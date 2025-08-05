@@ -351,8 +351,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         title: "Agreement created",
         description: `Agreement ${agreement.agreementNumber} has been created successfully.`,
       });
-      
-      onClose();
     } catch (error) {
       console.error("Finalize agreement error:", error);
       toast({
