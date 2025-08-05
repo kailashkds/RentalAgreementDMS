@@ -23,13 +23,13 @@ import { useToast } from "@/hooks/use-toast";
 export default function Agreements() {
   const [showWizard, setShowWizard] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
 
   const { data: agreementsData, isLoading } = useAgreements({
     search: searchTerm,
-    status: statusFilter,
+    status: statusFilter === "all" ? "" : statusFilter,
     limit: 20,
     offset: (currentPage - 1) * 20,
   });
@@ -138,7 +138,7 @@ export default function Agreements() {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="expired">Expired</SelectItem>
@@ -160,14 +160,14 @@ export default function Agreements() {
               <div className="p-6 text-center text-gray-500">Loading agreements...</div>
             ) : agreementsData?.agreements?.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
-                {searchTerm || statusFilter ? (
+                {searchTerm || (statusFilter && statusFilter !== "all") ? (
                   <>
                     No agreements found matching your criteria.
                     <Button
                       variant="ghost"
                       onClick={() => {
                         setSearchTerm("");
-                        setStatusFilter("");
+                        setStatusFilter("all");
                       }}
                       className="ml-2 text-blue-600 hover:text-blue-700"
                     >
