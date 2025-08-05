@@ -165,13 +165,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // More detailed error logging
       console.error("Error creating agreement:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+        name: (error as Error).name
       });
       
       // Send a more specific error message based on error type
-      if (error.message.includes('connection') || error.message.includes('timeout')) {
+      if ((error as Error).message.includes('connection') || (error as Error).message.includes('timeout')) {
         return res.status(503).json({ message: "Database connection error. Please try again." });
       }
       

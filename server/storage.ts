@@ -34,7 +34,7 @@ export interface IStorage {
   getCustomers(search?: string, limit?: number, offset?: number): Promise<{ customers: Customer[]; total: number }>;
   getCustomer(id: string): Promise<Customer | undefined>;
   getCustomerByMobile(mobile: string): Promise<Customer | undefined>;
-  createCustomer(customer: InsertCustomer & { password?: string }): Promise<Customer>;
+  createCustomer(customer: InsertCustomer & { password?: string | null }): Promise<Customer>;
   updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer>;
   deleteCustomer(id: string): Promise<void>;
   
@@ -298,7 +298,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
 
       let nextNumber = 1;
-      if (lastAgreement.length > 0) {
+      if (Array.isArray(lastAgreement) && lastAgreement.length > 0) {
         const lastNumber = parseInt(lastAgreement[0].agreementNumber.split('-')[2]);
         nextNumber = lastNumber + 1;
       }

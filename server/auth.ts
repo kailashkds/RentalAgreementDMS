@@ -3,6 +3,7 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
+import "./types"; // Import session types
 
 // Session configuration
 export function getSession() {
@@ -70,7 +71,7 @@ export async function setupAuth(app: Express) {
   
   // Current user endpoint
   app.get('/api/auth/me', requireAuth, (req, res) => {
-    const { password, ...userWithoutPassword } = req.user;
+    const { password, ...userWithoutPassword } = req.user!;
     res.json(userWithoutPassword);
   });
   
@@ -117,7 +118,7 @@ export async function setupAuth(app: Express) {
   app.post('/api/admin/users', requireAuth, async (req, res) => {
     try {
       // Only super_admin can create new admin users
-      if (req.user.role !== 'super_admin') {
+      if (req.user!.role !== 'super_admin') {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
       
@@ -139,7 +140,7 @@ export async function setupAuth(app: Express) {
       
       const { password: _, ...userWithoutPassword } = newUser;
       res.status(201).json(userWithoutPassword);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Create admin user error:", error);
       if (error.code === '23505') { // unique constraint violation
         return res.status(400).json({ message: "Username or email already exists" });
@@ -151,7 +152,7 @@ export async function setupAuth(app: Express) {
   // List admin users endpoint (protected)
   app.get('/api/admin/users', requireAuth, async (req, res) => {
     try {
-      if (req.user.role !== 'super_admin') {
+      if (req.user!.role !== 'super_admin') {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
       

@@ -46,16 +46,16 @@ async function initializeAdminUser() {
       const hashedPassword = await bcrypt.hash("admin123", 10);
       await storage.createAdminUser({
         username: "admin",
-        fullName: "Administrator",
+        name: "Administrator",
         email: "admin@quickkaraar.com",
-        passwordHash: hashedPassword,
+        password: hashedPassword,
         role: "admin",
         isActive: true
       });
       log("Default admin user created: admin/admin123");
     }
   } catch (error) {
-    log("Error initializing admin user:", error);
+    log("Error initializing admin user:", String(error));
   }
 }
 
