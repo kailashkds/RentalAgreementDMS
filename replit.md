@@ -1,0 +1,79 @@
+# Overview
+
+This is a comprehensive Document Management System (DMS) specifically designed for agreement generation and management. The application provides a web-based platform for creating, managing, and tracking rental agreements with support for multiple languages (English, Hindi, Gujarati, Tamil, Marathi). The system includes customer management, society/property management, document generation workflows, and file storage capabilities with granular access control.
+
+# User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+# System Architecture
+
+## Frontend Architecture
+- **Framework**: React with TypeScript using Vite as the build tool
+- **UI Components**: Shadcn/UI component library built on Radix UI primitives
+- **Styling**: Tailwind CSS with CSS variables for theming support
+- **State Management**: TanStack Query (React Query) for server state management
+- **Routing**: Wouter for client-side routing
+- **Form Handling**: React Hook Form with Zod validation
+
+## Backend Architecture
+- **Runtime**: Node.js with Express.js framework
+- **Language**: TypeScript with ES modules
+- **API Design**: RESTful API with JSON responses
+- **Middleware**: Express middleware for logging, JSON parsing, and error handling
+- **Development Server**: Vite development server integration for HMR
+
+## Data Storage Solutions
+- **Database**: PostgreSQL with Neon serverless hosting
+- **ORM**: Drizzle ORM for type-safe database operations
+- **Schema**: Shared schema definitions between client and server
+- **Migrations**: Drizzle Kit for database schema management
+- **Connection**: Connection pooling with @neondatabase/serverless
+
+## Object Storage & File Management
+- **Storage Provider**: Google Cloud Storage
+- **Upload Strategy**: Direct-to-cloud uploads using presigned URLs
+- **File Upload UI**: Uppy.js with dashboard interface for file management
+- **Access Control**: Custom ACL system with metadata-based permissions
+- **Storage Client**: Google Cloud Storage client with Replit sidecar authentication
+
+## Authentication & Authorization
+- **Session Management**: Express sessions stored in PostgreSQL
+- **User System**: Admin users with profile management
+- **Customer Authentication**: Basic password-based authentication for customers
+- **Access Control**: Object-level permissions with custom ACL policies
+
+## Multi-language Support
+- **Languages**: English, Hindi, Gujarati, Tamil, Marathi
+- **Implementation**: Translation system with language-specific form labels
+- **Document Generation**: Language-aware agreement template rendering
+
+# External Dependencies
+
+## Database Services
+- **Neon Database**: Serverless PostgreSQL hosting with connection pooling
+- **Environment**: DATABASE_URL configuration required
+
+## Cloud Storage
+- **Google Cloud Storage**: Object storage with ACL-based access control
+- **Authentication**: Replit sidecar service for GCS credentials
+- **Configuration**: Custom endpoint configuration for Replit environment
+
+## UI & Component Libraries
+- **Radix UI**: Headless UI primitives for accessibility
+- **Shadcn/UI**: Pre-built component library with Tailwind CSS
+- **Lucide React**: Icon library for UI elements
+- **Uppy**: File upload library with dashboard interface
+
+## Development Tools
+- **Vite**: Build tool and development server
+- **TypeScript**: Type safety across the entire stack
+- **Tailwind CSS**: Utility-first CSS framework
+- **ESBuild**: JavaScript bundler for production builds
+
+## Runtime Dependencies
+- **TanStack Query**: Server state management and caching
+- **React Hook Form**: Form state management and validation
+- **Zod**: Schema validation for forms and API data
+- **Wouter**: Lightweight client-side routing
+- **Bcrypt**: Password hashing for user authentication
