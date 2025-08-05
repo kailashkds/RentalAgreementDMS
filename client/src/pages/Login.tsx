@@ -51,13 +51,12 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-orange-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="flex items-center space-x-2">
-              <Building2 className="h-8 w-8 text-blue-600" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
-                QuickKaraar
-              </span>
-            </div>
+          <div className="flex justify-center mb-6">
+            <img 
+              src="https://quickkaraar.com/images/logo.png" 
+              alt="QuickKaraar" 
+              className="h-16 w-auto"
+            />
           </div>
           <CardTitle className="text-2xl">Admin Login</CardTitle>
           <CardDescription>

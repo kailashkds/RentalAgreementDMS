@@ -156,8 +156,12 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                   </span>
                 </button>
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">Q</span>
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-100">
+                    <img 
+                      src="https://quickkaraar.com/images/logo.png" 
+                      alt="QuickKaraar" 
+                      className="w-full h-full object-contain"
+                    />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-800">{user?.name || "Admin User"}</p>
