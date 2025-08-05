@@ -45,32 +45,36 @@ export default function Dashboard() {
 
   const statsCards = [
     {
-      title: "Total Agreements",
+      title: "Total Documents",
       value: stats?.totalAgreements || 0,
       icon: FileSignature,
       bgColor: "bg-primary/10",
       iconColor: "text-primary",
+      description: "All document types"
     },
     {
-      title: "Active Agreements",
+      title: "Active Documents",
       value: stats?.activeAgreements || 0,
       icon: CheckCircle,
       bgColor: "bg-green-100",
       iconColor: "text-green-600",
+      description: "Currently valid"
     },
     {
-      title: "Expiring Soon",
+      title: "Pending Review",
       value: stats?.expiringSoon || 0,
       icon: Clock,
       bgColor: "bg-accent/20",
       iconColor: "text-accent",
+      description: "Needs attention"
     },
     {
-      title: "Total Customers",
+      title: "Total Clients",
       value: stats?.totalCustomers || 0,
       icon: Users,
       bgColor: "bg-primary/10",
       iconColor: "text-primary",
+      description: "Registered users"
     },
   ];
 
@@ -98,11 +102,12 @@ export default function Dashboard() {
                 <div className={`p-3 ${card.bgColor} rounded-lg`}>
                   <card.icon className={`${card.iconColor} h-6 w-6`} />
                 </div>
-                <div className="ml-4">
+                <div className="ml-4 flex-1">
                   <p className="text-sm text-gray-600">{card.title}</p>
                   <p className="text-2xl font-bold text-gray-800">
                     {statsLoading ? "..." : card.value}
                   </p>
+                  <p className="text-xs text-gray-500">{card.description}</p>
                 </div>
               </div>
             </CardContent>
@@ -124,14 +129,14 @@ export default function Dashboard() {
                 className="w-full"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Create New Agreement
+                Create New Document
               </Button>
               <Button
                 onClick={() => setShowCustomerModal(true)}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
                 <UserPlus className="mr-2 h-4 w-4" />
-                Add Customer
+                Add Client
               </Button>
               <Button
                 onClick={() => setShowSocietyModal(true)}
@@ -139,7 +144,7 @@ export default function Dashboard() {
                 className="w-full border-primary text-primary hover:bg-primary hover:text-white"
               >
                 <Building className="mr-2 h-4 w-4" />
-                Add Society
+                Add Location
               </Button>
               <Button className="w-full bg-accent hover:bg-accent/90">
                 <Upload className="mr-2 h-4 w-4" />
@@ -154,8 +159,8 @@ export default function Dashboard() {
           <Card className="border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">Recent Agreements</h3>
-                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+                <h3 className="text-lg font-semibold text-gray-800">Recent Documents</h3>
+                <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
                   View All
                 </Button>
               </div>
@@ -165,20 +170,20 @@ export default function Dashboard() {
                 <div className="p-6 text-center text-gray-500">Loading agreements...</div>
               ) : recentAgreements?.agreements?.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">
-                  No agreements found. Create your first agreement to get started.
+                  No documents found. Create your first document to get started.
                 </div>
               ) : (
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Agreement ID
+                        Document ID
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer
+                        Client
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Property
+                        Type/Details
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
@@ -208,7 +213,7 @@ export default function Dashboard() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {agreement.propertyDetails?.type || "Property"}
+                            {agreement.propertyDetails?.type || "Document"}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
