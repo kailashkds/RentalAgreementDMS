@@ -7,10 +7,56 @@ import { ObjectPermission } from "./objectAcl";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
 import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema } from "@shared/schema";
 import { z } from "zod";
+import bcrypt from "bcrypt";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication system
   await setupAuth(app);
+  
+  // Debug endpoint to check admin user status (temporary)
+  app.get("/api/debug/admin-status", async (req, res) => {
+    try {
+      const adminUser = await storage.getAdminUserByUsername("admin");
+      const allAdmins = await storage.getAdminUsers();
+      res.json({
+        adminExists: !!adminUser,
+        adminUser: adminUser ? { id: adminUser.id, username: adminUser.username, email: adminUser.email } : null,
+        totalAdmins: allAdmins.length,
+        environment: process.env.NODE_ENV || 'development'
+      });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  // Emergency admin creation endpoint
+  app.post("/api/create-admin", async (req, res) => {
+    try {
+      const { secret } = req.body;
+      if (secret !== "quickkaraar2024") {
+        return res.status(403).json({ message: "Invalid secret" });
+      }
+      
+      const existingAdmin = await storage.getAdminUserByUsername("admin");
+      if (existingAdmin) {
+        return res.json({ message: "Admin already exists", admin: { username: existingAdmin.username, email: existingAdmin.email } });
+      }
+      
+      const hashedPassword = await bcrypt.hash("admin123", 10);
+      const newAdmin = await storage.createAdminUser({
+        username: "admin",
+        name: "Administrator",
+        email: "admin@quickkaraar.com", 
+        password: hashedPassword,
+        role: "super_admin",
+        isActive: true
+      });
+      
+      res.json({ message: "Admin created successfully", admin: { username: newAdmin.username, email: newAdmin.email } });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {

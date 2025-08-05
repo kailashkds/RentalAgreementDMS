@@ -41,21 +41,44 @@ app.use((req, res, next) => {
 // Initialize default admin user
 async function initializeAdminUser() {
   try {
+    log("Checking for admin user...");
     const adminUser = await storage.getAdminUserByUsername("admin");
     if (!adminUser) {
+      log("Creating admin user...");
       const hashedPassword = await bcrypt.hash("admin123", 10);
       await storage.createAdminUser({
         username: "admin",
         name: "Administrator",
         email: "admin@quickkaraar.com",
         password: hashedPassword,
-        role: "admin",
+        role: "super_admin", // Changed to match existing role
         isActive: true
       });
-      log("Default admin user created: admin/admin123");
+      log("✓ Default admin user created: admin/admin123");
+    } else {
+      log("✓ Admin user already exists");
     }
   } catch (error) {
-    log("Error initializing admin user:", String(error));
+    log("❌ Error initializing admin user:", String(error));
+    // Force retry once more in case of connection issues
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      const adminUser2 = await storage.getAdminUserByUsername("admin");
+      if (!adminUser2) {
+        const hashedPassword = await bcrypt.hash("admin123", 10);
+        await storage.createAdminUser({
+          username: "admin",
+          name: "Administrator", 
+          email: "admin@quickkaraar.com",
+          password: hashedPassword,
+          role: "super_admin",
+          isActive: true
+        });
+        log("✓ Admin user created on retry");
+      }
+    } catch (retryError) {
+      log("❌ Retry failed:", String(retryError));
+    }
   }
 }
 
