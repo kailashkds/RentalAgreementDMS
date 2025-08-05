@@ -197,10 +197,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       
       toast({
         title: "Draft saved",
-        description: "Agreement has been saved as draft.",
+        description: "Agreement has been saved as draft. You can continue editing.",
       });
-      
-      onClose();
     } catch (error) {
       console.error("Save draft error:", error);
       toast({
