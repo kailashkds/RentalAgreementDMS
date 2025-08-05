@@ -15,13 +15,6 @@ export function useAddresses(options: UseAddressesOptions = {}) {
 
   return useQuery<Address[]>({
     queryKey: ["/api/addresses", search, limit],
-    queryFn: async () => {
-      const response = await fetch(`/api/addresses?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch addresses');
-      }
-      return response.json();
-    },
     enabled: !!search && search.length >= 2, // Only search when user has typed at least 2 characters
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
