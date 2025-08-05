@@ -15,7 +15,7 @@ export function useAddresses(options: UseAddressesOptions = {}) {
 
   return useQuery<Address[]>({
     queryKey: ["/api/addresses", search, limit],
-    enabled: !!search && search.length >= 2, // Only search when user has typed at least 2 characters
+    enabled: !!search && search.length >= 3, // Only search when user has typed at least 3 characters
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
