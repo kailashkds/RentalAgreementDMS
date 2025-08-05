@@ -176,8 +176,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   const saveDraft = async (data: AgreementFormData) => {
     try {
       const agreementData = {
-        ...data,
+        customerId: data.customerId || "",
+        language: data.language || "english",
         status: "draft",
+        ownerDetails: data.ownerDetails || {},
+        tenantDetails: data.tenantDetails || {},
+        propertyDetails: data.propertyDetails || {},
+        rentalTerms: data.rentalTerms || {},
+        additionalClauses: data.additionalClauses || [],
+        documents: documents,
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(Date.now() + 11 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         agreementDate: new Date().toISOString().split('T')[0],
@@ -185,11 +192,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
       const response = await apiRequest("POST", "/api/agreements", agreementData);
       const agreement = await response.json();
-
-      // Update documents if any
-      if (Object.keys(documents).length > 0) {
-        await apiRequest("PUT", `/api/agreements/${agreement.id}/documents`, { documents });
-      }
 
       queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
       
@@ -200,6 +202,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       
       onClose();
     } catch (error) {
+      console.error("Save draft error:", error);
       toast({
         title: "Error",
         description: "Failed to save draft.",
@@ -211,20 +214,22 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   const finalizeAgreement = async (data: AgreementFormData) => {
     try {
       const agreementData = {
-        ...data,
+        customerId: data.customerId || "",
+        language: data.language || "english",
         status: "active",
-        startDate: data.rentalTerms.startDate || new Date().toISOString().split('T')[0],
-        endDate: data.rentalTerms.endDate || new Date(Date.now() + 11 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        ownerDetails: data.ownerDetails || {},
+        tenantDetails: data.tenantDetails || {},
+        propertyDetails: data.propertyDetails || {},
+        rentalTerms: data.rentalTerms || {},
+        additionalClauses: data.additionalClauses || [],
+        documents: documents,
+        startDate: data.rentalTerms?.startDate || new Date().toISOString().split('T')[0],
+        endDate: data.rentalTerms?.endDate || new Date(Date.now() + 11 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         agreementDate: new Date().toISOString().split('T')[0],
       };
 
       const response = await apiRequest("POST", "/api/agreements", agreementData);
       const agreement = await response.json();
-
-      // Update documents if any
-      if (Object.keys(documents).length > 0) {
-        await apiRequest("PUT", `/api/agreements/${agreement.id}/documents`, { documents });
-      }
 
       queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
@@ -236,6 +241,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       
       onClose();
     } catch (error) {
+      console.error("Finalize agreement error:", error);
       toast({
         title: "Error",
         description: "Failed to create agreement.",

@@ -147,7 +147,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/agreements", async (req, res) => {
     try {
+      console.log("Received agreement data:", JSON.stringify(req.body, null, 2));
       const agreementData = insertAgreementSchema.parse(req.body);
+      console.log("Parsed agreement data:", JSON.stringify(agreementData, null, 2));
       const agreement = await storage.createAgreement(agreementData);
       res.status(201).json(agreement);
     } catch (error) {

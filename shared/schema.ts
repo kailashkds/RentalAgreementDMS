@@ -155,6 +155,16 @@ export const insertAgreementSchema = createInsertSchema(agreements).omit({
   agreementNumber: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // Make date fields optional for draft saving
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  agreementDate: z.string().optional(),
+  // Make JSONB fields optional for draft saving
+  ownerDetails: z.any().optional(),
+  tenantDetails: z.any().optional(),
+  propertyDetails: z.any().optional(),
+  rentalTerms: z.any().optional(),
 });
 
 export const insertAgreementTemplateSchema = createInsertSchema(agreementTemplates).omit({
