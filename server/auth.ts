@@ -75,6 +75,16 @@ export async function setupAuth(app: Express) {
     res.json(userWithoutPassword);
   });
   
+  // Test endpoint to check session status
+  app.get('/api/auth/session-status', (req, res) => {
+    res.json({
+      hasSession: !!req.session,
+      sessionId: req.sessionID,
+      userId: req.session?.userId,
+      nodeEnv: process.env.NODE_ENV
+    });
+  });
+  
   // Login endpoint
   app.post('/api/auth/login', async (req, res) => {
     try {
@@ -96,8 +106,16 @@ export async function setupAuth(app: Express) {
       
       req.session.userId = user.id;
       
-      const { password: _, ...userWithoutPassword } = user;
-      res.json({ user: userWithoutPassword });
+      // Ensure session is saved before sending response
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Session error" });
+        }
+        
+        const { password: _, ...userWithoutPassword } = user;
+        res.json({ user: userWithoutPassword });
+      });
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Login failed" });

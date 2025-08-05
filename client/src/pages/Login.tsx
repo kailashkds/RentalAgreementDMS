@@ -26,10 +26,13 @@ export default function Login() {
       const response = await apiRequest("POST", "/api/auth/login", formData);
       
       if (response.ok) {
-        // Invalidate auth queries specifically to refresh auth state
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-        // Force a page reload to ensure proper auth state
-        window.location.href = "/";
+        // Invalidate auth queries and wait for refetch
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        
+        // Wait a brief moment for the session to be established
+        setTimeout(() => {
+          navigate("/");
+        }, 100);
       } else {
         const data = await response.json();
         setError(data.message || "Login failed");
