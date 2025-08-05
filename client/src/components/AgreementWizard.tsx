@@ -68,6 +68,45 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   const watchedLanguage = watch("language");
   const watchedCustomerId = watch("customerId");
+  const formData = watch();
+
+  // Step validation functions
+  const validateStep = (stepNumber: number): boolean => {
+    switch (stepNumber) {
+      case 1:
+        return !!(formData.customerId && formData.language);
+      case 2:
+        return !!(
+          formData.ownerDetails?.name &&
+          formData.ownerDetails?.mobile &&
+          formData.ownerDetails?.age &&
+          formData.ownerDetails?.address
+        );
+      case 3:
+        return !!(
+          formData.tenantDetails?.name &&
+          formData.tenantDetails?.mobile &&
+          formData.tenantDetails?.age &&
+          formData.tenantDetails?.address
+        );
+      case 4:
+        return !!(
+          formData.propertyDetails?.address &&
+          formData.propertyDetails?.type &&
+          formData.rentalTerms?.monthlyRent &&
+          formData.rentalTerms?.securityDeposit &&
+          formData.rentalTerms?.leasePeriod
+        );
+      case 5:
+        return true; // Finalize step doesn't need validation
+      default:
+        return false;
+    }
+  };
+
+  const canProceed = (stepNumber: number): boolean => {
+    return validateStep(stepNumber);
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -78,8 +117,14 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   }, [isOpen, reset]);
 
   const nextStep = () => {
-    if (currentStep < STEPS.length) {
+    if (currentStep < STEPS.length && canProceed(currentStep)) {
       setCurrentStep(currentStep + 1);
+    } else if (!canProceed(currentStep)) {
+      toast({
+        title: "Please complete all required fields",
+        description: "Fill in all required information before proceeding to the next step.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -293,19 +338,19 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Flat/House No.</Label>
-                  <Input {...register("ownerDetails.address.flatNo")} />
+                  <Input {...register("ownerDetails.address.flatNo", { required: "Flat/House No. is required" })} />
                 </div>
                 <div>
                   <Label>Society/Apartment</Label>
-                  <Input {...register("ownerDetails.address.society")} placeholder="Start typing society name..." />
+                  <Input {...register("ownerDetails.address.society", { required: "Society/Building name is required" })} placeholder="Start typing society name..." />
                 </div>
                 <div>
                   <Label>Area</Label>
-                  <Input {...register("ownerDetails.address.area")} />
+                  <Input {...register("ownerDetails.address.area", { required: "Area is required" })} />
                 </div>
                 <div>
                   <Label>City</Label>
-                  <Input {...register("ownerDetails.address.city")} />
+                  <Input {...register("ownerDetails.address.city", { required: "City is required" })} />
                 </div>
               </div>
             </div>
@@ -315,24 +360,56 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               <h4 className="text-md font-semibold text-gray-800 mb-4">Documents (Optional)</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Aadhar Card</Label>
+                  <Label className="text-sm font-medium text-gray-700">Aadhar Card</Label>
                   <ObjectUploader
+                    maxFileSize={5242880} // 5MB
                     onGetUploadParameters={getUploadParameters}
                     onComplete={(result) => handleDocumentUpload("ownerAadhar", result)}
+                    buttonClassName="w-full h-auto p-0"
                   >
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
-                      <p className="text-sm text-gray-600">Upload Aadhar Card</p>
+                    <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
+                      documents.ownerAadhar 
+                        ? "border-green-300 bg-green-50 hover:bg-green-100" 
+                        : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                    }`}>
+                      <div className="flex flex-col items-center space-y-2">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          documents.ownerAadhar ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-500"
+                        }`}>
+                          <Plus className="w-4 h-4" />
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {documents.ownerAadhar ? "Aadhar Card Uploaded" : "Upload Aadhar Card"}
+                        </p>
+                        <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
+                      </div>
                     </div>
                   </ObjectUploader>
                 </div>
                 <div>
-                  <Label>PAN Card</Label>
+                  <Label className="text-sm font-medium text-gray-700">PAN Card</Label>
                   <ObjectUploader
+                    maxFileSize={5242880} // 5MB
                     onGetUploadParameters={getUploadParameters}
                     onComplete={(result) => handleDocumentUpload("ownerPan", result)}
+                    buttonClassName="w-full h-auto p-0"
                   >
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
-                      <p className="text-sm text-gray-600">Upload PAN Card</p>
+                    <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
+                      documents.ownerPan 
+                        ? "border-green-300 bg-green-50 hover:bg-green-100" 
+                        : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                    }`}>
+                      <div className="flex flex-col items-center space-y-2">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          documents.ownerPan ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-500"
+                        }`}>
+                          <Plus className="w-4 h-4" />
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {documents.ownerPan ? "PAN Card Uploaded" : "Upload PAN Card"}
+                        </p>
+                        <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
+                      </div>
                     </div>
                   </ObjectUploader>
                 </div>
@@ -376,29 +453,84 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
             </div>
 
+            {/* Tenant Address Section */}
+            <div>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">Address Details</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Flat/House No.</Label>
+                  <Input {...register("tenantDetails.address.flatNo", { required: "Flat/House No. is required" })} />
+                </div>
+                <div>
+                  <Label>Society/Apartment</Label>
+                  <Input {...register("tenantDetails.address.society", { required: "Society/Building name is required" })} placeholder="Start typing society name..." />
+                </div>
+                <div>
+                  <Label>Area</Label>
+                  <Input {...register("tenantDetails.address.area", { required: "Area is required" })} />
+                </div>
+                <div>
+                  <Label>City</Label>
+                  <Input {...register("tenantDetails.address.city", { required: "City is required" })} />
+                </div>
+              </div>
+            </div>
+
             {/* Document Upload for Tenant */}
             <div>
               <h4 className="text-md font-semibold text-gray-800 mb-4">Documents (Optional)</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Aadhar Card</Label>
+                  <Label className="text-sm font-medium text-gray-700">Aadhar Card</Label>
                   <ObjectUploader
+                    maxFileSize={5242880} // 5MB
                     onGetUploadParameters={getUploadParameters}
                     onComplete={(result) => handleDocumentUpload("tenantAadhar", result)}
+                    buttonClassName="w-full h-auto p-0"
                   >
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
-                      <p className="text-sm text-gray-600">Upload Aadhar Card</p>
+                    <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
+                      documents.tenantAadhar 
+                        ? "border-green-300 bg-green-50 hover:bg-green-100" 
+                        : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                    }`}>
+                      <div className="flex flex-col items-center space-y-2">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          documents.tenantAadhar ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-500"
+                        }`}>
+                          <Plus className="w-4 h-4" />
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {documents.tenantAadhar ? "Aadhar Card Uploaded" : "Upload Aadhar Card"}
+                        </p>
+                        <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
+                      </div>
                     </div>
                   </ObjectUploader>
                 </div>
                 <div>
-                  <Label>PAN Card</Label>
+                  <Label className="text-sm font-medium text-gray-700">PAN Card</Label>
                   <ObjectUploader
+                    maxFileSize={5242880} // 5MB
                     onGetUploadParameters={getUploadParameters}
                     onComplete={(result) => handleDocumentUpload("tenantPan", result)}
+                    buttonClassName="w-full h-auto p-0"
                   >
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
-                      <p className="text-sm text-gray-600">Upload PAN Card</p>
+                    <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
+                      documents.tenantPan 
+                        ? "border-green-300 bg-green-50 hover:bg-green-100" 
+                        : "border-gray-300 bg-gray-50 hover:bg-gray-100"
+                    }`}>
+                      <div className="flex flex-col items-center space-y-2">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          documents.tenantPan ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-500"
+                        }`}>
+                          <Plus className="w-4 h-4" />
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          {documents.tenantPan ? "PAN Card Uploaded" : "Upload PAN Card"}
+                        </p>
+                        <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
+                      </div>
                     </div>
                   </ObjectUploader>
                 </div>
@@ -424,32 +556,44 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <Input {...register("propertyDetails.place")} placeholder="City name" />
                 </div>
               </div>
+              
+              <div className="mt-4">
+                <h5 className="text-sm font-semibold text-gray-700 mb-3">Property Address</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Flat/House No.</Label>
+                    <Input {...register("propertyDetails.address.flatNo", { required: "Property address is required" })} />
+                  </div>
+                  <div>
+                    <Label>Society/Building</Label>
+                    <Input {...register("propertyDetails.address.society", { required: "Society/Building name is required" })} />
+                  </div>
+                  <div>
+                    <Label>Area</Label>
+                    <Input {...register("propertyDetails.address.area", { required: "Area is required" })} />
+                  </div>
+                  <div>
+                    <Label>City</Label>
+                    <Input {...register("propertyDetails.address.city", { required: "City is required" })} />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div>
               <h4 className="text-md font-semibold text-gray-800 mb-4">Rental Terms</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>Advance Deposit (₹)</Label>
-                  <Input type="number" {...register("rentalTerms.deposit", { required: "Deposit is required" })} placeholder="Amount" />
+                  <Label>Security Deposit (₹)</Label>
+                  <Input type="number" {...register("rentalTerms.securityDeposit", { required: "Security deposit is required" })} placeholder="Amount" />
                 </div>
                 <div>
                   <Label>Monthly Rent (₹)</Label>
                   <Input type="number" {...register("rentalTerms.monthlyRent", { required: "Monthly rent is required" })} placeholder="Amount" />
                 </div>
                 <div>
-                  <Label>Rent Due Date</Label>
-                  <Select onValueChange={(value) => setValue("rentalTerms.dueDate", parseInt(value))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select day" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1st of month</SelectItem>
-                      <SelectItem value="5">5th of month</SelectItem>
-                      <SelectItem value="10">10th of month</SelectItem>
-                      <SelectItem value="15">15th of month</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Lease Period (Months)</Label>
+                  <Input type="number" {...register("rentalTerms.leasePeriod", { required: "Lease period is required" })} placeholder="e.g., 11, 24" />
                 </div>
               </div>
             </div>
@@ -623,7 +767,16 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     Create Agreement
                   </Button>
                 ) : (
-                  <Button type="button" onClick={nextStep} className="bg-blue-600 hover:bg-blue-700">
+                  <Button 
+                    type="button" 
+                    onClick={nextStep} 
+                    disabled={!canProceed(currentStep)}
+                    className={`${
+                      canProceed(currentStep) 
+                        ? "bg-primary hover:bg-primary/90" 
+                        : "bg-gray-400 cursor-not-allowed"
+                    }`}
+                  >
                     Next
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
