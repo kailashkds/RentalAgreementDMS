@@ -44,16 +44,12 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg border-r border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center">
+          <div className="flex justify-center">
             <img 
               src="https://quickkaraar.com/images/logo.png" 
               alt="QuickKaraar" 
-              className="h-8 w-auto mr-3"
+              className="h-8 w-auto"
             />
-            <div>
-              <h1 className="text-lg font-bold text-primary">QuickKaraar</h1>
-              <p className="text-xs text-muted-foreground">Agreement Management</p>
-            </div>
           </div>
         </div>
         
@@ -129,7 +125,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                     <span className="text-white text-sm font-medium">Q</span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-800">QuickKaraar Admin</p>
+                    <p className="text-sm font-medium text-gray-800">Admin User</p>
                     <p className="text-xs text-gray-600">Administrator</p>
                   </div>
                 </div>
