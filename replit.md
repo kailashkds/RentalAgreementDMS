@@ -1,6 +1,15 @@
 # Overview
 
-This is a comprehensive Document Management System (DMS) specifically designed for agreement generation and management. The application provides a web-based platform for creating, managing, and tracking rental agreements with support for multiple languages (English, Hindi, Gujarati, Tamil, Marathi). The system includes customer management, society/property management, document generation workflows, and file storage capabilities with granular access control.
+This is a comprehensive Document Management System (DMS) specifically designed for legal document generation and management. The application provides a web-based admin panel for creating, managing, and tracking multiple document types including rental agreements, promissory notes, power of attorney, and other legal documents. The system features a 5-step document creation wizard with step validation, multi-language support (English, Hindi, Gujarati, Tamil, Marathi), customer management, society/property management, and file storage capabilities with granular access control.
+
+## Recent Changes
+
+- **Step Validation System**: Implemented comprehensive validation preventing progression without completing required fields across all 5 wizard steps
+- **Enhanced Document Upload UI**: Improved Aadhar/PAN card upload interface with visual feedback, file size limits (5MB), and upload status indicators
+- **Smart Button Behavior**: Next button disabled when validation fails, with toast notifications for incomplete steps
+- **Complete Form Structure**: Added proper address validation for landlord, tenant, and property details with required field validation
+- **Professional UI**: Updated document upload cards with green success states, file format indicators, and responsive design
+- **Deployment Documentation**: Added comprehensive README with step-by-step deployment instructions including nginx configuration
 
 # User Preferences
 
