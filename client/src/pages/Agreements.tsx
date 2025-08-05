@@ -104,7 +104,8 @@ export default function Agreements() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | undefined) => {
+    if (!status) return "bg-gray-100 text-gray-800";
     const statusConfig = {
       active: "bg-green-100 text-green-800",
       expired: "bg-red-100 text-red-800",
@@ -257,7 +258,7 @@ export default function Agreements() {
                             agreement.status
                           )}`}
                         >
-                          {agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1)}
+                          {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

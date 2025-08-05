@@ -94,8 +94,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
           formData.propertyDetails?.address &&
           formData.propertyDetails?.type &&
           formData.rentalTerms?.monthlyRent &&
-          formData.rentalTerms?.securityDeposit &&
-          formData.rentalTerms?.leasePeriod
+          formData.rentalTerms?.deposit
         );
       case 5:
         return true; // Finalize step doesn't need validation
@@ -263,7 +262,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     <SelectValue placeholder="Search for existing customer..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {customersData?.customers.map((customer) => (
+                    {customersData?.customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name} - {customer.mobile}
                       </SelectItem>
@@ -589,15 +588,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Security Deposit (₹)</Label>
-                  <Input type="number" {...register("rentalTerms.securityDeposit", { required: "Security deposit is required" })} placeholder="Amount" />
+                  <Input type="number" {...register("rentalTerms.deposit", { required: "Security deposit is required" })} placeholder="Amount" />
                 </div>
                 <div>
                   <Label>Monthly Rent (₹)</Label>
                   <Input type="number" {...register("rentalTerms.monthlyRent", { required: "Monthly rent is required" })} placeholder="Amount" />
                 </div>
                 <div>
-                  <Label>Lease Period (Months)</Label>
-                  <Input type="number" {...register("rentalTerms.leasePeriod", { required: "Lease period is required" })} placeholder="e.g., 11, 24" />
+                  <Label>Due Date (Day of Month)</Label>
+                  <Input type="number" {...register("rentalTerms.dueDate", { required: "Due date is required" })} placeholder="e.g., 5, 15" />
                 </div>
               </div>
             </div>
