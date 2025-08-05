@@ -715,11 +715,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-screen overflow-y-auto">
           <DialogHeader className="bg-gray-800 text-white p-6 -m-6 mb-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center">
               <DialogTitle className="text-xl font-bold">Create New Agreement</DialogTitle>
-              <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:text-gray-200">
-                <X className="h-5 w-5" />
-              </Button>
             </div>
             
             {/* Progress Bar */}
