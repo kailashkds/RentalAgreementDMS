@@ -295,6 +295,7 @@ export interface RentalTerms {
   furniture: string;
   startDate: string;
   endDate: string;
+  tenure: "11_months" | "custom"; // New tenure field
 }
 
 export interface AgreementDocuments {

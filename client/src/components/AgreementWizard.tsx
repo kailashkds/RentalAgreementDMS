@@ -71,6 +71,17 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     defaultValues: {
       language: "english",
       additionalClauses: [],
+      rentalTerms: {
+        tenure: "11_months", // Default to 11 months
+        startDate: "",
+        endDate: "",
+        deposit: 0,
+        monthlyRent: 0,
+        dueDate: 1,
+        maintenance: "included",
+        noticePeriod: 1,
+        furniture: ""
+      }
     },
   });
 
@@ -159,10 +170,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     // Save addresses to database
     for (const address of addressesToSave) {
       try {
-        await apiRequest("/api/addresses", {
-          method: "POST",
-          body: address
-        });
+        await apiRequest("/api/addresses", "POST", address);
       } catch (error) {
         console.error("Error saving address:", error);
       }
@@ -193,6 +201,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
           formData.propertyDetails?.address &&
           formData.propertyDetails?.type &&
           formData.rentalTerms?.monthlyRent &&
+          formData.rentalTerms?.startDate &&
+          formData.rentalTerms?.endDate &&
+          formData.rentalTerms?.tenure &&
           formData.rentalTerms?.deposit
         );
       case 5:
@@ -749,6 +760,71 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             </div>
 
             <div>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">Agreement Duration</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label>Agreement Start Date</Label>
+                  <Input 
+                    type="date" 
+                    {...register("rentalTerms.startDate", { required: "Start date is required" })}
+                    onChange={(e) => {
+                      setValue("rentalTerms.startDate", e.target.value);
+                      // Auto-calculate end date if 11 months tenure is selected
+                      if (watch("rentalTerms.tenure") === "11_months" && e.target.value) {
+                        const startDate = new Date(e.target.value);
+                        const endDate = new Date(startDate);
+                        endDate.setMonth(endDate.getMonth() + 11);
+                        setValue("rentalTerms.endDate", endDate.toISOString().split('T')[0]);
+                      }
+                    }}
+                  />
+                  {errors.rentalTerms?.startDate && (
+                    <p className="text-sm text-red-600 mt-1">{errors.rentalTerms.startDate.message}</p>
+                  )}
+                </div>
+                <div>
+                  <Label>Agreement Tenure</Label>
+                  <Select 
+                    value={watch("rentalTerms.tenure")} 
+                    onValueChange={(value) => {
+                      setValue("rentalTerms.tenure", value as "11_months" | "custom");
+                      // Auto-calculate end date if 11 months is selected and start date exists
+                      if (value === "11_months" && watch("rentalTerms.startDate")) {
+                        const startDate = new Date(watch("rentalTerms.startDate"));
+                        const endDate = new Date(startDate);
+                        endDate.setMonth(endDate.getMonth() + 11);
+                        setValue("rentalTerms.endDate", endDate.toISOString().split('T')[0]);
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select tenure" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="11_months">11 Months</SelectItem>
+                      <SelectItem value="custom">Custom Duration</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Agreement End Date</Label>
+                  <Input 
+                    type="date" 
+                    {...register("rentalTerms.endDate", { required: "End date is required" })}
+                    disabled={watch("rentalTerms.tenure") === "11_months"}
+                    className={watch("rentalTerms.tenure") === "11_months" ? "bg-gray-100" : ""}
+                  />
+                  {errors.rentalTerms?.endDate && (
+                    <p className="text-sm text-red-600 mt-1">{errors.rentalTerms.endDate.message}</p>
+                  )}
+                  {watch("rentalTerms.tenure") === "11_months" && (
+                    <p className="text-xs text-gray-500 mt-1">Auto-calculated based on start date</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
               <h4 className="text-md font-semibold text-gray-800 mb-4">Rental Terms</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -771,7 +847,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Maintenance Charge</Label>
-                  <Select onValueChange={(value) => setValue("rentalTerms.maintenance", value as "included" | "excluded")}>
+                  <Select value={watch("rentalTerms.maintenance")} onValueChange={(value) => setValue("rentalTerms.maintenance", value as "included" | "excluded")}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select option" />
                     </SelectTrigger>
@@ -860,6 +936,20 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <div>
                     <span className="text-gray-600">Deposit:</span>
                     <span className="ml-2 font-medium">₹{watch("rentalTerms.deposit") || "0"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Start Date:</span>
+                    <span className="ml-2 font-medium">{watch("rentalTerms.startDate") || "Not set"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">End Date:</span>
+                    <span className="ml-2 font-medium">{watch("rentalTerms.endDate") || "Not set"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Tenure:</span>
+                    <span className="ml-2 font-medium">
+                      {watch("rentalTerms.tenure") === "11_months" ? "11 Months" : "Custom Duration"}
+                    </span>
                   </div>
                 </div>
               </CardContent>
