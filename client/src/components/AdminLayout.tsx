@@ -40,14 +40,21 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   const [location] = useLocation();
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-muted/30">
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg border-r border-gray-200">
         <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-800 flex items-center">
-            <FileSignature className="text-blue-600 mr-2 h-6 w-6" />
-            Agreement DMS
-          </h1>
+          <div className="flex items-center">
+            <img 
+              src="https://quickkaraar.com/images/logo.png" 
+              alt="QuickKaraar" 
+              className="h-8 w-auto mr-3"
+            />
+            <div>
+              <h1 className="text-lg font-bold text-primary">QuickKaraar</h1>
+              <p className="text-xs text-muted-foreground">Agreement Management</p>
+            </div>
+          </div>
         </div>
         
         <nav className="mt-6">
@@ -60,8 +67,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                     className={cn(
                       "flex items-center px-4 py-3 rounded-lg font-medium transition-colors",
                       isActive
-                        ? "text-gray-700 bg-blue-50"
-                        : "text-gray-600 hover:bg-gray-100"
+                        ? "text-primary bg-primary/10 border-r-2 border-primary"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-primary"
                     )}
                   >
                     <item.icon className="w-5 h-5 mr-3" />
@@ -85,8 +92,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                       className={cn(
                         "flex items-center px-4 py-3 rounded-lg transition-colors",
                         isActive
-                          ? "text-gray-700 bg-gray-100"
-                          : "text-gray-600 hover:bg-gray-100"
+                          ? "text-primary bg-primary/10 border-r-2 border-primary"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-primary"
                       )}
                     >
                       <item.icon className="w-5 h-5 mr-3" />
@@ -118,11 +125,11 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                   </span>
                 </button>
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">A</span>
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">Q</span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-800">Admin User</p>
+                    <p className="text-sm font-medium text-gray-800">QuickKaraar Admin</p>
                     <p className="text-xs text-gray-600">Administrator</p>
                   </div>
                 </div>

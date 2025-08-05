@@ -48,8 +48,8 @@ export default function Dashboard() {
       title: "Total Agreements",
       value: stats?.totalAgreements || 0,
       icon: FileSignature,
-      bgColor: "bg-blue-100",
-      iconColor: "text-blue-600",
+      bgColor: "bg-primary/10",
+      iconColor: "text-primary",
     },
     {
       title: "Active Agreements",
@@ -62,15 +62,15 @@ export default function Dashboard() {
       title: "Expiring Soon",
       value: stats?.expiringSoon || 0,
       icon: Clock,
-      bgColor: "bg-amber-100",
-      iconColor: "text-amber-600",
+      bgColor: "bg-accent/20",
+      iconColor: "text-accent",
     },
     {
       title: "Total Customers",
       value: stats?.totalCustomers || 0,
       icon: Users,
-      bgColor: "bg-purple-100",
-      iconColor: "text-purple-600",
+      bgColor: "bg-primary/10",
+      iconColor: "text-primary",
     },
   ];
 
@@ -78,8 +78,8 @@ export default function Dashboard() {
     const statusConfig = {
       active: "bg-green-100 text-green-800",
       expired: "bg-red-100 text-red-800",
-      expiring: "bg-amber-100 text-amber-800",
-      draft: "bg-blue-100 text-blue-800",
+      expiring: "bg-accent/20 text-accent",
+      draft: "bg-primary/10 text-primary",
       renewed: "bg-purple-100 text-purple-800",
       terminated: "bg-gray-100 text-gray-800",
     };
@@ -121,7 +121,7 @@ export default function Dashboard() {
             <div className="p-6 space-y-4">
               <Button
                 onClick={() => setShowAgreementWizard(true)}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create New Agreement
@@ -135,12 +135,13 @@ export default function Dashboard() {
               </Button>
               <Button
                 onClick={() => setShowSocietyModal(true)}
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                variant="outline"
+                className="w-full border-primary text-primary hover:bg-primary hover:text-white"
               >
                 <Building className="mr-2 h-4 w-4" />
                 Add Society
               </Button>
-              <Button className="w-full bg-amber-600 hover:bg-amber-700">
+              <Button className="w-full bg-accent hover:bg-accent/90">
                 <Upload className="mr-2 h-4 w-4" />
                 Bulk Import
               </Button>
