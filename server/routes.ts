@@ -153,14 +153,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Received agreement data:", JSON.stringify(req.body, null, 2));
       const agreementData = insertAgreementSchema.parse(req.body);
       console.log("Parsed agreement data:", JSON.stringify(agreementData, null, 2));
+      
       const agreement = await storage.createAgreement(agreementData);
       res.status(201).json(agreement);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Validation error:", error.errors);
         return res.status(400).json({ message: "Invalid agreement data", errors: error.errors });
       }
-      console.error("Error creating agreement:", error);
-      res.status(500).json({ message: "Failed to create agreement" });
+      
+      // More detailed error logging
+      console.error("Error creating agreement:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
+      // Send a more specific error message based on error type
+      if (error.message.includes('connection') || error.message.includes('timeout')) {
+        return res.status(503).json({ message: "Database connection error. Please try again." });
+      }
+      
+      res.status(500).json({ message: "Failed to create agreement. Please try again." });
     }
   });
 

@@ -279,31 +279,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAgreement(agreementData: InsertAgreement): Promise<Agreement> {
-    // Generate agreement number
-    const year = new Date().getFullYear();
-    const lastAgreement = await db
-      .select()
-      .from(agreements)
-      .where(ilike(agreements.agreementNumber, `AGR-${year}-%`))
-      .orderBy(desc(agreements.createdAt))
-      .limit(1);
+    try {
+      // Generate agreement number
+      const year = new Date().getFullYear();
+      const lastAgreement = await db
+        .select()
+        .from(agreements)
+        .where(ilike(agreements.agreementNumber, `AGR-${year}-%`))
+        .orderBy(desc(agreements.createdAt))
+        .limit(1);
 
-    let nextNumber = 1;
-    if (lastAgreement.length > 0) {
-      const lastNumber = parseInt(lastAgreement[0].agreementNumber.split('-')[2]);
-      nextNumber = lastNumber + 1;
+      let nextNumber = 1;
+      if (lastAgreement.length > 0) {
+        const lastNumber = parseInt(lastAgreement[0].agreementNumber.split('-')[2]);
+        nextNumber = lastNumber + 1;
+      }
+
+      const agreementNumber = `AGR-${year}-${nextNumber.toString().padStart(3, '0')}`;
+
+      const [agreement] = await db
+        .insert(agreements)
+        .values({
+          ...agreementData,
+          agreementNumber,
+        })
+        .returning();
+        
+      if (!agreement) {
+        throw new Error('Failed to create agreement - no data returned');
+      }
+        
+      return agreement;
+    } catch (error) {
+      console.error('Database error in createAgreement:', error);
+      throw error;
     }
-
-    const agreementNumber = `AGR-${year}-${nextNumber.toString().padStart(3, '0')}`;
-
-    const [agreement] = await db
-      .insert(agreements)
-      .values({
-        ...agreementData,
-        agreementNumber,
-      })
-      .returning();
-    return agreement;
   }
 
   async updateAgreement(id: string, agreementData: Partial<InsertAgreement>): Promise<Agreement> {
