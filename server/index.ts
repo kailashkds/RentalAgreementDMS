@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
+import bcrypt from "bcrypt";
 
 const app = express();
 app.use(express.json());
@@ -36,7 +38,31 @@ app.use((req, res, next) => {
   next();
 });
 
+// Initialize default admin user
+async function initializeAdminUser() {
+  try {
+    const adminUser = await storage.getAdminUserByUsername("admin");
+    if (!adminUser) {
+      const hashedPassword = await bcrypt.hash("admin123", 10);
+      await storage.createAdminUser({
+        username: "admin",
+        fullName: "Administrator",
+        email: "admin@quickkaraar.com",
+        passwordHash: hashedPassword,
+        role: "admin",
+        isActive: true
+      });
+      log("Default admin user created: admin/admin123");
+    }
+  } catch (error) {
+    log("Error initializing admin user:", error);
+  }
+}
+
 (async () => {
+  // Initialize admin user before starting server
+  await initializeAdminUser();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
