@@ -269,8 +269,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Address search for intelligent autocomplete
-  app.get("/api/addresses", async (req, res) => {
+  // Address search for intelligent autocomplete - requires authentication
+  app.get("/api/addresses", requireAuth, async (req, res) => {
     try {
       const search = req.query.search as string;
       const limit = parseInt(req.query.limit as string) || 10;
@@ -287,8 +287,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Save new address
-  app.post("/api/addresses", async (req, res) => {
+  // Save new address - requires authentication  
+  app.post("/api/addresses", requireAuth, async (req, res) => {
     try {
       const addressData = req.body;
       const address = await storage.saveAddress(addressData);
