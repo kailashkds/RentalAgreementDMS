@@ -48,7 +48,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
             <img 
               src="https://quickkaraar.com/images/logo.png" 
               alt="QuickKaraar" 
-              className="h-8 w-auto"
+              className="h-12 w-auto"
             />
           </div>
         </div>
@@ -63,7 +63,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                     className={cn(
                       "flex items-center px-4 py-3 rounded-lg font-medium transition-colors",
                       isActive
-                        ? "text-primary bg-primary/10 border-r-2 border-primary"
+                        ? "text-primary bg-primary/10"
                         : "text-gray-600 hover:bg-gray-50 hover:text-primary"
                     )}
                   >
@@ -88,7 +88,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                       className={cn(
                         "flex items-center px-4 py-3 rounded-lg transition-colors",
                         isActive
-                          ? "text-primary bg-primary/10 border-r-2 border-primary"
+                          ? "text-primary bg-primary/10"
                           : "text-gray-600 hover:bg-gray-50 hover:text-primary"
                       )}
                     >

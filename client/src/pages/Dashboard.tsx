@@ -90,7 +90,7 @@ export default function Dashboard() {
   return (
     <AdminLayout title="Dashboard" subtitle="Manage rental agreements and documents">
       {/* Dashboard Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statsCards.map((card) => (
           <Card key={card.title} className="border border-gray-200">
             <CardContent className="p-6">
