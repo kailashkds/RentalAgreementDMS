@@ -40,9 +40,22 @@ export const users = pgTable("users", {
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  mobile: varchar("mobile", { length: 15 }).notNull(),
+  mobile: varchar("mobile", { length: 15 }).notNull().unique(), // Make mobile unique
   email: varchar("email"),
   password: text("password"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Admin users table for login system
+export const adminUsers = pgTable("admin_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username", { length: 50 }).notNull().unique(),
+  email: varchar("email").notNull().unique(),
+  password: text("password").notNull(), // hashed password
+  name: text("name").notNull(),
+  role: varchar("role", { length: 20 }).notNull().default("admin"), // admin, super_admin
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -172,6 +185,12 @@ export const insertAgreementTemplateSchema = createInsertSchema(agreementTemplat
   createdAt: true,
 });
 
+export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -183,6 +202,8 @@ export type InsertAgreement = z.infer<typeof insertAgreementSchema>;
 export type Agreement = typeof agreements.$inferSelect;
 export type InsertAgreementTemplate = z.infer<typeof insertAgreementTemplateSchema>;
 export type AgreementTemplate = typeof agreementTemplates.$inferSelect;
+export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
+export type AdminUser = typeof adminUsers.$inferSelect;
 
 // Extended types for agreement data structures
 export interface OwnerDetails {

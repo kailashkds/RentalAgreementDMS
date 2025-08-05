@@ -4,6 +4,7 @@ import {
   societies,
   agreements,
   agreementTemplates,
+  adminUsers,
   type User,
   type UpsertUser,
   type Customer,
@@ -14,6 +15,8 @@ import {
   type InsertAgreement,
   type AgreementTemplate,
   type InsertAgreementTemplate,
+  type AdminUser,
+  type InsertAdminUser,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, ilike, desc, and, or, count, sql } from "drizzle-orm";
@@ -38,6 +41,14 @@ export interface IStorage {
   createSociety(society: InsertSociety): Promise<Society>;
   updateSociety(id: string, society: Partial<InsertSociety>): Promise<Society>;
   deleteSociety(id: string): Promise<void>;
+  
+  // Admin user operations
+  getAdminUsers(): Promise<AdminUser[]>;
+  getAdminUser(id: string): Promise<AdminUser | undefined>;
+  getAdminUserByUsername(username: string): Promise<AdminUser | undefined>;
+  createAdminUser(user: InsertAdminUser): Promise<AdminUser>;
+  updateAdminUser(id: string, user: Partial<InsertAdminUser>): Promise<AdminUser>;
+  deleteAdminUser(id: string): Promise<void>;
   
   // Agreement operations
   getAgreements(filters?: {
@@ -407,6 +418,39 @@ export class DatabaseStorage implements IStorage {
       .from(agreementTemplates)
       .where(whereConditions)
       .orderBy(agreementTemplates.name);
+  }
+
+  // Admin user operations
+  async getAdminUsers(): Promise<AdminUser[]> {
+    return db.select().from(adminUsers).orderBy(adminUsers.createdAt);
+  }
+
+  async getAdminUser(id: string): Promise<AdminUser | undefined> {
+    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.id, id));
+    return user;
+  }
+
+  async getAdminUserByUsername(username: string): Promise<AdminUser | undefined> {
+    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.username, username));
+    return user;
+  }
+
+  async createAdminUser(userData: InsertAdminUser): Promise<AdminUser> {
+    const [user] = await db.insert(adminUsers).values(userData).returning();
+    return user;
+  }
+
+  async updateAdminUser(id: string, userData: Partial<InsertAdminUser>): Promise<AdminUser> {
+    const [user] = await db
+      .update(adminUsers)
+      .set({ ...userData, updatedAt: new Date() })
+      .where(eq(adminUsers.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteAdminUser(id: string): Promise<void> {
+    await db.delete(adminUsers).where(eq(adminUsers.id, id));
   }
 
   async createAgreementTemplate(templateData: InsertAgreementTemplate): Promise<AgreementTemplate> {

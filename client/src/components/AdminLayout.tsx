@@ -1,6 +1,9 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
 import {
   FileSignature,
   Users,
@@ -12,7 +15,9 @@ import {
   UserCircle,
   Bell,
   Home,
-  Building
+  Building,
+  LogOut,
+  Shield
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -32,12 +37,24 @@ const navigation = [
 ];
 
 const settingsNavigation = [
+  { name: "Admin Users", href: "/admin/users", icon: Shield },
   { name: "System Settings", href: "/settings", icon: Settings },
   { name: "Profile", href: "/profile", icon: UserCircle },
 ];
 
 export default function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
   const [location] = useLocation();
+  const { user } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/auth/logout", {});
+      queryClient.clear();
+      window.location.reload();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-muted/30">
@@ -101,6 +118,24 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
             </div>
           </div>
         </nav>
+        
+        {/* User info and logout at bottom */}
+        <div className="mt-auto p-4 bg-gray-50 border-t">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <UserCircle className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="text-sm">
+                <div className="font-medium text-gray-900">{user?.name}</div>
+                <div className="text-gray-500">@{user?.username}</div>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -125,7 +160,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                     <span className="text-white text-sm font-medium">Q</span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-800">Admin User</p>
+                    <p className="text-sm font-medium text-gray-800">{user?.name || "Admin User"}</p>
                     <p className="text-xs text-gray-600">Administrator</p>
                   </div>
                 </div>

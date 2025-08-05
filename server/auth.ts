@@ -1,0 +1,178 @@
+import bcrypt from "bcrypt";
+import session from "express-session";
+import type { Express, RequestHandler } from "express";
+import connectPg from "connect-pg-simple";
+import { storage } from "./storage";
+
+// Session configuration
+export function getSession() {
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: false,
+    ttl: sessionTtl,
+    tableName: "sessions",
+  });
+  
+  return session({
+    secret: process.env.SESSION_SECRET || "your-super-secret-session-key",
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: sessionTtl,
+    },
+  });
+}
+
+// Auth middleware
+export const requireAuth: RequestHandler = async (req, res, next) => {
+  if (!req.session?.userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  try {
+    const user = await storage.getAdminUser(req.session.userId);
+    if (!user || !user.isActive) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ message: "Invalid session" });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error("Auth middleware error:", error);
+    return res.status(500).json({ message: "Authentication error" });
+  }
+};
+
+// Optional auth middleware (doesn't block if not authenticated)
+export const optionalAuth: RequestHandler = async (req, res, next) => {
+  if (req.session?.userId) {
+    try {
+      const user = await storage.getAdminUser(req.session.userId);
+      if (user && user.isActive) {
+        req.user = user;
+      }
+    } catch (error) {
+      console.error("Optional auth error:", error);
+    }
+  }
+  next();
+};
+
+// Setup authentication
+export async function setupAuth(app: Express) {
+  app.use(getSession());
+  
+  // Current user endpoint
+  app.get('/api/auth/me', requireAuth, (req, res) => {
+    const { password, ...userWithoutPassword } = req.user;
+    res.json(userWithoutPassword);
+  });
+  
+  // Login endpoint
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password required" });
+      }
+      
+      const user = await storage.getAdminUserByUsername(username);
+      if (!user || !user.isActive) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      req.session.userId = user.id;
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+  
+  // Logout endpoint
+  app.post('/api/auth/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+  
+  // Create admin user endpoint (protected)
+  app.post('/api/admin/users', requireAuth, async (req, res) => {
+    try {
+      // Only super_admin can create new admin users
+      if (req.user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+      
+      const { username, email, password, name, role = 'admin' } = req.body;
+      
+      if (!username || !email || !password || !name) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      const newUser = await storage.createAdminUser({
+        username,
+        email,
+        password: hashedPassword,
+        name,
+        role,
+      });
+      
+      const { password: _, ...userWithoutPassword } = newUser;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Create admin user error:", error);
+      if (error.code === '23505') { // unique constraint violation
+        return res.status(400).json({ message: "Username or email already exists" });
+      }
+      res.status(500).json({ message: "Failed to create admin user" });
+    }
+  });
+  
+  // List admin users endpoint (protected)
+  app.get('/api/admin/users', requireAuth, async (req, res) => {
+    try {
+      if (req.user.role !== 'super_admin') {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+      
+      const users = await storage.getAdminUsers();
+      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Get admin users error:", error);
+      res.status(500).json({ message: "Failed to get admin users" });
+    }
+  });
+}
+
+// Extend Express Request type
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+    interface Session {
+      userId?: string;
+    }
+  }
+}

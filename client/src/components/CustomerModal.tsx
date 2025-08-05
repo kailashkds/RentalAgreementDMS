@@ -40,10 +40,16 @@ export default function CustomerModal({ isOpen, onClose, onCustomerCreated }: Cu
       onCustomerCreated?.(customer.id);
       reset();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      let errorMessage = "Failed to create customer.";
+      
+      if (error.message.includes("unique constraint")) {
+        errorMessage = "A customer with this mobile number already exists.";
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to create customer.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -57,15 +63,10 @@ export default function CustomerModal({ isOpen, onClose, onCustomerCreated }: Cu
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
-        <DialogHeader className="border-b border-gray-200 pb-6">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold text-gray-800">
-              Create New Customer
-            </DialogTitle>
-            <Button variant="ghost" size="sm" onClick={handleClose}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold text-gray-800">
+            Create New Customer
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
