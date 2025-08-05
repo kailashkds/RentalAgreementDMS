@@ -12,7 +12,7 @@ import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRouter() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, error } = useAuth();
 
   if (isLoading) {
     return (
@@ -25,7 +25,7 @@ function AuthenticatedRouter() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || error) {
     return <Login />;
   }
 

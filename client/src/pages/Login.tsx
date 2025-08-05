@@ -26,9 +26,10 @@ export default function Login() {
       const response = await apiRequest("POST", "/api/auth/login", formData);
       
       if (response.ok) {
-        // Invalidate queries to refresh auth state
-        queryClient.invalidateQueries();
-        navigate("/");
+        // Invalidate auth queries specifically to refresh auth state
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        // Force a page reload to ensure proper auth state
+        window.location.href = "/";
       } else {
         const data = await response.json();
         setError(data.message || "Login failed");
