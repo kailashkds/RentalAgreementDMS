@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import type { Address } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
@@ -219,6 +220,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error renewing agreement:", error);
       res.status(500).json({ message: "Failed to renew agreement" });
+    }
+  });
+
+  // Address search for intelligent autocomplete
+  app.get("/api/addresses", async (req, res) => {
+    try {
+      const search = req.query.search as string;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      if (!search || search.length < 2) {
+        return res.json([]);
+      }
+      
+      const addresses = await storage.searchAddresses(search, limit);
+      res.json(addresses);
+    } catch (error) {
+      console.error("Error searching addresses:", error);
+      res.status(500).json({ message: "Failed to search addresses" });
+    }
+  });
+
+  // Save new address
+  app.post("/api/addresses", async (req, res) => {
+    try {
+      const addressData = req.body;
+      const address = await storage.saveAddress(addressData);
+      res.status(201).json(address);
+    } catch (error) {
+      console.error("Error saving address:", error);
+      res.status(500).json({ message: "Failed to save address" });
     }
   });
 

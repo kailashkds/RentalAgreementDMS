@@ -2,6 +2,7 @@ import {
   users,
   customers,
   societies,
+  addresses,
   agreements,
   agreementTemplates,
   adminUsers,
@@ -11,6 +12,8 @@ import {
   type InsertCustomer,
   type Society,
   type InsertSociety,
+  type Address,
+  type InsertAddress,
   type Agreement,
   type InsertAgreement,
   type AgreementTemplate,
@@ -41,6 +44,11 @@ export interface IStorage {
   createSociety(society: InsertSociety): Promise<Society>;
   updateSociety(id: string, society: Partial<InsertSociety>): Promise<Society>;
   deleteSociety(id: string): Promise<void>;
+  
+  // Address operations for intelligent autocomplete
+  searchAddresses(search: string, limit?: number): Promise<Address[]>;
+  saveAddress(address: InsertAddress): Promise<Address>;
+  incrementAddressUsage(addressId: string): Promise<void>;
   
   // Admin user operations
   getAdminUsers(): Promise<AdminUser[]>;
@@ -469,6 +477,74 @@ export class DatabaseStorage implements IStorage {
       .values(templateData)
       .returning();
     return template;
+  }
+
+  // Address operations for intelligent autocomplete
+  async searchAddresses(search: string, limit: number = 10): Promise<Address[]> {
+    const results = await db
+      .select()
+      .from(addresses)
+      .where(
+        or(
+          ilike(addresses.society, `%${search}%`),
+          ilike(addresses.area, `%${search}%`),
+          ilike(addresses.city, `%${search}%`)
+        )
+      )
+      .orderBy(desc(addresses.usageCount), desc(addresses.createdAt))
+      .limit(limit);
+    
+    return results;
+  }
+
+  async saveAddress(addressData: InsertAddress): Promise<Address> {
+    try {
+      // Check if address already exists
+      const existingAddress = await db
+        .select()
+        .from(addresses)
+        .where(
+          and(
+            eq(addresses.society, addressData.society),
+            eq(addresses.area, addressData.area),
+            eq(addresses.city, addressData.city)
+          )
+        )
+        .limit(1);
+
+      if (existingAddress.length > 0) {
+        // Increment usage count
+        const [updatedAddress] = await db
+          .update(addresses)
+          .set({ 
+            usageCount: sql`${addresses.usageCount} + 1`,
+            updatedAt: new Date()
+          })
+          .where(eq(addresses.id, existingAddress[0].id))
+          .returning();
+        return updatedAddress;
+      }
+
+      // Create new address
+      const [newAddress] = await db
+        .insert(addresses)
+        .values(addressData)
+        .returning();
+      return newAddress;
+    } catch (error) {
+      console.error("Error saving address:", error);
+      throw error;
+    }
+  }
+
+  async incrementAddressUsage(addressId: string): Promise<void> {
+    await db
+      .update(addresses)
+      .set({ 
+        usageCount: sql`${addresses.usageCount} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(addresses.id, addressId));
   }
 }
 

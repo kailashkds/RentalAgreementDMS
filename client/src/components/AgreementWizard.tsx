@@ -6,12 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Combobox } from "@/components/ui/combobox";
 import { Progress } from "@/components/ui/progress";
 import { X, ArrowLeft, ArrowRight, Plus, Trash2, Copy } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useSocieties } from "@/hooks/useSocieties";
+import { useAddresses } from "@/hooks/useAddresses";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import CustomerModal from "@/components/CustomerModal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -55,6 +55,16 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   const [currentStep, setCurrentStep] = useState(1);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [documents, setDocuments] = useState<Record<string, string>>({});
+  const [addressSearch, setAddressSearch] = useState({
+    owner: "",
+    tenant: "",
+    property: ""
+  });
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState({
+    owner: false,
+    tenant: false,
+    property: false
+  });
   const { toast } = useToast();
 
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<AgreementFormData>({
@@ -66,16 +76,98 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   const { data: customersData } = useCustomers({ search: "", limit: 100 });
   const { data: societies } = useSocieties({ limit: 100 });
-
-  // Prepare society options for autocomplete
-  const societyOptions = societies?.map(society => ({
-    value: society.name,
-    label: society.name
-  })) || [];
+  
+  // Address search hooks
+  const { data: ownerAddresses = [] } = useAddresses({ search: addressSearch.owner });
+  const { data: tenantAddresses = [] } = useAddresses({ search: addressSearch.tenant });
+  const { data: propertyAddresses = [] } = useAddresses({ search: addressSearch.property });
 
   const watchedLanguage = watch("language");
   const watchedCustomerId = watch("customerId");
   const formData = watch();
+
+  // Helper functions for address autocomplete
+  const handleAddressSelect = (addressType: 'owner' | 'tenant' | 'property', address: any) => {
+    const fieldPrefix = addressType === 'owner' ? 'ownerDetails.address' : 
+                       addressType === 'tenant' ? 'tenantDetails.address' : 
+                       'propertyDetails.address';
+    
+    setValue(`${fieldPrefix}.society`, address.society);
+    setValue(`${fieldPrefix}.area`, address.area);
+    setValue(`${fieldPrefix}.city`, address.city);
+    setValue(`${fieldPrefix}.pincode`, address.pincode);
+    
+    setShowAddressSuggestions(prev => ({ ...prev, [addressType]: false }));
+    setAddressSearch(prev => ({ ...prev, [addressType]: address.society }));
+  };
+
+  const handleSocietyInputChange = (addressType: 'owner' | 'tenant' | 'property', value: string) => {
+    const fieldPrefix = addressType === 'owner' ? 'ownerDetails.address' : 
+                       addressType === 'tenant' ? 'tenantDetails.address' : 
+                       'propertyDetails.address';
+    
+    setValue(`${fieldPrefix}.society`, value);
+    setAddressSearch(prev => ({ ...prev, [addressType]: value }));
+    setShowAddressSuggestions(prev => ({ ...prev, [addressType]: value.length >= 2 }));
+  };
+
+  const saveAddressWhenSubmitting = async () => {
+    const addressesToSave = [];
+    
+    // Check owner address
+    const ownerAddress = formData.ownerDetails?.address;
+    if (ownerAddress?.society && ownerAddress?.area && ownerAddress?.city && ownerAddress?.pincode) {
+      addressesToSave.push({
+        society: ownerAddress.society,
+        area: ownerAddress.area,
+        city: ownerAddress.city,
+        state: ownerAddress.state || "Gujarat",
+        pincode: ownerAddress.pincode,
+        district: ownerAddress.district || "",
+        landmark: ownerAddress.landmark || ""
+      });
+    }
+
+    // Check tenant address  
+    const tenantAddress = formData.tenantDetails?.address;
+    if (tenantAddress?.society && tenantAddress?.area && tenantAddress?.city && tenantAddress?.pincode) {
+      addressesToSave.push({
+        society: tenantAddress.society,
+        area: tenantAddress.area,
+        city: tenantAddress.city,
+        state: tenantAddress.state || "Gujarat",
+        pincode: tenantAddress.pincode,
+        district: tenantAddress.district || "",
+        landmark: tenantAddress.landmark || ""
+      });
+    }
+
+    // Check property address
+    const propertyAddress = formData.propertyDetails?.address;
+    if (propertyAddress?.society && propertyAddress?.area && propertyAddress?.city && propertyAddress?.pincode) {
+      addressesToSave.push({
+        society: propertyAddress.society,
+        area: propertyAddress.area,
+        city: propertyAddress.city,
+        state: propertyAddress.state || "Gujarat",
+        pincode: propertyAddress.pincode,
+        district: propertyAddress.district || "",
+        landmark: propertyAddress.landmark || ""
+      });
+    }
+
+    // Save addresses to database
+    for (const address of addressesToSave) {
+      try {
+        await apiRequest("/api/addresses", {
+          method: "POST",
+          body: address
+        });
+      } catch (error) {
+        console.error("Error saving address:", error);
+      }
+    }
+  };
 
   // Step validation functions
   const validateStep = (stepNumber: number): boolean => {
@@ -181,6 +273,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   const saveDraft = async (data: AgreementFormData) => {
     try {
+      // Save addresses to database first
+      await saveAddressWhenSubmitting();
+
       const agreementData = {
         customerId: data.customerId || "",
         language: data.language || "english",
@@ -217,6 +312,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   const finalizeAgreement = async (data: AgreementFormData) => {
     try {
+      // Save addresses to database first
+      await saveAddressWhenSubmitting();
+
       const agreementData = {
         customerId: data.customerId || "",
         language: data.language || "english",
@@ -350,15 +448,29 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <Label>Flat/House No.</Label>
                   <Input {...register("ownerDetails.address.flatNo", { required: "Flat/House No. is required" })} />
                 </div>
-                <div>
+                <div className="relative">
                   <Label>Society/Apartment</Label>
-                  <Combobox
-                    options={societyOptions}
-                    value={watch("ownerDetails.address.society")}
-                    onValueChange={(value) => setValue("ownerDetails.address.society", value)}
+                  <Input 
+                    value={watch("ownerDetails.address.society") || ""}
+                    onChange={(e) => handleSocietyInputChange('owner', e.target.value)}
                     placeholder="Start typing society name..."
-                    allowCustom={true}
+                    onFocus={() => setShowAddressSuggestions(prev => ({ ...prev, owner: addressSearch.owner.length >= 2 }))}
+                    onBlur={() => setTimeout(() => setShowAddressSuggestions(prev => ({ ...prev, owner: false })), 200)}
                   />
+                  {showAddressSuggestions.owner && ownerAddresses.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {ownerAddresses.map((address) => (
+                        <div
+                          key={address.id}
+                          className="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                          onClick={() => handleAddressSelect('owner', address)}
+                        >
+                          <div className="font-medium">{address.society}</div>
+                          <div className="text-sm text-gray-600">{address.area}, {address.city} - {address.pincode}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label>Area</Label>
@@ -477,15 +589,29 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <Label>Flat/House No.</Label>
                   <Input {...register("tenantDetails.address.flatNo", { required: "Flat/House No. is required" })} />
                 </div>
-                <div>
+                <div className="relative">
                   <Label>Society/Apartment</Label>
-                  <Combobox
-                    options={societyOptions}
-                    value={watch("tenantDetails.address.society")}
-                    onValueChange={(value) => setValue("tenantDetails.address.society", value)}
+                  <Input 
+                    value={watch("tenantDetails.address.society") || ""}
+                    onChange={(e) => handleSocietyInputChange('tenant', e.target.value)}
                     placeholder="Start typing society name..."
-                    allowCustom={true}
+                    onFocus={() => setShowAddressSuggestions(prev => ({ ...prev, tenant: addressSearch.tenant.length >= 2 }))}
+                    onBlur={() => setTimeout(() => setShowAddressSuggestions(prev => ({ ...prev, tenant: false })), 200)}
                   />
+                  {showAddressSuggestions.tenant && tenantAddresses.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {tenantAddresses.map((address) => (
+                        <div
+                          key={address.id}
+                          className="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                          onClick={() => handleAddressSelect('tenant', address)}
+                        >
+                          <div className="font-medium">{address.society}</div>
+                          <div className="text-sm text-gray-600">{address.area}, {address.city} - {address.pincode}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label>Area</Label>
@@ -586,15 +712,29 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     <Label>Flat/House No.</Label>
                     <Input {...register("propertyDetails.address.flatNo", { required: "Property address is required" })} />
                   </div>
-                  <div>
+                  <div className="relative">
                     <Label>Society/Building</Label>
-                    <Combobox
-                      options={societyOptions}
-                      value={watch("propertyDetails.address.society")}
-                      onValueChange={(value) => setValue("propertyDetails.address.society", value)}
+                    <Input 
+                      value={watch("propertyDetails.address.society") || ""}
+                      onChange={(e) => handleSocietyInputChange('property', e.target.value)}
                       placeholder="Start typing society name..."
-                      allowCustom={true}
+                      onFocus={() => setShowAddressSuggestions(prev => ({ ...prev, property: addressSearch.property.length >= 2 }))}
+                      onBlur={() => setTimeout(() => setShowAddressSuggestions(prev => ({ ...prev, property: false })), 200)}
                     />
+                    {showAddressSuggestions.property && propertyAddresses.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                        {propertyAddresses.map((address) => (
+                          <div
+                            key={address.id}
+                            className="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                            onClick={() => handleAddressSelect('property', address)}
+                          >
+                            <div className="font-medium">{address.society}</div>
+                            <div className="text-sm text-gray-600">{address.area}, {address.city} - {address.pincode}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <Label>Area</Label>
