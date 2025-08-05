@@ -26,13 +26,11 @@ export default function Login() {
       const response = await apiRequest("POST", "/api/auth/login", formData);
       
       if (response.ok) {
-        // Invalidate auth queries and wait for refetch
-        await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        // Clear all queries first
+        queryClient.clear();
         
-        // Wait a brief moment for the session to be established
-        setTimeout(() => {
-          navigate("/");
-        }, 100);
+        // Force a complete page reload to ensure proper session state
+        window.location.href = "/";
       } else {
         const data = await response.json();
         setError(data.message || "Login failed");

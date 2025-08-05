@@ -23,7 +23,8 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Set to false for development
+      sameSite: 'lax',
       maxAge: sessionTtl,
     },
   });
@@ -81,7 +82,8 @@ export async function setupAuth(app: Express) {
       hasSession: !!req.session,
       sessionId: req.sessionID,
       userId: req.session?.userId,
-      nodeEnv: process.env.NODE_ENV
+      nodeEnv: process.env.NODE_ENV,
+      cookies: req.headers.cookie || 'no cookies',
     });
   });
   
