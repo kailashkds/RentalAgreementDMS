@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Combobox } from "@/components/ui/combobox";
 import { Progress } from "@/components/ui/progress";
 import { X, ArrowLeft, ArrowRight, Plus, Trash2, Copy } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -65,6 +66,12 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   const { data: customersData } = useCustomers({ search: "", limit: 100 });
   const { data: societies } = useSocieties({ limit: 100 });
+
+  // Prepare society options for autocomplete
+  const societyOptions = societies?.map(society => ({
+    value: society.name,
+    label: society.name
+  })) || [];
 
   const watchedLanguage = watch("language");
   const watchedCustomerId = watch("customerId");
@@ -345,7 +352,13 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 </div>
                 <div>
                   <Label>Society/Apartment</Label>
-                  <Input {...register("ownerDetails.address.society", { required: "Society/Building name is required" })} placeholder="Start typing society name..." />
+                  <Combobox
+                    options={societyOptions}
+                    value={watch("ownerDetails.address.society")}
+                    onValueChange={(value) => setValue("ownerDetails.address.society", value)}
+                    placeholder="Start typing society name..."
+                    allowCustom={true}
+                  />
                 </div>
                 <div>
                   <Label>Area</Label>
@@ -466,7 +479,13 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 </div>
                 <div>
                   <Label>Society/Apartment</Label>
-                  <Input {...register("tenantDetails.address.society", { required: "Society/Building name is required" })} placeholder="Start typing society name..." />
+                  <Combobox
+                    options={societyOptions}
+                    value={watch("tenantDetails.address.society")}
+                    onValueChange={(value) => setValue("tenantDetails.address.society", value)}
+                    placeholder="Start typing society name..."
+                    allowCustom={true}
+                  />
                 </div>
                 <div>
                   <Label>Area</Label>
@@ -569,7 +588,13 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   </div>
                   <div>
                     <Label>Society/Building</Label>
-                    <Input {...register("propertyDetails.address.society", { required: "Society/Building name is required" })} />
+                    <Combobox
+                      options={societyOptions}
+                      value={watch("propertyDetails.address.society")}
+                      onValueChange={(value) => setValue("propertyDetails.address.society", value)}
+                      placeholder="Start typing society name..."
+                      allowCustom={true}
+                    />
                   </div>
                   <div>
                     <Label>Area</Label>
