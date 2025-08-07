@@ -60,6 +60,7 @@ const DYNAMIC_FIELDS = {
     { key: "{{PROPERTY_CITY}}", label: "Property City" },
     { key: "{{PROPERTY_STATE}}", label: "Property State" },
     { key: "{{PROPERTY_PINCODE}}", label: "Property Pincode" },
+    { key: "{{PROPERTY_AREA_SQFT}}", label: "Property Area (Sq Ft)" },
     { key: "{{PROPERTY_PURPOSE}}", label: "Property Purpose (Resident/Commercial)" },
     { key: "{{PROPERTY_FURNISHED_STATUS}}", label: "Furnished Status" },
     { key: "{{ADDITIONAL_ITEMS}}", label: "Additional Items to Handover" },

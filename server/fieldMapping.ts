@@ -100,6 +100,7 @@ const FIELD_MAPPINGS = {
   'propertyDetails.city': 'PROPERTY_CITY',
   'propertyDetails.state': 'PROPERTY_STATE',
   'propertyDetails.pincode': 'PROPERTY_PINCODE',
+  'propertyDetails.areaInSqFt': 'PROPERTY_AREA_SQFT',
   'propertyDetails.purpose': 'PROPERTY_PURPOSE',
   'propertyDetails.furnishedStatus': 'PROPERTY_FURNISHED_STATUS',
   'propertyDetails.additionalItems': 'ADDITIONAL_ITEMS',

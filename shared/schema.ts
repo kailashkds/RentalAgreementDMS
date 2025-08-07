@@ -316,6 +316,7 @@ export interface PropertyDetails {
   purpose?: string; // Resident/Commercial
   furnishedStatus?: string;
   additionalItems?: string;
+  areaInSqFt?: number; // Property area in square feet
   // Granular address fields
   houseNumber: string;
   society: string;

@@ -452,7 +452,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             {/* Address Section */}
             <div>
               <h4 className="text-md font-semibold text-gray-800 mb-4">Address Details</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Flat/House No.</Label>
                   <Input {...register("ownerDetails.address.flatNo", { required: "Flat/House No. is required" })} />
@@ -488,6 +488,14 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 <div>
                   <Label>City</Label>
                   <Input {...register("ownerDetails.address.city", { required: "City is required" })} />
+                </div>
+                <div>
+                  <Label>State</Label>
+                  <Input {...register("ownerDetails.address.state", { required: "State is required" })} placeholder="e.g., Gujarat, Maharashtra" />
+                </div>
+                <div>
+                  <Label>Pincode</Label>
+                  <Input {...register("ownerDetails.address.pincode", { required: "Pincode is required" })} placeholder="e.g., 380001" />
                 </div>
               </div>
             </div>
@@ -593,7 +601,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             {/* Tenant Address Section */}
             <div>
               <h4 className="text-md font-semibold text-gray-800 mb-4">Address Details</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Flat/House No.</Label>
                   <Input {...register("tenantDetails.address.flatNo", { required: "Flat/House No. is required" })} />
@@ -629,6 +637,14 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 <div>
                   <Label>City</Label>
                   <Input {...register("tenantDetails.address.city", { required: "City is required" })} />
+                </div>
+                <div>
+                  <Label>State</Label>
+                  <Input {...register("tenantDetails.address.state", { required: "State is required" })} placeholder="e.g., Gujarat, Maharashtra" />
+                </div>
+                <div>
+                  <Label>Pincode</Label>
+                  <Input {...register("tenantDetails.address.pincode", { required: "Pincode is required" })} placeholder="e.g., 380001" />
                 </div>
               </div>
             </div>
@@ -716,7 +732,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               
               <div className="mt-4">
                 <h5 className="text-sm font-semibold text-gray-700 mb-3">Property Address</h5>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label>Flat/House No.</Label>
                     <Input {...register("propertyDetails.address.flatNo", { required: "Property address is required" })} />
@@ -752,6 +768,68 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <div>
                     <Label>City</Label>
                     <Input {...register("propertyDetails.address.city", { required: "City is required" })} />
+                  </div>
+                  <div>
+                    <Label>State</Label>
+                    <Input {...register("propertyDetails.address.state", { required: "State is required" })} placeholder="e.g., Gujarat, Maharashtra" />
+                  </div>
+                  <div>
+                    <Label>Pincode</Label>
+                    <Input {...register("propertyDetails.address.pincode", { required: "Pincode is required" })} placeholder="e.g., 380001" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <h5 className="text-sm font-semibold text-gray-700 mb-3">Property Details</h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Property Area (Square Feet)</Label>
+                    <Input 
+                      type="number" 
+                      {...register("propertyDetails.areaInSqFt")} 
+                      placeholder="e.g., 1200" 
+                    />
+                  </div>
+                  <div>
+                    <Label>Purpose</Label>
+                    <Select 
+                      value={watch("propertyDetails.purpose")} 
+                      onValueChange={(value) => setValue("propertyDetails.purpose", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select purpose" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="residential">Residential</SelectItem>
+                        <SelectItem value="commercial">Commercial</SelectItem>
+                        <SelectItem value="mixed">Mixed Use</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Furnished Status</Label>
+                    <Select 
+                      value={watch("propertyDetails.furnishedStatus")} 
+                      onValueChange={(value) => setValue("propertyDetails.furnishedStatus", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fully_furnished">Fully Furnished</SelectItem>
+                        <SelectItem value="semi_furnished">Semi Furnished</SelectItem>
+                        <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <Label>Additional Items to Handover</Label>
+                    <Textarea 
+                      {...register("propertyDetails.additionalItems")} 
+                      rows={3} 
+                      placeholder="List items like washing machine, refrigerator, AC, etc..."
+                    />
                   </div>
                 </div>
               </div>
