@@ -366,7 +366,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   const copyOwnerAsCustomer = async () => {
     const ownerData = watch("ownerDetails");
-    if (!ownerData.name || !ownerData.mobile) {
+    console.log("Owner data:", ownerData); // Debug log
+    
+    if (!ownerData || !ownerData.name || !ownerData.mobile) {
       toast({
         title: "Missing Information",
         description: "Please fill in the landlord's name and mobile number first.",
