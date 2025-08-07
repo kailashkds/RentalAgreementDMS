@@ -314,12 +314,19 @@ export default function Agreements() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {[
-                            agreement.propertyDetails?.flat,
-                            agreement.propertyDetails?.society,
-                            agreement.propertyDetails?.area,
-                            agreement.propertyDetails?.city
-                          ].filter(Boolean).join(', ') || 'Property address not available'}
+                          {(() => {
+                            // Try multiple possible property address sources
+                            const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
+                            if (propertyAddr) {
+                              return [
+                                propertyAddr.flatNo,
+                                propertyAddr.society,
+                                propertyAddr.area,
+                                propertyAddr.city
+                              ].filter(Boolean).join(', ');
+                            }
+                            return 'Property address not available';
+                          })()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -334,10 +341,16 @@ export default function Agreements() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {agreement.rentalTerms?.startDate && agreement.rentalTerms?.endDate 
-                            ? `${new Date(agreement.rentalTerms.startDate).toLocaleDateString()} - ${new Date(agreement.rentalTerms.endDate).toLocaleDateString()}`
-                            : 'Period not available'
-                          }
+                          {(() => {
+                            // Try rental terms or fallback to top-level dates
+                            const startDate = agreement.rentalTerms?.startDate || agreement.startDate;
+                            const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+                            
+                            if (startDate && endDate) {
+                              return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+                            }
+                            return 'Period not available';
+                          })()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

@@ -4,6 +4,10 @@ This is a comprehensive Document Management System (DMS) specifically designed f
 
 ## Recent Changes
 
+- **Agreement List Data Display Fixed (Aug 8, 2025)**: Resolved field mapping issues causing "not available" messages in agreement list
+- **Action Buttons Implementation**: Complete functionality for Edit, Show, Download, Renew, and Duplicate agreement actions
+- **Data Structure Optimization**: Fixed property address, landlord name, tenant name, and agreement period display with proper fallback logic
+- **API Endpoints Enhancement**: Added authenticated renew and duplicate endpoints with proper error handling
 - **PDF Template Management System**: Complete implementation with database schema, CRUD API endpoints, professional UI, and advanced template editor
 - **Template Editor Features**: 3-tab interface (Basic Info, Template Editor, Preview) with intelligent dynamic field insertion and live HTML preview
 - **Dynamic Field Categories**: Organized buttons for Owner, Tenant, Property, Rental Terms, and Agreement fields with one-click insertion

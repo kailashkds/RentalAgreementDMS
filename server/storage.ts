@@ -245,10 +245,7 @@ export class DatabaseStorage implements IStorage {
 
     const [agreementsResult, totalResult] = await Promise.all([
       db
-        .select({
-          ...agreements,
-          customer: customers,
-        })
+        .select()
         .from(agreements)
         .leftJoin(customers, eq(agreements.customerId, customers.id))
         .where(whereConditions)
@@ -264,27 +261,24 @@ export class DatabaseStorage implements IStorage {
     return {
       agreements: agreementsResult.map(row => ({
         ...row.agreements,
-        customer: row.customer
+        customer: row.customers
       })) as any,
       total: totalResult[0].count,
     };
   }
 
   async getAgreement(id: string): Promise<Agreement | undefined> {
-    const [agreement] = await db
-      .select({
-        ...agreements,
-        customer: customers,
-      })
+    const [result] = await db
+      .select()
       .from(agreements)
       .leftJoin(customers, eq(agreements.customerId, customers.id))
       .where(eq(agreements.id, id));
     
-    if (!agreement) return undefined;
+    if (!result) return undefined;
     
     return {
-      ...agreement.agreements,
-      customer: agreement.customer
+      ...result.agreements,
+      customer: result.customers
     } as any;
   }
 
