@@ -170,8 +170,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
     <p><strong>Security Deposit:</strong> ₹{{SECURITY_DEPOSIT}} ({{SECURITY_DEPOSIT_WORDS}})</p>
     <p><strong>Maintenance Charge:</strong> {{MAINTENANCE_CHARGE}} {{MAINTENANCE_INCLUSION}}</p>
     <p><strong>Lease Period:</strong> {{START_DATE}} to {{END_DATE}} ({{TENURE}})</p>
-    <p><strong>Payment Due:</strong> {{PAYMENT_DUE_DATE_FROM}} to {{PAYMENT_DUE_DATE_TO}} of each month</p>
-    <p><strong>Minimum Stay:</strong> {{MINIMUM_STAY}}</p>
+    <p><strong>Payment Due Date:</strong> {{PAYMENT_DUE_DATE_FROM}} of each month</p>
     <p><strong>Notice Period:</strong> {{NOTICE_PERIOD}}</p>
   </div>
   

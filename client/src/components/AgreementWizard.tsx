@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { X, ArrowLeft, ArrowRight, Plus, Trash2, Copy } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, Plus, Trash2, Copy, Download } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useSocieties } from "@/hooks/useSocieties";
