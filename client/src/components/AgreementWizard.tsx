@@ -364,53 +364,37 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     }
   };
 
-  const copyOwnerAsCustomer = async () => {
-    const ownerData = watch("ownerDetails");
-    console.log("Owner data:", ownerData); // Debug log
+  const copyCustomerAsOwner = () => {
+    const selectedCustomer = customersData?.customers.find(c => c.id === watchedCustomerId);
     
-    if (!ownerData || !ownerData.name || !ownerData.mobile) {
+    if (!selectedCustomer) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in the landlord's name and mobile number first.",
+        title: "No Customer Selected",
+        description: "Please select a customer first to copy their details.",
         variant: "destructive",
       });
       return;
     }
 
-    try {
-      // Check if customer with this mobile already exists
-      const existingCustomer = customersData?.customers.find(c => c.mobile === ownerData.mobile);
-      if (existingCustomer) {
-        toast({
-          title: "Customer exists",
-          description: `Customer with mobile ${ownerData.mobile} already exists.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Create customer from owner details
-      const customerResponse = await apiRequest("POST", "/api/customers", {
-        name: ownerData.name,
-        mobile: ownerData.mobile,
-        email: "", // Optional
-      });
-      
-      // Refresh customers list
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      
-      toast({
-        title: "Customer created",
-        description: `${ownerData.name} has been added as a customer.`,
-      });
-    } catch (error: any) {
-      console.error("Error creating customer:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create customer from landlord details.",
-        variant: "destructive",
-      });
+    // Copy customer details to owner fields
+    setValue("ownerDetails.name", selectedCustomer.name);
+    setValue("ownerDetails.mobile", selectedCustomer.mobile);
+    setValue("ownerDetails.email", selectedCustomer.email || "");
+    
+    // If customer has address information, copy that too
+    if (selectedCustomer.address) {
+      setValue("ownerDetails.address.flatNo", selectedCustomer.address.flatNo || "");
+      setValue("ownerDetails.address.society", selectedCustomer.address.society || "");
+      setValue("ownerDetails.address.area", selectedCustomer.address.area || "");
+      setValue("ownerDetails.address.city", selectedCustomer.address.city || "");
+      setValue("ownerDetails.address.state", selectedCustomer.address.state || "");
+      setValue("ownerDetails.address.pincode", selectedCustomer.address.pincode || "");
     }
+    
+    toast({
+      title: "Details Copied",
+      description: `${selectedCustomer.name}'s details have been copied to landlord fields.`,
+    });
   };
 
   const fetchMobileInfo = async (mobile: string, userType: 'owner' | 'tenant') => {
@@ -641,10 +625,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               <Button
                 type="button"
                 variant="outline"
-                onClick={copyOwnerAsCustomer}
+                onClick={copyCustomerAsOwner}
+                disabled={!watchedCustomerId}
               >
                 <Copy className="mr-2 h-4 w-4" />
-                Copy as Customer
+                Copy Customer Details
               </Button>
             </div>
             
