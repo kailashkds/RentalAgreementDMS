@@ -640,7 +640,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 type="button"
                 variant="outline"
                 onClick={copyOwnerAsCustomer}
-                disabled={!watch("ownerDetails.name") || !watch("ownerDetails.mobile")}
               >
                 <Copy className="mr-2 h-4 w-4" />
                 Copy as Customer
