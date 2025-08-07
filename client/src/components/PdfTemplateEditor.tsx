@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
+import { Plus, Code, Eye, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Editor from "@monaco-editor/react";
 import type { PdfTemplate, InsertPdfTemplate } from "@shared/schema";
 
 const DOCUMENT_TYPES = [
@@ -79,6 +79,8 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
     isActive: true,
   });
   const [activeTab, setActiveTab] = useState("basic");
+  const [editorTheme, setEditorTheme] = useState("light");
+  const editorRef = useRef<any>(null);
   const { toast } = useToast();
 
   // Initialize form data when template changes
@@ -89,8 +91,8 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
         documentType: template.documentType,
         language: template.language,
         htmlTemplate: template.htmlTemplate,
-        dynamicFields: template.dynamicFields,
-        conditionalRules: template.conditionalRules,
+        dynamicFields: (template.dynamicFields || []) as string[],
+        conditionalRules: (template.conditionalRules || []) as string[],
         isActive: template.isActive,
       });
     } else {
@@ -186,21 +188,70 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
   };
 
   const insertDynamicField = (fieldKey: string) => {
-    const textarea = document.querySelector('textarea[name="htmlTemplate"]') as HTMLTextAreaElement;
-    if (textarea) {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const currentValue = formData.htmlTemplate;
-      const newValue = currentValue.substring(0, start) + fieldKey + currentValue.substring(end);
+    if (editorRef.current) {
+      const editor = editorRef.current;
+      const selection = editor.getSelection();
+      const range = selection || { 
+        startLineNumber: 1, 
+        startColumn: 1, 
+        endLineNumber: 1, 
+        endColumn: 1 
+      };
       
-      setFormData(prev => ({ ...prev, htmlTemplate: newValue }));
+      editor.executeEdits("insert-field", [{
+        range,
+        text: fieldKey,
+        forceMoveMarkers: true
+      }]);
       
-      // Set cursor position after inserted text
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start + fieldKey.length, start + fieldKey.length);
-      }, 0);
+      // Focus the editor and position cursor after inserted text
+      editor.focus();
+      const newPosition = {
+        lineNumber: range.startLineNumber,
+        column: range.startColumn + fieldKey.length
+      };
+      editor.setPosition(newPosition);
     }
+  };
+
+  const handleEditorDidMount = (editor: any, monaco: any) => {
+    editorRef.current = editor;
+    
+    // Configure HTML language features
+    monaco.languages.html.htmlDefaults.setOptions({
+      format: {
+        tabSize: 2,
+        insertSpaces: true,
+        wrapLineLength: 120,
+        wrapAttributes: 'auto',
+        unformatted: 'default',
+        contentUnformatted: 'pre,code,textarea',
+        endWithNewline: false,
+        extraLiners: 'head, body, /html',
+        indentHandlebars: false,
+        indentInnerHtml: false,
+        insertFinalNewline: false,
+        maxPreserveNewLines: 2,
+        preserveNewLines: true,
+        unformattedContentDelimiter: ''
+      }
+    });
+
+    // Add custom dynamic field highlighting
+    monaco.editor.defineTheme('dynamic-fields-theme', {
+      base: editorTheme === 'dark' ? 'vs-dark' : 'vs',
+      inherit: true,
+      rules: [
+        {
+          token: 'dynamic-field',
+          foreground: '28a745',
+          fontStyle: 'bold'
+        }
+      ],
+      colors: {}
+    });
+    
+    monaco.editor.setTheme('dynamic-fields-theme');
   };
 
   return (
@@ -266,7 +317,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                   <input
                     type="checkbox"
                     id="isActive"
-                    checked={formData.isActive}
+                    checked={formData.isActive ?? true}
                     onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
                     className="rounded"
                   />
@@ -276,39 +327,93 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
             </TabsContent>
 
             <TabsContent value="editor" className="flex-1 flex gap-4">
-              <div className="flex-1">
-                <Label htmlFor="htmlTemplate">HTML Template</Label>
-                <Textarea
-                  id="htmlTemplate"
-                  name="htmlTemplate"
-                  value={formData.htmlTemplate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, htmlTemplate: e.target.value }))}
-                  placeholder="Enter your HTML template with dynamic fields"
-                  className="h-96 font-mono text-sm"
-                  required
-                />
+              <div className="flex-1 space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="htmlTemplate" className="text-lg font-medium">HTML Template Editor</Label>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditorTheme(editorTheme === 'light' ? 'dark' : 'light')}
+                    >
+                      {editorTheme === 'light' ? '🌙' : '☀️'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (editorRef.current) {
+                          editorRef.current.getAction('editor.action.formatDocument').run();
+                        }
+                      }}
+                    >
+                      <Code className="h-4 w-4 mr-2" />
+                      Format
+                    </Button>
+                  </div>
+                </div>
+                <div className="border rounded-lg overflow-hidden">
+                  <Editor
+                    height="400px"
+                    language="html"
+                    theme={editorTheme === 'dark' ? 'vs-dark' : 'vs'}
+                    value={formData.htmlTemplate}
+                    onChange={(value) => setFormData(prev => ({ ...prev, htmlTemplate: value || '' }))}
+                    onMount={handleEditorDidMount}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      lineNumbers: 'on',
+                      wordWrap: 'bounded',
+                      wordWrapColumn: 120,
+                      automaticLayout: true,
+                      scrollBeyondLastLine: false,
+                      folding: true,
+                      renderLineHighlight: 'line',
+                      cursorBlinking: 'blink',
+                      cursorSmoothCaretAnimation: 'on',
+                      suggest: {
+                        showKeywords: true,
+                        showSnippets: true,
+                      },
+                      bracketPairColorization: {
+                        enabled: true
+                      }
+                    }}
+                  />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  💡 Tip: Use Ctrl+Space for auto-completion, Ctrl+Shift+F for formatting
+                </div>
               </div>
               <div className="w-80 space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm">Dynamic Fields</CardTitle>
+                    <CardTitle className="text-sm flex items-center">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Dynamic Fields
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 max-h-96 overflow-y-auto">
                     {Object.entries(DYNAMIC_FIELDS).map(([category, fields]) => (
                       <div key={category}>
-                        <h4 className="font-medium text-sm capitalize mb-2">{category} Fields</h4>
+                        <h4 className="font-medium text-sm capitalize mb-2 text-primary border-b pb-1">
+                          {category} Fields
+                        </h4>
                         <div className="space-y-1">
                           {fields.map((field) => (
                             <Button
                               key={field.key}
                               type="button"
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              className="w-full justify-start text-xs"
+                              className="w-full justify-start text-xs hover:bg-accent hover:text-accent-foreground"
                               onClick={() => insertDynamicField(field.key)}
                             >
-                              <Plus className="h-3 w-3 mr-2" />
-                              {field.label}
+                              <Plus className="h-3 w-3 mr-2 text-green-600" />
+                              <span className="truncate">{field.label}</span>
                             </Button>
                           ))}
                         </div>
@@ -316,12 +421,46 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                     ))}
                   </CardContent>
                 </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Editor Help
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-xs text-muted-foreground space-y-2">
+                    <div><strong>Ctrl+Space:</strong> Auto-complete</div>
+                    <div><strong>Ctrl+Shift+F:</strong> Format code</div>
+                    <div><strong>Ctrl+F:</strong> Find & replace</div>
+                    <div><strong>Ctrl+/:</strong> Comment/uncomment</div>
+                    <div><strong>Alt+Shift+F:</strong> Format selection</div>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 
-            <TabsContent value="preview" className="flex-1">
-              <div className="border rounded-lg p-4 h-96 overflow-auto">
-                <div dangerouslySetInnerHTML={{ __html: formData.htmlTemplate }} />
+            <TabsContent value="preview" className="flex-1 space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-lg font-medium flex items-center">
+                  <Eye className="h-5 w-5 mr-2" />
+                  Live Preview
+                </Label>
+                <Badge variant="secondary" className="text-xs">
+                  Real-time HTML rendering
+                </Badge>
+              </div>
+              <div className="border rounded-lg p-4 h-96 overflow-auto bg-white">
+                <div 
+                  dangerouslySetInnerHTML={{ __html: formData.htmlTemplate }}
+                  style={{ 
+                    fontFamily: 'Arial, sans-serif',
+                    lineHeight: '1.4',
+                    color: '#333'
+                  }}
+                />
+              </div>
+              <div className="text-sm text-muted-foreground">
+                💡 This preview shows how your template will look when printed as PDF
               </div>
             </TabsContent>
           </Tabs>
