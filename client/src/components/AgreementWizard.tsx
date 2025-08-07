@@ -366,29 +366,48 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   const copyOwnerAsCustomer = async () => {
     const ownerData = watch("ownerDetails");
-    if (ownerData.name && ownerData.mobile) {
-      try {
-        // Create customer from owner details
-        await apiRequest("POST", "/api/customers", {
-          name: ownerData.name,
-          mobile: ownerData.mobile,
-          email: "", // Optional
-        });
-        
-        // Refresh customers list
-        queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-        
+    if (!ownerData.name || !ownerData.mobile) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in the landlord's name and mobile number first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Check if customer with this mobile already exists
+      const existingCustomer = customersData?.customers.find(c => c.mobile === ownerData.mobile);
+      if (existingCustomer) {
         toast({
-          title: "Customer created",
-          description: "Landlord has been added as a customer.",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to create customer from landlord details.",
+          title: "Customer exists",
+          description: `Customer with mobile ${ownerData.mobile} already exists.`,
           variant: "destructive",
         });
+        return;
       }
+
+      // Create customer from owner details
+      const customerResponse = await apiRequest("POST", "/api/customers", {
+        name: ownerData.name,
+        mobile: ownerData.mobile,
+        email: "", // Optional
+      });
+      
+      // Refresh customers list
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      
+      toast({
+        title: "Customer created",
+        description: `${ownerData.name} has been added as a customer.`,
+      });
+    } catch (error: any) {
+      console.error("Error creating customer:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create customer from landlord details.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -621,7 +640,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 type="button"
                 variant="outline"
                 onClick={copyOwnerAsCustomer}
-                disabled={!watchedCustomerId}
+                disabled={!watch("ownerDetails.name") || !watch("ownerDetails.mobile")}
               >
                 <Copy className="mr-2 h-4 w-4" />
                 Copy as Customer
