@@ -13,6 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePdfTemplates } from "@/hooks/usePdfTemplates";
 import PdfTemplateEditor from "@/components/PdfTemplateEditor";
+import AdminLayout from "@/components/AdminLayout";
 import type { PdfTemplate } from "@shared/schema";
 
 const DOCUMENT_TYPES = [
@@ -123,7 +124,8 @@ export default function PdfTemplates() {
   };
 
   return (
-    <div className="space-y-6">
+    <AdminLayout>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -282,6 +284,7 @@ export default function PdfTemplates() {
           }}
         />
       )}
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

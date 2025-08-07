@@ -151,8 +151,11 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
   
   <div style="margin: 20px 0;">
     <h3>PROPERTY DETAILS:</h3>
-    <p><strong>Address:</strong> {{property.address}}, {{property.city}} - {{property.pincode}}</p>
-    <p><strong>Area:</strong> {{property.area}}</p>
+    <p><strong>Address:</strong> {{PROPERTY_HOUSE_NUMBER}}, {{PROPERTY_SOCIETY}}, {{PROPERTY_AREA}}, {{PROPERTY_CITY}}, {{PROPERTY_STATE}} - {{PROPERTY_PINCODE}}</p>
+    <p><strong>Property Type:</strong> {{PROPERTY_TYPE}}</p>
+    <p><strong>Area:</strong> {{PROPERTY_AREA_SQFT}} sq ft</p>
+    <p><strong>Purpose:</strong> {{PROPERTY_PURPOSE}}</p>
+    <p><strong>Furnished Status:</strong> {{PROPERTY_FURNISHED_STATUS}}</p>
   </div>
   
   <div style="margin: 20px 0;">
