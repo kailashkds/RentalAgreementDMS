@@ -11,6 +11,7 @@ import { Plus, Edit, Trash2, Eye, Download } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { usePdfTemplates } from "@/hooks/usePdfTemplates";
 import PdfTemplateEditor from "@/components/PdfTemplateEditor";
 import type { PdfTemplate } from "@shared/schema";
 
@@ -33,36 +34,46 @@ export default function PdfTemplates() {
   const [selectedTemplate, setSelectedTemplate] = useState<PdfTemplate | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [filters, setFilters] = useState({
-    documentType: "",
-    language: "",
+    documentType: "all",
+    language: "all",
   });
   const { toast } = useToast();
 
   // Fetch templates with filters
-  const { data: templates = [], isLoading } = useQuery<PdfTemplate[]>({
-    queryKey: ["/api/pdf-templates", filters.documentType, filters.language],
-  });
+  const { 
+    templates, 
+    isLoading, 
+    createTemplate, 
+    updateTemplate, 
+    deleteTemplate,
+    isCreating,
+    isUpdating,
+    isDeleting 
+  } = usePdfTemplates(
+    filters.documentType === "all" ? "" : filters.documentType,
+    filters.language === "all" ? "" : filters.language
+  );
 
-  // Delete template mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/pdf-templates/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/pdf-templates"] });
-      toast({
-        title: "Success",
-        description: "Template deleted successfully",
+  // Handle template operations with toast notifications
+  const handleDeleteWithToast = (id: string) => {
+    if (confirm("Are you sure you want to delete this template?")) {
+      deleteTemplate(id, {
+        onSuccess: () => {
+          toast({
+            title: "Success",
+            description: "Template deleted successfully",
+          });
+        },
+        onError: (error: Error) => {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        },
       });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+    }
+  };
 
   const handleEdit = (template: PdfTemplate) => {
     setSelectedTemplate(template);
@@ -74,11 +85,7 @@ export default function PdfTemplates() {
     setShowEditor(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this template?")) {
-      deleteMutation.mutate(id);
-    }
-  };
+
 
   const handlePreview = (template: PdfTemplate) => {
     // Open preview in new window
@@ -145,7 +152,7 @@ export default function PdfTemplates() {
                   <SelectValue placeholder="All document types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All document types</SelectItem>
+                  <SelectItem value="all">All document types</SelectItem>
                   {DOCUMENT_TYPES.map(type => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
@@ -163,7 +170,7 @@ export default function PdfTemplates() {
                   <SelectValue placeholder="All languages" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All languages</SelectItem>
+                  <SelectItem value="all">All languages</SelectItem>
                   {LANGUAGES.map(lang => (
                     <SelectItem key={lang.value} value={lang.value}>
                       {lang.label}
@@ -243,9 +250,9 @@ export default function PdfTemplates() {
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => handleDelete(template.id)}
+                          onClick={() => handleDeleteWithToast(template.id)}
                           title="Delete Template"
-                          disabled={deleteMutation.isPending}
+                          disabled={isDeleting}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -265,9 +272,13 @@ export default function PdfTemplates() {
           template={selectedTemplate}
           isOpen={showEditor}
           onClose={() => setShowEditor(false)}
-          onSave={() => {
+          onSave={(templateData) => {
+            if (selectedTemplate) {
+              updateTemplate({ id: selectedTemplate.id, data: templateData });
+            } else {
+              createTemplate(templateData);
+            }
             setShowEditor(false);
-            queryClient.invalidateQueries({ queryKey: ["/api/pdf-templates"] });
           }}
         />
       )}

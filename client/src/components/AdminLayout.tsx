@@ -127,8 +127,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                 <UserCircle className="w-5 h-5 text-blue-600" />
               </div>
               <div className="text-sm">
-                <div className="font-medium text-gray-900">{user?.name}</div>
-                <div className="text-gray-500">@{user?.username}</div>
+                <div className="font-medium text-gray-900">{(user as any)?.name || 'Admin User'}</div>
+                <div className="text-gray-500">@{(user as any)?.username || 'admin'}</div>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
@@ -164,7 +164,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                     />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-800">{user?.name || "Admin User"}</p>
+                    <p className="text-sm font-medium text-gray-800">{(user as any)?.name || "Admin User"}</p>
                     <p className="text-xs text-gray-600">Administrator</p>
                   </div>
                 </div>
