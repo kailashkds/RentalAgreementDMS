@@ -550,6 +550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         propertyDetails: agreement.propertyDetails,
         rentalTerms: agreement.rentalTerms,
         agreementDate: agreement.agreementDate,
+        createdAt: agreement.createdAt,
         agreementType: 'rental_agreement'
       };
 

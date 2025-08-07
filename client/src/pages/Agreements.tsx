@@ -126,6 +126,7 @@ export default function Agreements() {
           propertyDetails: agreement.propertyDetails,
           rentalTerms: agreement.rentalTerms,
           agreementDate: agreement.agreementDate,
+          createdAt: agreement.createdAt,
           language: agreement.language || 'english',
           additionalClauses: agreement.additionalClauses || [],
         }),

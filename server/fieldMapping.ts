@@ -122,7 +122,7 @@ const FIELD_MAPPINGS = {
   'rentalTerms.tenure': 'TENURE',
   'rentalTerms.startDate': 'START_DATE',
   'rentalTerms.endDate': 'END_DATE',
-  'rentalTerms.dueDate': 'PAYMENT_DUE_DATE_FROM',
+  'rentalTerms.dueDate': 'DUE_DATE',
   'rentalTerms.paymentDueDateFrom': 'PAYMENT_DUE_DATE_FROM',
   'rentalTerms.paymentDueDateTo': 'PAYMENT_DUE_DATE_TO',
   'rentalTerms.paymentDueFromDate': 'PAYMENT_DUE_DATE_FROM',
@@ -291,10 +291,18 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
     templateFields['MINIMUM_STAY'] = '11 months';
   }
 
-  // Handle agreement date mapping - use createdAt if available
-  if (formData.createdAt && !templateFields['AGREEMENT_DATE']) {
-    const agreementDate = new Date(formData.createdAt);
-    templateFields['AGREEMENT_DATE'] = agreementDate.toLocaleDateString('en-GB');
+  // Handle agreement date mapping - use createdAt if available, or current date as fallback
+  if (!templateFields['AGREEMENT_DATE']) {
+    if (formData.createdAt) {
+      const agreementDate = new Date(formData.createdAt);
+      templateFields['AGREEMENT_DATE'] = agreementDate.toLocaleDateString('en-GB');
+    } else if (formData.agreementDate) {
+      const agreementDate = new Date(formData.agreementDate);
+      templateFields['AGREEMENT_DATE'] = agreementDate.toLocaleDateString('en-GB');
+    } else {
+      // Fallback to current date
+      templateFields['AGREEMENT_DATE'] = new Date().toLocaleDateString('en-GB');
+    }
   }
 
   return templateFields;
