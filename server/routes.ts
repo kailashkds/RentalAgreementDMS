@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import type { Address } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import { mapFormDataToTemplateFields, generatePdfHtml } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
 import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
 import { z } from "zod";
@@ -432,7 +433,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate PDF from template
+  // Test field mapping (temporary endpoint for debugging)
+  app.post("/api/test-field-mapping", requireAuth, async (req, res) => {
+    try {
+      const { agreementData } = req.body;
+      const mappedFields = mapFormDataToTemplateFields(agreementData);
+      
+      res.json({
+        originalData: agreementData,
+        mappedFields: mappedFields,
+        message: "Field mapping test completed"
+      });
+    } catch (error) {
+      console.error("Error testing field mapping:", error);
+      res.status(500).json({ message: "Failed to test field mapping" });
+    }
+  });
+
+  // Generate PDF from template using new field mapping system
   app.post("/api/generate-pdf", requireAuth, async (req, res) => {
     try {
       const { templateId, agreementData } = req.body;
@@ -446,23 +464,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "PDF template not found" });
       }
 
-      // Process template with dynamic data
-      let processedHtml = template.htmlTemplate;
-      
-      // Replace dynamic fields with actual data
-      const fieldMatches = processedHtml.match(/\{\{([^}]+)\}\}/g);
-      if (fieldMatches) {
-        for (const match of fieldMatches) {
-          const fieldPath = match.replace(/[{}]/g, '');
-          const value = getNestedValue(agreementData, fieldPath) || '';
-          processedHtml = processedHtml.replace(match, value);
-        }
-      }
+      // Use the new field mapping system to generate PDF HTML
+      const processedHtml = generatePdfHtml(agreementData, template.htmlTemplate);
 
-      // For now, return the processed HTML (you can integrate a PDF generation library later)
       res.json({ 
         html: processedHtml,
-        message: "PDF generated successfully" 
+        templateName: template.name,
+        mappedFields: mapFormDataToTemplateFields(agreementData), // Include mapped fields for debugging
+        message: "PDF generated successfully with field mapping" 
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
+  // Generate PDF from existing agreement
+  app.post("/api/agreements/:id/generate-pdf", requireAuth, async (req, res) => {
+    try {
+      const { templateId } = req.body;
+      
+      // Get the agreement data
+      const agreement = await storage.getAgreement(req.params.id);
+      if (!agreement) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+
+      // Get the PDF template
+      const template = await storage.getPdfTemplate(templateId);
+      if (!template) {
+        return res.status(404).json({ message: "PDF template not found" });
+      }
+
+      // Map agreement data to template fields
+      const agreementFormData = {
+        ownerDetails: agreement.ownerDetails,
+        tenantDetails: agreement.tenantDetails,
+        propertyDetails: agreement.propertyDetails,
+        rentalTerms: agreement.rentalTerms,
+        agreementDate: agreement.agreementDate,
+        agreementType: 'rental_agreement'
+      };
+
+      // Generate the HTML with mapped field values
+      const processedHtml = generatePdfHtml(agreementFormData, template.htmlTemplate);
+      
+      res.json({
+        html: processedHtml,
+        templateName: template.name,
+        agreementNumber: agreement.agreementNumber,
+        message: "PDF generated from existing agreement"
       });
     } catch (error) {
       console.error("Error generating PDF:", error);

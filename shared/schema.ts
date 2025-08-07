@@ -257,12 +257,21 @@ export type AdminUser = typeof adminUsers.$inferSelect;
 // Extended types for agreement data structures
 export interface OwnerDetails {
   name: string;
+  company?: string;
   mobile: string;
   age: number;
   occupation: string;
   aadhar: string;
   pan: string;
-  address: {
+  // Granular address fields
+  houseNumber: string;
+  society: string;
+  area: string;
+  city: string;
+  state: string;
+  pincode: string;
+  // Legacy nested address support for backward compatibility
+  address?: {
     flatNo: string;
     society: string;
     area: string;
@@ -276,12 +285,21 @@ export interface OwnerDetails {
 
 export interface TenantDetails {
   name: string;
+  company?: string;
   mobile: string;
   age: number;
   occupation: string;
   aadhar: string;
   pan: string;
-  address: {
+  // Granular address fields
+  houseNumber: string;
+  society: string;
+  area: string;
+  city: string;
+  state: string;
+  pincode: string;
+  // Legacy nested address support for backward compatibility
+  address?: {
     flatNo: string;
     society: string;
     area: string;
@@ -295,7 +313,18 @@ export interface TenantDetails {
 
 export interface PropertyDetails {
   type: string;
-  address: {
+  purpose?: string; // Resident/Commercial
+  furnishedStatus?: string;
+  additionalItems?: string;
+  // Granular address fields
+  houseNumber: string;
+  society: string;
+  area: string;
+  city: string;
+  state: string;
+  pincode: string;
+  // Legacy nested address support for backward compatibility
+  address?: {
     flatNo: string;
     society: string;
     area: string;
