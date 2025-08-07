@@ -70,6 +70,9 @@ const DYNAMIC_FIELDS = {
     { key: "{{RENT_AMOUNT_WORDS}}", label: "Rent Amount (Words)" },
     { key: "{{SECURITY_DEPOSIT}}", label: "Security Deposit (Number)" },
     { key: "{{SECURITY_DEPOSIT_WORDS}}", label: "Security Deposit (Words)" },
+    { key: "{{MAINTENANCE_CHARGE}}", label: "Maintenance Charge" },
+    { key: "{{MAINTENANCE_INCLUSION}}", label: "Maintenance Inclusion (Conditional)" },
+    { key: "{{MAINTENANCE_INCLUSION}}", label: "Maintenance Inclusion (Conditional)" },
     { key: "{{TENURE}}", label: "Tenure (11 Month)" },
     { key: "{{START_DATE}}", label: "Start Date" },
     { key: "{{END_DATE}}", label: "End Date" },
@@ -165,6 +168,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
     <h3>RENTAL TERMS:</h3>
     <p><strong>Monthly Rent:</strong> ₹{{RENT_AMOUNT}} ({{RENT_AMOUNT_WORDS}})</p>
     <p><strong>Security Deposit:</strong> ₹{{SECURITY_DEPOSIT}} ({{SECURITY_DEPOSIT_WORDS}})</p>
+    <p><strong>Maintenance Charge:</strong> {{MAINTENANCE_CHARGE}} {{MAINTENANCE_INCLUSION}}</p>
     <p><strong>Lease Period:</strong> {{START_DATE}} to {{END_DATE}} ({{TENURE}})</p>
     <p><strong>Payment Due:</strong> {{PAYMENT_DUE_DATE_FROM}} to {{PAYMENT_DUE_DATE_TO}} of each month</p>
     <p><strong>Minimum Stay:</strong> {{MINIMUM_STAY}}</p>
@@ -180,6 +184,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
       <li>No subletting without written consent of the owner.</li>
       <li>The minimum stay period is {{MINIMUM_STAY}}.</li>
       <li>{{NOTICE_PERIOD}} notice is required for termination.</li>
+      <li>{{MAINTENANCE_INCLUSION}}</li>
     </ul>
   </div>
   

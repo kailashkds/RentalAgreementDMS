@@ -40,6 +40,7 @@ export interface FormData {
   rentalTerms: {
     rentAmount: number;
     securityDeposit: number;
+    maintenanceCharge: string;
     tenure: string;
     startDate: string;
     endDate: string;
@@ -117,6 +118,7 @@ const FIELD_MAPPINGS = {
   'rentalTerms.rentAmount': 'RENT_AMOUNT',
   'rentalTerms.deposit': 'SECURITY_DEPOSIT',
   'rentalTerms.securityDeposit': 'SECURITY_DEPOSIT',
+  'rentalTerms.maintenanceCharge': 'MAINTENANCE_CHARGE',
   'rentalTerms.tenure': 'TENURE',
   'rentalTerms.startDate': 'START_DATE',
   'rentalTerms.endDate': 'END_DATE',
@@ -255,6 +257,16 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
     const dueDate = formData.rentalTerms.dueDate;
     templateFields['PAYMENT_DUE_DATE_FROM'] = String(dueDate);
     templateFields['PAYMENT_DUE_DATE_TO'] = String(Math.min(Number(dueDate) + 7, 31)); // Default 7-day window
+  }
+
+  // Handle conditional logic for maintenance charge
+  const maintenanceCharge = formData.rentalTerms?.maintenanceCharge;
+  if (maintenanceCharge) {
+    if (maintenanceCharge.toLowerCase() === 'included in rent') {
+      templateFields['MAINTENANCE_INCLUSION'] = 'Inclusion of Maintenance';
+    } else {
+      templateFields['MAINTENANCE_INCLUSION'] = '';
+    }
   }
 
   // Default values for common fields if not provided
