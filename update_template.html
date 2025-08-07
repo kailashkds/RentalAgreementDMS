@@ -1,184 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rent Agreement</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 40px;
-            color: #333;
-            background-color: #fff;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .title {
-            font-size: 24px;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-        }
-        .parties-section {
-            margin-bottom: 30px;
-        }
-        .party-details {
-            margin-bottom: 20px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        .party-label {
-            font-weight: bold;
-            text-align: center;
-            margin-top: 10px;
-        }
-        .property-details {
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .clauses {
-            margin-bottom: 20px;
-        }
-        .clause {
-            margin-bottom: 15px;
-            text-align: justify;
-        }
-        .signatures {
-            margin-top: 40px;
-        }
-        .signature-section {
-            display: inline-block;
-            width: 45%;
-            vertical-align: top;
-            margin: 20px 0;
-        }
-        .signature-box {
-            border: 1px solid #ccc;
-            height: 80px;
-            margin-top: 10px;
-        }
-        .witnesses {
-            margin-top: 40px;
-            border-top: 1px solid #ccc;
-            padding-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="title">RENT AGREEMENT</div>
+<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
+  <h1 style="text-align: center; color: #333; border-bottom: 2px solid #ccc; padding-bottom: 10px;">
+    RENTAL AGREEMENT
+  </h1>
+  
+  <p style="margin: 20px 0;">
+    This Rental Agreement is made on <strong>{{AGREEMENT_DATE}}</strong> between:
+  </p>
+  
+  <div style="margin: 20px 0;">
+    <h3>OWNER (Lessor):</h3>
+    <p><strong>Name:</strong> {{OWNER_NAME}}</p>
+    <p><strong>Company:</strong> {{OWNER_COMPANY}}</p>
+    <p><strong>Age:</strong> {{OWNER_AGE}}</p>
+    <p><strong>Occupation:</strong> {{OWNER_OCCUPATION}}</p>
+    <p><strong>Address:</strong> {{OWNER_HOUSE_NUMBER}}, {{OWNER_SOCIETY}}, {{OWNER_AREA}}, {{OWNER_CITY}}, {{OWNER_STATE}} - {{OWNER_PINCODE}}</p>
+  </div>
+  
+  <div style="margin: 20px 0;">
+    <h3>TENANT (Lessee):</h3>
+    <p><strong>Name:</strong> {{TENANT_NAME}}</p>
+    <p><strong>Company:</strong> {{TENANT_COMPANY}}</p>
+    <p><strong>Age:</strong> {{TENANT_AGE}}</p>
+    <p><strong>Occupation:</strong> {{TENANT_OCCUPATION}}</p>
+    <p><strong>Address:</strong> {{TENANT_HOUSE_NUMBER}}, {{TENANT_SOCIETY}}, {{TENANT_AREA}}, {{TENANT_CITY}}, {{TENANT_STATE}} - {{TENANT_PINCODE}}</p>
+  </div>
+  
+  <div style="margin: 20px 0;">
+    <h3>PROPERTY DETAILS:</h3>
+    <p><strong>Address:</strong> {{PROPERTY_HOUSE_NUMBER}}, {{PROPERTY_SOCIETY}}, {{PROPERTY_AREA}}, {{PROPERTY_CITY}}, {{PROPERTY_STATE}} - {{PROPERTY_PINCODE}}</p>
+    <p><strong>Property Type:</strong> {{PROPERTY_TYPE}}</p>
+    <p><strong>Area:</strong> {{PROPERTY_AREA_SQFT}} sq ft</p>
+    <p><strong>Purpose:</strong> {{PROPERTY_PURPOSE}}</p>
+    <p><strong>Furnished Status:</strong> {{PROPERTY_FURNISHED_STATUS}}</p>
+    <p><strong>Additional Items:</strong> {{ADDITIONAL_ITEMS}}</p>
+  </div>
+  
+  <div style="margin: 20px 0;">
+    <h3>RENTAL TERMS:</h3>
+    <p><strong>Monthly Rent:</strong> ₹{{RENT_AMOUNT}} ({{RENT_AMOUNT_WORDS}})</p>
+    <p><strong>Security Deposit:</strong> ₹{{SECURITY_DEPOSIT}} ({{SECURITY_DEPOSIT_WORDS}})</p>
+    <p><strong>Lease Period:</strong> {{START_DATE}} to {{END_DATE}} ({{TENURE}})</p>
+    <p><strong>Payment Due:</strong> {{PAYMENT_DUE_DATE_FROM}} to {{PAYMENT_DUE_DATE_TO}} of each month</p>
+    <p><strong>Minimum Stay:</strong> {{MINIMUM_STAY}}</p>
+    <p><strong>Notice Period:</strong> {{NOTICE_PERIOD}}</p>
+  </div>
+  
+  <div style="margin: 40px 0;">
+    <h3>TERMS AND CONDITIONS:</h3>
+    <ul style="line-height: 1.6;">
+      <li>The tenant agrees to pay rent on or before the due date of each month.</li>
+      <li>The security deposit will be refunded after deducting any damages.</li>
+      <li>The property should be maintained in good condition.</li>
+      <li>No subletting without written consent of the owner.</li>
+      <li>The minimum stay period is {{MINIMUM_STAY}}.</li>
+      <li>{{NOTICE_PERIOD}} notice is required for termination.</li>
+    </ul>
+  </div>
+  
+  <div style="margin: 40px 0; display: flex; justify-content: space-between;">
+    <div>
+      <p><strong>Owner Signature</strong></p>
+      <p style="margin-top: 40px;">{{OWNER_NAME}}</p>
+      <p>Date: ___________</p>
     </div>
-
-    <p>This Agreement of Rent is made on {{AGREEMENT_DATE}} by and between</p>
-
-    <div class="parties-section">
-        <div class="party-details">
-            <strong>{{OWNER_NAME}}</strong><br>
-            Power of Attorney Holder for "{{OWNER_COMPANY}}"<br>
-            Age: {{OWNER_AGE}}, Occupation: {{OWNER_OCCUPATION}}<br>
-            Address: {{OWNER_HOUSE_NUMBER}}, {{OWNER_SOCIETY}}, {{OWNER_AREA}}, {{OWNER_CITY}}, {{OWNER_STATE}} {{OWNER_PINCODE}}
-            <div class="party-label">Hereinafter called the LANDLORD of the FIRST PART</div>
-        </div>
-
-        <div class="party-details">
-            <strong>{{TENANT_NAME}}</strong><br>
-            Authorized Person for "{{TENANT_COMPANY}}"<br>
-            Age: {{TENANT_AGE}}, Occupation: {{TENANT_OCCUPATION}}<br>
-            Address: {{TENANT_HOUSE_NUMBER}}, {{TENANT_SOCIETY}}, {{TENANT_AREA}}, {{TENANT_CITY}}, {{TENANT_STATE}} {{TENANT_PINCODE}}
-            <div class="party-label">Hereinafter called the TENANT of the SECOND PART</div>
-        </div>
+    <div>
+      <p><strong>Tenant Signature</strong></p>
+      <p style="margin-top: 40px;">{{TENANT_NAME}}</p>
+      <p>Date: ___________</p>
     </div>
-
-    <div class="property-details">
-        <strong>Property Address:</strong> {{PROPERTY_HOUSE_NUMBER}}, {{PROPERTY_SOCIETY}}, {{PROPERTY_AREA}}, {{PROPERTY_CITY}}, {{PROPERTY_STATE}} {{PROPERTY_PINCODE}}<br>
-        <strong>Property Area:</strong> {{PROPERTY_AREA}}<br>
-        <strong>Property Purpose:</strong> {{PROPERTY_PURPOSE}}<br>
-        <strong>Property Furnished Status:</strong> {{PROPERTY_FURNISHED_STATUS}}<br>
-        <strong>Tenure:</strong> {{TENURE}}<br>
-        <strong>Rent Amount:</strong> Rs. {{RENT_AMOUNT}} ({{RENT_AMOUNT_WORDS}}) Per Month.
-    </div>
-
-    <p><strong>NOW THIS AGREEMENT WITNESSETH AND IT IS HEREBY AGREED BY AND BETWEEN THE PARTIES AS UNDER:</strong></p>
-
-    <div class="clauses">
-        <div class="clause">
-            <strong>1.</strong> That the tenancy shall be initially for the period of {{TENURE}} with effect from {{START_DATE}} to {{END_DATE}} and will be renewed every {{RENEWAL_PERIOD}} with mutual consent of both the landlord and tenant.
-        </div>
-
-        <div class="clause">
-            <strong>2.</strong> That the rent payable by the tenant to the landlord or his/her Authorized person, in respect of the said premises, shall be Rs. {{RENT_AMOUNT}} ({{RENT_AMOUNT_WORDS}}) per month Inclusion of Maintenance which shall be payable on or before {{PAYMENT_DUE_DATE_FROM}} To {{PAYMENT_DUE_DATE_TO}} Date of every succeeding month of the rental period.
-        </div>
-
-        <div class="clause">
-            <strong>3.</strong> That the tenant has paid a sum of Rs. {{SECURITY_DEPOSIT}}/- ({{SECURITY_DEPOSIT_WORDS}}) as interest free security deposit, the receipt of which is hereby acknowledged by the landlord by these presents. This advance amount shall be returned to the tenant by the landlord at the time of vacating the said premises after adjusting the dues such as rent, water charges, maintenance charges and electricity dues, apart from cost of damages if any.
-        </div>
-
-        <div class="clause">
-            <strong>4.</strong> All the expenses on the said Premises such as Electric Power, Water, Gas, Professional Tax, Municipal Tax, and GST (relating to business of tenant) shall be paid by the Tenant. All the above mentioned paid receipt) will be handed over to the Landlord by Tenant.
-        </div>
-
-        <div class="clause">
-            <strong>5.</strong> That the furniture, fittings and fixtures in the house premises are in good condition and the tenant return the same to the landlord in good condition excepting normal wear and tear before vacating the house premises and actual cost of damages if any, shall be reimbursable by the tenant to the landlord.
-        </div>
-
-        <div class="clause">
-            <strong>6.</strong> That the tenant has agreed to ensure minimum stay for a period of {{MINIMUM_STAY}}. The tenant and landlord) has agreed to give {{NOTICE_PERIOD}} notice before vacating the house.
-        </div>
-
-        <div class="clause">
-            <strong>7.</strong> That the tenant shall not sub Rent or sublet either the entire or any part of the said premises. The said premises shall be used only for {{PROPERTY_PURPOSE}} purpose.
-        </div>
-
-        <div class="clause">
-            <strong>8.</strong> That the tenant has agreed to keep the house premises clean and in hygienic condition including the surrounding areas and the tenant has agreed not to do any action that would cause permanent / structural damages / changes without obtaining prior consent from the owner on impact and costs.
-        </div>
-
-        <div class="clause">
-            <strong>9.</strong> That the landlord shall be at liberty to inspect to the house premises by himself and or by any other authorized person(s) as and when necessary.
-        </div>
-
-        <div class="clause">
-            <strong>10.</strong> That the tenant has agreed to hand over {{ADDITIONAL_ITEMS}} to the landlord at the time of vacating the house. (this is additional point if mentioned in form than only this point shows here)
-        </div>
-
-        <div class="clause">
-            <strong>11.</strong> It is hereby agreed that if default is made by the tenant in payment of the rent for a period of three months, or in observance and performance of any of the covenants and stipulations hereby contained, the non such default, the landlord shall be entitled in addition to or in the alternative to any other remedy that may be available to him at this discretion, to terminate the Rent and eject the tenant from the said premises; and to take possession thereof as full and absolute owner.
-        </div>
-
-        <div class="clause">
-            <strong>12.</strong> That the landlord shall be responsible for the payment of all taxes and levies pertaining to the said premises including but not limited to House Tax, Property Tax, other ceases, if any, and any other statutory taxes, levied by the Government or Governmental Departments. During the term of this Agreement, the landlord shall comply with all rules, regulations and requirements of any statutory authority, local, state and central government and governmental departments in relation to the said premises.
-        </div>
-    </div>
-
-    <p><strong>IN WITNESS WHERE OF, the parties here to have set their hands on the day and year first here in above mentioned without any external influence or pressure from anybody.</strong></p>
-
-    <div class="signatures">
-        <div class="signature-section">
-            <strong>{{OWNER_NAME}}</strong><br>
-            <div style="float: right; margin-top: -20px;">Passport Size Photo</div>
-            <br><strong>Landlord</strong>
-            <div class="signature-box"></div>
-            <div style="text-align: center; margin-top: 5px;"><strong>Signature</strong></div>
-        </div>
-
-        <div class="signature-section" style="float: right;">
-            <strong>{{TENANT_NAME}}</strong><br>
-            <div style="float: right; margin-top: -20px;">Passport Size Photo</div>
-            <br><strong>Tenant</strong>
-            <div class="signature-box"></div>
-            <div style="text-align: center; margin-top: 5px;"><strong>Signature</strong></div>
-        </div>
-    </div>
-
-    <div class="witnesses">
-        <strong>Witnesses</strong><br><br>
-        ___________________________ &nbsp;&nbsp;&nbsp; __________________________
-    </div>
-</body>
-</html>
+  </div>
+</div>
