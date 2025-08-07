@@ -106,12 +106,13 @@ export default function Agreements() {
   };
 
   const handleViewAgreement = (agreementId: string) => {
-    // For now, open the agreement for editing (can be enhanced to view-only mode)
     const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
     if (agreement) {
       setEditingAgreement(agreement);
     }
   };
+
+
 
   const handleDownloadAgreement = async (agreement: any) => {
     try {
@@ -273,16 +274,19 @@ export default function Agreements() {
                       Agreement ID
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
+                      Customer Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Property
+                      Property Address
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rent
+                      Landlord Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Period
+                      Tenant Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Agreement Period
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -301,34 +305,39 @@ export default function Agreements() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {agreement.customer?.name || "Unknown"}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {agreement.customer?.mobile || ""}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {agreement.propertyDetails?.type || "Property"}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {agreement.propertyDetails?.place || ""}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
-                          ₹{agreement.rentalTerms?.monthlyRent?.toLocaleString() || "0"}
+                          {agreement.customer?.name || "Unknown"}
                         </div>
                         <div className="text-sm text-gray-500">
-                          Deposit: ₹{agreement.rentalTerms?.deposit?.toLocaleString() || "0"}
+                          {agreement.customer?.mobile || ""}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {new Date(agreement.startDate).toLocaleDateString()} - {new Date(agreement.endDate).toLocaleDateString()}
+                          {[
+                            agreement.propertyDetails?.flat,
+                            agreement.propertyDetails?.society,
+                            agreement.propertyDetails?.area,
+                            agreement.propertyDetails?.city
+                          ].filter(Boolean).join(', ') || 'Property address not available'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {agreement.ownerDetails?.name || 'Landlord name not available'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {agreement.tenantDetails?.name || 'Tenant name not available'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {agreement.rentalTerms?.startDate && agreement.rentalTerms?.endDate 
+                            ? `${new Date(agreement.rentalTerms.startDate).toLocaleDateString()} - ${new Date(agreement.rentalTerms.endDate).toLocaleDateString()}`
+                            : 'Period not available'
+                          }
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -439,6 +448,14 @@ export default function Agreements() {
         isOpen={showWizard}
         onClose={() => setShowWizard(false)}
       />
+
+      {editingAgreement && (
+        <AgreementWizard
+          isOpen={!!editingAgreement}
+          onClose={() => setEditingAgreement(null)}
+          editingAgreement={editingAgreement}
+        />
+      )}
     </AdminLayout>
   );
 }

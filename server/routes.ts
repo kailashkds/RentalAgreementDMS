@@ -298,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agreement renewal
-  app.post("/api/agreements/:id/renew", async (req, res) => {
+  app.post("/api/agreements/:id/renew", requireAuth, async (req, res) => {
     try {
       const { startDate, endDate } = req.body;
       if (!startDate || !endDate) {
@@ -314,6 +314,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error renewing agreement:", error);
       res.status(500).json({ message: "Failed to renew agreement" });
+    }
+  });
+
+  // Agreement duplication
+  app.post("/api/agreements/:id/duplicate", requireAuth, async (req, res) => {
+    try {
+      const { customerId } = req.body;
+      const duplicatedAgreement = await storage.duplicateAgreement(req.params.id, customerId);
+      res.status(201).json(duplicatedAgreement);
+    } catch (error) {
+      console.error("Error duplicating agreement:", error);
+      res.status(500).json({ message: "Failed to duplicate agreement" });
     }
   });
 
@@ -348,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agreement duplication
-  app.post("/api/agreements/:id/duplicate", async (req, res) => {
+  app.post("/api/agreements/:id/duplicate", requireAuth, async (req, res) => {
     try {
       const { customerId } = req.body;
       const duplicatedAgreement = await storage.duplicateAgreement(req.params.id, customerId);
