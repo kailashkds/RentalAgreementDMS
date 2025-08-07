@@ -223,7 +223,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       // Fetch and populate form with existing agreement data
       const loadAgreement = async () => {
         try {
-          const agreement = await apiRequest(`/api/agreements/${agreementId}`);
+          const agreement = await apiRequest("GET", `/api/agreements/${agreementId}`) as any;
           
           // Convert agreement data to form format, handling address structure
           const formData: AgreementFormData = {
@@ -364,6 +364,55 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     }
   };
 
+  const copyOwnerAsCustomer = async () => {
+    const ownerData = watch("ownerDetails");
+    if (ownerData.name && ownerData.mobile) {
+      try {
+        // Create customer from owner details
+        await apiRequest("POST", "/api/customers", {
+          name: ownerData.name,
+          mobile: ownerData.mobile,
+          email: "", // Optional
+        });
+        
+        // Refresh customers list
+        queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+        
+        toast({
+          title: "Customer created",
+          description: "Landlord has been added as a customer.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to create customer from landlord details.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const fetchMobileInfo = async (mobile: string, userType: 'owner' | 'tenant') => {
+    if (mobile && mobile.length >= 10) {
+      try {
+        const customer = await apiRequest("GET", `/api/customers/by-mobile?mobile=${encodeURIComponent(mobile)}`) as any;
+        if (customer) {
+          if (userType === 'owner') {
+            setValue("ownerDetails.name", customer.name);
+          } else {
+            setValue("tenantDetails.name", customer.name);
+          }
+          toast({
+            title: "Info retrieved",
+            description: `Found existing customer: ${customer.name}`,
+          });
+        }
+      } catch (error) {
+        // Silent fail - customer not found
+      }
+    }
+  };
+
   const handleDocumentUpload = (type: string, result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
     if (result.successful && result.successful.length > 0) {
       const uploadURL = result.successful[0].uploadURL;
@@ -418,6 +467,53 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       toast({
         title: "Error",
         description: "Failed to save draft.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadAgreement = async () => {
+    const formData = watch();
+    if (!formData || !formData.customerId) {
+      toast({
+        title: "Error",
+        description: "Please complete the agreement form first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/agreements/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `rental-agreement-${Date.now()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: "PDF Downloaded",
+          description: "Agreement PDF has been downloaded successfully.",
+        });
+      } else {
+        throw new Error('Failed to generate PDF');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to download PDF. Please try again.",
         variant: "destructive",
       });
     }
@@ -519,7 +615,18 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       case 2:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800">Step 2: Landlord Details</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-800">Step 2: Landlord Details</h3>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={copyOwnerAsCustomer}
+                disabled={!watchedCustomerId}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copy as Customer
+              </Button>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -531,7 +638,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
               <div>
                 <Label htmlFor="ownerMobile">Mobile Number</Label>
-                <Input {...register("ownerDetails.mobile", { required: "Mobile is required" })} placeholder="+91 XXXXXXXXXX" />
+                <Input 
+                  {...register("ownerDetails.mobile", { required: "Mobile is required" })} 
+                  placeholder="+91 XXXXXXXXXX"
+                  onBlur={(e) => fetchMobileInfo(e.target.value, 'owner')}
+                />
               </div>
               <div>
                 <Label htmlFor="ownerAge">Age</Label>
@@ -688,7 +799,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
               <div>
                 <Label>Mobile Number</Label>
-                <Input {...register("tenantDetails.mobile", { required: "Mobile is required" })} placeholder="+91 XXXXXXXXXX" />
+                <Input 
+                  {...register("tenantDetails.mobile", { required: "Mobile is required" })} 
+                  placeholder="+91 XXXXXXXXXX" 
+                  onBlur={(e) => fetchMobileInfo(e.target.value, 'tenant')}
+                />
               </div>
               <div>
                 <Label>Age</Label>
@@ -1022,7 +1137,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
             <div>
               <h4 className="text-md font-semibold text-gray-800 mb-4">Additional Terms</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Maintenance Charge</Label>
                   <Select value={watch("rentalTerms.maintenance")} onValueChange={(value) => setValue("rentalTerms.maintenance", value as "included" | "excluded")}>
@@ -1036,8 +1151,24 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   </Select>
                 </div>
                 <div>
+                  <Label>Maintenance Charge Amount</Label>
+                  <Input {...register("rentalTerms.maintenanceCharge")} placeholder="₹5000 per month" />
+                </div>
+                <div>
                   <Label>Notice Period (Months)</Label>
                   <Input type="number" {...register("rentalTerms.noticePeriod")} placeholder="1-3 months" />
+                </div>
+                <div>
+                  <Label>Minimum Stay</Label>
+                  <Input {...register("rentalTerms.minimumStay")} placeholder="e.g., 11 months" />
+                </div>
+                <div>
+                  <Label>Payment Due From Date</Label>
+                  <Input {...register("rentalTerms.paymentDueFromDate")} placeholder="1st of every month" />
+                </div>
+                <div>
+                  <Label>Payment Due To Date</Label>
+                  <Input {...register("rentalTerms.paymentDueToDate")} placeholder="5th of every month" />
                 </div>
               </div>
               <div className="mt-4">
@@ -1196,9 +1327,20 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   Save as Draft
                 </Button>
                 {currentStep === STEPS.length ? (
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                    Create Agreement
-                  </Button>
+                  <div className="flex space-x-3">
+                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                      Create Agreement
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => downloadAgreement()}
+                      className="bg-green-600 text-white hover:bg-green-700"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download PDF
+                    </Button>
+                  </div>
                 ) : (
                   <Button 
                     type="button" 

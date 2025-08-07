@@ -342,8 +342,12 @@ export interface RentalTerms {
   deposit: number;
   monthlyRent: number;
   dueDate: number;
+  maintenanceCharge?: string; // Add maintenanceCharge field
   maintenance: "included" | "excluded";
   noticePeriod: number;
+  minimumStay?: string; // Add minimumStay field
+  paymentDueFromDate?: number; // Add payment due from date
+  paymentDueToDate?: number; // Add payment due to date
   furniture: string;
   startDate: string;
   endDate: string;

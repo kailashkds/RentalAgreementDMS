@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Agreements() {
   const [showWizard, setShowWizard] = useState(false);
+  const [editingAgreement, setEditingAgreement] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -99,6 +100,83 @@ export default function Agreements() {
       toast({
         title: "Error",
         description: "Failed to delete agreement.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleViewAgreement = (agreementId: string) => {
+    // For now, open the agreement for editing (can be enhanced to view-only mode)
+    const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
+    if (agreement) {
+      setEditingAgreement(agreement);
+    }
+  };
+
+  const handleDownloadAgreement = async (agreement: any) => {
+    try {
+      const response = await fetch('/api/agreements/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ownerDetails: agreement.ownerDetails,
+          tenantDetails: agreement.tenantDetails,
+          propertyDetails: agreement.propertyDetails,
+          rentalTerms: agreement.rentalTerms,
+          agreementDate: agreement.agreementDate,
+          language: agreement.language || 'english',
+          additionalClauses: agreement.additionalClauses || [],
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Create a temporary HTML page for printing/PDF generation
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Rental Agreement - ${agreement.agreementNumber}</title>
+              <style>
+                body { 
+                  font-family: Arial, sans-serif; 
+                  margin: 20px; 
+                  line-height: 1.6; 
+                }
+                @media print {
+                  body { margin: 0; }
+                  .no-print { display: none; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="no-print" style="margin-bottom: 20px;">
+                <button onclick="window.print()">Print / Save as PDF</button>
+                <button onclick="window.close()">Close</button>
+              </div>
+              ${data.html}
+            </body>
+            </html>
+          `);
+          printWindow.document.close();
+        }
+        
+        toast({
+          title: "Agreement ready",
+          description: "Agreement opened in new window for download.",
+        });
+      } else {
+        throw new Error('Failed to generate PDF');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate agreement PDF.",
         variant: "destructive",
       });
     }
@@ -263,7 +341,12 @@ export default function Agreements() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-900">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-blue-600 hover:text-blue-900"
+                            onClick={() => handleViewAgreement(agreement.id)}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
                           {agreement.status === "active" && (
@@ -301,7 +384,12 @@ export default function Agreements() {
                           )}
                           {agreement.status === "active" && (
                             <>
-                              <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-900">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-indigo-600 hover:text-indigo-900"
+                                onClick={() => handleDownloadAgreement(agreement)}
+                              >
                                 <Download className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-900">

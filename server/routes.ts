@@ -70,6 +70,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Customer routes
+  app.get("/api/customers/by-mobile", async (req, res) => {
+    try {
+      const { mobile } = req.query;
+      if (!mobile) {
+        return res.status(400).json({ message: "Mobile number is required" });
+      }
+      
+      const customer = await storage.getCustomerByMobile(mobile as string);
+      if (customer) {
+        res.json(customer);
+      } else {
+        res.status(404).json({ message: "Customer not found" });
+      }
+    } catch (error) {
+      console.error("Error fetching customer by mobile:", error);
+      res.status(500).json({ message: "Failed to fetch customer" });
+    }
+  });
+
   app.get("/api/customers", async (req, res) => {
     try {
       const { search, limit, offset } = req.query;
@@ -133,6 +152,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting customer:", error);
       res.status(500).json({ message: "Failed to delete customer" });
+    }
+  });
+
+  // Quick PDF download endpoint for form data
+  app.post("/api/agreements/generate-pdf", async (req, res) => {
+    try {
+      const agreementData = req.body;
+      
+      // Find a default template for rental agreements
+      const templates = await storage.getPdfTemplates('rental_agreement', agreementData.language || 'english');
+      const template = templates[0]; // Use first available template
+      
+      if (!template) {
+        return res.status(404).json({ message: "No PDF template found for rental agreements" });
+      }
+
+      // Generate the HTML with mapped field values
+      const processedHtml = generatePdfHtml(agreementData, template.htmlTemplate);
+      
+      // Return HTML for client-side PDF generation
+      res.json({
+        html: processedHtml,
+        templateName: template.name,
+        message: "PDF content generated successfully"
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ message: "Failed to generate PDF" });
     }
   });
 
