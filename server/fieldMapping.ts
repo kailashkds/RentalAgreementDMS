@@ -134,7 +134,11 @@ const FIELD_MAPPINGS = {
 
   // Agreement fields
   'agreementDate': 'AGREEMENT_DATE',
+  'createdAt': 'AGREEMENT_DATE',
   'agreementType': 'AGREEMENT_TYPE',
+  
+  // Property type mapping
+  'propertyDetails.type': 'PROPERTY_TYPE',
 };
 
 // Helper function to get nested object property by path
@@ -285,6 +289,12 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
   }
   if (!templateFields['MINIMUM_STAY']) {
     templateFields['MINIMUM_STAY'] = '11 months';
+  }
+
+  // Handle agreement date mapping - use createdAt if available
+  if (formData.createdAt && !templateFields['AGREEMENT_DATE']) {
+    const agreementDate = new Date(formData.createdAt);
+    templateFields['AGREEMENT_DATE'] = agreementDate.toLocaleDateString('en-GB');
   }
 
   return templateFields;

@@ -19,7 +19,8 @@ import {
   RotateCcw,
   Copy,
   Edit,
-  Trash2
+  Trash2,
+  Download
 } from "lucide-react";
 import { useAgreements } from "@/hooks/useAgreements";
 
@@ -196,8 +197,8 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {recentAgreements?.agreements?.map((agreement: any) => (
-                      <tr key={agreement.id}>
+                    {recentAgreements?.agreements?.map((agreement: any, index: number) => (
+                      <tr key={agreement.id || index}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="text-sm font-mono font-medium text-gray-900">
                             {agreement.agreementNumber}
@@ -229,26 +230,57 @@ export default function Dashboard() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-900">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-blue-600 hover:text-blue-900"
+                              title="View Agreement"
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-green-600 hover:text-green-900"
+                              title="Print/Download PDF"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-amber-600 hover:text-amber-900"
+                              title="Edit Agreement"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                             {agreement.status === "active" && (
-                              <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-900">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-indigo-600 hover:text-indigo-900"
+                                title="Renew Agreement"
+                              >
                                 <RotateCcw className="h-4 w-4" />
                               </Button>
                             )}
-                            <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-900">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-purple-600 hover:text-purple-900"
+                              title="Duplicate Agreement"
+                            >
                               <Copy className="h-4 w-4" />
                             </Button>
                             {agreement.status === "draft" && (
-                              <>
-                                <Button variant="ghost" size="sm" className="text-amber-600 hover:text-amber-900">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-900">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-red-600 hover:text-red-900"
+                                title="Delete Agreement"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
                         </td>

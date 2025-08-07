@@ -1195,10 +1195,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   </Select>
                 </div>
                 <div>
-                  <Label>Maintenance Charge Amount</Label>
-                  <Input {...register("rentalTerms.maintenanceCharge")} placeholder="₹5000 per month" />
-                </div>
-                <div>
                   <Label>Notice Period (Months)</Label>
                   <Input type="number" {...register("rentalTerms.noticePeriod")} placeholder="1-3 months" />
                 </div>
@@ -1206,19 +1202,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <Label>Minimum Stay</Label>
                   <Input {...register("rentalTerms.minimumStay")} placeholder="e.g., 11 months" />
                 </div>
-                <div>
-                  <Label>Payment Due From Date</Label>
-                  <Input {...register("rentalTerms.paymentDueFromDate")} placeholder="1st of every month" />
-                </div>
-                <div>
-                  <Label>Payment Due To Date</Label>
-                  <Input {...register("rentalTerms.paymentDueToDate")} placeholder="5th of every month" />
-                </div>
               </div>
-              <div className="mt-4">
-                <Label>Furniture/Items Included</Label>
-                <Textarea {...register("rentalTerms.furniture")} rows={3} placeholder="List all furniture and items included..." />
-              </div>
+
             </div>
           </div>
         );
