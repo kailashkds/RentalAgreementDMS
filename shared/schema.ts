@@ -144,6 +144,20 @@ export const agreementTemplates = pgTable("agreement_templates", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// PDF Templates for dynamic document generation
+export const pdfTemplates = pgTable("pdf_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  documentType: text("document_type").notNull(), // 'rental_agreement', 'promissory_note', etc.
+  language: varchar("language", { length: 20 }).notNull(),
+  htmlTemplate: text("html_template").notNull(), // WYSIWYG HTML content
+  dynamicFields: jsonb("dynamic_fields").notNull().default('[]'), // Array of field configurations
+  conditionalRules: jsonb("conditional_rules").notNull().default('[]'), // Conditional display rules
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const customersRelations = relations(customers, ({ many }) => ({
   agreements: many(agreements),
@@ -210,6 +224,12 @@ export const insertAgreementTemplateSchema = createInsertSchema(agreementTemplat
   createdAt: true,
 });
 
+export const insertPdfTemplateSchema = createInsertSchema(pdfTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
   id: true,
   createdAt: true,
@@ -229,6 +249,8 @@ export type InsertAgreement = z.infer<typeof insertAgreementSchema>;
 export type Agreement = typeof agreements.$inferSelect;
 export type InsertAgreementTemplate = z.infer<typeof insertAgreementTemplateSchema>;
 export type AgreementTemplate = typeof agreementTemplates.$inferSelect;
+export type InsertPdfTemplate = z.infer<typeof insertPdfTemplateSchema>;
+export type PdfTemplate = typeof pdfTemplates.$inferSelect;
 export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
 export type AdminUser = typeof adminUsers.$inferSelect;
 

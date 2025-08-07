@@ -31,7 +31,7 @@ const navigation = [
   { name: "Agreements", href: "/agreements", icon: FileSignature },
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Documents", href: "/documents", icon: FolderOpen },
-  { name: "Templates", href: "/templates", icon: FileText },
+  { name: "PDF Templates", href: "/pdf-templates", icon: FileText },
   { name: "Societies", href: "/societies", icon: Building },
   { name: "WhatsApp", href: "/whatsapp", icon: MessageSquare },
 ];

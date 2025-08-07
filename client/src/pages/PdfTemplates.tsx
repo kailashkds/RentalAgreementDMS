@@ -1,0 +1,276 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Edit, Trash2, Eye, Download } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import PdfTemplateEditor from "@/components/PdfTemplateEditor";
+import type { PdfTemplate } from "@shared/schema";
+
+const DOCUMENT_TYPES = [
+  { value: "rental_agreement", label: "Rental Agreement" },
+  { value: "promissory_note", label: "Promissory Note" },
+  { value: "power_of_attorney", label: "Power of Attorney" },
+  { value: "lease_deed", label: "Lease Deed" },
+];
+
+const LANGUAGES = [
+  { value: "english", label: "English" },
+  { value: "hindi", label: "Hindi (हिन्दी)" },
+  { value: "gujarati", label: "Gujarati (ગુજરાતી)" },
+  { value: "tamil", label: "Tamil (தமிழ்)" },
+  { value: "marathi", label: "Marathi (मराठी)" },
+];
+
+export default function PdfTemplates() {
+  const [selectedTemplate, setSelectedTemplate] = useState<PdfTemplate | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
+  const [filters, setFilters] = useState({
+    documentType: "",
+    language: "",
+  });
+  const { toast } = useToast();
+
+  // Fetch templates with filters
+  const { data: templates = [], isLoading } = useQuery<PdfTemplate[]>({
+    queryKey: ["/api/pdf-templates", filters.documentType, filters.language],
+  });
+
+  // Delete template mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/pdf-templates/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pdf-templates"] });
+      toast({
+        title: "Success",
+        description: "Template deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEdit = (template: PdfTemplate) => {
+    setSelectedTemplate(template);
+    setShowEditor(true);
+  };
+
+  const handleCreate = () => {
+    setSelectedTemplate(null);
+    setShowEditor(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to delete this template?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const handlePreview = (template: PdfTemplate) => {
+    // Open preview in new window
+    const previewWindow = window.open("", "_blank");
+    if (previewWindow) {
+      previewWindow.document.write(`
+        <html>
+          <head>
+            <title>Template Preview - ${template.name}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              .preview-header { border-bottom: 2px solid #ccc; margin-bottom: 20px; padding-bottom: 10px; }
+            </style>
+          </head>
+          <body>
+            <div class="preview-header">
+              <h1>Preview: ${template.name}</h1>
+              <p><strong>Type:</strong> ${template.documentType} | <strong>Language:</strong> ${template.language}</p>
+            </div>
+            <div class="template-content">
+              ${template.htmlTemplate}
+            </div>
+          </body>
+        </html>
+      `);
+    }
+  };
+
+  const getDocumentTypeLabel = (type: string) => {
+    return DOCUMENT_TYPES.find(dt => dt.value === type)?.label || type;
+  };
+
+  const getLanguageLabel = (lang: string) => {
+    return LANGUAGES.find(l => l.value === lang)?.label || lang;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">PDF Templates</h1>
+          <p className="text-gray-600 mt-1">Manage document templates for automatic PDF generation</p>
+        </div>
+        <Button onClick={handleCreate} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="mr-2 h-4 w-4" />
+          Create Template
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="documentType">Document Type</Label>
+              <Select value={filters.documentType} onValueChange={(value) => 
+                setFilters(prev => ({ ...prev, documentType: value }))
+              }>
+                <SelectTrigger>
+                  <SelectValue placeholder="All document types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All document types</SelectItem>
+                  {DOCUMENT_TYPES.map(type => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="language">Language</Label>
+              <Select value={filters.language} onValueChange={(value) => 
+                setFilters(prev => ({ ...prev, language: value }))
+              }>
+                <SelectTrigger>
+                  <SelectValue placeholder="All languages" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All languages</SelectItem>
+                  {LANGUAGES.map(lang => (
+                    <SelectItem key={lang.value} value={lang.value}>
+                      {lang.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Templates Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Templates ({templates.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">Loading templates...</div>
+          ) : templates.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No templates found. Create your first template to get started.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Document Type</TableHead>
+                  <TableHead>Language</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {templates.map((template) => (
+                  <TableRow key={template.id}>
+                    <TableCell className="font-medium">{template.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {getDocumentTypeLabel(template.documentType)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {getLanguageLabel(template.language)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={template.isActive ? "default" : "destructive"}>
+                        {template.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(template.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handlePreview(template)}
+                          title="Preview Template"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEdit(template)}
+                          title="Edit Template"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDelete(template.id)}
+                          title="Delete Template"
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Template Editor Modal */}
+      {showEditor && (
+        <PdfTemplateEditor
+          template={selectedTemplate}
+          isOpen={showEditor}
+          onClose={() => setShowEditor(false)}
+          onSave={() => {
+            setShowEditor(false);
+            queryClient.invalidateQueries({ queryKey: ["/api/pdf-templates"] });
+          }}
+        />
+      )}
+    </div>
+  );
+}

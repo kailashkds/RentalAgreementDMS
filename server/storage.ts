@@ -5,6 +5,7 @@ import {
   addresses,
   agreements,
   agreementTemplates,
+  pdfTemplates,
   adminUsers,
   type User,
   type UpsertUser,
@@ -18,6 +19,8 @@ import {
   type InsertAgreement,
   type AgreementTemplate,
   type InsertAgreementTemplate,
+  type PdfTemplate,
+  type InsertPdfTemplate,
   type AdminUser,
   type InsertAdminUser,
 } from "@shared/schema";
@@ -49,6 +52,13 @@ export interface IStorage {
   searchAddresses(search: string, limit?: number): Promise<Address[]>;
   saveAddress(address: InsertAddress): Promise<Address>;
   incrementAddressUsage(addressId: string): Promise<void>;
+  
+  // PDF Template operations
+  getPdfTemplates(documentType?: string, language?: string): Promise<PdfTemplate[]>;
+  getPdfTemplate(id: string): Promise<PdfTemplate | undefined>;
+  createPdfTemplate(template: InsertPdfTemplate): Promise<PdfTemplate>;
+  updatePdfTemplate(id: string, template: Partial<InsertPdfTemplate>): Promise<PdfTemplate>;
+  deletePdfTemplate(id: string): Promise<void>;
   
   // Admin user operations
   getAdminUsers(): Promise<AdminUser[]>;
@@ -469,6 +479,44 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAdminUser(id: string): Promise<void> {
     await db.delete(adminUsers).where(eq(adminUsers.id, id));
+  }
+
+  // PDF Template operations
+  async getPdfTemplates(documentType?: string, language?: string): Promise<PdfTemplate[]> {
+    const whereConditions = and(
+      eq(pdfTemplates.isActive, true),
+      documentType ? eq(pdfTemplates.documentType, documentType) : undefined,
+      language ? eq(pdfTemplates.language, language) : undefined
+    );
+
+    return db
+      .select()
+      .from(pdfTemplates)
+      .where(whereConditions)
+      .orderBy(pdfTemplates.createdAt);
+  }
+
+  async getPdfTemplate(id: string): Promise<PdfTemplate | undefined> {
+    const [template] = await db.select().from(pdfTemplates).where(eq(pdfTemplates.id, id));
+    return template;
+  }
+
+  async createPdfTemplate(templateData: InsertPdfTemplate): Promise<PdfTemplate> {
+    const [template] = await db.insert(pdfTemplates).values(templateData).returning();
+    return template;
+  }
+
+  async updatePdfTemplate(id: string, templateData: Partial<InsertPdfTemplate>): Promise<PdfTemplate> {
+    const [template] = await db
+      .update(pdfTemplates)
+      .set({ ...templateData, updatedAt: new Date() })
+      .where(eq(pdfTemplates.id, id))
+      .returning();
+    return template;
+  }
+
+  async deletePdfTemplate(id: string): Promise<void> {
+    await db.update(pdfTemplates).set({ isActive: false }).where(eq(pdfTemplates.id, id));
   }
 
   async createAgreementTemplate(templateData: InsertAgreementTemplate): Promise<AgreementTemplate> {

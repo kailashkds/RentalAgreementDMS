@@ -5,7 +5,7 @@ import type { Address } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
-import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema } from "@shared/schema";
+import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 
@@ -366,6 +366,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PDF Template routes
+  app.get("/api/pdf-templates", requireAuth, async (req, res) => {
+    try {
+      const { documentType, language } = req.query;
+      const templates = await storage.getPdfTemplates(
+        documentType as string,
+        language as string
+      );
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching PDF templates:", error);
+      res.status(500).json({ message: "Failed to fetch PDF templates" });
+    }
+  });
+
+  app.get("/api/pdf-templates/:id", requireAuth, async (req, res) => {
+    try {
+      const template = await storage.getPdfTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ message: "PDF template not found" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching PDF template:", error);
+      res.status(500).json({ message: "Failed to fetch PDF template" });
+    }
+  });
+
+  app.post("/api/pdf-templates", requireAuth, async (req, res) => {
+    try {
+      const templateData = insertPdfTemplateSchema.parse(req.body);
+      const template = await storage.createPdfTemplate(templateData);
+      res.status(201).json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid template data", errors: error.errors });
+      }
+      console.error("Error creating PDF template:", error);
+      res.status(500).json({ message: "Failed to create PDF template" });
+    }
+  });
+
+  app.put("/api/pdf-templates/:id", requireAuth, async (req, res) => {
+    try {
+      const templateData = insertPdfTemplateSchema.partial().parse(req.body);
+      const template = await storage.updatePdfTemplate(req.params.id, templateData);
+      res.json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid template data", errors: error.errors });
+      }
+      console.error("Error updating PDF template:", error);
+      res.status(500).json({ message: "Failed to update PDF template" });
+    }
+  });
+
+  app.delete("/api/pdf-templates/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deletePdfTemplate(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting PDF template:", error);
+      res.status(500).json({ message: "Failed to delete PDF template" });
+    }
+  });
+
+  // Generate PDF from template
+  app.post("/api/generate-pdf", requireAuth, async (req, res) => {
+    try {
+      const { templateId, agreementData } = req.body;
+      
+      if (!templateId || !agreementData) {
+        return res.status(400).json({ message: "Template ID and agreement data are required" });
+      }
+
+      const template = await storage.getPdfTemplate(templateId);
+      if (!template) {
+        return res.status(404).json({ message: "PDF template not found" });
+      }
+
+      // Process template with dynamic data
+      let processedHtml = template.htmlTemplate;
+      
+      // Replace dynamic fields with actual data
+      const fieldMatches = processedHtml.match(/\{\{([^}]+)\}\}/g);
+      if (fieldMatches) {
+        for (const match of fieldMatches) {
+          const fieldPath = match.replace(/[{}]/g, '');
+          const value = getNestedValue(agreementData, fieldPath) || '';
+          processedHtml = processedHtml.replace(match, value);
+        }
+      }
+
+      // For now, return the processed HTML (you can integrate a PDF generation library later)
+      res.json({ 
+        html: processedHtml,
+        message: "PDF generated successfully" 
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Helper function to get nested object values
+function getNestedValue(obj: any, path: string): any {
+  return path.split('.').reduce((current, key) => current?.[key], obj);
 }
