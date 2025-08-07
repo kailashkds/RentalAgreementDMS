@@ -264,12 +264,12 @@ export interface OwnerDetails {
   aadhar: string;
   pan: string;
   // Granular address fields
-  houseNumber: string;
-  society: string;
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
+  houseNumber?: string;
+  society?: string;
+  area?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
   // Legacy nested address support for backward compatibility
   address?: {
     flatNo: string;
@@ -292,12 +292,12 @@ export interface TenantDetails {
   aadhar: string;
   pan: string;
   // Granular address fields
-  houseNumber: string;
-  society: string;
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
+  houseNumber?: string;
+  society?: string;
+  area?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
   // Legacy nested address support for backward compatibility
   address?: {
     flatNo: string;
@@ -318,12 +318,12 @@ export interface PropertyDetails {
   additionalItems?: string;
   areaInSqFt?: number; // Property area in square feet
   // Granular address fields
-  houseNumber: string;
-  society: string;
-  area: string;
-  city: string;
-  state: string;
-  pincode: string;
+  houseNumber?: string;
+  society?: string;
+  area?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
   // Legacy nested address support for backward compatibility
   address?: {
     flatNo: string;

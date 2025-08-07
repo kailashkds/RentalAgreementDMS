@@ -217,13 +217,115 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     return validateStep(stepNumber);
   };
 
+  // Load existing agreement data when editing
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen && agreementId) {
+      // Fetch and populate form with existing agreement data
+      const loadAgreement = async () => {
+        try {
+          const agreement = await apiRequest(`/api/agreements/${agreementId}`);
+          
+          // Convert agreement data to form format, handling address structure
+          const formData: AgreementFormData = {
+            customerId: agreement.customerId || "",
+            language: agreement.language || "english",
+            ownerDetails: {
+              ...agreement.ownerDetails,
+              // Ensure granular address fields are populated from nested structure if needed
+              houseNumber: agreement.ownerDetails?.houseNumber || agreement.ownerDetails?.address?.flatNo || "",
+              society: agreement.ownerDetails?.society || agreement.ownerDetails?.address?.society || "",
+              area: agreement.ownerDetails?.area || agreement.ownerDetails?.address?.area || "",
+              city: agreement.ownerDetails?.city || agreement.ownerDetails?.address?.city || "",
+              state: agreement.ownerDetails?.state || agreement.ownerDetails?.address?.state || "",
+              pincode: agreement.ownerDetails?.pincode || agreement.ownerDetails?.address?.pincode || "",
+              // Keep nested address structure for compatibility
+              address: agreement.ownerDetails?.address || {
+                flatNo: agreement.ownerDetails?.houseNumber || "",
+                society: agreement.ownerDetails?.society || "",
+                area: agreement.ownerDetails?.area || "",
+                city: agreement.ownerDetails?.city || "",
+                state: agreement.ownerDetails?.state || "",
+                pincode: agreement.ownerDetails?.pincode || "",
+                district: agreement.ownerDetails?.address?.district || "",
+                landmark: agreement.ownerDetails?.address?.landmark || ""
+              }
+            },
+            tenantDetails: {
+              ...agreement.tenantDetails,
+              // Ensure granular address fields are populated from nested structure if needed
+              houseNumber: agreement.tenantDetails?.houseNumber || agreement.tenantDetails?.address?.flatNo || "",
+              society: agreement.tenantDetails?.society || agreement.tenantDetails?.address?.society || "",
+              area: agreement.tenantDetails?.area || agreement.tenantDetails?.address?.area || "",
+              city: agreement.tenantDetails?.city || agreement.tenantDetails?.address?.city || "",
+              state: agreement.tenantDetails?.state || agreement.tenantDetails?.address?.state || "",
+              pincode: agreement.tenantDetails?.pincode || agreement.tenantDetails?.address?.pincode || "",
+              // Keep nested address structure for compatibility
+              address: agreement.tenantDetails?.address || {
+                flatNo: agreement.tenantDetails?.houseNumber || "",
+                society: agreement.tenantDetails?.society || "",
+                area: agreement.tenantDetails?.area || "",
+                city: agreement.tenantDetails?.city || "",
+                state: agreement.tenantDetails?.state || "",
+                pincode: agreement.tenantDetails?.pincode || "",
+                district: agreement.tenantDetails?.address?.district || "",
+                landmark: agreement.tenantDetails?.address?.landmark || ""
+              }
+            },
+            propertyDetails: {
+              ...agreement.propertyDetails,
+              // Ensure granular address fields are populated from nested structure if needed
+              houseNumber: agreement.propertyDetails?.houseNumber || agreement.propertyDetails?.address?.flatNo || "",
+              society: agreement.propertyDetails?.society || agreement.propertyDetails?.address?.society || "",
+              area: agreement.propertyDetails?.area || agreement.propertyDetails?.address?.area || "",
+              city: agreement.propertyDetails?.city || agreement.propertyDetails?.address?.city || "",
+              state: agreement.propertyDetails?.state || agreement.propertyDetails?.address?.state || "",
+              pincode: agreement.propertyDetails?.pincode || agreement.propertyDetails?.address?.pincode || "",
+              // Keep nested address structure for compatibility
+              address: agreement.propertyDetails?.address || {
+                flatNo: agreement.propertyDetails?.houseNumber || "",
+                society: agreement.propertyDetails?.society || "",
+                area: agreement.propertyDetails?.area || "",
+                city: agreement.propertyDetails?.city || "",
+                state: agreement.propertyDetails?.state || "",
+                pincode: agreement.propertyDetails?.pincode || "",
+                district: agreement.propertyDetails?.address?.district || "",
+                landmark: agreement.propertyDetails?.address?.landmark || ""
+              }
+            },
+            rentalTerms: {
+              ...agreement.rentalTerms,
+              // Ensure all rental terms have default values
+              tenure: agreement.rentalTerms?.tenure || "11_months",
+              maintenance: agreement.rentalTerms?.maintenance || "included"
+            },
+            additionalClauses: agreement.additionalClauses || []
+          };
+          
+          reset(formData);
+          
+          // Set documents if they exist
+          if (agreement.documents) {
+            setDocuments(agreement.documents);
+          }
+          
+        } catch (error) {
+          console.error("Error loading agreement:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load agreement data",
+            variant: "destructive"
+          });
+        }
+      };
+      
+      loadAgreement();
+    } else if (!isOpen) {
+      // Reset form when modal is closed
       setCurrentStep(1);
       setDocuments({});
       reset();
     }
-  }, [isOpen, reset]);
+  }, [isOpen, agreementId, reset, toast]);
 
   const nextStep = () => {
     if (currentStep < STEPS.length && canProceed(currentStep)) {
