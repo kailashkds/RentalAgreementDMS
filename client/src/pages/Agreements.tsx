@@ -116,25 +116,38 @@ export default function Agreements() {
 
   const handleDownloadAgreement = async (agreement: any) => {
     try {
+      console.log('Starting PDF generation for agreement:', agreement.id);
+      console.log('Agreement data:', {
+        hasOwnerDetails: !!agreement.ownerDetails,
+        hasTenantDetails: !!agreement.tenantDetails,
+        hasPropertyDetails: !!agreement.propertyDetails,
+        hasRentalTerms: !!agreement.rentalTerms,
+        agreementNumber: agreement.agreementNumber
+      });
+
       const response = await fetch('/api/agreements/generate-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ownerDetails: agreement.ownerDetails,
-          tenantDetails: agreement.tenantDetails,
-          propertyDetails: agreement.propertyDetails,
-          rentalTerms: agreement.rentalTerms,
+          ownerDetails: agreement.ownerDetails || {},
+          tenantDetails: agreement.tenantDetails || {},
+          propertyDetails: agreement.propertyDetails || {},
+          rentalTerms: agreement.rentalTerms || {},
           agreementDate: agreement.agreementDate,
           createdAt: agreement.createdAt,
           language: agreement.language || 'english',
           additionalClauses: agreement.additionalClauses || [],
+          agreementNumber: agreement.agreementNumber,
         }),
       });
 
+      console.log('PDF generation response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('PDF generation successful, received HTML');
         
         // Create a temporary HTML page for printing/PDF generation
         const printWindow = window.open('', '_blank');
@@ -143,7 +156,7 @@ export default function Agreements() {
             <!DOCTYPE html>
             <html>
             <head>
-              <title>Rental Agreement - ${agreement.agreementNumber}</title>
+              <title>Rental Agreement - ${agreement.agreementNumber || 'Agreement'}</title>
               <style>
                 body { 
                   font-family: Arial, sans-serif; 
@@ -161,11 +174,13 @@ export default function Agreements() {
                 <button onclick="window.print()">Print / Save as PDF</button>
                 <button onclick="window.close()">Close</button>
               </div>
-              ${data.html}
+              ${data.html || '<p>No agreement content available</p>'}
             </body>
             </html>
           `);
           printWindow.document.close();
+        } else {
+          throw new Error('Could not open print window - popup blocked?');
         }
         
         toast({
@@ -173,12 +188,15 @@ export default function Agreements() {
           description: "Agreement opened in new window for download.",
         });
       } else {
-        throw new Error('Failed to generate PDF');
+        const errorText = await response.text();
+        console.error('PDF generation failed:', response.status, errorText);
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
       }
     } catch (error) {
+      console.error('Download error:', error);
       toast({
         title: "Error",
-        description: "Failed to generate agreement PDF.",
+        description: `Failed to generate agreement PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }

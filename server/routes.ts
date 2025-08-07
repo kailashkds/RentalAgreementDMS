@@ -158,28 +158,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Quick PDF download endpoint for form data
   app.post("/api/agreements/generate-pdf", async (req, res) => {
     try {
+      console.log('PDF generation request received');
+      console.log('Request body keys:', Object.keys(req.body));
+      
       const agreementData = req.body;
+      const language = agreementData.language || 'english';
+      
+      console.log('Processing PDF generation for language:', language);
+      console.log('Agreement data present:', {
+        hasOwnerDetails: !!agreementData.ownerDetails && Object.keys(agreementData.ownerDetails).length > 0,
+        hasTenantDetails: !!agreementData.tenantDetails && Object.keys(agreementData.tenantDetails).length > 0,
+        hasPropertyDetails: !!agreementData.propertyDetails && Object.keys(agreementData.propertyDetails).length > 0,
+        hasRentalTerms: !!agreementData.rentalTerms && Object.keys(agreementData.rentalTerms).length > 0,
+        agreementNumber: agreementData.agreementNumber
+      });
       
       // Find a default template for rental agreements
-      const templates = await storage.getPdfTemplates('rental_agreement', agreementData.language || 'english');
-      const template = templates[0]; // Use first available template
+      const templates = await storage.getPdfTemplates('rental_agreement', language);
+      console.log('Found templates:', templates.length);
+      
+      const template = templates.find(t => t.isActive) || templates[0]; // Use first active or first available template
       
       if (!template) {
-        return res.status(404).json({ message: "No PDF template found for rental agreements" });
+        console.error(`No PDF template found for rental agreements in language: ${language}`);
+        return res.status(404).json({ 
+          message: "No PDF template found for rental agreements",
+          language: language,
+          availableTemplates: templates.map(t => ({ id: t.id, name: t.name, active: t.isActive }))
+        });
       }
 
+      console.log('Using template:', template.name);
+
+      // Ensure all required fields have default values
+      const safeAgreementData = {
+        ownerDetails: agreementData.ownerDetails || {},
+        tenantDetails: agreementData.tenantDetails || {},
+        propertyDetails: agreementData.propertyDetails || {},
+        rentalTerms: agreementData.rentalTerms || {},
+        agreementDate: agreementData.agreementDate,
+        createdAt: agreementData.createdAt,
+        agreementType: 'rental_agreement',
+        additionalClauses: agreementData.additionalClauses || [],
+        agreementNumber: agreementData.agreementNumber,
+        language: language
+      };
+
+      console.log('Generating HTML from template...');
+
       // Generate the HTML with mapped field values
-      const processedHtml = generatePdfHtml(agreementData, template.htmlTemplate);
+      const processedHtml = generatePdfHtml(safeAgreementData, template.htmlTemplate);
+      
+      console.log('PDF generation successful');
       
       // Return HTML for client-side PDF generation
       res.json({
         html: processedHtml,
         templateName: template.name,
+        agreementNumber: agreementData.agreementNumber,
         message: "PDF content generated successfully"
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
-      res.status(500).json({ message: "Failed to generate PDF" });
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+      res.status(500).json({ 
+        message: "Failed to generate PDF",
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
