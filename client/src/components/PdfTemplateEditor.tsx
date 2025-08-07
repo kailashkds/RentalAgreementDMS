@@ -130,23 +130,25 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
   </h1>
   
   <p style="margin: 20px 0;">
-    This Rental Agreement is made on <strong>{{agreement.createdDate}}</strong> between:
+    This Rental Agreement is made on <strong>{{AGREEMENT_DATE}}</strong> between:
   </p>
   
   <div style="margin: 20px 0;">
     <h3>OWNER (Lessor):</h3>
-    <p><strong>Name:</strong> {{owner.name}}</p>
-    <p><strong>Email:</strong> {{owner.email}}</p>
-    <p><strong>Phone:</strong> {{owner.phone}}</p>
-    <p><strong>Address:</strong> {{owner.address}}</p>
+    <p><strong>Name:</strong> {{OWNER_NAME}}</p>
+    <p><strong>Company:</strong> {{OWNER_COMPANY}}</p>
+    <p><strong>Age:</strong> {{OWNER_AGE}}</p>
+    <p><strong>Occupation:</strong> {{OWNER_OCCUPATION}}</p>
+    <p><strong>Address:</strong> {{OWNER_HOUSE_NUMBER}}, {{OWNER_SOCIETY}}, {{OWNER_AREA}}, {{OWNER_CITY}}, {{OWNER_STATE}} - {{OWNER_PINCODE}}</p>
   </div>
   
   <div style="margin: 20px 0;">
     <h3>TENANT (Lessee):</h3>
-    <p><strong>Name:</strong> {{tenant.name}}</p>
-    <p><strong>Email:</strong> {{tenant.email}}</p>
-    <p><strong>Phone:</strong> {{tenant.phone}}</p>
-    <p><strong>Address:</strong> {{tenant.address}}</p>
+    <p><strong>Name:</strong> {{TENANT_NAME}}</p>
+    <p><strong>Company:</strong> {{TENANT_COMPANY}}</p>
+    <p><strong>Age:</strong> {{TENANT_AGE}}</p>
+    <p><strong>Occupation:</strong> {{TENANT_OCCUPATION}}</p>
+    <p><strong>Address:</strong> {{TENANT_HOUSE_NUMBER}}, {{TENANT_SOCIETY}}, {{TENANT_AREA}}, {{TENANT_CITY}}, {{TENANT_STATE}} - {{TENANT_PINCODE}}</p>
   </div>
   
   <div style="margin: 20px 0;">
@@ -156,34 +158,40 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
     <p><strong>Area:</strong> {{PROPERTY_AREA_SQFT}} sq ft</p>
     <p><strong>Purpose:</strong> {{PROPERTY_PURPOSE}}</p>
     <p><strong>Furnished Status:</strong> {{PROPERTY_FURNISHED_STATUS}}</p>
+    <p><strong>Additional Items:</strong> {{ADDITIONAL_ITEMS}}</p>
   </div>
   
   <div style="margin: 20px 0;">
     <h3>RENTAL TERMS:</h3>
-    <p><strong>Monthly Rent:</strong> ₹{{rental.amount}}</p>
-    <p><strong>Security Deposit:</strong> ₹{{rental.securityDeposit}}</p>
-    <p><strong>Lease Period:</strong> {{rental.startDate}} to {{rental.endDate}} ({{rental.tenure}})</p>
+    <p><strong>Monthly Rent:</strong> ₹{{RENT_AMOUNT}} ({{RENT_AMOUNT_WORDS}})</p>
+    <p><strong>Security Deposit:</strong> ₹{{SECURITY_DEPOSIT}} ({{SECURITY_DEPOSIT_WORDS}})</p>
+    <p><strong>Lease Period:</strong> {{START_DATE}} to {{END_DATE}} ({{TENURE}})</p>
+    <p><strong>Payment Due:</strong> {{PAYMENT_DUE_DATE_FROM}} to {{PAYMENT_DUE_DATE_TO}} of each month</p>
+    <p><strong>Minimum Stay:</strong> {{MINIMUM_STAY}}</p>
+    <p><strong>Notice Period:</strong> {{NOTICE_PERIOD}}</p>
   </div>
   
   <div style="margin: 40px 0;">
     <h3>TERMS AND CONDITIONS:</h3>
     <ul style="line-height: 1.6;">
-      <li>The tenant agrees to pay rent on or before the 1st of each month.</li>
+      <li>The tenant agrees to pay rent on or before the due date of each month.</li>
       <li>The security deposit will be refunded after deducting any damages.</li>
       <li>The property should be maintained in good condition.</li>
       <li>No subletting without written consent of the owner.</li>
+      <li>The minimum stay period is {{MINIMUM_STAY}}.</li>
+      <li>{{NOTICE_PERIOD}} notice is required for termination.</li>
     </ul>
   </div>
   
   <div style="margin: 40px 0; display: flex; justify-content: space-between;">
     <div>
       <p><strong>Owner Signature</strong></p>
-      <p style="margin-top: 40px;">{{owner.name}}</p>
+      <p style="margin-top: 40px;">{{OWNER_NAME}}</p>
       <p>Date: ___________</p>
     </div>
     <div>
       <p><strong>Tenant Signature</strong></p>
-      <p style="margin-top: 40px;">{{tenant.name}}</p>
+      <p style="margin-top: 40px;">{{TENANT_NAME}}</p>
       <p>Date: ___________</p>
     </div>
   </div>
