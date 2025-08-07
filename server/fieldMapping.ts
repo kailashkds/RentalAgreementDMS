@@ -125,6 +125,8 @@ const FIELD_MAPPINGS = {
   'rentalTerms.dueDate': 'PAYMENT_DUE_DATE_FROM',
   'rentalTerms.paymentDueDateFrom': 'PAYMENT_DUE_DATE_FROM',
   'rentalTerms.paymentDueDateTo': 'PAYMENT_DUE_DATE_TO',
+  'rentalTerms.paymentDueFromDate': 'PAYMENT_DUE_DATE_FROM',
+  'rentalTerms.paymentDueToDate': 'PAYMENT_DUE_DATE_TO',
   'rentalTerms.noticePeriod': 'NOTICE_PERIOD',
   'rentalTerms.minimumStay': 'MINIMUM_STAY',
   'rentalTerms.renewalPeriod': 'RENEWAL_PERIOD',

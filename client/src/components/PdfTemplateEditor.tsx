@@ -161,17 +161,17 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
     <p><strong>Area:</strong> {{PROPERTY_AREA_SQFT}} sq ft</p>
     <p><strong>Purpose:</strong> {{PROPERTY_PURPOSE}}</p>
     <p><strong>Furnished Status:</strong> {{PROPERTY_FURNISHED_STATUS}}</p>
-    <p><strong>Additional Items:</strong> {{ADDITIONAL_ITEMS}}</p>
+    <p><strong>Furniture/Items:</strong> {{ADDITIONAL_ITEMS}}</p>
   </div>
   
   <div style="margin: 20px 0;">
     <h3>RENTAL TERMS:</h3>
     <p><strong>Monthly Rent:</strong> ₹{{RENT_AMOUNT}} ({{RENT_AMOUNT_WORDS}})</p>
     <p><strong>Security Deposit:</strong> ₹{{SECURITY_DEPOSIT}} ({{SECURITY_DEPOSIT_WORDS}})</p>
-    <p><strong>Maintenance Charge:</strong> {{MAINTENANCE_CHARGE}} {{MAINTENANCE_INCLUSION}}</p>
+    <p><strong>Maintenance Charge:</strong> ₹{{MAINTENANCE_CHARGE}} {{MAINTENANCE_INCLUSION}}</p>
     <p><strong>Lease Period:</strong> {{START_DATE}} to {{END_DATE}} ({{TENURE}})</p>
-    <p><strong>Payment Due Date:</strong> {{PAYMENT_DUE_DATE_FROM}} of each month</p>
-    <p><strong>Notice Period:</strong> {{NOTICE_PERIOD}}</p>
+    <p><strong>Payment Due:</strong> {{PAYMENT_DUE_DATE_FROM}} to {{PAYMENT_DUE_DATE_TO}} of each month</p>
+    <p><strong>Notice Period:</strong> {{NOTICE_PERIOD}} months</p>
   </div>
   
   <div style="margin: 40px 0;">

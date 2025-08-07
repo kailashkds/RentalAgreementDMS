@@ -489,36 +489,75 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     }
 
     try {
-      const response = await fetch(`/api/agreements/generate-pdf`, {
+      // First get the active PDF template for rental agreements
+      const templatesResponse = await fetch('/api/pdf-templates?documentType=rental_agreement&language=english');
+      const templates = await templatesResponse.json();
+      const activeTemplate = templates.find((t: any) => t.isActive);
+      
+      if (!activeTemplate) {
+        toast({
+          title: "Error",
+          description: "No active PDF template found.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Generate PDF with the active template
+      const response = await fetch('/api/generate-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          templateId: activeTemplate.id,
+          agreementData: formData
+        }),
       });
 
       if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `rental-agreement-${Date.now()}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
+        const result = await response.json();
+        
+        // Create a new window to show the PDF content
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Rental Agreement</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                @media print { 
+                  body { margin: 0; }
+                  .no-print { display: none; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="no-print" style="margin-bottom: 20px;">
+                <button onclick="window.print()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px;">Print PDF</button>
+                <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; margin-left: 10px;">Close</button>
+              </div>
+              ${result.html}
+            </body>
+            </html>
+          `);
+          printWindow.document.close();
+        }
         
         toast({
-          title: "PDF Downloaded",
-          description: "Agreement PDF has been downloaded successfully.",
+          title: "PDF Generated",
+          description: "Agreement PDF opened in new window. You can print it from there.",
         });
       } else {
         throw new Error('Failed to generate PDF');
       }
     } catch (error) {
+      console.error('PDF generation error:', error);
       toast({
         title: "Error",
-        description: "Failed to download PDF. Please try again.",
+        description: "Failed to generate PDF. Please try again.",
         variant: "destructive",
       });
     }
