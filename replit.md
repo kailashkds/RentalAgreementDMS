@@ -17,6 +17,8 @@ This is a comprehensive Document Management System (DMS) specifically designed f
 - **Production Domain**: Successfully deployed to office.quickkaraar.com with admin/admin123 credentials
 - **Step Validation System**: Comprehensive validation preventing progression without completing required fields across all 5 wizard steps
 - **Enhanced Document Upload UI**: Professional interface with visual feedback, file size limits, and upload status indicators
+- **Conditional Logic System**: Smart field replacement with if-else conditions for maintenance charge handling
+- **Amount-to-Words Conversion**: Automatic conversion of numeric amounts to Indian format words (25000 → "Twenty Five Thousand")
 
 # User Preferences
 

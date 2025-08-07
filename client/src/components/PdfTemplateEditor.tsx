@@ -72,7 +72,7 @@ const DYNAMIC_FIELDS = {
     { key: "{{SECURITY_DEPOSIT_WORDS}}", label: "Security Deposit (Words)" },
     { key: "{{MAINTENANCE_CHARGE}}", label: "Maintenance Charge" },
     { key: "{{MAINTENANCE_INCLUSION}}", label: "Maintenance Inclusion (Conditional)" },
-    { key: "{{MAINTENANCE_INCLUSION}}", label: "Maintenance Inclusion (Conditional)" },
+    { key: "{{MAINTENANCE_EXCLUSION}}", label: "Maintenance Exclusion (Conditional)" },
     { key: "{{TENURE}}", label: "Tenure (11 Month)" },
     { key: "{{START_DATE}}", label: "Start Date" },
     { key: "{{END_DATE}}", label: "End Date" },

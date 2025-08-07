@@ -264,9 +264,14 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
   if (maintenanceCharge) {
     if (maintenanceCharge.toLowerCase() === 'included in rent') {
       templateFields['MAINTENANCE_INCLUSION'] = 'Inclusion of Maintenance';
+      templateFields['MAINTENANCE_EXCLUSION'] = '';
     } else {
       templateFields['MAINTENANCE_INCLUSION'] = '';
+      templateFields['MAINTENANCE_EXCLUSION'] = 'Exclusion of Maintenance';
     }
+  } else {
+    templateFields['MAINTENANCE_INCLUSION'] = '';
+    templateFields['MAINTENANCE_EXCLUSION'] = '';
   }
 
   // Default values for common fields if not provided
