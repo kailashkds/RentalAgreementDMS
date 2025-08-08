@@ -1476,9 +1476,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                         <SelectValue placeholder={t("selectStatus")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fully_furnished">{t("fullyFurnished")}</SelectItem>
-                        <SelectItem value="semi_furnished">{t("semiFurnished")}</SelectItem>
-                        <SelectItem value="unfurnished">{t("unfurnished")}</SelectItem>
+                        <SelectItem value="fully_furnished">Fully Furnished</SelectItem>
+                        <SelectItem value="semi_furnished">Semi Furnished</SelectItem>
+                        <SelectItem value="unfurnished">Unfurnished</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

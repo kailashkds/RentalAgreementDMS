@@ -51,6 +51,20 @@ export const translations = {
     noticePeriod: "Notice Period (Days)",
     minimumStay: "Minimum Stay (Days)",
     
+    // Agreement sections
+    agreementDuration: "Agreement Duration",
+    agreementStartDate: "Agreement Start Date",
+    agreementTenure: "Agreement Tenure",
+    agreementEndDate: "Agreement End Date",
+    rentalTerms: "Rental Terms",
+    dueDateLabel: "Due Date (Day of Month)",
+    maintenanceCharge: "Maintenance Charge",
+    additionalTerms: "Additional Terms",
+    propertyInformation: "Property Information",
+    propertyDetails: "Property Details",
+    propertyAreaSquareFeet: "Property Area (Square Feet)",
+    placeOfAgreement: "Place of Agreement",
+    
     // Address fields
     flatNo: "Flat/House Number",
     society: "Society/Building",
@@ -84,15 +98,30 @@ export const translations = {
     // Options
     residential: "Residential",
     commercial: "Commercial", 
+    mixedUse: "Mixed Use",
     furnished: "Furnished",
     semifurnished: "Semi-Furnished",
     unfurnished: "Unfurnished",
+    fullyFurnished: "Fully Furnished",
+    semiFurnished: "Semi Furnished",
     included: "Included in Rent",
     excluded: "Excluded from Rent",
     months11: "11 Months",
     year1: "1 Year",
     years2: "2 Years",
-    years3: "3 Years"
+    years3: "3 Years",
+    
+    // Placeholders and examples
+    selectPurpose: "Select Purpose",
+    selectStatus: "Select Status",
+    selectOption: "Select Option",
+    cityName: "City Name",
+    societyBuilding: "Society/Building",
+    listItems: "List items/facilities included with property",
+    amountPlaceholder: "Enter amount",
+    dueDateExample: "e.g., 5 (for 5th of every month)",
+    noticePeriodExample: "e.g., 1",
+    autoCalculated: "Auto-calculated based on start date"
   },
   
   gujarati: {
