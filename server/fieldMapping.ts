@@ -450,10 +450,13 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
 }
 
 /**
- * Processes HTML template by replacing template fields with actual values
+ * Processes HTML template by replacing template fields with actual values and handling conditional logic
  */
 export function processTemplate(htmlTemplate: string, fieldValues: Record<string, string>): string {
   let processedTemplate = htmlTemplate;
+  
+  // First, process conditional statements {{#if FIELD_NAME}} ... {{/if}}
+  processedTemplate = processConditionalLogic(processedTemplate, fieldValues);
   
   // Replace all template fields with actual values
   for (const [fieldName, value] of Object.entries(fieldValues)) {
@@ -464,6 +467,34 @@ export function processTemplate(htmlTemplate: string, fieldValues: Record<string
   // Replace any remaining empty placeholders with empty string
   processedTemplate = processedTemplate.replace(/\{\{[^}]*\}\}/g, '');
 
+  return processedTemplate;
+}
+
+/**
+ * Process conditional logic in templates {{#if FIELD_NAME}} content {{/if}}
+ */
+function processConditionalLogic(template: string, fieldValues: Record<string, string>): string {
+  let processedTemplate = template;
+  
+  // Find all conditional blocks using regex
+  const conditionalRegex = /\{\{#if\s+([^}]+)\}\}([\s\S]*?)\{\{\/if\}\}/gi;
+  
+  processedTemplate = processedTemplate.replace(conditionalRegex, (match, fieldName, content) => {
+    const trimmedFieldName = fieldName.trim();
+    const fieldValue = fieldValues[trimmedFieldName];
+    
+    console.log(`[Conditional Logic] Checking field: ${trimmedFieldName}, value: ${fieldValue}`);
+    
+    // Show content only if field has a value and is not empty
+    if (fieldValue && fieldValue.trim() && fieldValue !== 'undefined' && fieldValue !== 'null') {
+      console.log(`[Conditional Logic] Field ${trimmedFieldName} has value, including content`);
+      return content;
+    } else {
+      console.log(`[Conditional Logic] Field ${trimmedFieldName} is empty/null, excluding content`);
+      return '';
+    }
+  });
+  
   return processedTemplate;
 }
 
@@ -581,7 +612,7 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
   
   for (const fieldName of documentFields) {
     const documentUrl = fieldValues[fieldName];
-    if (documentUrl && documentUrl.trim()) {
+    if (documentUrl && documentUrl.trim() && documentUrl !== 'undefined' && documentUrl !== 'null') {
       try {
         console.log(`[PDF Embedding] Processing document field: ${fieldName} with URL: ${documentUrl}`);
         
@@ -601,6 +632,10 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
         // Fallback to text reference on error
         processedFields[fieldName] = `<p style="color: #999; font-style: italic;">Document attached but preview unavailable.</p>`;
       }
+    } else {
+      // Ensure empty fields are properly handled for conditionals
+      processedFields[fieldName] = '';
+      console.log(`[PDF Embedding] ${fieldName} is empty, setting to empty string for conditionals`);
     }
   }
   

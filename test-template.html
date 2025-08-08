@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Conditional Logic and Document Embedding</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .document-section { margin: 20px 0; padding: 15px; border: 2px solid #ddd; border-radius: 8px; }
+  </style>
+</head>
+<body>
+
+<h1>RENTAL AGREEMENT</h1>
+
+<h2>Owner Details</h2>
+<p><strong>Name:</strong> {{OWNER_NAME}}</p>
+<p><strong>Mobile:</strong> {{OWNER_MOBILE}}</p>
+
+<h2>Documents</h2>
+
+<!-- This will ONLY show if Aadhaar is uploaded -->
+{{#if OWNER_AADHAR_URL}}
+<div class="document-section">
+  <h3>📄 Owner Aadhaar Card</h3>
+  <p>Document uploaded and embedded below:</p>
+  {{OWNER_AADHAR_URL}}
+</div>
+{{/if}}
+
+<!-- This will ONLY show if PAN is uploaded -->
+{{#if OWNER_PAN_URL}}
+<div class="document-section">
+  <h3>📄 Owner PAN Card</h3>
+  <p>Document uploaded and embedded below:</p>
+  {{OWNER_PAN_URL}}
+</div>
+{{/if}}
+
+<!-- This will ONLY show if Tenant Aadhaar is uploaded -->
+{{#if TENANT_AADHAR_URL}}
+<div class="document-section">
+  <h3>📄 Tenant Aadhaar Card</h3>
+  <p>Document uploaded and embedded below:</p>
+  {{TENANT_AADHAR_URL}}
+</div>
+{{/if}}
+
+<!-- This will ONLY show if Tenant PAN is uploaded -->
+{{#if TENANT_PAN_URL}}
+<div class="document-section">
+  <h3>📄 Tenant PAN Card</h3>
+  <p>Document uploaded and embedded below:</p>
+  {{TENANT_PAN_URL}}
+</div>
+{{/if}}
+
+</body>
+</html>
