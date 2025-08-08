@@ -205,9 +205,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       console.log('Generating HTML from template...');
+      console.log('Sample data for mapping:', {
+        purpose: safeAgreementData.propertyDetails?.purpose,
+        furnishedStatus: safeAgreementData.propertyDetails?.furnishedStatus
+      });
 
-      // Generate the HTML with mapped field values
+      // Generate the HTML with mapped field values using the enhanced field mapping system
       const processedHtml = generatePdfHtml(safeAgreementData, template.htmlTemplate);
+      
+      // Debug the field mapping
+      const mappedFields = mapFormDataToTemplateFields(safeAgreementData);
+      console.log('Mapped fields for debugging:', {
+        PROPERTY_PURPOSE: mappedFields.PROPERTY_PURPOSE,
+        PROPERTY_FURNISHED_STATUS: mappedFields.PROPERTY_FURNISHED_STATUS
+      });
       
       // Debug: Check if placeholders are being replaced
       const stillHasPlaceholders = processedHtml.includes('{{');
