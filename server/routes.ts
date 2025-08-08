@@ -192,8 +192,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         language: language
       };
 
+      // Debug: Log the agreement data structure to understand what we're working with
+      console.log("Parsed agreement data:", JSON.stringify(safeAgreementData, null, 2));
+      
       // Generate the HTML with mapped field values using the enhanced field mapping system
       const processedHtml = generatePdfHtml(safeAgreementData, template.htmlTemplate);
+      
+      // Debug: Log first 500 chars of processed HTML to see if replacement is working
+      console.log("First 500 chars of processed HTML:", processedHtml.substring(0, 500));
       
       // Return HTML for client-side PDF generation
       res.json({

@@ -138,6 +138,22 @@ const FIELD_MAPPINGS = {
   
   // Property type mapping
   'propertyDetails.type': 'PROPERTY_TYPE',
+  'propertyDetails.place': 'PROPERTY_PLACE',
+  
+  // Owner mobile and contact info
+  'ownerDetails.mobile': 'OWNER_MOBILE',
+  'ownerDetails.email': 'OWNER_EMAIL',
+  'ownerDetails.aadhar': 'OWNER_AADHAR',
+  'ownerDetails.pan': 'OWNER_PAN',
+  
+  // Tenant mobile and contact info
+  'tenantDetails.mobile': 'TENANT_MOBILE',
+  'tenantDetails.email': 'TENANT_EMAIL',
+  'tenantDetails.aadhar': 'TENANT_AADHAR',
+  'tenantDetails.pan': 'TENANT_PAN',
+  
+  // Maintenance mapping
+  'rentalTerms.maintenance': 'MAINTENANCE_CHARGE',
 };
 
 // Helper function to get nested object property by path
@@ -306,6 +322,10 @@ function numberToWords(num: number): string {
 export function mapFormDataToTemplateFields(formData: any): Record<string, string> {
   const templateFields: Record<string, string> = {};
 
+  // Debug: Log the form data to understand its structure
+  console.log("Mapping form data to template fields...");
+  console.log("Form data keys:", Object.keys(formData));
+  
   // Map all configured fields, handling precedence for granular vs nested
   for (const [formPath, templateField] of Object.entries(FIELD_MAPPINGS)) {
     const value = getNestedProperty(formData, formPath);
@@ -319,9 +339,16 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
         formattedValue = applySmartFormatting(formattedValue, templateField);
         
         templateFields[templateField] = formattedValue;
+        
+        // Debug: Log successful mappings
+        console.log(`Mapped ${formPath} = "${value}" -> ${templateField} = "${formattedValue}"`);
       }
     }
   }
+
+  // Debug: Log total number of mapped fields
+  console.log(`Total fields mapped: ${Object.keys(templateFields).length}`);
+  console.log("All mapped fields:", Object.keys(templateFields));
 
   // Add computed fields (amounts in words)
   // Handle both monthlyRent and rentAmount fields
@@ -329,6 +356,7 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
   if (rentAmount) {
     const rentAmountNum = Number(rentAmount);
     templateFields['RENT_AMOUNT_WORDS'] = numberToWords(rentAmountNum);
+    console.log(`Added computed field: RENT_AMOUNT_WORDS = "${templateFields['RENT_AMOUNT_WORDS']}"`);
   }
 
   // Handle both deposit and securityDeposit fields
@@ -395,13 +423,27 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
 export function processTemplate(htmlTemplate: string, fieldValues: Record<string, string>): string {
   let processedTemplate = htmlTemplate;
 
+  // Debug: Find all placeholders in the template
+  const placeholdersInTemplate = htmlTemplate.match(/\{\{[^}]*\}\}/g) || [];
+  console.log("Placeholders found in template:", placeholdersInTemplate);
+  console.log("Field values available:", Object.keys(fieldValues));
+  
   // Replace all template fields with actual values
   for (const [fieldName, value] of Object.entries(fieldValues)) {
     const templateField = `{{${fieldName}}}`;
-    processedTemplate = processedTemplate.replace(new RegExp(templateField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value || '');
+    const regex = new RegExp(templateField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+    const beforeCount = (processedTemplate.match(regex) || []).length;
+    processedTemplate = processedTemplate.replace(regex, value || '');
+    const afterCount = (processedTemplate.match(regex) || []).length;
+    
+    if (beforeCount > 0) {
+      console.log(`Replaced ${beforeCount} instances of ${templateField} with "${value}"`);
+    }
   }
 
   // Replace any remaining empty placeholders with empty string
+  const remainingPlaceholders = processedTemplate.match(/\{\{[^}]*\}\}/g) || [];
+  console.log("Remaining unreplaced placeholders:", remainingPlaceholders);
   processedTemplate = processedTemplate.replace(/\{\{[^}]*\}\}/g, '');
 
   return processedTemplate;
