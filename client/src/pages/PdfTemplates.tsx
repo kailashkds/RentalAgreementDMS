@@ -99,6 +99,59 @@ export default function PdfTemplates() {
             <style>
               body { font-family: Arial, sans-serif; margin: 20px; }
               .preview-header { border-bottom: 2px solid #ccc; margin-bottom: 20px; padding-bottom: 10px; }
+              
+              /* Page break control classes for PDF generation */
+              .no-page-break,
+              .keep-together,
+              .agreement-section,
+              .clause-section,
+              .signature-section,
+              .terms-section {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                border: 1px dashed #ccc;
+                margin: 5px 0;
+                padding: 5px;
+              }
+              
+              .page-break-before {
+                page-break-before: always;
+                break-before: page;
+                border-top: 2px solid #ff6b6b;
+                margin-top: 20px;
+              }
+              
+              .page-break-after {
+                page-break-after: always;
+                break-after: page;
+                border-bottom: 2px solid #ff6b6b;
+                margin-bottom: 20px;
+              }
+              
+              @media print {
+                .no-page-break,
+                .keep-together,
+                .agreement-section,
+                .clause-section,
+                .signature-section,
+                .terms-section {
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                  border: none;
+                }
+                
+                .page-break-before {
+                  page-break-before: always !important;
+                  break-before: page !important;
+                  border-top: none;
+                }
+                
+                .page-break-after {
+                  page-break-after: always !important;
+                  break-after: page !important;
+                  border-bottom: none;
+                }
+              }
             </style>
           </head>
           <body>

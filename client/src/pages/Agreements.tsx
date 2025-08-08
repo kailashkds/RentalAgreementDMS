@@ -163,9 +163,52 @@ export default function Agreements() {
                   margin: 20px; 
                   line-height: 1.6; 
                 }
+                
+                /* Page break control classes for PDF generation */
+                .no-page-break,
+                .keep-together,
+                .agreement-section,
+                .clause-section,
+                .signature-section,
+                .terms-section {
+                  page-break-inside: avoid;
+                  break-inside: avoid;
+                }
+                
+                .page-break-before {
+                  page-break-before: always;
+                  break-before: page;
+                }
+                
+                .page-break-after {
+                  page-break-after: always;
+                  break-after: page;
+                }
+                
                 @media print {
                   body { margin: 0; }
                   .no-print { display: none; }
+                  
+                  /* Enforce page break controls for print/PDF */
+                  .no-page-break,
+                  .keep-together,
+                  .agreement-section,
+                  .clause-section,
+                  .signature-section,
+                  .terms-section {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                  }
+                  
+                  .page-break-before {
+                    page-break-before: always !important;
+                    break-before: page !important;
+                  }
+                  
+                  .page-break-after {
+                    page-break-after: always !important;
+                    break-after: page !important;
+                  }
                 }
               </style>
             </head>

@@ -445,5 +445,89 @@ export function processTemplate(htmlTemplate: string, fieldValues: Record<string
  */
 export function generatePdfHtml(formData: any, htmlTemplate: string): string {
   const fieldValues = mapFormDataToTemplateFields(formData);
-  return processTemplate(htmlTemplate, fieldValues);
+  let processedHtml = processTemplate(htmlTemplate, fieldValues);
+  
+  // Add page break control CSS if not already present
+  const pageBreakCSS = `
+<style>
+/* Page break control for PDF generation */
+.no-page-break {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.page-break-before {
+  page-break-before: always;
+  break-before: page;
+}
+
+.page-break-after {
+  page-break-after: always;
+  break-after: page;
+}
+
+.keep-together {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  orphans: 3;
+  widows: 3;
+}
+
+/* Specific content that should stay together */
+.agreement-section {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin-bottom: 20px;
+}
+
+.clause-section {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin-bottom: 15px;
+}
+
+.signature-section {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin-top: 30px;
+}
+
+.terms-section {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Print media specific rules */
+@media print {
+  .no-page-break, .keep-together, .agreement-section, .clause-section, .signature-section, .terms-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+</style>`;
+
+  // Insert CSS into the HTML if it doesn't already contain page break styles
+  if (!processedHtml.includes('page-break-inside') && !processedHtml.includes('<style')) {
+    // Add CSS at the beginning of the HTML
+    processedHtml = pageBreakCSS + processedHtml;
+  } else if (!processedHtml.includes('page-break-inside')) {
+    // If there's already a style tag, add our CSS rules inside the existing one
+    processedHtml = processedHtml.replace('</style>', `
+/* Page break control for PDF generation */
+.no-page-break, .keep-together, .agreement-section, .clause-section, .signature-section, .terms-section {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.page-break-before { page-break-before: always; break-before: page; }
+.page-break-after { page-break-after: always; break-after: page; }
+@media print {
+  .no-page-break, .keep-together, .agreement-section, .clause-section, .signature-section, .terms-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+</style>`);
+  }
+  
+  return processedHtml;
 }
