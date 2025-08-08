@@ -1042,7 +1042,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <Input {...register("ownerDetails.address.flatNo", { required: "Flat/House No. is required" })} />
                 </div>
                 <div className="relative">
-                  <Label>{t("societyApartment")}</Label>
+                  <Label>{t("society")}</Label>
                   <Input 
                     {...register("ownerDetails.address.society", { required: "Society/Apartment name is required" })}
                     placeholder={t("startTypingSociety")}
@@ -1251,7 +1251,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <Input {...register("tenantDetails.address.flatNo", { required: "Flat/House No. is required" })} />
                 </div>
                 <div className="relative">
-                  <Label>{t("societyApartment")}</Label>
+                  <Label>{t("society")}</Label>
                   <Input 
                     {...register("tenantDetails.address.society", { required: "Society/Apartment name is required" })}
                     placeholder={t("startTypingSociety")}

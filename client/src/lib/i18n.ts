@@ -121,7 +121,20 @@ export const translations = {
     amountPlaceholder: "Enter amount",
     dueDateExample: "e.g., 5 (for 5th of every month)",
     noticePeriodExample: "e.g., 1",
-    autoCalculated: "Auto-calculated based on start date"
+    autoCalculated: "Auto-calculated based on start date",
+    
+    // Missing section headers and labels
+    addressDetails: "Address Details",
+    documents: "Documents",
+    optional: "(Optional)",
+    aadharCard: "Aadhar Card",
+    panCardLabel: "PAN Card",
+    uploadAadharCard: "Upload Aadhar Card",
+    aadharCardUploaded: "Aadhar Card Uploaded",
+    fileSizeNote: "Max file size: 5MB",
+    createNewAgreement: "Create New Agreement",
+    copyCustomerDetails: "Copy Customer Details",
+    societyApartment: "Society/Apartment"
   },
   
   gujarati: {
@@ -216,7 +229,49 @@ export const translations = {
     months11: "11 મહિના",
     year1: "1 વર્ષ", 
     years2: "2 વર્ષ",
-    years3: "3 વર્ષ"
+    years3: "3 વર્ષ",
+    
+    // Agreement sections (Gujarati)
+    agreementDuration: "કરારની અવધિ",
+    agreementStartDate: "કરારની શરૂઆતની તારીખ",
+    agreementTenure: "કરારનો કાર્યકાળ",
+    agreementEndDate: "કરારની અંતિમ તારીખ",
+    rentalTerms: "ભાડાની શરતો",
+    dueDateLabel: "બાકી તારીખ (મહિનાનો દિવસ)",
+    maintenanceCharge: "જાળવણી ચાર્જ",
+    additionalTerms: "વધારાની શરતો",
+    propertyInformation: "મકાનની માહિતી",
+    propertyDetails: "મકાનની વિગતો",
+    propertyAreaSquareFeet: "મકાનનો વિસ્તાર (ચોરસ ફૂટ)",
+    placeOfAgreement: "કરારનું સ્થળ",
+    mixedUse: "મિશ્ર ઉપયોગ",
+    fullyFurnished: "સંપૂર્ણ ફર્નિશ્ડ",
+    semiFurnished: "અર્ધ ફર્નિશ્ડ",
+    
+    // Placeholders and examples (Gujarati)
+    selectPurpose: "હેતુ પસંદ કરો",
+    selectStatus: "સ્થિતિ પસંદ કરો",
+    selectOption: "વિકલ્પ પસંદ કરો",
+    cityName: "શહેરનું નામ",
+    societyBuilding: "સોસાયટી/બિલ્ડિંગ",
+    listItems: "મકાન સાથે આવતી વસ્તુઓ/સુવિધાઓની યાદી",
+    amountPlaceholder: "રકમ દાખલ કરો",
+    dueDateExample: "દા.ત., 5 (દર મહિનાની 5મી તારીખ માટે)",
+    noticePeriodExample: "દા.ત., 1",
+    autoCalculated: "શરૂઆતની તારીખના આધારે આપમેળે ગણવામાં આવે છે",
+    
+    // Missing section headers and labels (Gujarati)
+    addressDetails: "સરનામાની વિગતો",
+    documents: "દસ્તાવેજો",
+    optional: "(વૈકલ્પિક)",
+    aadharCard: "આધાર કાર્ડ",
+    panCardLabel: "પેન કાર્ડ",
+    uploadAadharCard: "આધાર કાર્ડ અપલોડ કરો",
+    aadharCardUploaded: "આધાર કાર્ડ અપલોડ થયું",
+    fileSizeNote: "મહત્તમ ફાઇલ સાઇઝ: 5MB",
+    createNewAgreement: "નવો કરાર બનાવો",
+    copyCustomerDetails: "ગ્રાહકની વિગતો કોપી કરો",
+    societyApartment: "સોસાયટી/એપાર્ટમેન્ટ"
   },
   
   hindi: {
