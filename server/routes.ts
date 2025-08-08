@@ -410,11 +410,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Object storage routes for document uploads
   app.get("/objects/:objectPath(*)", async (req, res) => {
     const objectStorageService = new ObjectStorageService();
+    const objectPath = req.path;
+    console.log(`[Object Access] Requested path: ${objectPath}`);
+    
     try {
-      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+      console.log(`[Object Access] File found, serving: ${objectFile.name}`);
       objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
-      console.error("Error accessing object:", error);
+      console.error(`[Object Access] Error accessing object at path ${objectPath}:`, error);
       if (error instanceof ObjectNotFoundError) {
         return res.sendStatus(404);
       }

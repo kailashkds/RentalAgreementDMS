@@ -156,25 +156,40 @@ export class ObjectStorageService {
 
   // Gets the object entity file from the object path.
   async getObjectEntityFile(objectPath: string): Promise<File> {
+    console.log(`[ObjectStorage] getObjectEntityFile called with: ${objectPath}`);
+    
     if (!objectPath.startsWith("/objects/")) {
+      console.log(`[ObjectStorage] Invalid path prefix: ${objectPath}`);
       throw new ObjectNotFoundError();
     }
 
     const parts = objectPath.slice(1).split("/");
     if (parts.length < 2) {
+      console.log(`[ObjectStorage] Invalid path parts: ${parts}`);
       throw new ObjectNotFoundError();
     }
 
     const entityId = parts.slice(1).join("/");
+    console.log(`[ObjectStorage] Extracted entityId: ${entityId}`);
+    
     let entityDir = this.getPrivateObjectDir();
     if (!entityDir.endsWith("/")) {
       entityDir = `${entityDir}/`;
     }
+    
+    // The entityId should already include the uploads/ prefix since files are uploaded to /uploads/uuid
     const objectEntityPath = `${entityDir}${entityId}`;
+    console.log(`[ObjectStorage] Full object path: ${objectEntityPath}`);
+    
     const { bucketName, objectName } = parseObjectPath(objectEntityPath);
+    console.log(`[ObjectStorage] Bucket: ${bucketName}, Object: ${objectName}`);
+    
     const bucket = objectStorageClient.bucket(bucketName);
     const objectFile = bucket.file(objectName);
     const [exists] = await objectFile.exists();
+    
+    console.log(`[ObjectStorage] File exists: ${exists}`);
+    
     if (!exists) {
       throw new ObjectNotFoundError();
     }

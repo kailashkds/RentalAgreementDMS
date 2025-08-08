@@ -27,7 +27,16 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
         const [, bucket, objectPath] = match;
         // Remove any query parameters
         const cleanObjectPath = objectPath.split('?')[0];
-        return `/objects/${cleanObjectPath}`;
+        
+        // The uploaded files are in the format: /bucketname/uploads/uuid
+        // We need to extract just the uploads/uuid part for our proxy route
+        if (cleanObjectPath.includes('/uploads/')) {
+          const uploadsIndex = cleanObjectPath.indexOf('/uploads/');
+          const relativePath = cleanObjectPath.substring(uploadsIndex + 1); // Remove leading slash from /uploads/
+          return `/objects/${relativePath}`;
+        } else {
+          return `/objects/${cleanObjectPath}`;
+        }
       }
     }
     return url;
