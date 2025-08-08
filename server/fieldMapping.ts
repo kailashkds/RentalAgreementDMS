@@ -2,6 +2,7 @@
 // Maps form field names to template field names
 
 import { ObjectStorageService } from './objectStorage';
+import { localFileStorage } from './localFileStorage';
 
 export interface FormData {
   ownerDetails: {
@@ -623,7 +624,6 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string): Prom
  */
 async function processDocumentEmbedding(fieldValues: Record<string, string>, formData: any): Promise<Record<string, string>> {
   const processedFields = { ...fieldValues };
-  const objectStorage = new ObjectStorageService();
   
   // Document URL fields that should be processed for embedding
   const documentFields = [
@@ -636,24 +636,40 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
   
   for (const fieldName of documentFields) {
     const documentUrl = fieldValues[fieldName];
-    if (documentUrl && documentUrl.trim() && documentUrl !== 'undefined' && documentUrl !== 'null') {
+    if (documentUrl && documentUrl.trim() && documentUrl !== 'undefined' && documentUrl !== 'null' && documentUrl !== '[object Object]') {
       try {
         console.log(`[PDF Embedding] Processing document field: ${fieldName} with URL: ${documentUrl}`);
         
-        // Convert document URL to embedded HTML
-        const embeddedContent = await createEmbeddedDocumentHtml(documentUrl, fieldName, objectStorage);
-        if (embeddedContent) {
-          // Replace the URL with embedded HTML content
-          processedFields[fieldName] = embeddedContent;
-          console.log(`[PDF Embedding] Successfully embedded content for ${fieldName}`);
+        // Save file locally from URL and convert to embedded HTML
+        const localFileName = await localFileStorage.saveFileFromUrl(documentUrl, `${fieldName}.jpg`);
+        
+        if (localFileName) {
+          // Get file as base64 data URL
+          const base64DataUrl = await localFileStorage.getFileAsBase64(localFileName);
+          
+          if (base64DataUrl && localFileStorage.isEmbeddableFileType(localFileName)) {
+            // Create embedded HTML with professional styling
+            const documentType = getDocumentTypeFromFieldName(fieldName);
+            const embeddedImage = `
+              <div style="margin: 10px 0; text-align: center; page-break-inside: avoid;">
+                <p style="margin: 5px 0; font-weight: bold; color: #333; font-size: 12px;">${documentType}</p>
+                <img src="${base64DataUrl}" 
+                     style="max-width: 200px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" 
+                     alt="${documentType}" />
+              </div>
+            `;
+            processedFields[fieldName] = embeddedImage;
+            console.log(`[PDF Embedding] Successfully embedded ${fieldName} as image from local file`);
+          } else {
+            processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document uploaded successfully.</p>`;
+            console.log(`[PDF Embedding] Could not convert ${fieldName} to base64 or unsupported type`);
+          }
         } else {
-          // Fallback to text reference
-          processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document attached but cannot be embedded for display.</p>`;
-          console.log(`[PDF Embedding] Could not embed ${fieldName}, using fallback text`);
+          processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document uploaded successfully.</p>`;
+          console.log(`[PDF Embedding] Could not save ${fieldName} locally`);
         }
       } catch (error) {
         console.error(`[PDF Embedding] Error processing ${fieldName}:`, error);
-        // Fallback to text reference on error
         processedFields[fieldName] = `<p style="color: #999; font-style: italic;">Document attached but preview unavailable.</p>`;
       }
     } else {
