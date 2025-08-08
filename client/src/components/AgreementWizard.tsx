@@ -623,10 +623,17 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   // Fill customer details including any associated address
   const fillCustomerDetails = (customer: any, userType: 'owner' | 'tenant') => {
+    console.log('Filling customer details for:', userType, customer);
+    
     if (userType === 'owner') {
       setValue("ownerDetails.name", customer.name);
       setValue("ownerDetails.mobile", customer.mobile);
       setValue("ownerDetails.email", customer.email || "");
+      
+      // Also set additional fields if available
+      if (customer.age) setValue("ownerDetails.age", customer.age);
+      if (customer.occupation) setValue("ownerDetails.occupation", customer.occupation);
+      if (customer.company) setValue("ownerDetails.company", customer.company);
       
       // Fill address if available (from most recent agreement)
       fillAssociatedAddress(customer.id, userType);
@@ -635,9 +642,16 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       setValue("tenantDetails.mobile", customer.mobile);
       setValue("tenantDetails.email", customer.email || "");
       
+      // Also set additional fields if available
+      if (customer.age) setValue("tenantDetails.age", customer.age);
+      if (customer.occupation) setValue("tenantDetails.occupation", customer.occupation);
+      if (customer.company) setValue("tenantDetails.company", customer.company);
+      
       // Fill address if available (from most recent agreement)
       fillAssociatedAddress(customer.id, userType);
     }
+    
+    console.log('Set form values, current form state:', watch());
   };
 
   // Fill associated address from customer's previous agreements
@@ -652,22 +666,24 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         let addressData = null;
         
         // Get address from owner or tenant details based on user type
-        if (userType === 'owner' && lastAgreement.ownerDetails?.address) {
-          addressData = lastAgreement.ownerDetails.address;
-        } else if (userType === 'tenant' && lastAgreement.tenantDetails?.address) {
-          addressData = lastAgreement.tenantDetails.address;
+        // Check both nested address and flat structure
+        if (userType === 'owner') {
+          addressData = lastAgreement.ownerDetails?.address || lastAgreement.ownerDetails;
+        } else if (userType === 'tenant') {
+          addressData = lastAgreement.tenantDetails?.address || lastAgreement.tenantDetails;
         }
+        
+        console.log('Address data found:', addressData);
         
         if (addressData) {
           const prefix = userType === 'owner' ? 'ownerDetails' : 'tenantDetails';
-          setValue(`${prefix}.address.flatNo`, addressData.flatNo || "");
-          setValue(`${prefix}.address.society`, addressData.society || "");
-          setValue(`${prefix}.address.area`, addressData.area || "");
-          setValue(`${prefix}.address.city`, addressData.city || "");
-          setValue(`${prefix}.address.state`, addressData.state || "");
-          setValue(`${prefix}.address.pincode`, addressData.pincode || "");
-          setValue(`${prefix}.address.district`, addressData.district || "");
-          setValue(`${prefix}.address.landmark`, addressData.landmark || "");
+          // Map to current flat form structure (not nested address)
+          setValue(`${prefix}.houseNumber`, addressData.flatNo || addressData.houseNumber || "");
+          setValue(`${prefix}.society`, addressData.society || "");
+          setValue(`${prefix}.area`, addressData.area || "");
+          setValue(`${prefix}.city`, addressData.city || "");
+          setValue(`${prefix}.state`, addressData.state || "");
+          setValue(`${prefix}.pincode`, addressData.pincode || "");
           
           toast({
             title: "Address Auto-filled ✓",
