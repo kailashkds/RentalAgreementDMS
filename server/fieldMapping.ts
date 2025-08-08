@@ -162,6 +162,7 @@ const FIELD_MAPPINGS = {
   'tenantDocuments.aadharUrl': 'TENANT_AADHAR_URL',
   'tenantDocuments.panUrl': 'TENANT_PAN_URL',
   'documents.propertyUrl': 'PROPERTY_DOCUMENTS_URL',
+  'propertyDocuments.urls': 'PROPERTY_DOCUMENTS_URL',
 };
 
 // Helper function to get nested object property by path

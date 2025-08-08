@@ -1584,6 +1584,52 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   </div>
                 </div>
               </div>
+
+              {/* Property Documents Upload Section */}
+              <div className="space-y-4">
+                <h4 className="text-md font-semibold text-gray-800 mb-4">Property Documents (Optional)</h4>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Property Documents (NOC, Sale Deed, etc.)</Label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                      <Input 
+                        type="file" 
+                        accept="image/*,.pdf" 
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 0) {
+                            // Simulate file upload URLs (in real app, upload to storage and get URLs)
+                            const mockUrls = files.map((file, index) => 
+                              `/uploads/property_doc_${Date.now()}_${index}.${file.name.split('.').pop()}`
+                            );
+                            setValue("propertyDocuments.urls", mockUrls);
+                            console.log("Property documents uploaded:", mockUrls);
+                          }
+                        }}
+                        className="hidden" 
+                        id="propertyDocuments"
+                      />
+                      <label htmlFor="propertyDocuments" className="cursor-pointer">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <Plus className="w-6 h-6 text-gray-500" />
+                          </div>
+                          <p className="text-sm text-gray-600">Click to upload property documents</p>
+                          <p className="text-xs text-gray-500">NOC, Sale Deed, Property Papers (Max 5MB each)</p>
+                        </div>
+                      </label>
+                    </div>
+                    {watch("propertyDocuments.urls")?.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-green-600">
+                          ✓ {watch("propertyDocuments.urls").length} document(s) uploaded
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div>
