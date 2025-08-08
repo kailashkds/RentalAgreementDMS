@@ -16,6 +16,7 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import CustomerModal from "@/components/CustomerModal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { getTranslation } from "@/lib/i18n";
 import type { UploadResult } from "@uppy/core";
 import type { OwnerDetails, TenantDetails, PropertyDetails, RentalTerms } from "@shared/schema";
 
@@ -96,6 +97,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   const watchedLanguage = watch("language");
   const watchedCustomerId = watch("customerId");
   const formData = watch();
+
+  // Get current language for translations
+  const currentLanguage = watchedLanguage || "english";
+  const t = (key: string) => getTranslation(currentLanguage, key);
 
   // Helper functions for address autocomplete
   const handleAddressSelect = (addressType: 'owner' | 'tenant' | 'property', address: any) => {
@@ -664,14 +669,14 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       case 1:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800">Step 1: Customer Selection & Language</h3>
+            <h3 className="text-lg font-semibold text-gray-800">{t("step1Title")}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="customerId">Select Customer</Label>
+                <Label htmlFor="customerId">{t("selectCustomer")}</Label>
                 <Select value={watch("customerId")} onValueChange={(value) => setValue("customerId", value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Search for existing customer..." />
+                    <SelectValue placeholder={t("searchCustomer")} />
                   </SelectTrigger>
                   <SelectContent>
                     {customersData?.customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer) => (
@@ -689,12 +694,12 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   className="mt-2 text-blue-600 hover:text-blue-700"
                 >
                   <Plus className="mr-1 h-4 w-4" />
-                  Create New Customer
+                  {t("createNewCustomer")}
                 </Button>
               </div>
 
               <div>
-                <Label htmlFor="language">Agreement Language</Label>
+                <Label htmlFor="language">{t("selectLanguage")}</Label>
                 <Select value={watchedLanguage} onValueChange={(value) => setValue("language", value)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -716,7 +721,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-800">Step 2: Landlord Details</h3>
+              <h3 className="text-lg font-semibold text-gray-800">{t("step2Title")}</h3>
               <Button
                 type="button"
                 variant="outline"
@@ -730,14 +735,14 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="ownerName">Full Name</Label>
-                <Input {...register("ownerDetails.name", { required: "Name is required" })} placeholder="Enter landlord's full name" />
+                <Label htmlFor="ownerName">{t("ownerName")}</Label>
+                <Input {...register("ownerDetails.name", { required: "Name is required" })} placeholder={t("ownerName")} />
                 {errors.ownerDetails?.name && (
                   <p className="text-sm text-red-600 mt-1">{errors.ownerDetails.name.message}</p>
                 )}
               </div>
               <div>
-                <Label htmlFor="ownerMobile">Mobile Number</Label>
+                <Label htmlFor="ownerMobile">{t("ownerMobile")}</Label>
                 <div className="relative">
                   <Input 
                     {...register("ownerDetails.mobile", { required: "Mobile is required" })} 
@@ -1420,7 +1425,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 disabled={currentStep === 1}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Previous
+                {t("previous")}
               </Button>
               <div className="flex space-x-3">
                 <Button
@@ -1429,7 +1434,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   onClick={handleSubmit(saveDraft)}
                   className="bg-amber-600 text-white hover:bg-amber-700"
                 >
-                  Save as Draft
+                  {t("saveDraft")}
                 </Button>
                 <Button 
                   type="button" 
@@ -1441,7 +1446,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                       : "bg-gray-400 cursor-not-allowed"
                   }`}
                 >
-                  {currentStep === STEPS.length - 1 ? "Create Agreement" : "Next"}
+                  {currentStep === STEPS.length - 1 ? t("createAgreement") : t("next")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>

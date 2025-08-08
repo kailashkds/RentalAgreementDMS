@@ -1,3 +1,204 @@
+// Multi-language support for the application
+export const translations = {
+  english: {
+    // Step titles
+    step1Title: "Step 1: Customer Selection & Language",
+    step2Title: "Step 2: Owner/Landlord Details", 
+    step3Title: "Step 3: Tenant Details",
+    step4Title: "Step 4: Property & Rental Terms",
+    step5Title: "Step 5: Review & Create Agreement",
+    
+    // Common labels
+    selectCustomer: "Select Customer",
+    searchCustomer: "Search for existing customer...",
+    createNewCustomer: "Create New Customer",
+    language: "Language",
+    selectLanguage: "Select Agreement Language",
+    
+    // Owner details
+    ownerName: "Owner Name",
+    ownerMobile: "Mobile Number",
+    ownerAge: "Age",
+    ownerOccupation: "Occupation",
+    ownerAadhar: "Aadhar Number",
+    ownerPan: "PAN Card Number",
+    ownerAddress: "Owner Address",
+    
+    // Tenant details  
+    tenantName: "Tenant Name",
+    tenantMobile: "Mobile Number",
+    tenantAge: "Age",
+    tenantOccupation: "Occupation",
+    tenantAddress: "Tenant Address",
+    
+    // Property details
+    propertyType: "Property Type",
+    propertyPlace: "Place/Locality", 
+    propertyAddress: "Property Address",
+    areaInSqFt: "Area (Sq Ft)",
+    additionalItems: "Additional Items/Facilities",
+    purpose: "Purpose",
+    furnishedStatus: "Furnished Status",
+    
+    // Rental terms
+    tenure: "Tenure",
+    startDate: "Start Date",
+    endDate: "End Date", 
+    deposit: "Security Deposit",
+    monthlyRent: "Monthly Rent",
+    dueDate: "Rent Due Date",
+    maintenance: "Maintenance",
+    noticePeriod: "Notice Period (Days)",
+    minimumStay: "Minimum Stay (Days)",
+    
+    // Address fields
+    flatNo: "Flat/House Number",
+    society: "Society/Building",
+    area: "Area",
+    city: "City",
+    state: "State",
+    pincode: "Pincode",
+    
+    // Buttons
+    previous: "Previous",
+    next: "Next",
+    saveDraft: "Save as Draft",
+    createAgreement: "Create Agreement",
+    downloadPdf: "Download PDF",
+    
+    // Options
+    residential: "Residential",
+    commercial: "Commercial", 
+    furnished: "Furnished",
+    semifurnished: "Semi-Furnished",
+    unfurnished: "Unfurnished",
+    included: "Included in Rent",
+    excluded: "Excluded from Rent",
+    months11: "11 Months",
+    year1: "1 Year",
+    years2: "2 Years",
+    years3: "3 Years"
+  },
+  
+  gujarati: {
+    // Step titles
+    step1Title: "પગલું 1: ગ્રાહક પસંદગી અને ભાષા",
+    step2Title: "પગલું 2: માલિક/ભાડાકર્તાની વિગતો",
+    step3Title: "પગલું 3: ભાડુઆતની વિગતો", 
+    step4Title: "પગલું 4: મકાન અને ભાડાની શરતો",
+    step5Title: "પગલું 5: સમીક્ષા અને કરાર બનાવો",
+    
+    // Common labels
+    selectCustomer: "ગ્રાહક પસંદ કરો",
+    searchCustomer: "હાલના ગ્રાહક માટે શોધો...",
+    createNewCustomer: "નવો ગ્રાહક બનાવો",
+    language: "ભાષા",
+    selectLanguage: "કરારની ભાષા પસંદ કરો",
+    
+    // Owner details
+    ownerName: "માલિકનું નામ",
+    ownerMobile: "મોબાઇલ નંબર",
+    ownerAge: "ઉંમર", 
+    ownerOccupation: "ધંધો",
+    ownerAadhar: "આધાર નંબર",
+    ownerPan: "પેન કાર્ડ નંબર",
+    ownerAddress: "માલિકનું સરનામું",
+    
+    // Tenant details
+    tenantName: "ભાડુઆતનું નામ",
+    tenantMobile: "મોબાઇલ નંબર", 
+    tenantAge: "ઉંમર",
+    tenantOccupation: "ધંધો",
+    tenantAddress: "ભાડુઆતનું સરનામું",
+    
+    // Property details
+    propertyType: "મકાનનો પ્રકાર",
+    propertyPlace: "સ્થળ/વિસ્તાર",
+    propertyAddress: "મકાનનું સરનામું", 
+    areaInSqFt: "વિસ્તાર (ચો ફૂટ)",
+    additionalItems: "વધારાની વસ્તુઓ/સુવિધાઓ",
+    purpose: "હેતુ",
+    furnishedStatus: "ફર્નિશ્ડ સ્થિતિ",
+    
+    // Rental terms
+    tenure: "મુદત",
+    startDate: "શરૂઆતની તારીખ",
+    endDate: "અંતિમ તારીખ",
+    deposit: "જામીન રકમ", 
+    monthlyRent: "માસિક ભાડું",
+    dueDate: "ભાડાની નિયત તારીખ",
+    maintenance: "જાળવણી",
+    noticePeriod: "નોટિસ પીરિયડ (દિવસો)",
+    minimumStay: "ન્યૂનતમ રહેઠાણ (દિવસો)",
+    
+    // Address fields
+    flatNo: "ફ્લેટ/મકાન નંબર",
+    society: "સોસાયટી/બિલ્ડિંગ",
+    area: "વિસ્તાર", 
+    city: "શહેર",
+    state: "રાજ્ય",
+    pincode: "પિનકોડ",
+    
+    // Buttons
+    previous: "પાછળ",
+    next: "આગળ",
+    saveDraft: "ડ્રાફ્ટ સેવ કરો", 
+    createAgreement: "કરાર બનાવો",
+    downloadPdf: "પીડીએફ ડાઉનલોડ કરો",
+    
+    // Options
+    residential: "રહેણાંક",
+    commercial: "વ્યાપારી",
+    furnished: "ફર્નિશ્ડ", 
+    semifurnished: "અર્ધ-ફર્નિશ્ડ",
+    unfurnished: "બિન-ફર્નિશ્ડ",
+    included: "ભાડામાં સમાવેશ",
+    excluded: "ભાડામાંથી બાકાત",
+    months11: "11 મહિના",
+    year1: "1 વર્ષ", 
+    years2: "2 વર્ષ",
+    years3: "3 વર્ષ"
+  },
+  
+  hindi: {
+    // Step titles
+    step1Title: "चरण 1: ग्राहक चयन और भाषा",
+    step2Title: "चरण 2: मालिक/किराया देने वाले की जानकारी",
+    step3Title: "चरण 3: किरायेदार की जानकारी",
+    step4Title: "चरण 4: संपत्ति और किराया शर्तें", 
+    step5Title: "चरण 5: समीक्षा और अनुबंध बनाएं",
+    
+    // Common labels
+    selectCustomer: "ग्राहक चुनें",
+    searchCustomer: "मौजूदा ग्राहक खोजें...",
+    createNewCustomer: "नया ग्राहक बनाएं",
+    language: "भाषा",
+    selectLanguage: "अनुबंध की भाषा चुनें",
+    
+    // Owner details
+    ownerName: "मालिक का नाम",
+    ownerMobile: "मोबाइल नंबर",
+    ownerAge: "आयु",
+    ownerOccupation: "पेशा",
+    ownerAadhar: "आधार नंबर", 
+    ownerPan: "पैन कार्ड नंबर",
+    ownerAddress: "मालिक का पता",
+    
+    // Continue with Hindi translations...
+    // (I'll add more if needed, but focusing on Gujarati for now)
+  }
+};
+
+export function getTranslation(language: string, key: string): string {
+  const lang = language as keyof typeof translations;
+  const translation = translations[lang]?.[key as keyof typeof translations['english']];
+  return translation || translations.english[key as keyof typeof translations['english']] || key;
+}
+
+export function useTranslation(language: string) {
+  return (key: string) => getTranslation(language, key);
+}
+
 export const LANGUAGES = [
   { value: "english", label: "English" },
   { value: "hindi", label: "Hindi (हिन्दी)" },
@@ -9,136 +210,4 @@ export const LANGUAGES = [
 export const getLanguageLabel = (value: string): string => {
   const language = LANGUAGES.find(lang => lang.value === value);
   return language?.label || "English";
-};
-
-// Translation keys for form labels based on selected language
-export const translations = {
-  english: {
-    // Step 1
-    selectCustomer: "Select Customer",
-    agreementLanguage: "Agreement Language",
-    createNewCustomer: "Create New Customer",
-    
-    // Step 2 - Landlord
-    landlordDetails: "Landlord Details",
-    fullName: "Full Name",
-    mobileNumber: "Mobile Number",
-    age: "Age",
-    occupation: "Occupation",
-    aadharNumber: "Aadhar Number",
-    panCardNumber: "PAN Card Number",
-    addressDetails: "Address Details",
-    flatHouseNo: "Flat/House No.",
-    societyApartment: "Society/Apartment",
-    area: "Area",
-    city: "City",
-    documents: "Documents (Optional)",
-    aadharCard: "Aadhar Card",
-    panCard: "PAN Card",
-    
-    // Step 3 - Tenant
-    tenantDetails: "Tenant Details",
-    copyFromCustomer: "Copy from Customer",
-    
-    // Step 4 - Property
-    propertyDetails: "Property Details & Rental Terms",
-    propertyInformation: "Property Information",
-    propertyType: "Property Type",
-    placeOfAgreement: "Place of Agreement",
-    rentalTerms: "Rental Terms",
-    advanceDeposit: "Advance Deposit (₹)",
-    monthlyRent: "Monthly Rent (₹)",
-    rentDueDate: "Rent Due Date",
-    additionalTerms: "Additional Terms",
-    maintenanceCharge: "Maintenance Charge",
-    noticePeriod: "Notice Period (Months)",
-    furnitureItems: "Furniture/Items Included",
-    
-    // Step 5 - Finalize
-    additionalConditions: "Additional Conditions & Finalize",
-    additionalClauses: "Additional Clauses",
-    addClause: "Add Clause",
-    agreementSummary: "Agreement Summary",
-    
-    // Common
-    customer: "Customer",
-    language: "Language",
-    property: "Property",
-    duration: "Duration",
-    deposit: "Deposit",
-    saveDraft: "Save as Draft",
-    createAgreement: "Create Agreement",
-    previous: "Previous",
-    next: "Next",
-  },
-  hindi: {
-    // Basic translations - in a real app, you'd have comprehensive translations
-    selectCustomer: "ग्राहक चुनें",
-    agreementLanguage: "समझौते की भाषा",
-    fullName: "पूरा नाम",
-    mobileNumber: "मोबाइल नंबर",
-    // ... more translations would go here
-  },
-  // Add other languages as needed
-};
-
-export const getTranslation = (key: string, language: string = "english"): string => {
-  const langTranslations = translations[language as keyof typeof translations] || translations.english;
-  return langTranslations[key as keyof typeof langTranslations] || key;
-};
-
-// Date formatting based on locale
-export const formatDate = (date: Date | string, language: string = "english"): string => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
-  const localeMap = {
-    english: 'en-US',
-    hindi: 'hi-IN',
-    gujarati: 'gu-IN',
-    tamil: 'ta-IN',
-    marathi: 'mr-IN',
-  };
-  
-  const locale = localeMap[language as keyof typeof localeMap] || 'en-US';
-  
-  return dateObj.toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
-
-// Currency formatting for Indian Rupees
-export const formatCurrency = (amount: number, language: string = "english"): string => {
-  const localeMap = {
-    english: 'en-IN',
-    hindi: 'hi-IN',
-    gujarati: 'gu-IN',
-    tamil: 'ta-IN',
-    marathi: 'mr-IN',
-  };
-  
-  const locale = localeMap[language as keyof typeof localeMap] || 'en-IN';
-  
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
-// Number formatting for different locales
-export const formatNumber = (number: number, language: string = "english"): string => {
-  const localeMap = {
-    english: 'en-IN',
-    hindi: 'hi-IN',
-    gujarati: 'gu-IN',
-    tamil: 'ta-IN',
-    marathi: 'mr-IN',
-  };
-  
-  const locale = localeMap[language as keyof typeof localeMap] || 'en-IN';
-  
-  return new Intl.NumberFormat(locale).format(number);
 };
