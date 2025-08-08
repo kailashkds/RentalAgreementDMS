@@ -680,11 +680,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            ...formData,
             language: selectedLanguage,
-            agreementData: {
-              ...formData,
-              agreementNumber: agreement.agreementNumber
-            }
+            agreementNumber: agreement.agreementNumber
           }),
         });
 
@@ -781,8 +779,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          language: selectedLanguage,
-          agreementData: formData
+          ...formData,
+          language: selectedLanguage
         }),
       });
 
@@ -1083,7 +1081,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 </div>
                 <div>
                   <Label>{t("state")}</Label>
-                  <Input {...register("ownerDetails.address.state", { required: "State is required" })} placeholder={t("stateExamplePlaceholder")} />
+                  <Input {...register("ownerDetails.address.state", { required: "State is required" })} placeholder="e.g., Gujarat, Maharashtra" />
                 </div>
                 <div>
                   <Label>{t("pincode")}</Label>
@@ -1290,11 +1288,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 </div>
                 <div>
                   <Label>{t("state")}</Label>
-                  <Input {...register("tenantDetails.address.state", { required: "State is required" })} placeholder={t("stateExamplePlaceholder")} />
+                  <Input {...register("tenantDetails.address.state", { required: "State is required" })} placeholder="e.g., Gujarat, Maharashtra" />
                 </div>
                 <div>
                   <Label>{t("pincode")}</Label>
-                  <Input {...register("tenantDetails.address.pincode", { required: "Pincode is required" })} placeholder={t("pincodeExamplePlaceholder")} />
+                  <Input {...register("tenantDetails.address.pincode", { required: "Pincode is required" })} placeholder="e.g., 380001" />
                 </div>
               </div>
             </div>
@@ -1372,7 +1370,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>{t("propertyType")}</Label>
-                  <Input {...register("propertyDetails.type", { required: "Property type is required" })} placeholder={t("propertyTypeExample")} />
+                  <Input {...register("propertyDetails.type", { required: "Property type is required" })} placeholder="e.g., 2BHK Apartment" />
                 </div>
                 <div>
                   <Label>{t("placeOfAgreement")}</Label>
@@ -1427,11 +1425,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   </div>
                   <div>
                     <Label>{t("state")}</Label>
-                    <Input {...register("propertyDetails.address.state", { required: "State is required" })} placeholder={t("stateExamplePlaceholder")} />
+                    <Input {...register("propertyDetails.address.state", { required: "State is required" })} placeholder="e.g., Gujarat, Maharashtra" />
                   </div>
                   <div>
                     <Label>{t("pincode")}</Label>
-                    <Input {...register("propertyDetails.address.pincode", { required: "Pincode is required" })} placeholder={t("pincodeExamplePlaceholder")} />
+                    <Input {...register("propertyDetails.address.pincode", { required: "Pincode is required" })} placeholder="e.g., 380001" />
                   </div>
                 </div>
               </div>
@@ -1448,7 +1446,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                       {...register("propertyDetails.areaInSqFt", {
                         min: { value: 1, message: "Area must be at least 1 sq ft" }
                       })} 
-                      placeholder={t("areaSquareFeetExample")}
+                      placeholder="e.g., 1200"
                       onWheel={(e) => e.currentTarget.blur()}
                     />
                   </div>
@@ -1632,7 +1630,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 </div>
                 <div>
                   <Label>{t("minimumStay")}</Label>
-                  <Input {...register("rentalTerms.minimumStay")} placeholder={t("minimumStayExample")} />
+                  <Input {...register("rentalTerms.minimumStay")} placeholder="e.g., 11 months" />
                 </div>
               </div>
 

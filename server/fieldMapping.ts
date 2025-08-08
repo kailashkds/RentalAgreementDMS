@@ -346,17 +346,12 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
     }
   }
 
-  // Debug: Log total number of mapped fields
-  console.log(`Total fields mapped: ${Object.keys(templateFields).length}`);
-  console.log("All mapped fields:", Object.keys(templateFields));
-
   // Add computed fields (amounts in words)
   // Handle both monthlyRent and rentAmount fields
   const rentAmount = formData.rentalTerms?.rentAmount || formData.rentalTerms?.monthlyRent;
   if (rentAmount) {
     const rentAmountNum = Number(rentAmount);
     templateFields['RENT_AMOUNT_WORDS'] = numberToWords(rentAmountNum);
-    console.log(`Added computed field: RENT_AMOUNT_WORDS = "${templateFields['RENT_AMOUNT_WORDS']}"`);
   }
 
   // Handle both deposit and securityDeposit fields
@@ -422,28 +417,14 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
  */
 export function processTemplate(htmlTemplate: string, fieldValues: Record<string, string>): string {
   let processedTemplate = htmlTemplate;
-
-  // Debug: Find all placeholders in the template
-  const placeholdersInTemplate = htmlTemplate.match(/\{\{[^}]*\}\}/g) || [];
-  console.log("Placeholders found in template:", placeholdersInTemplate);
-  console.log("Field values available:", Object.keys(fieldValues));
   
   // Replace all template fields with actual values
   for (const [fieldName, value] of Object.entries(fieldValues)) {
     const templateField = `{{${fieldName}}}`;
-    const regex = new RegExp(templateField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-    const beforeCount = (processedTemplate.match(regex) || []).length;
-    processedTemplate = processedTemplate.replace(regex, value || '');
-    const afterCount = (processedTemplate.match(regex) || []).length;
-    
-    if (beforeCount > 0) {
-      console.log(`Replaced ${beforeCount} instances of ${templateField} with "${value}"`);
-    }
+    processedTemplate = processedTemplate.replace(new RegExp(templateField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value || '');
   }
 
   // Replace any remaining empty placeholders with empty string
-  const remainingPlaceholders = processedTemplate.match(/\{\{[^}]*\}\}/g) || [];
-  console.log("Remaining unreplaced placeholders:", remainingPlaceholders);
   processedTemplate = processedTemplate.replace(/\{\{[^}]*\}\}/g, '');
 
   return processedTemplate;
