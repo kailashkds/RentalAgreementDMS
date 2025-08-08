@@ -120,7 +120,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/customers", async (req, res) => {
     try {
       const customerData = insertCustomerSchema.parse(req.body);
-      const customer = await storage.createCustomer(customerData);
+      const customer = await storage.createCustomer({
+        ...customerData,
+        password: customerData.password || undefined
+      });
       res.status(201).json(customer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -158,25 +161,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Quick PDF download endpoint for form data
   app.post("/api/agreements/generate-pdf", async (req, res) => {
     try {
-      console.log('PDF generation request received');
-      console.log('Request body keys:', Object.keys(req.body));
-      
+
       const agreementData = req.body;
       const language = agreementData.language || 'english';
       
-      console.log('Processing PDF generation for language:', language);
-      console.log('Agreement data present:', {
-        hasOwnerDetails: !!agreementData.ownerDetails && Object.keys(agreementData.ownerDetails).length > 0,
-        hasTenantDetails: !!agreementData.tenantDetails && Object.keys(agreementData.tenantDetails).length > 0,
-        hasPropertyDetails: !!agreementData.propertyDetails && Object.keys(agreementData.propertyDetails).length > 0,
-        hasRentalTerms: !!agreementData.rentalTerms && Object.keys(agreementData.rentalTerms).length > 0,
-        agreementNumber: agreementData.agreementNumber
-      });
-      
       // Find a default template for rental agreements
       const templates = await storage.getPdfTemplates('rental_agreement', language);
-      console.log('Found templates:', templates.length);
-      
       const template = templates.find(t => t.isActive) || templates[0]; // Use first active or first available template
       
       if (!template) {
@@ -188,14 +178,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log('Using template:', template.name);
-
-      // Log incoming data structure
-      console.log('Raw agreementData received:', JSON.stringify({
-        propertyDetails: agreementData.propertyDetails,
-        hasPropertyDetails: !!agreementData.propertyDetails
-      }, null, 2));
-      
       // Ensure all required fields have default values
       const safeAgreementData = {
         ownerDetails: agreementData.ownerDetails || {},
@@ -210,31 +192,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         language: language
       };
 
-      console.log('Generating HTML from template...');
-      console.log('Sample data for mapping:', {
-        purpose: safeAgreementData.propertyDetails?.purpose,
-        furnishedStatus: safeAgreementData.propertyDetails?.furnishedStatus
-      });
-      console.log('Full safeAgreementData.propertyDetails:', JSON.stringify(safeAgreementData.propertyDetails, null, 2));
-
       // Generate the HTML with mapped field values using the enhanced field mapping system
       const processedHtml = generatePdfHtml(safeAgreementData, template.htmlTemplate);
-      
-      // Debug the field mapping
-      const mappedFields = mapFormDataToTemplateFields(safeAgreementData);
-      console.log('Mapped fields for debugging:', {
-        PROPERTY_PURPOSE: mappedFields.PROPERTY_PURPOSE,
-        PROPERTY_FURNISHED_STATUS: mappedFields.PROPERTY_FURNISHED_STATUS
-      });
-      
-      // Force cache invalidation by adding timestamp
-      const timestamp = new Date().toISOString();
-      
-      // Debug: Check if placeholders are being replaced
-      const stillHasPlaceholders = processedHtml.includes('{{');
-      console.log('Template processing complete. Remaining placeholders:', stillHasPlaceholders ? 'Yes' : 'None');
-      
-      console.log('PDF generation successful');
       
       // Return HTML for client-side PDF generation
       res.json({
