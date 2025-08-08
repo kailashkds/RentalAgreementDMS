@@ -418,46 +418,110 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     });
   };
 
-  const fetchMobileInfo = async (mobile: string, userType: 'owner' | 'tenant') => {
-    // Only lookup if mobile has 10 digits
-    if (mobile && mobile.replace(/\D/g, '').length === 10) {
-      try {
-        console.log(`Looking up customer for mobile: ${mobile}`);
-        const response = await apiRequest("GET", `/api/customers/by-mobile?mobile=${encodeURIComponent(mobile)}`);
-        const customer = await response.json();
+  // Enhanced customer lookup for both mobile and name
+  const fetchCustomerInfo = async (searchTerm: string, searchType: 'mobile' | 'name', userType: 'owner' | 'tenant') => {
+    if (!searchTerm || searchTerm.trim().length < 3) return;
+    
+    try {
+      let customer = null;
+      
+      if (searchType === 'mobile' && searchTerm.replace(/\D/g, '').length === 10) {
+        console.log(`Looking up customer by mobile: ${searchTerm}`);
+        const response = await apiRequest("GET", `/api/customers/by-mobile?mobile=${encodeURIComponent(searchTerm)}`);
+        customer = await response.json();
+      } else if (searchType === 'name' && searchTerm.trim().length >= 3) {
+        console.log(`Looking up customer by name: ${searchTerm}`);
+        const response = await apiRequest("GET", `/api/customers?search=${encodeURIComponent(searchTerm)}`);
+        const data = await response.json();
+        // Find exact or close match
+        const customers = data.customers || [];
+        customer = customers.find((c: any) => 
+          c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          searchTerm.toLowerCase().includes(c.name.toLowerCase())
+        );
+      }
+      
+      if (customer) {
+        console.log(`Found customer:`, customer);
+        fillCustomerDetails(customer, userType);
         
-        if (customer) {
-          console.log(`Found customer:`, customer);
-          if (userType === 'owner') {
-            setValue("ownerDetails.name", customer.name);
-            setValue("ownerDetails.email", customer.email || "");
-          } else {
-            setValue("tenantDetails.name", customer.name);
-            setValue("tenantDetails.email", customer.email || "");
-          }
+        toast({
+          title: "Customer Found ✓",
+          description: `Auto-filled details for ${customer.name}`,
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.log("Customer lookup error:", error);
+      if (error instanceof Error && error.message.includes('404')) {
+        console.log(`No existing customer found for ${searchType}: ${searchTerm}`);
+      } else {
+        console.error("Customer lookup error:", error);
+        toast({
+          title: "Lookup Failed",
+          description: "Could not check for existing customer details",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  // Fill customer details including any associated address
+  const fillCustomerDetails = (customer: any, userType: 'owner' | 'tenant') => {
+    if (userType === 'owner') {
+      setValue("ownerDetails.name", customer.name);
+      setValue("ownerDetails.mobile", customer.mobile);
+      setValue("ownerDetails.email", customer.email || "");
+      
+      // Fill address if available (from most recent agreement)
+      fillAssociatedAddress(customer.id, userType);
+    } else {
+      setValue("tenantDetails.name", customer.name);
+      setValue("tenantDetails.mobile", customer.mobile);
+      setValue("tenantDetails.email", customer.email || "");
+      
+      // Fill address if available (from most recent agreement)
+      fillAssociatedAddress(customer.id, userType);
+    }
+  };
+
+  // Fill associated address from customer's previous agreements
+  const fillAssociatedAddress = async (customerId: string, userType: 'owner' | 'tenant') => {
+    try {
+      const response = await apiRequest("GET", `/api/agreements?customerId=${customerId}&limit=1`);
+      const data = await response.json();
+      const agreements = data.agreements || [];
+      
+      if (agreements.length > 0) {
+        const lastAgreement = agreements[0];
+        let addressData = null;
+        
+        // Get address from owner or tenant details based on user type
+        if (userType === 'owner' && lastAgreement.ownerDetails?.address) {
+          addressData = lastAgreement.ownerDetails.address;
+        } else if (userType === 'tenant' && lastAgreement.tenantDetails?.address) {
+          addressData = lastAgreement.tenantDetails.address;
+        }
+        
+        if (addressData) {
+          const prefix = userType === 'owner' ? 'ownerDetails' : 'tenantDetails';
+          setValue(`${prefix}.address.flatNo`, addressData.flatNo || "");
+          setValue(`${prefix}.address.society`, addressData.society || "");
+          setValue(`${prefix}.address.area`, addressData.area || "");
+          setValue(`${prefix}.address.city`, addressData.city || "");
+          setValue(`${prefix}.address.state`, addressData.state || "");
+          setValue(`${prefix}.address.pincode`, addressData.pincode || "");
+          setValue(`${prefix}.address.district`, addressData.district || "");
+          setValue(`${prefix}.address.landmark`, addressData.landmark || "");
           
           toast({
-            title: "Customer Found ✓",
-            description: `Auto-filled details for ${customer.name}`,
-            variant: "default",
-          });
-        }
-      } catch (error) {
-        console.log("Customer lookup error:", error);
-        // Check if it's a 404 (customer not found) vs other errors
-        if (error instanceof Error && error.message.includes('404')) {
-          // Customer not found - this is expected behavior, no error toast
-          console.log(`No existing customer found for mobile: ${mobile}`);
-        } else {
-          // Other error - show error toast
-          console.error("Customer lookup error:", error);
-          toast({
-            title: "Lookup Failed",
-            description: "Could not check for existing customer details",
-            variant: "destructive",
+            title: "Address Auto-filled ✓",
+            description: "Filled address from previous agreement",
           });
         }
       }
+    } catch (error) {
+      console.log("Could not fetch associated address:", error);
     }
   };
 
@@ -827,7 +891,33 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="ownerName">{t("ownerName")}</Label>
-                <Input {...register("ownerDetails.name", { required: "Name is required" })} placeholder={t("ownerName")} />
+                <div className="relative">
+                  <Input 
+                    {...register("ownerDetails.name", { required: "Name is required" })} 
+                    placeholder={t("ownerName")}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      // Clear previous timeout
+                      if (mobileTimeout.current) {
+                        clearTimeout(mobileTimeout.current);
+                      }
+                      // Auto-lookup when user finishes typing name (3+ chars)
+                      if (name.trim().length >= 3) {
+                        mobileTimeout.current = setTimeout(() => {
+                          fetchCustomerInfo(name, 'name', 'owner');
+                        }, 800);
+                      }
+                    }}
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      ✓ Auto-Fill
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter name to auto-fill mobile and address
+                </p>
                 {errors.ownerDetails?.name && (
                   <p className="text-sm text-red-600 mt-1">{errors.ownerDetails.name.message}</p>
                 )}
@@ -847,11 +937,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                       // Auto-lookup when user finishes typing 10 digits
                       if (mobile.replace(/\D/g, '').length === 10) {
                         mobileTimeout.current = setTimeout(() => {
-                          fetchMobileInfo(mobile, 'owner');
+                          fetchCustomerInfo(mobile, 'mobile', 'owner');
                         }, 500);
                       }
                     }}
-                    onBlur={(e) => fetchMobileInfo(e.target.value, 'owner')}
+                    onBlur={(e) => fetchCustomerInfo(e.target.value, 'mobile', 'owner')}
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
@@ -1014,7 +1104,33 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label>{t("fullName")}</Label>
-                <Input {...register("tenantDetails.name", { required: "Name is required" })} placeholder={t("enterTenantFullName")} />
+                <div className="relative">
+                  <Input 
+                    {...register("tenantDetails.name", { required: "Name is required" })} 
+                    placeholder={t("enterTenantFullName")}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      // Clear previous timeout
+                      if (mobileTimeout.current) {
+                        clearTimeout(mobileTimeout.current);
+                      }
+                      // Auto-lookup when user finishes typing name (3+ chars)
+                      if (name.trim().length >= 3) {
+                        mobileTimeout.current = setTimeout(() => {
+                          fetchCustomerInfo(name, 'name', 'tenant');
+                        }, 800);
+                      }
+                    }}
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      ✓ Auto-Fill
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter name to auto-fill mobile and address
+                </p>
               </div>
               <div>
                 <Label>{t("mobileNumber")}</Label>
@@ -1031,11 +1147,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                       // Auto-lookup when user finishes typing 10 digits
                       if (mobile.replace(/\D/g, '').length === 10) {
                         mobileTimeout.current = setTimeout(() => {
-                          fetchMobileInfo(mobile, 'tenant');
+                          fetchCustomerInfo(mobile, 'mobile', 'tenant');
                         }, 500);
                       }
                     }}
-                    onBlur={(e) => fetchMobileInfo(e.target.value, 'tenant')}
+                    onBlur={(e) => fetchCustomerInfo(e.target.value, 'mobile', 'tenant')}
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
