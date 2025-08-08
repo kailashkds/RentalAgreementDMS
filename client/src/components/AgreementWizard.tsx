@@ -351,17 +351,23 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   const nextStep = async () => {
     if (currentStep < STEPS.length && canProceed(currentStep)) {
-      // Clear any automatic lookup conflicts when moving to tenant step
+      // Clear tenant fields when moving from owner to tenant step
       if (currentStep === 1) {
-        // Moving from owner to tenant - ensure no cross-contamination
-        const ownerDetails = watch("ownerDetails");
-        if (ownerDetails) {
-          // Just ensure tenant fields start clean
-          const currentTenantName = watch("tenantDetails.name");
-          if (!currentTenantName || currentTenantName.trim() === "") {
-            // Tenant fields are already clean, proceed normally
-          }
-        }
+        // Moving from owner to tenant - clear all tenant fields to ensure clean start
+        setValue("tenantDetails.name", "");
+        setValue("tenantDetails.mobile", "");
+        setValue("tenantDetails.email", "");
+        setValue("tenantDetails.age", "");
+        setValue("tenantDetails.occupation", "");
+        setValue("tenantDetails.company", "");
+        setValue("tenantDetails.address.flatNo", "");
+        setValue("tenantDetails.address.society", "");
+        setValue("tenantDetails.address.area", "");
+        setValue("tenantDetails.address.city", "");
+        setValue("tenantDetails.address.state", "");
+        setValue("tenantDetails.address.pincode", "");
+        
+        console.log("Cleared tenant fields when moving from owner to tenant step");
       }
       setCurrentStep(currentStep + 1);
     } else if (!canProceed(currentStep)) {
@@ -535,15 +541,19 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   const fetchCustomerInfo = async (searchTerm: string, searchType: 'mobile' | 'name', userType: 'owner' | 'tenant') => {
     if (!searchTerm || searchTerm.trim().length < 3) return;
     
+    // Prevent cross-step auto-fill: only allow lookup on correct step
+    if (userType === 'owner' && currentStep !== 1) return;
+    if (userType === 'tenant' && currentStep !== 2) return;
+    
     try {
       let customer = null;
       
       if (searchType === 'mobile' && searchTerm.replace(/\D/g, '').length === 10) {
-        console.log(`Looking up customer by mobile: ${searchTerm}`);
+        console.log(`Looking up customer by mobile: ${searchTerm} for ${userType} on step ${currentStep}`);
         const response = await apiRequest("GET", `/api/customers/by-mobile?mobile=${encodeURIComponent(searchTerm)}`);
         customer = await response.json();
       } else if (searchType === 'name' && searchTerm.trim().length >= 3) {
-        console.log(`Looking up customer by name: ${searchTerm}`);
+        console.log(`Looking up customer by name: ${searchTerm} for ${userType} on step ${currentStep}`);
         const response = await apiRequest("GET", `/api/customers?search=${encodeURIComponent(searchTerm)}`);
         const data = await response.json();
         // Find exact or close match
@@ -555,12 +565,12 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       }
       
       if (customer) {
-        console.log(`Found customer:`, customer);
+        console.log(`Found customer for ${userType}:`, customer);
         fillCustomerDetails(customer, userType);
         
         toast({
           title: "Customer Found ✓",
-          description: `Auto-filled details for ${customer.name}`,
+          description: `Auto-filled ${userType} details for ${customer.name}`,
           variant: "default",
         });
       }
@@ -581,8 +591,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   // Fill customer details including any associated address
   const fillCustomerDetails = (customer: any, userType: 'owner' | 'tenant') => {
-    if (userType === 'owner') {
-      // Only fill if owner fields are currently empty to avoid overwriting manually entered data
+    // Prevent cross-contamination: only fill fields that are completely empty
+    if (userType === 'owner' && currentStep === 1) {
+      // Only fill owner fields when on owner step
       const currentOwnerName = watch("ownerDetails.name");
       if (!currentOwnerName || currentOwnerName.trim() === "") {
         setValue("ownerDetails.name", customer.name);
@@ -592,8 +603,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         // Fill address if available (from most recent agreement)
         fillAssociatedAddress(customer.id, userType);
       }
-    } else {
-      // Only fill if tenant fields are currently empty to avoid overwriting manually entered data
+    } else if (userType === 'tenant' && currentStep === 2) {
+      // Only fill tenant fields when on tenant step
       const currentTenantName = watch("tenantDetails.name");
       if (!currentTenantName || currentTenantName.trim() === "") {
         setValue("tenantDetails.name", customer.name);
