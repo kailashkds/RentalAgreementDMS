@@ -1576,7 +1576,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 >
                   {t("saveDraft")}
                 </Button>
-                {currentStep < STEPS.length && (
+                {currentStep < 5 && (
                   <Button 
                     type="button" 
                     onClick={nextStep} 
