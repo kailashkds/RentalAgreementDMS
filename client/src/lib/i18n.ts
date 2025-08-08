@@ -155,7 +155,8 @@ export const translations = {
     selectTenure: "Select Tenure",
     notSelected: "Not Selected",
     notSet: "Not Set",
-    notSpecified: "Not Specified"
+    notSpecified: "Not Specified",
+    additionalClauses: "Additional Clauses"
   },
   
   gujarati: {
@@ -313,7 +314,8 @@ export const translations = {
     selectTenure: "અવધિ પસંદ કરો",
     notSelected: "પસંદ નથી",
     notSet: "સેટ નથી",
-    notSpecified: "નિર્દિષ્ટ નથી"
+    notSpecified: "નિર્દિષ્ટ નથી",
+    additionalClauses: "વધારાની કલમો"
   },
   
   hindi: {
