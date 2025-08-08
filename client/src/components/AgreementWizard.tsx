@@ -327,8 +327,18 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     }
   }, [isOpen, agreementId, reset, toast]);
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (currentStep < STEPS.length && canProceed(currentStep)) {
+      // If we're about to go to the final step (step 5), auto-save the agreement
+      if (currentStep === STEPS.length - 1) {
+        try {
+          await finalizeAgreement(watch());
+          return; // Don't increment step, the modal will close after saving
+        } catch (error) {
+          console.error("Failed to auto-save agreement:", error);
+          // Still proceed to final step if auto-save fails
+        }
+      }
       setCurrentStep(currentStep + 1);
     } else if (!canProceed(currentStep)) {
       toast({
@@ -524,19 +534,24 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     }
 
     try {
-      // First get the active PDF template for rental agreements
-      const templatesResponse = await fetch('/api/pdf-templates?documentType=rental_agreement&language=english');
+      const selectedLanguage = formData.language || 'english';
+      console.log('Downloading agreement with language:', selectedLanguage);
+      
+      // First get the active PDF template for rental agreements in the selected language
+      const templatesResponse = await fetch(`/api/pdf-templates?documentType=rental_agreement&language=${selectedLanguage}`);
       const templates = await templatesResponse.json();
       const activeTemplate = templates.find((t: any) => t.isActive);
       
       if (!activeTemplate) {
         toast({
           title: "Error",
-          description: "No active PDF template found.",
+          description: `No active PDF template found for ${selectedLanguage} language.`,
           variant: "destructive",
         });
         return;
       }
+      
+      console.log('Using template:', activeTemplate.name, 'for language:', selectedLanguage);
 
       // Generate PDF with the active template
       const response = await fetch('/api/generate-pdf', {
@@ -618,6 +633,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         agreementDate: new Date().toISOString().split('T')[0],
       };
 
+      console.log('Creating agreement with language:', agreementData.language);
+
       const response = await apiRequest("POST", "/api/agreements", agreementData);
       const agreement = await response.json();
 
@@ -628,6 +645,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         title: "Agreement created",
         description: `Agreement ${agreement.agreementNumber} has been created successfully.`,
       });
+
+      // Close the modal after successful creation
+      onClose();
     } catch (error) {
       console.error("Finalize agreement error:", error);
       toast({
@@ -635,6 +655,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         description: "Failed to create agreement.",
         variant: "destructive",
       });
+      throw error; // Re-throw to prevent step progression in nextStep
     }
   };
 
@@ -1388,7 +1409,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             </div>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(currentStep === STEPS.length ? finalizeAgreement : () => {})} className="space-y-6">
+          <form onSubmit={handleSubmit(() => {})} className="space-y-6">
             {renderStep()}
             
             <div className="flex items-center justify-between pt-6 border-t border-gray-200">
@@ -1410,36 +1431,19 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 >
                   Save as Draft
                 </Button>
-                {currentStep === STEPS.length ? (
-                  <div className="flex space-x-3">
-                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                      Create Agreement
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      onClick={() => downloadAgreement()}
-                      className="bg-green-600 text-white hover:bg-green-700"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download PDF
-                    </Button>
-                  </div>
-                ) : (
-                  <Button 
-                    type="button" 
-                    onClick={nextStep} 
-                    disabled={!canProceed(currentStep)}
-                    className={`${
-                      canProceed(currentStep) 
-                        ? "bg-primary hover:bg-primary/90" 
-                        : "bg-gray-400 cursor-not-allowed"
-                    }`}
-                  >
-                    Next
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
+                <Button 
+                  type="button" 
+                  onClick={nextStep} 
+                  disabled={!canProceed(currentStep)}
+                  className={`${
+                    canProceed(currentStep) 
+                      ? "bg-blue-600 hover:bg-blue-700" 
+                      : "bg-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  {currentStep === STEPS.length - 1 ? "Create Agreement" : "Next"}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </div>
             </div>
           </form>

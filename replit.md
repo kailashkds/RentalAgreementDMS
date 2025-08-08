@@ -23,6 +23,9 @@ This is a comprehensive Document Management System (DMS) specifically designed f
 - **Enhanced Document Upload UI**: Professional interface with visual feedback, file size limits, and upload status indicators
 - **Conditional Logic System**: Smart field replacement with if-else conditions for maintenance charge handling
 - **Amount-to-Words Conversion**: Automatic conversion of numeric amounts to Indian format words (25000 → "Twenty Five Thousand")
+- **Mobile Number Auto-Fill (Aug 8, 2025)**: Enhanced mobile lookup feature that automatically fills landlord/tenant details when existing mobile numbers are entered
+- **Language Selection Fix (Aug 8, 2025)**: Fixed Gujarati language PDF generation bug, created Gujarati templates, and corrected language passing to PDF generator
+- **Auto-Save Final Step (Aug 8, 2025)**: Removed "Create Agreement" button from final step, agreement now auto-saves when proceeding from step 4 to completion
 
 # User Preferences
 
