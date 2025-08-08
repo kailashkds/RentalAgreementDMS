@@ -13,6 +13,7 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { useSocieties } from "@/hooks/useSocieties";
 import { useAddresses } from "@/hooks/useAddresses";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { FilePreview } from "@/components/FilePreview";
 import CustomerModal from "@/components/CustomerModal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -1204,57 +1205,59 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-gray-700">{t("aadharCard")}</Label>
-                  <ObjectUploader
-                    maxFileSize={5242880} // 5MB
-                    onGetUploadParameters={getUploadParameters}
-                    onComplete={(result) => handleDocumentUpload("ownerAadhar", result)}
-                    buttonClassName="w-full h-auto p-0"
-                  >
-                    <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
-                      documents.ownerAadhar 
-                        ? "border-green-300 bg-green-50 hover:bg-green-100" 
-                        : "border-gray-300 bg-gray-50 hover:bg-gray-100"
-                    }`}>
-                      <div className="flex flex-col items-center space-y-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          documents.ownerAadhar ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-500"
-                        }`}>
-                          <Plus className="w-4 h-4" />
+                  {documents.ownerAadhar ? (
+                    <FilePreview
+                      fileUrl={documents.ownerAadhar}
+                      fileName="Owner Aadhar Card"
+                      onRemove={() => setDocuments(prev => ({ ...prev, ownerAadhar: "" }))}
+                      className="w-full"
+                    />
+                  ) : (
+                    <ObjectUploader
+                      maxFileSize={5242880} // 5MB
+                      onGetUploadParameters={getUploadParameters}
+                      onComplete={(result) => handleDocumentUpload("ownerAadhar", result)}
+                      buttonClassName="w-full h-auto p-0"
+                    >
+                      <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-500">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <p className="text-sm text-gray-600">{t("uploadAadharCard")}</p>
+                          <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          {documents.ownerAadhar ? t("aadharCardUploaded") : t("uploadAadharCard")}
-                        </p>
-                        <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                       </div>
-                    </div>
-                  </ObjectUploader>
+                    </ObjectUploader>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700">{t("panCardLabel")}</Label>
-                  <ObjectUploader
-                    maxFileSize={5242880} // 5MB
-                    onGetUploadParameters={getUploadParameters}
-                    onComplete={(result) => handleDocumentUpload("ownerPan", result)}
-                    buttonClassName="w-full h-auto p-0"
-                  >
-                    <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
-                      documents.ownerPan 
-                        ? "border-green-300 bg-green-50 hover:bg-green-100" 
-                        : "border-gray-300 bg-gray-50 hover:bg-gray-100"
-                    }`}>
-                      <div className="flex flex-col items-center space-y-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          documents.ownerPan ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-500"
-                        }`}>
-                          <Plus className="w-4 h-4" />
+                  {documents.ownerPan ? (
+                    <FilePreview
+                      fileUrl={documents.ownerPan}
+                      fileName="Owner PAN Card"
+                      onRemove={() => setDocuments(prev => ({ ...prev, ownerPan: "" }))}
+                      className="w-full"
+                    />
+                  ) : (
+                    <ObjectUploader
+                      maxFileSize={5242880} // 5MB
+                      onGetUploadParameters={getUploadParameters}
+                      onComplete={(result) => handleDocumentUpload("ownerPan", result)}
+                      buttonClassName="w-full h-auto p-0"
+                    >
+                      <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-500">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <p className="text-sm text-gray-600">{t("uploadPanCard")}</p>
+                          <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          {documents.ownerPan ? t("panCardUploaded") : t("uploadPanCard")}
-                        </p>
-                        <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                       </div>
-                    </div>
-                  </ObjectUploader>
+                    </ObjectUploader>
+                  )}
                 </div>
               </div>
             </div>
@@ -1411,57 +1414,59 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-gray-700">{t("aadharCard")}</Label>
-                  <ObjectUploader
-                    maxFileSize={5242880} // 5MB
-                    onGetUploadParameters={getUploadParameters}
-                    onComplete={(result) => handleDocumentUpload("tenantAadhar", result)}
-                    buttonClassName="w-full h-auto p-0"
-                  >
-                    <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
-                      documents.tenantAadhar 
-                        ? "border-green-300 bg-green-50 hover:bg-green-100" 
-                        : "border-gray-300 bg-gray-50 hover:bg-gray-100"
-                    }`}>
-                      <div className="flex flex-col items-center space-y-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          documents.tenantAadhar ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-500"
-                        }`}>
-                          <Plus className="w-4 h-4" />
+                  {documents.tenantAadhar ? (
+                    <FilePreview
+                      fileUrl={documents.tenantAadhar}
+                      fileName="Tenant Aadhar Card"
+                      onRemove={() => setDocuments(prev => ({ ...prev, tenantAadhar: "" }))}
+                      className="w-full"
+                    />
+                  ) : (
+                    <ObjectUploader
+                      maxFileSize={5242880} // 5MB
+                      onGetUploadParameters={getUploadParameters}
+                      onComplete={(result) => handleDocumentUpload("tenantAadhar", result)}
+                      buttonClassName="w-full h-auto p-0"
+                    >
+                      <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-500">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <p className="text-sm text-gray-600">{t("uploadAadharCard")}</p>
+                          <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          {documents.tenantAadhar ? t("aadharCardUploaded") : t("uploadAadharCard")}
-                        </p>
-                        <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                       </div>
-                    </div>
-                  </ObjectUploader>
+                    </ObjectUploader>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-700">{t("panCardLabel")}</Label>
-                  <ObjectUploader
-                    maxFileSize={5242880} // 5MB
-                    onGetUploadParameters={getUploadParameters}
-                    onComplete={(result) => handleDocumentUpload("tenantPan", result)}
-                    buttonClassName="w-full h-auto p-0"
-                  >
-                    <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer ${
-                      documents.tenantPan 
-                        ? "border-green-300 bg-green-50 hover:bg-green-100" 
-                        : "border-gray-300 bg-gray-50 hover:bg-gray-100"
-                    }`}>
-                      <div className="flex flex-col items-center space-y-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                          documents.tenantPan ? "bg-green-100 text-green-600" : "bg-gray-200 text-gray-500"
-                        }`}>
-                          <Plus className="w-4 h-4" />
+                  {documents.tenantPan ? (
+                    <FilePreview
+                      fileUrl={documents.tenantPan}
+                      fileName="Tenant PAN Card"
+                      onRemove={() => setDocuments(prev => ({ ...prev, tenantPan: "" }))}
+                      className="w-full"
+                    />
+                  ) : (
+                    <ObjectUploader
+                      maxFileSize={5242880} // 5MB
+                      onGetUploadParameters={getUploadParameters}
+                      onComplete={(result) => handleDocumentUpload("tenantPan", result)}
+                      buttonClassName="w-full h-auto p-0"
+                    >
+                      <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-500">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <p className="text-sm text-gray-600">{t("uploadPanCard")}</p>
+                          <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                         </div>
-                        <p className="text-sm text-gray-600">
-                          {documents.tenantPan ? t("panCardUploaded") : t("uploadPanCard")}
-                        </p>
-                        <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                       </div>
-                    </div>
-                  </ObjectUploader>
+                    </ObjectUploader>
+                  )}
                 </div>
               </div>
             </div>
@@ -1607,41 +1612,30 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Property Documents (NOC, Sale Deed, etc.)</Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      <Input 
-                        type="file" 
-                        accept="image/*,.pdf" 
-                        multiple
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files || []);
-                          if (files.length > 0) {
-                            // Simulate file upload URLs (in real app, upload to storage and get URLs)
-                            const mockUrls = files.map((file, index) => 
-                              `/uploads/property_doc_${Date.now()}_${index}.${file.name.split('.').pop()}`
-                            );
-                            setValue("propertyDocuments.urls", mockUrls);
-                            console.log("Property documents uploaded:", mockUrls);
-                          }
-                        }}
-                        className="hidden" 
-                        id="propertyDocuments"
+                    {documents.propertyDocuments ? (
+                      <FilePreview
+                        fileUrl={documents.propertyDocuments}
+                        fileName="Property Documents"
+                        onRemove={() => setDocuments(prev => ({ ...prev, propertyDocuments: "" }))}
+                        className="w-full"
                       />
-                      <label htmlFor="propertyDocuments" className="cursor-pointer">
-                        <div className="flex flex-col items-center space-y-2">
-                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                            <Plus className="w-6 h-6 text-gray-500" />
+                    ) : (
+                      <ObjectUploader
+                        maxFileSize={5242880} // 5MB
+                        onGetUploadParameters={getUploadParameters}
+                        onComplete={(result) => handleDocumentUpload("propertyDocuments", result)}
+                        buttonClassName="w-full h-auto p-0"
+                      >
+                        <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                          <div className="flex flex-col items-center space-y-2">
+                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                              <Plus className="w-6 h-6 text-gray-500" />
+                            </div>
+                            <p className="text-sm text-gray-600">Click to upload property documents</p>
+                            <p className="text-xs text-gray-500">NOC, Sale Deed, Property Papers (Max 5MB)</p>
                           </div>
-                          <p className="text-sm text-gray-600">Click to upload property documents</p>
-                          <p className="text-xs text-gray-500">NOC, Sale Deed, Property Papers (Max 5MB each)</p>
                         </div>
-                      </label>
-                    </div>
-                    {watch("propertyDocuments.urls")?.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-sm text-green-600">
-                          ✓ {watch("propertyDocuments.urls").length} document(s) uploaded
-                        </p>
-                      </div>
+                      </ObjectUploader>
                     )}
                   </div>
                 </div>
