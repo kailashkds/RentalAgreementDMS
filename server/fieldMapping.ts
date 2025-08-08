@@ -160,11 +160,24 @@ const FIELD_MAPPINGS = {
   
   // Document URLs - Dynamic document fields for conditional PDF display
   'ownerDocuments.aadharUrl': 'OWNER_AADHAR_URL',
+  'ownerDocuments.aadhar': 'OWNER_AADHAR_URL',
   'ownerDocuments.panUrl': 'OWNER_PAN_URL',
+  'ownerDocuments.pan': 'OWNER_PAN_URL',
   'tenantDocuments.aadharUrl': 'TENANT_AADHAR_URL',
+  'tenantDocuments.aadhar': 'TENANT_AADHAR_URL',
   'tenantDocuments.panUrl': 'TENANT_PAN_URL',
+  'tenantDocuments.pan': 'TENANT_PAN_URL',
   'documents.propertyUrl': 'PROPERTY_DOCUMENTS_URL',
+  'documents.property': 'PROPERTY_DOCUMENTS_URL',
   'propertyDocuments.urls': 'PROPERTY_DOCUMENTS_URL',
+  'propertyDocuments': 'PROPERTY_DOCUMENTS_URL',
+  
+  // Alternative document field mappings (from AgreementWizard documents state)
+  'documents.ownerAadhar': 'OWNER_AADHAR_URL',
+  'documents.ownerPan': 'OWNER_PAN_URL',
+  'documents.tenantAadhar': 'TENANT_AADHAR_URL',
+  'documents.tenantPan': 'TENANT_PAN_URL',
+  'documents.propertyDocs': 'PROPERTY_DOCUMENTS_URL',
 };
 
 // Helper function to get nested object property by path
@@ -336,6 +349,17 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
   // Debug: Log the form data to understand its structure
   console.log("Mapping form data to template fields...");
   console.log("Form data keys:", Object.keys(formData));
+  
+  // Debug: Log document-related fields to see structure
+  if (formData.documents) {
+    console.log("Documents object:", JSON.stringify(formData.documents, null, 2));
+  }
+  if (formData.ownerDocuments) {
+    console.log("Owner documents:", JSON.stringify(formData.ownerDocuments, null, 2));
+  }
+  if (formData.tenantDocuments) {
+    console.log("Tenant documents:", JSON.stringify(formData.tenantDocuments, null, 2));
+  }
   
   // Map all configured fields, handling precedence for granular vs nested
   for (const [formPath, templateField] of Object.entries(FIELD_MAPPINGS)) {
