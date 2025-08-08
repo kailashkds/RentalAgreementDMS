@@ -295,22 +295,23 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {template ? "Edit PDF Template" : "Create New PDF Template"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-3 flex-shrink-0 mb-4">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="editor">Template Editor</TabsTrigger>
               <TabsTrigger value="preview">Preview</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="basic" className="flex-1 space-y-4 overflow-auto">
+            <div className="flex-1 min-h-0 overflow-auto">
+              <TabsContent value="basic" className="space-y-4 mt-0">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Template Name</Label>
@@ -365,68 +366,68 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
               </div>
             </TabsContent>
 
-            <TabsContent value="editor" className="flex-1 flex gap-4 overflow-hidden">
-              <div className="flex-1 space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="htmlTemplate" className="text-lg font-medium">HTML Template Editor</Label>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditorTheme(editorTheme === 'light' ? 'dark' : 'light')}
-                    >
-                      {editorTheme === 'light' ? '🌙' : '☀️'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (editorRef.current) {
-                          editorRef.current.getAction('editor.action.formatDocument').run();
+              <TabsContent value="editor" className="flex gap-4 h-full mt-0">
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="htmlTemplate" className="text-lg font-medium">HTML Template Editor</Label>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditorTheme(editorTheme === 'light' ? 'dark' : 'light')}
+                      >
+                        {editorTheme === 'light' ? '🌙' : '☀️'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (editorRef.current) {
+                            editorRef.current.getAction('editor.action.formatDocument').run();
+                          }
+                        }}
+                      >
+                        <Code className="h-4 w-4 mr-2" />
+                        Format
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Editor
+                      height="400px"
+                      language="html"
+                      theme={editorTheme === 'dark' ? 'vs-dark' : 'vs'}
+                      value={formData.htmlTemplate}
+                      onChange={(value) => setFormData(prev => ({ ...prev, htmlTemplate: value || '' }))}
+                      onMount={handleEditorDidMount}
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                        lineNumbers: 'on',
+                        wordWrap: 'bounded',
+                        wordWrapColumn: 120,
+                        automaticLayout: true,
+                        scrollBeyondLastLine: false,
+                        folding: true,
+                        renderLineHighlight: 'line',
+                        cursorBlinking: 'blink',
+                        cursorSmoothCaretAnimation: 'on',
+                        suggest: {
+                          showKeywords: true,
+                          showSnippets: true,
+                        },
+                        bracketPairColorization: {
+                          enabled: true
                         }
                       }}
-                    >
-                      <Code className="h-4 w-4 mr-2" />
-                      Format
-                    </Button>
+                    />
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    💡 Tip: Use Ctrl+Space for auto-completion, Ctrl+Shift+F for formatting
                   </div>
                 </div>
-                <div className="border rounded-lg overflow-hidden">
-                  <Editor
-                    height="400px"
-                    language="html"
-                    theme={editorTheme === 'dark' ? 'vs-dark' : 'vs'}
-                    value={formData.htmlTemplate}
-                    onChange={(value) => setFormData(prev => ({ ...prev, htmlTemplate: value || '' }))}
-                    onMount={handleEditorDidMount}
-                    options={{
-                      minimap: { enabled: false },
-                      fontSize: 14,
-                      lineNumbers: 'on',
-                      wordWrap: 'bounded',
-                      wordWrapColumn: 120,
-                      automaticLayout: true,
-                      scrollBeyondLastLine: false,
-                      folding: true,
-                      renderLineHighlight: 'line',
-                      cursorBlinking: 'blink',
-                      cursorSmoothCaretAnimation: 'on',
-                      suggest: {
-                        showKeywords: true,
-                        showSnippets: true,
-                      },
-                      bracketPairColorization: {
-                        enabled: true
-                      }
-                    }}
-                  />
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  💡 Tip: Use Ctrl+Space for auto-completion, Ctrl+Shift+F for formatting
-                </div>
-              </div>
               <div className="w-80 space-y-4">
                 <Card>
                   <CardHeader>
@@ -475,38 +476,39 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                     <div><strong>Alt+Shift+F:</strong> Format selection</div>
                   </CardContent>
                 </Card>
-              </div>
-            </TabsContent>
+                </div>
+              </TabsContent>
 
-            <TabsContent value="preview" className="flex-1 space-y-4 overflow-auto">
-              <div className="flex items-center justify-between">
-                <Label className="text-lg font-medium flex items-center">
-                  <Eye className="h-5 w-5 mr-2" />
-                  Live Preview
-                </Label>
-                <Badge variant="secondary" className="text-xs">
-                  Real-time HTML rendering
-                </Badge>
-              </div>
-              <div className="border rounded-lg p-4 h-96 overflow-auto bg-white">
-                <div 
-                  dangerouslySetInnerHTML={{ __html: formData.htmlTemplate }}
-                  style={{ 
-                    fontFamily: 'Arial, sans-serif',
-                    lineHeight: '1.4',
-                    color: '#333'
-                  }}
-                />
-              </div>
-              <div className="text-sm text-muted-foreground">
-                💡 This preview shows how your template will look when printed as PDF
-              </div>
-            </TabsContent>
+              <TabsContent value="preview" className="space-y-4 mt-0">
+                <div className="flex items-center justify-between">
+                  <Label className="text-lg font-medium flex items-center">
+                    <Eye className="h-5 w-5 mr-2" />
+                    Live Preview
+                  </Label>
+                  <Badge variant="secondary" className="text-xs">
+                    Real-time HTML rendering
+                  </Badge>
+                </div>
+                <div className="border rounded-lg p-4 h-96 overflow-auto bg-white">
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: formData.htmlTemplate }}
+                    style={{ 
+                      fontFamily: 'Arial, sans-serif',
+                      lineHeight: '1.4',
+                      color: '#333'
+                    }}
+                  />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  💡 This preview shows how your template will look when printed as PDF
+                </div>
+              </TabsContent>
+            </div>
           </Tabs>
 
-          <Separator className="flex-shrink-0" />
+          <Separator className="flex-shrink-0 my-4" />
 
-          <div className="flex justify-end space-x-2 flex-shrink-0 pt-4">
+          <div className="flex justify-end space-x-2 flex-shrink-0">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
