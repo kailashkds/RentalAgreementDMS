@@ -239,26 +239,35 @@ export class ObjectStorageService {
   normalizeObjectEntityPath(
     rawPath: string,
   ): string {
+    console.log(`[ObjectStorage] Normalizing path: ${rawPath}`);
+    
     if (!rawPath.startsWith("https://storage.googleapis.com/")) {
+      console.log(`[ObjectStorage] Path doesn't start with GCS URL, returning as-is: ${rawPath}`);
       return rawPath;
     }
   
     // Extract the path from the URL by removing query parameters and domain
     const url = new URL(rawPath);
     const rawObjectPath = url.pathname;
+    console.log(`[ObjectStorage] Extracted pathname: ${rawObjectPath}`);
   
-    let objectEntityDir = this.getPrivateObjectDir();
-    if (!objectEntityDir.endsWith("/")) {
-      objectEntityDir = `${objectEntityDir}/`;
-    }
-  
-    if (!rawObjectPath.startsWith(objectEntityDir)) {
+    // The private object directory format is like: /replit-objstore-xxx/.private
+    // The URL pathname will be like: /replit-objstore-xxx/.private/uploads/file-id
+    // We want to convert this to: /objects/uploads/file-id
+    
+    // Find the `.private/` part and extract everything after it
+    const privateIndex = rawObjectPath.indexOf('/.private/');
+    if (privateIndex === -1) {
+      console.log(`[ObjectStorage] No .private directory found in path: ${rawObjectPath}`);
       return rawObjectPath;
     }
-  
-    // Extract the entity ID from the path
-    const entityId = rawObjectPath.slice(objectEntityDir.length);
-    return `/objects/${entityId}`;
+    
+    // Extract everything after /.private/
+    const entityId = rawObjectPath.slice(privateIndex + '/.private/'.length);
+    const normalizedPath = `/objects/${entityId}`;
+    
+    console.log(`[ObjectStorage] Normalized to: ${normalizedPath}`);
+    return normalizedPath;
   }
 
   // Tries to set the ACL policy for the object entity and return the normalized path.
