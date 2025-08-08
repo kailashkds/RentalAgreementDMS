@@ -146,6 +146,30 @@ function getNestedProperty(obj: any, path: string): any {
   return path.split('.').reduce((current, key) => current?.[key], obj);
 }
 
+// Helper function to format strings by capitalizing first letter of each word and replacing underscores with spaces
+function formatStringValue(value: string): string {
+  if (!value) return '';
+  return value
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+// Helper function to format date from YYYY-MM-DD to DD-MM-YYYY
+function formatDateToDDMMYYYY(dateString: string): string {
+  if (!dateString) return '';
+  
+  // Handle different date formats
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString; // Return original if invalid date
+  
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  
+  return `${day}-${month}-${year}`;
+}
+
 // Helper function to convert number to words (Indian format)
 function numberToWords(num: number): string {
   if (num === 0) return 'Zero';
@@ -237,7 +261,18 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
       // Only set if we haven't already set this template field
       // This gives precedence to granular fields over nested address fields
       if (!templateFields[templateField]) {
-        templateFields[templateField] = String(value);
+        let formattedValue = String(value);
+        
+        // Apply special formatting for specific fields
+        if (templateField === 'PROPERTY_PURPOSE' || templateField === 'PROPERTY_FURNISHED_STATUS') {
+          formattedValue = formatStringValue(formattedValue);
+        } else if (templateField === 'START_DATE' || templateField === 'END_DATE') {
+          formattedValue = formatDateToDDMMYYYY(formattedValue);
+        } else if (templateField === 'TENURE') {
+          formattedValue = formatStringValue(formattedValue);
+        }
+        
+        templateFields[templateField] = formattedValue;
       }
     }
   }

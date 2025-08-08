@@ -26,6 +26,8 @@ This is a comprehensive Document Management System (DMS) specifically designed f
 - **Mobile Number Auto-Fill (Aug 8, 2025)**: Enhanced mobile lookup feature that automatically fills landlord/tenant details when existing mobile numbers are entered
 - **Language Selection Fix (Aug 8, 2025)**: Fixed Gujarati language PDF generation bug, created Gujarati templates, and corrected language passing to PDF generator
 - **Auto-Save Final Step (Aug 8, 2025)**: Removed "Create Agreement" button from final step, agreement now auto-saves when proceeding from step 4 to completion
+- **Complete Gujarati Translation (Aug 8, 2025)**: Fixed step navigation titles and state field placeholders to display properly in Gujarati, achieving complete form translation
+- **PDF Field Formatting Enhancement (Aug 8, 2025)**: Implemented automatic formatting for PDF placeholders including property purpose/furnished status (capitalize and remove underscores), date formatting (YYYY-MM-DD to DD-MM-YYYY), and tenure formatting for professional document output
 
 # User Preferences
 
