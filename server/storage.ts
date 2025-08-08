@@ -250,29 +250,7 @@ export class DatabaseStorage implements IStorage {
 
     const [agreementsResult, totalResult] = await Promise.all([
       db
-        .select({
-          // Select specific fields to avoid column errors
-          id: agreements.id,
-          agreementNumber: agreements.agreementNumber,
-          customerId: agreements.customerId,
-          language: agreements.language,
-          status: agreements.status,
-          ownerDetails: agreements.ownerDetails,
-          tenantDetails: agreements.tenantDetails,
-          propertyDetails: agreements.propertyDetails,
-          rentalTerms: agreements.rentalTerms,
-          additionalClauses: agreements.additionalClauses,
-          startDate: agreements.startDate,
-          endDate: agreements.endDate,
-          agreementDate: agreements.agreementDate,
-          parentAgreementId: agreements.parentAgreementId,
-          renewedFromId: agreements.renewedFromId,
-          documents: agreements.documents,
-          createdAt: agreements.createdAt,
-          updatedAt: agreements.updatedAt,
-          // Customer fields
-          customer: customers,
-        })
+        .select()
         .from(agreements)
         .leftJoin(customers, eq(agreements.customerId, customers.id))
         .where(whereConditions)
@@ -287,25 +265,8 @@ export class DatabaseStorage implements IStorage {
 
     return {
       agreements: agreementsResult.map(row => ({
-        id: row.id,
-        agreementNumber: row.agreementNumber,
-        customerId: row.customerId,
-        language: row.language,
-        status: row.status,
-        ownerDetails: row.ownerDetails,
-        tenantDetails: row.tenantDetails,
-        propertyDetails: row.propertyDetails,
-        rentalTerms: row.rentalTerms,
-        additionalClauses: row.additionalClauses,
-        startDate: row.startDate,
-        endDate: row.endDate,
-        agreementDate: row.agreementDate,
-        parentAgreementId: row.parentAgreementId,
-        renewedFromId: row.renewedFromId,
-        documents: row.documents,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-        customer: row.customer
+        ...row.agreements,
+        customer: row.customers
       })) as any,
       total: totalResult[0].count,
     };

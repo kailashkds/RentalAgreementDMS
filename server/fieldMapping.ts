@@ -357,10 +357,10 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
 
   // Handle additional clauses array
   if (formData.additionalClauses && Array.isArray(formData.additionalClauses)) {
-    const validClauses = formData.additionalClauses.filter(clause => clause && clause.trim());
+    const validClauses = formData.additionalClauses.filter((clause: any) => clause && clause.trim());
     if (validClauses.length > 0) {
       const clausesText = validClauses
-        .map((clause, index) => `${index + 1}. ${clause.trim()}`)
+        .map((clause: any, index: number) => `${index + 1}. ${clause.trim()}`)
         .join('<br/>');
       templateFields['ADDITIONAL_CLAUSES'] = clausesText;
     } else {
@@ -368,10 +368,10 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
     }
   } else if (typeof formData.additionalClauses === 'string') {
     // Handle case where additionalClauses comes as comma-separated string
-    const clausesArray = formData.additionalClauses.split(',').filter(clause => clause && clause.trim());
+    const clausesArray = formData.additionalClauses.split(',').filter((clause: any) => clause && clause.trim());
     if (clausesArray.length > 0) {
       const clausesText = clausesArray
-        .map((clause, index) => `${index + 1}. ${clause.trim()}`)
+        .map((clause: any, index: number) => `${index + 1}. ${clause.trim()}`)
         .join('<br/>');
       templateFields['ADDITIONAL_CLAUSES'] = clausesText;
     } else {

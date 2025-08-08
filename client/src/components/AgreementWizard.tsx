@@ -715,6 +715,14 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         rentalTerms: data.rentalTerms || {},
         additionalClauses: data.additionalClauses || [],
         documents: documents,
+        ownerDocuments: {
+          aadharUrl: documents.ownerAadhar || null,
+          panUrl: documents.ownerPan || null
+        },
+        tenantDocuments: {
+          aadharUrl: documents.tenantAadhar || null,
+          panUrl: documents.tenantPan || null
+        },
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(Date.now() + 11 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         agreementDate: new Date().toISOString().split('T')[0],
@@ -939,6 +947,14 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         rentalTerms: data.rentalTerms || {},
         additionalClauses: data.additionalClauses || [],
         documents: documents,
+        ownerDocuments: {
+          aadharUrl: documents.ownerAadhar || null,
+          panUrl: documents.ownerPan || null
+        },
+        tenantDocuments: {
+          aadharUrl: documents.tenantAadhar || null,
+          panUrl: documents.tenantPan || null
+        },
         startDate: data.rentalTerms?.startDate || new Date().toISOString().split('T')[0],
         endDate: data.rentalTerms?.endDate || new Date(Date.now() + 11 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         agreementDate: new Date().toISOString().split('T')[0],
