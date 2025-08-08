@@ -135,6 +135,7 @@ const FIELD_MAPPINGS = {
   'agreementDate': 'AGREEMENT_DATE',
   'createdAt': 'AGREEMENT_DATE',
   'agreementType': 'AGREEMENT_TYPE',
+  'additionalClauses': 'ADDITIONAL_CLAUSES',
   
   // Property type mapping
   'propertyDetails.type': 'PROPERTY_TYPE',
@@ -344,6 +345,15 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
         console.log(`Mapped ${formPath} = "${value}" -> ${templateField} = "${formattedValue}"`);
       }
     }
+  }
+
+  // Handle additional clauses array
+  if (formData.additionalClauses && Array.isArray(formData.additionalClauses)) {
+    const clausesText = formData.additionalClauses
+      .filter(clause => clause && clause.trim()) // Filter out empty clauses
+      .map((clause, index) => `${index + 1}. ${clause}`)
+      .join('\n');
+    templateFields['ADDITIONAL_CLAUSES'] = clausesText || 'No additional clauses specified.';
   }
 
   // Add computed fields (amounts in words)

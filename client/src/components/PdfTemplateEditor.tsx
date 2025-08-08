@@ -85,6 +85,7 @@ const DYNAMIC_FIELDS = {
   agreement: [
     { key: "{{AGREEMENT_DATE}}", label: "Agreement Creation Date" },
     { key: "{{AGREEMENT_TYPE}}", label: "Agreement Type" },
+    { key: "{{ADDITIONAL_CLAUSES}}", label: "Additional Clauses" },
   ],
 };
 
