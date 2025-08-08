@@ -244,6 +244,7 @@ export const translations = {
     agePlaceholder: "ઉંમર",
     aadharPlaceholder: "XXXX XXXX XXXX",
     panPlaceholder: "ABCDE૧૨૩૪F",
+    occupationPlaceholder: "વ્યવસાય",
     
     // Due date label fix
     dueDateLabel: "નિયત તારીખ (મહિનાનો દિવસ)",

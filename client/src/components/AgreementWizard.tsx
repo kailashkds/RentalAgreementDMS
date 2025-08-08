@@ -822,7 +822,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 </div>
                 <div>
                   <Label>{t("state")}</Label>
-                  <Input {...register("ownerDetails.address.state", { required: "State is required" })} placeholder="e.g., Gujarat, Maharashtra" />
+                  <Input {...register("ownerDetails.address.state", { required: "State is required" })} placeholder={t("stateExamplePlaceholder")} />
                 </div>
                 <div>
                   <Label>{t("pincode")}</Label>
