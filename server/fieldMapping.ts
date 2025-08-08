@@ -366,11 +366,27 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
   for (const [formPath, templateField] of Object.entries(FIELD_MAPPINGS)) {
     const value = getNestedProperty(formData, formPath);
     if (value !== undefined && value !== null) {
+      // Handle object values (like propertyDocuments array)
+      let formattedValue: string;
+      if (typeof value === 'object' && value !== null) {
+        if (Array.isArray(value) && value.length > 0) {
+          // For arrays, take the first URL
+          formattedValue = String(value[0]);
+        } else if (value.url) {
+          // For objects with url property
+          formattedValue = String(value.url);
+        } else {
+          // Skip objects that can't be converted to URLs
+          console.log(`Skipping object value for ${formPath}: ${JSON.stringify(value)}`);
+          continue;
+        }
+      } else {
+        formattedValue = String(value);
+      }
+      
       // Only set if we haven't already set this template field
       // This gives precedence to granular fields over nested address fields
       if (!templateFields[templateField]) {
-        let formattedValue = String(value);
-        
         // Apply smart formatting based on value characteristics and field patterns
         formattedValue = applySmartFormatting(formattedValue, templateField);
         

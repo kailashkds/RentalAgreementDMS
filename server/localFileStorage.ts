@@ -15,10 +15,12 @@ export class LocalFileStorage {
 
   async saveFileFromUrl(url: string, originalFileName?: string): Promise<string | null> {
     try {
-      console.log(`[LocalStorage] Downloading file from URL: ${url}`);
+      // Fix URL case sensitivity issues (Https -> https)
+      const correctedUrl = url.replace(/^Https:\/\//, 'https://');
+      console.log(`[LocalStorage] Downloading file from URL: ${correctedUrl}`);
       
       // Download the file from the URL
-      const response = await fetch(url);
+      const response = await fetch(correctedUrl);
       if (!response.ok) {
         console.error(`[LocalStorage] Failed to fetch file: ${response.status}`);
         return null;
