@@ -729,7 +729,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 disabled={!watchedCustomerId}
               >
                 <Copy className="mr-2 h-4 w-4" />
-                Copy Customer Details
+                {t("copyCustomerDetails")}
               </Button>
             </div>
             
@@ -751,46 +751,46 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <div className="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded">
-                      Auto-fill
+                      {t("autoFill")}
                     </div>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Enter mobile number to auto-fill customer details if they exist
+                  {t("autoFillMessage")}
                 </p>
               </div>
               <div>
-                <Label htmlFor="ownerAge">Age</Label>
+                <Label htmlFor="ownerAge">{t("ownerAge")}</Label>
                 <Input type="number" {...register("ownerDetails.age", { required: "Age is required" })} placeholder="Age" />
               </div>
               <div>
-                <Label htmlFor="ownerOccupation">Occupation</Label>
+                <Label htmlFor="ownerOccupation">{t("ownerOccupation")}</Label>
                 <Input {...register("ownerDetails.occupation")} placeholder="Occupation" />
               </div>
               <div>
-                <Label htmlFor="ownerAadhar">Aadhar Number</Label>
+                <Label htmlFor="ownerAadhar">{t("ownerAadhar")}</Label>
                 <Input {...register("ownerDetails.aadhar")} placeholder="XXXX XXXX XXXX" />
               </div>
               <div>
-                <Label htmlFor="ownerPan">PAN Card Number</Label>
+                <Label htmlFor="ownerPan">{t("ownerPan")}</Label>
                 <Input {...register("ownerDetails.pan")} placeholder="ABCDE1234F" />
               </div>
             </div>
 
             {/* Address Section */}
             <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-4">Address Details</h4>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">{t("addressDetails")}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>Flat/House No.</Label>
+                  <Label>{t("flatNo")}</Label>
                   <Input {...register("ownerDetails.address.flatNo", { required: "Flat/House No. is required" })} />
                 </div>
                 <div className="relative">
-                  <Label>Society/Apartment</Label>
+                  <Label>{t("societyApartment")}</Label>
                   <Input 
                     value={watch("ownerDetails.address.society") || ""}
                     onChange={(e) => handleSocietyInputChange('owner', e.target.value)}
-                    placeholder="Start typing society name..."
+                    placeholder={t("startTypingSociety")}
                     onFocus={() => setShowAddressSuggestions(prev => ({ ...prev, owner: addressSearch.owner.length >= 2 }))}
                     onBlur={() => setTimeout(() => setShowAddressSuggestions(prev => ({ ...prev, owner: false })), 200)}
                   />
@@ -810,19 +810,19 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   )}
                 </div>
                 <div>
-                  <Label>Area</Label>
+                  <Label>{t("area")}</Label>
                   <Input {...register("ownerDetails.address.area", { required: "Area is required" })} />
                 </div>
                 <div>
-                  <Label>City</Label>
+                  <Label>{t("city")}</Label>
                   <Input {...register("ownerDetails.address.city", { required: "City is required" })} />
                 </div>
                 <div>
-                  <Label>State</Label>
+                  <Label>{t("state")}</Label>
                   <Input {...register("ownerDetails.address.state", { required: "State is required" })} placeholder="e.g., Gujarat, Maharashtra" />
                 </div>
                 <div>
-                  <Label>Pincode</Label>
+                  <Label>{t("pincode")}</Label>
                   <Input {...register("ownerDetails.address.pincode", { required: "Pincode is required" })} placeholder="e.g., 380001" />
                 </div>
               </div>
@@ -830,10 +830,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
             {/* Document Upload */}
             <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-4">Documents (Optional)</h4>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">{t("documents")} {t("optional")}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Aadhar Card</Label>
+                  <Label className="text-sm font-medium text-gray-700">{t("aadharCard")}</Label>
                   <ObjectUploader
                     maxFileSize={5242880} // 5MB
                     onGetUploadParameters={getUploadParameters}
@@ -852,7 +852,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                           <Plus className="w-4 h-4" />
                         </div>
                         <p className="text-sm text-gray-600">
-                          {documents.ownerAadhar ? "Aadhar Card Uploaded" : "Upload Aadhar Card"}
+                          {documents.ownerAadhar ? t("aadharCardUploaded") : t("uploadAadharCard")}
                         </p>
                         <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
                       </div>
@@ -895,7 +895,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-800">Step 3: Tenant Details</h3>
+              <h3 className="text-lg font-semibold text-gray-800">{t("step3Title")}</h3>
               <Button
                 type="button"
                 variant="outline"
@@ -903,17 +903,17 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 disabled={!watchedCustomerId}
               >
                 <Copy className="mr-2 h-4 w-4" />
-                Copy from Customer
+                {t("copyFromCustomer")}
               </Button>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label>Full Name</Label>
-                <Input {...register("tenantDetails.name", { required: "Name is required" })} placeholder="Enter tenant's full name" />
+                <Label>{t("fullName")}</Label>
+                <Input {...register("tenantDetails.name", { required: "Name is required" })} placeholder={t("enterTenantFullName")} />
               </div>
               <div>
-                <Label>Mobile Number</Label>
+                <Label>{t("mobileNumber")}</Label>
                 <div className="relative">
                   <Input 
                     {...register("tenantDetails.mobile", { required: "Mobile is required" })} 
@@ -922,38 +922,38 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <div className="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded">
-                      Auto-fill
+                      {t("autoFill")}
                     </div>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Enter mobile number to auto-fill customer details if they exist
+                  {t("autoFillMessage")}
                 </p>
               </div>
               <div>
-                <Label>Age</Label>
-                <Input type="number" {...register("tenantDetails.age", { required: "Age is required" })} placeholder="Age" />
+                <Label>{t("tenantAge")}</Label>
+                <Input type="number" {...register("tenantDetails.age", { required: "Age is required" })} placeholder={t("tenantAge")} />
               </div>
               <div>
-                <Label>Occupation</Label>
+                <Label>{t("tenantOccupation")}</Label>
                 <Input {...register("tenantDetails.occupation")} placeholder="Occupation" />
               </div>
             </div>
 
             {/* Tenant Address Section */}
             <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-4">Address Details</h4>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">{t("addressDetails")}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>Flat/House No.</Label>
+                  <Label>{t("flatNo")}</Label>
                   <Input {...register("tenantDetails.address.flatNo", { required: "Flat/House No. is required" })} />
                 </div>
                 <div className="relative">
-                  <Label>Society/Apartment</Label>
+                  <Label>{t("societyApartment")}</Label>
                   <Input 
                     value={watch("tenantDetails.address.society") || ""}
                     onChange={(e) => handleSocietyInputChange('tenant', e.target.value)}
-                    placeholder="Start typing society name..."
+                    placeholder={t("startTypingSociety")}
                     onFocus={() => setShowAddressSuggestions(prev => ({ ...prev, tenant: addressSearch.tenant.length >= 2 }))}
                     onBlur={() => setTimeout(() => setShowAddressSuggestions(prev => ({ ...prev, tenant: false })), 200)}
                   />
@@ -973,19 +973,19 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   )}
                 </div>
                 <div>
-                  <Label>Area</Label>
+                  <Label>{t("area")}</Label>
                   <Input {...register("tenantDetails.address.area", { required: "Area is required" })} />
                 </div>
                 <div>
-                  <Label>City</Label>
+                  <Label>{t("city")}</Label>
                   <Input {...register("tenantDetails.address.city", { required: "City is required" })} />
                 </div>
                 <div>
-                  <Label>State</Label>
+                  <Label>{t("state")}</Label>
                   <Input {...register("tenantDetails.address.state", { required: "State is required" })} placeholder="e.g., Gujarat, Maharashtra" />
                 </div>
                 <div>
-                  <Label>Pincode</Label>
+                  <Label>{t("pincode")}</Label>
                   <Input {...register("tenantDetails.address.pincode", { required: "Pincode is required" })} placeholder="e.g., 380001" />
                 </div>
               </div>
@@ -1057,34 +1057,34 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       case 4:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800">Step 4: Property Details & Rental Terms</h3>
+            <h3 className="text-lg font-semibold text-gray-800">{t("step4Title")}</h3>
             
             <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-4">Property Information</h4>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">{t("propertyInformation")}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Property Type</Label>
+                  <Label>{t("propertyType")}</Label>
                   <Input {...register("propertyDetails.type", { required: "Property type is required" })} placeholder="e.g., 2BHK Apartment" />
                 </div>
                 <div>
-                  <Label>Place of Agreement</Label>
-                  <Input {...register("propertyDetails.place")} placeholder="City name" />
+                  <Label>{t("placeOfAgreement")}</Label>
+                  <Input {...register("propertyDetails.place")} placeholder={t("cityName")} />
                 </div>
               </div>
               
               <div className="mt-4">
-                <h5 className="text-sm font-semibold text-gray-700 mb-3">Property Address</h5>
+                <h5 className="text-sm font-semibold text-gray-700 mb-3">{t("propertyAddress")}</h5>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label>Flat/House No.</Label>
+                    <Label>{t("flatNo")}</Label>
                     <Input {...register("propertyDetails.address.flatNo", { required: "Property address is required" })} />
                   </div>
                   <div className="relative">
-                    <Label>Society/Building</Label>
+                    <Label>{t("societyBuilding")}</Label>
                     <Input 
                       value={watch("propertyDetails.address.society") || ""}
                       onChange={(e) => handleSocietyInputChange('property', e.target.value)}
-                      placeholder="Start typing society name..."
+                      placeholder={t("startTypingSociety")}
                       onFocus={() => setShowAddressSuggestions(prev => ({ ...prev, property: addressSearch.property.length >= 2 }))}
                       onBlur={() => setTimeout(() => setShowAddressSuggestions(prev => ({ ...prev, property: false })), 200)}
                     />
@@ -1123,10 +1123,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
 
               <div className="mt-4">
-                <h5 className="text-sm font-semibold text-gray-700 mb-3">Property Details</h5>
+                <h5 className="text-sm font-semibold text-gray-700 mb-3">{t("propertyDetails")}</h5>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Property Area (Square Feet)</Label>
+                    <Label>{t("propertyAreaSquareFeet")}</Label>
                     <Input 
                       type="number" 
                       {...register("propertyDetails.areaInSqFt")} 
@@ -1134,43 +1134,43 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     />
                   </div>
                   <div>
-                    <Label>Purpose</Label>
+                    <Label>{t("purpose")}</Label>
                     <Select 
                       value={watch("propertyDetails.purpose")} 
                       onValueChange={(value) => setValue("propertyDetails.purpose", value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select purpose" />
+                        <SelectValue placeholder={t("selectPurpose")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="residential">Residential</SelectItem>
-                        <SelectItem value="commercial">Commercial</SelectItem>
-                        <SelectItem value="mixed">Mixed Use</SelectItem>
+                        <SelectItem value="residential">{t("residential")}</SelectItem>
+                        <SelectItem value="commercial">{t("commercial")}</SelectItem>
+                        <SelectItem value="mixed">{t("mixedUse")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label>Furnished Status</Label>
+                    <Label>{t("furnishedStatus")}</Label>
                     <Select 
                       value={watch("propertyDetails.furnishedStatus")} 
                       onValueChange={(value) => setValue("propertyDetails.furnishedStatus", value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder={t("selectStatus")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fully_furnished">Fully Furnished</SelectItem>
-                        <SelectItem value="semi_furnished">Semi Furnished</SelectItem>
-                        <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                        <SelectItem value="fully_furnished">{t("fullyFurnished")}</SelectItem>
+                        <SelectItem value="semi_furnished">{t("semiFurnished")}</SelectItem>
+                        <SelectItem value="unfurnished">{t("unfurnished")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="md:col-span-2">
-                    <Label>Additional Items to Handover</Label>
+                    <Label>{t("additionalItems")}</Label>
                     <Textarea 
                       {...register("propertyDetails.additionalItems")} 
                       rows={3} 
-                      placeholder="List items like washing machine, refrigerator, AC, etc..."
+                      placeholder={t("listItems")}
                     />
                   </div>
                 </div>
@@ -1243,18 +1243,18 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             </div>
 
             <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-4">Rental Terms</h4>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">{t("rentalTerms")}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>Security Deposit (₹)</Label>
+                  <Label>{t("deposit")} (₹)</Label>
                   <Input type="number" {...register("rentalTerms.deposit", { required: "Security deposit is required" })} placeholder="Amount" />
                 </div>
                 <div>
-                  <Label>Monthly Rent (₹)</Label>
+                  <Label>{t("monthlyRent")} (₹)</Label>
                   <Input type="number" {...register("rentalTerms.monthlyRent", { required: "Monthly rent is required" })} placeholder="Amount" />
                 </div>
                 <div>
-                  <Label>Due Date (Day of Month)</Label>
+                  <Label>{t("dueDate")} (Day of Month)</Label>
                   <Input type="number" {...register("rentalTerms.dueDate", { required: "Due date is required" })} placeholder="e.g., 5, 15" />
                 </div>
               </div>
@@ -1264,23 +1264,23 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               <h4 className="text-md font-semibold text-gray-800 mb-4">Additional Terms</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>Maintenance Charge</Label>
+                  <Label>{t("maintenance")} Charge</Label>
                   <Select value={watch("rentalTerms.maintenance")} onValueChange={(value) => setValue("rentalTerms.maintenance", value as "included" | "excluded")}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select option" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="included">Included in rent</SelectItem>
-                      <SelectItem value="excluded">Excluded from rent</SelectItem>
+                      <SelectItem value="included">{t("included")}</SelectItem>
+                      <SelectItem value="excluded">{t("excluded")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Notice Period (Months)</Label>
+                  <Label>{t("noticePeriod")} (Months)</Label>
                   <Input type="number" {...register("rentalTerms.noticePeriod")} placeholder="1-3 months" />
                 </div>
                 <div>
-                  <Label>Minimum Stay</Label>
+                  <Label>{t("minimumStay")}</Label>
                   <Input {...register("rentalTerms.minimumStay")} placeholder="e.g., 11 months" />
                 </div>
               </div>
@@ -1292,7 +1292,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       case 5:
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800">Step 5: Additional Conditions & Finalize</h3>
+            <h3 className="text-lg font-semibold text-gray-800">{t("step5Title")}</h3>
             
             <div>
               <div className="flex items-center justify-between mb-4">
