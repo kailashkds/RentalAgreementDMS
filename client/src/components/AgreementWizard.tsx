@@ -955,7 +955,22 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
               <div>
                 <Label htmlFor="ownerAge">{t("ownerAge")}</Label>
-                <Input type="number" {...register("ownerDetails.age", { required: "Age is required" })} placeholder={t("agePlaceholder")} />
+                <Input 
+                  type="number" 
+                  min="18" 
+                  max="100" 
+                  step="1"
+                  {...register("ownerDetails.age", { 
+                    required: "Age is required",
+                    min: { value: 18, message: "Age must be at least 18" },
+                    max: { value: 100, message: "Age must be less than 100" }
+                  })} 
+                  placeholder={t("agePlaceholder")}
+                  onWheel={(e) => e.currentTarget.blur()} // Prevent scroll wheel issues
+                />
+                {errors.ownerDetails?.age && (
+                  <p className="text-sm text-red-600 mt-1">{errors.ownerDetails.age.message}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="ownerOccupation">{t("ownerOccupation")}</Label>
@@ -1165,7 +1180,22 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
               <div>
                 <Label>{t("tenantAge")}</Label>
-                <Input type="number" {...register("tenantDetails.age", { required: "Age is required" })} placeholder={t("agePlaceholder")} />
+                <Input 
+                  type="number" 
+                  min="18" 
+                  max="100" 
+                  step="1"
+                  {...register("tenantDetails.age", { 
+                    required: "Age is required",
+                    min: { value: 18, message: "Age must be at least 18" },
+                    max: { value: 100, message: "Age must be less than 100" }
+                  })} 
+                  placeholder={t("agePlaceholder")}
+                  onWheel={(e) => e.currentTarget.blur()} // Prevent scroll wheel issues
+                />
+                {errors.tenantDetails?.age && (
+                  <p className="text-sm text-red-600 mt-1">{errors.tenantDetails.age.message}</p>
+                )}
               </div>
               <div>
                 <Label>{t("tenantOccupation")}</Label>
@@ -1362,8 +1392,13 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     <Label>{t("propertyAreaSquareFeet")}</Label>
                     <Input 
                       type="number" 
-                      {...register("propertyDetails.areaInSqFt")} 
-                      placeholder={t("areaSquareFeetExample")} 
+                      min="1"
+                      step="1"
+                      {...register("propertyDetails.areaInSqFt", {
+                        min: { value: 1, message: "Area must be at least 1 sq ft" }
+                      })} 
+                      placeholder={t("areaSquareFeetExample")}
+                      onWheel={(e) => e.currentTarget.blur()}
                     />
                   </div>
                   <div>
@@ -1480,15 +1515,47 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>{t("deposit")} (₹)</Label>
-                  <Input type="number" {...register("rentalTerms.deposit", { required: "Security deposit is required" })} placeholder={t("amountPlaceholder")} />
+                  <Input 
+                    type="number" 
+                    min="0"
+                    step="1"
+                    {...register("rentalTerms.deposit", { 
+                      required: "Security deposit is required",
+                      min: { value: 0, message: "Deposit cannot be negative" }
+                    })} 
+                    placeholder={t("amountPlaceholder")}
+                    onWheel={(e) => e.currentTarget.blur()}
+                  />
                 </div>
                 <div>
                   <Label>{t("monthlyRent")} (₹)</Label>
-                  <Input type="number" {...register("rentalTerms.monthlyRent", { required: "Monthly rent is required" })} placeholder={t("amountPlaceholder")} />
+                  <Input 
+                    type="number" 
+                    min="1"
+                    step="1"
+                    {...register("rentalTerms.monthlyRent", { 
+                      required: "Monthly rent is required",
+                      min: { value: 1, message: "Monthly rent must be at least ₹1" }
+                    })} 
+                    placeholder={t("amountPlaceholder")}
+                    onWheel={(e) => e.currentTarget.blur()}
+                  />
                 </div>
                 <div>
                   <Label>{t("dueDateLabel")}</Label>
-                  <Input type="number" {...register("rentalTerms.dueDate", { required: "Due date is required" })} placeholder={t("dueDateExample")} />
+                  <Input 
+                    type="number" 
+                    min="1"
+                    max="31"
+                    step="1"
+                    {...register("rentalTerms.dueDate", { 
+                      required: "Due date is required",
+                      min: { value: 1, message: "Due date must be between 1-31" },
+                      max: { value: 31, message: "Due date must be between 1-31" }
+                    })} 
+                    placeholder={t("dueDateExample")}
+                    onWheel={(e) => e.currentTarget.blur()}
+                  />
                 </div>
               </div>
             </div>
