@@ -219,6 +219,19 @@ export const translations = {
     // Dialog title and other elements
     createNewAgreement: "નવો કરાર બનાવો",
     
+    // Placeholders and additional text
+    occupationPlaceholder: "વ્યવસાય",
+    stateExamplePlaceholder: "દા.ત., ગુજરાત, મહારાષ્ટ્ર",
+    pincodeExamplePlaceholder: "દા.ત., ૩૮૦૦૦૧",
+    propertyTypeExample: "દા.ત., ૨BHK એપાર્ટમેન્ટ",
+    areaSquareFeetExample: "દા.ત., ૧૨૦૦",
+    fileSizeNote: "PDF, JPG, PNG (મહત્તમ ૫MB)",
+    amountPlaceholder: "રકમ",
+    dueDateExample: "દા.ત., ૫, ૧૫",
+    noticePeriodExample: "૧-૩ મહિના",
+    minimumStayExample: "દા.ત., ૧૧ મહિના",
+    customDuration: "કસ્ટમ અવધિ",
+    
     // Options
     residential: "રહેણાંક",
     commercial: "વ્યાપારી",
