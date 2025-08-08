@@ -418,10 +418,14 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   };
 
   const fetchMobileInfo = async (mobile: string, userType: 'owner' | 'tenant') => {
-    if (mobile && mobile.length >= 10) {
+    // Only lookup if mobile has 10 digits
+    if (mobile && mobile.replace(/\D/g, '').length === 10) {
       try {
+        console.log(`Looking up customer for mobile: ${mobile}`);
         const customer = await apiRequest(`/api/customers/by-mobile?mobile=${encodeURIComponent(mobile)}`) as any;
+        
         if (customer) {
+          console.log(`Found customer:`, customer);
           if (userType === 'owner') {
             setValue("ownerDetails.name", customer.name);
             setValue("ownerDetails.email", customer.email || "");
@@ -429,21 +433,24 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             setValue("tenantDetails.name", customer.name);
             setValue("tenantDetails.email", customer.email || "");
           }
+          
           toast({
-            title: "Customer Found",
+            title: "Customer Found ✓",
             description: `Auto-filled details for ${customer.name}`,
+            variant: "default",
           });
         }
       } catch (error) {
+        console.log("Customer lookup error:", error);
         // Check if it's a 404 (customer not found) vs other errors
         if (error instanceof Error && error.message.includes('404')) {
-          // Customer not found - this is expected behavior, no toast needed
+          // Customer not found - this is expected behavior, no error toast
           console.log(`No existing customer found for mobile: ${mobile}`);
         } else {
           // Other error - show error toast
           console.error("Customer lookup error:", error);
           toast({
-            title: "Lookup Error",
+            title: "Lookup Failed",
             description: "Could not check for existing customer details",
             variant: "destructive",
           });
@@ -829,16 +836,23 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <Input 
                     {...register("ownerDetails.mobile", { required: "Mobile is required" })} 
                     placeholder={t("mobileNumberPlaceholder")}
+                    onChange={(e) => {
+                      const mobile = e.target.value;
+                      // Auto-lookup when user finishes typing 10 digits
+                      if (mobile.replace(/\D/g, '').length === 10) {
+                        setTimeout(() => fetchMobileInfo(mobile, 'owner'), 500);
+                      }
+                    }}
                     onBlur={(e) => fetchMobileInfo(e.target.value, 'owner')}
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded">
-                      {t("autoFill")}
+                    <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                      ✓ Auto-Fill
                     </div>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {t("autoFillMessage")}
+                  Enter mobile number to auto-fill name and email
                 </p>
               </div>
               <div>
@@ -1000,16 +1014,23 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <Input 
                     {...register("tenantDetails.mobile", { required: "Mobile is required" })} 
                     placeholder={t("mobileNumberPlaceholder")} 
+                    onChange={(e) => {
+                      const mobile = e.target.value;
+                      // Auto-lookup when user finishes typing 10 digits
+                      if (mobile.replace(/\D/g, '').length === 10) {
+                        setTimeout(() => fetchMobileInfo(mobile, 'tenant'), 500);
+                      }
+                    }}
                     onBlur={(e) => fetchMobileInfo(e.target.value, 'tenant')}
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded">
-                      {t("autoFill")}
+                    <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                      ✓ Auto-Fill
                     </div>
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {t("autoFillMessage")}
+                  Enter mobile number to auto-fill name and email
                 </p>
               </div>
               <div>
