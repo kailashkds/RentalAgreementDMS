@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { X, ArrowLeft, ArrowRight, Plus, Trash2, Copy, Download } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, Plus, Trash2, Copy, Download, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useSocieties } from "@/hooks/useSocieties";
@@ -66,6 +66,12 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     tenant: false,
     property: false
   });
+  
+  // PDF Generation state
+  const [pdfState, setPdfState] = useState<'idle' | 'creating' | 'ready'>('idle');
+  const [pdfData, setPdfData] = useState<{ html: string; agreementNumber: string } | null>(null);
+  const [createdAgreementId, setCreatedAgreementId] = useState<string | null>(null);
+  
   const { toast } = useToast();
 
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<AgreementFormData>({
@@ -331,22 +337,18 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       // Reset form when modal is closed
       setCurrentStep(1);
       setDocuments({});
+      setAddressSearch({ owner: "", tenant: "", property: "" });
+      setShowAddressSuggestions({ owner: false, tenant: false, property: false });
+      // Reset PDF state
+      setPdfState('idle');
+      setPdfData(null);
+      setCreatedAgreementId(null);
       reset();
     }
   }, [isOpen, agreementId, reset, toast]);
 
   const nextStep = async () => {
     if (currentStep < STEPS.length && canProceed(currentStep)) {
-      // If we're about to go to the final step (step 5), auto-save the agreement
-      if (currentStep === STEPS.length - 1) {
-        try {
-          await finalizeAgreement(watch());
-          return; // Don't increment step, the modal will close after saving
-        } catch (error) {
-          console.error("Failed to auto-save agreement:", error);
-          // Still proceed to final step if auto-save fails
-        }
-      }
       setCurrentStep(currentStep + 1);
     } else if (!canProceed(currentStep)) {
       toast({
@@ -530,6 +532,88 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     }
   };
 
+  // Enhanced PDF generation function for Step 5
+  const handlePdfGeneration = async () => {
+    const formData = watch();
+    
+    if (pdfState === 'idle') {
+      // First, create the agreement
+      setPdfState('creating');
+      
+      try {
+        const agreement = await finalizeAgreement(formData);
+        
+        // Then generate the PDF
+        const selectedLanguage = formData.language || 'english';
+        console.log('Generating PDF for agreement:', agreement.agreementNumber);
+        
+        const response = await fetch('/api/agreements/generate-pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...formData,
+            agreementNumber: agreement.agreementNumber,
+            language: selectedLanguage
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          setPdfData({
+            html: result.html,
+            agreementNumber: agreement.agreementNumber
+          });
+          setPdfState('ready');
+          
+          toast({
+            title: "PDF Generated Successfully",
+            description: `Agreement ${agreement.agreementNumber} PDF is ready for download.`,
+          });
+        } else {
+          throw new Error('Failed to generate PDF');
+        }
+      } catch (error) {
+        console.error('PDF generation error:', error);
+        setPdfState('idle');
+        toast({
+          title: "Error",
+          description: "Failed to create agreement and generate PDF.",
+          variant: "destructive",
+        });
+      }
+    } else if (pdfState === 'ready' && pdfData) {
+      // Download the generated PDF
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Rental Agreement - ${pdfData.agreementNumber}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              @media print { 
+                body { margin: 0; }
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="no-print" style="margin-bottom: 20px;">
+              <button onclick="window.print()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px;">Print PDF</button>
+              <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; margin-left: 10px;">Close</button>
+            </div>
+            ${pdfData.html}
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    }
+  };
+
   const downloadAgreement = async () => {
     const formData = watch();
     if (!formData || !formData.customerId) {
@@ -645,6 +729,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
       const response = await apiRequest("POST", "/api/agreements", agreementData);
       const agreement = await response.json();
+      
+      // Store the created agreement ID for PDF generation
+      setCreatedAgreementId(agreement.id);
 
       queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
@@ -654,8 +741,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         description: `Agreement ${agreement.agreementNumber} has been created successfully.`,
       });
 
-      // Close the modal after successful creation
-      onClose();
+      return agreement;
     } catch (error) {
       console.error("Finalize agreement error:", error);
       toast({
@@ -1376,6 +1462,43 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 </div>
               </CardContent>
             </Card>
+
+            {/* Enhanced PDF Generation Button */}
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-6">
+                <h4 className="text-md font-semibold text-gray-800 mb-4">Create Agreement & Generate PDF</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  Review your agreement details above and click below to create the agreement and generate a professional PDF.
+                </p>
+                <Button 
+                  onClick={handlePdfGeneration}
+                  disabled={pdfState === 'creating' || !canProceed(currentStep)}
+                  className={`w-full h-12 text-lg font-semibold ${
+                    pdfState === 'idle' 
+                      ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                      : pdfState === 'creating'
+                      ? "bg-blue-400 cursor-not-allowed text-white"
+                      : "bg-green-600 hover:bg-green-700 text-white"
+                  }`}
+                  aria-live="polite"
+                >
+                  {pdfState === 'creating' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                  {pdfState === 'idle' && "Create PDF"}
+                  {pdfState === 'creating' && "Creating PDF..."}
+                  {pdfState === 'ready' && (
+                    <>
+                      <Download className="mr-2 h-5 w-5" />
+                      Download PDF
+                    </>
+                  )}
+                </Button>
+                {pdfState === 'ready' && pdfData && (
+                  <p className="text-sm text-green-600 mt-2 text-center">
+                    ✓ Agreement {pdfData.agreementNumber} created successfully! Click above to download the PDF.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </div>
         );
 
@@ -1439,19 +1562,30 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 >
                   {t("saveDraft")}
                 </Button>
-                <Button 
-                  type="button" 
-                  onClick={nextStep} 
-                  disabled={!canProceed(currentStep)}
-                  className={`${
-                    canProceed(currentStep) 
-                      ? "bg-blue-600 hover:bg-blue-700" 
-                      : "bg-gray-400 cursor-not-allowed"
-                  }`}
-                >
-                  {currentStep === STEPS.length - 1 ? t("createAgreement") : t("next")}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+                {currentStep < STEPS.length ? (
+                  <Button 
+                    type="button" 
+                    onClick={nextStep} 
+                    disabled={!canProceed(currentStep)}
+                    className={`${
+                      canProceed(currentStep) 
+                        ? "bg-blue-600 hover:bg-blue-700" 
+                        : "bg-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    {t("next")}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button 
+                    type="button" 
+                    onClick={onClose}
+                    variant="outline"
+                    className="bg-gray-100 hover:bg-gray-200"
+                  >
+                    Close Wizard
+                  </Button>
+                )}
               </div>
             </div>
           </form>
