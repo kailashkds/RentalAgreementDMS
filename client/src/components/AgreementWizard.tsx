@@ -74,6 +74,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   
   const { toast } = useToast();
   const mobileTimeout = useRef<NodeJS.Timeout | null>(null);
+  const addressTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<AgreementFormData>({
     defaultValues: {
@@ -415,6 +416,64 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     toast({
       title: "Details Copied",
       description: `${selectedCustomer.name}'s details have been copied to landlord fields.`,
+    });
+  };
+
+  // Address autocomplete from societies database
+  const [societySuggestions, setSocietySuggestions] = useState<Array<{
+    id: string;
+    societyName: string;
+    area: string;
+    city: string;
+    pincode: string;
+    state: string;
+  }>>([]);
+  const [showSocietySuggestions, setShowSocietySuggestions] = useState(false);
+  
+  const fetchSocietyAddresses = async (searchValue: string) => {
+    if (searchValue.length < 2) {
+      setSocietySuggestions([]);
+      setShowSocietySuggestions(false);
+      return;
+    }
+
+    // Clear previous timeout
+    if (addressTimeout.current) {
+      clearTimeout(addressTimeout.current);
+    }
+
+    addressTimeout.current = setTimeout(async () => {
+      try {
+        const societies = await apiRequest("GET", `/api/societies?search=${encodeURIComponent(searchValue)}&limit=10`) as any[];
+        setSocietySuggestions(societies.map(society => ({
+          id: society.id,
+          societyName: society.societyName,
+          area: society.area,
+          city: society.city,
+          pincode: society.pincode,
+          state: society.state || "Gujarat"
+        })));
+        setShowSocietySuggestions(true);
+      } catch (error) {
+        console.error("Error fetching society addresses:", error);
+        setSocietySuggestions([]);
+        setShowSocietySuggestions(false);
+      }
+    }, 300);
+  };
+
+  const handleSocietySelect = (society: any, fieldPrefix: string) => {
+    setValue(`${fieldPrefix}.society`, society.societyName);
+    setValue(`${fieldPrefix}.area`, society.area);
+    setValue(`${fieldPrefix}.city`, society.city);
+    setValue(`${fieldPrefix}.pincode`, society.pincode);
+    setValue(`${fieldPrefix}.state`, society.state);
+    
+    setShowSocietySuggestions(false);
+    
+    toast({
+      title: "Address Auto-filled",
+      description: `Auto-filled from ${society.societyName}`,
     });
   };
 
@@ -891,30 +950,23 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="ownerName">{t("ownerName")}</Label>
-                <div className="relative">
-                  <Input 
-                    {...register("ownerDetails.name", { required: "Name is required" })} 
-                    placeholder={t("ownerName")}
-                    onChange={(e) => {
-                      const name = e.target.value;
-                      // Clear previous timeout
-                      if (mobileTimeout.current) {
-                        clearTimeout(mobileTimeout.current);
-                      }
-                      // Auto-lookup when user finishes typing name (3+ chars)
-                      if (name.trim().length >= 3) {
-                        mobileTimeout.current = setTimeout(() => {
-                          fetchCustomerInfo(name, 'name', 'owner');
-                        }, 800);
-                      }
-                    }}
-                  />
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                      ✓ Auto-Fill
-                    </div>
-                  </div>
-                </div>
+                <Input 
+                  {...register("ownerDetails.name", { required: "Name is required" })} 
+                  placeholder={t("ownerName")}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    // Clear previous timeout
+                    if (mobileTimeout.current) {
+                      clearTimeout(mobileTimeout.current);
+                    }
+                    // Auto-lookup when user finishes typing name (3+ chars)
+                    if (name.trim().length >= 3) {
+                      mobileTimeout.current = setTimeout(() => {
+                        fetchCustomerInfo(name, 'name', 'owner');
+                      }, 800);
+                    }
+                  }}
+                />
                 <p className="text-xs text-gray-500 mt-1">
                   Enter name to auto-fill mobile and address
                 </p>
@@ -924,31 +976,24 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
               <div>
                 <Label htmlFor="ownerMobile">{t("ownerMobile")}</Label>
-                <div className="relative">
-                  <Input 
-                    {...register("ownerDetails.mobile", { required: "Mobile is required" })} 
-                    placeholder={t("mobileNumberPlaceholder")}
-                    onChange={(e) => {
-                      const mobile = e.target.value;
-                      // Clear previous timeout to prevent multiple lookups
-                      if (mobileTimeout.current) {
-                        clearTimeout(mobileTimeout.current);
-                      }
-                      // Auto-lookup when user finishes typing 10 digits
-                      if (mobile.replace(/\D/g, '').length === 10) {
-                        mobileTimeout.current = setTimeout(() => {
-                          fetchCustomerInfo(mobile, 'mobile', 'owner');
-                        }, 500);
-                      }
-                    }}
-                    onBlur={(e) => fetchCustomerInfo(e.target.value, 'mobile', 'owner')}
-                  />
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                      ✓ Auto-Fill
-                    </div>
-                  </div>
-                </div>
+                <Input 
+                  {...register("ownerDetails.mobile", { required: "Mobile is required" })} 
+                  placeholder={t("mobileNumberPlaceholder")}
+                  onChange={(e) => {
+                    const mobile = e.target.value;
+                    // Clear previous timeout to prevent multiple lookups
+                    if (mobileTimeout.current) {
+                      clearTimeout(mobileTimeout.current);
+                    }
+                    // Auto-lookup when user finishes typing 10 digits
+                    if (mobile.replace(/\D/g, '').length === 10) {
+                      mobileTimeout.current = setTimeout(() => {
+                        fetchCustomerInfo(mobile, 'mobile', 'owner');
+                      }, 500);
+                    }
+                  }}
+                  onBlur={(e) => fetchCustomerInfo(e.target.value, 'mobile', 'owner')}
+                />
                 <p className="text-xs text-gray-500 mt-1">
                   Enter mobile number to auto-fill name and email
                 </p>
@@ -997,26 +1042,30 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 <div className="relative">
                   <Label>{t("societyApartment")}</Label>
                   <Input 
-                    value={watch("ownerDetails.address.society") || ""}
-                    onChange={(e) => handleSocietyInputChange('owner', e.target.value)}
+                    {...register("ownerDetails.address.society", { required: "Society/Apartment name is required" })}
                     placeholder={t("startTypingSociety")}
-                    onFocus={() => setShowAddressSuggestions(prev => ({ ...prev, owner: addressSearch.owner.length >= 2 }))}
-                    onBlur={() => setTimeout(() => setShowAddressSuggestions(prev => ({ ...prev, owner: false })), 200)}
+                    onChange={(e) => {
+                      fetchSocietyAddresses(e.target.value);
+                    }}
+                    onBlur={() => setTimeout(() => setShowSocietySuggestions(false), 200)}
                   />
-                  {showAddressSuggestions.owner && ownerAddresses.length > 0 && (
+                  {showSocietySuggestions && societySuggestions.length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                      {ownerAddresses.map((address) => (
+                      {societySuggestions.map((society) => (
                         <div
-                          key={address.id}
+                          key={society.id}
                           className="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
-                          onClick={() => handleAddressSelect('owner', address)}
+                          onClick={() => handleSocietySelect(society, 'ownerDetails.address')}
                         >
-                          <div className="font-medium">{address.society}</div>
-                          <div className="text-sm text-gray-600">{address.area}, {address.city} - {address.pincode}</div>
+                          <div className="font-medium">{society.societyName}</div>
+                          <div className="text-sm text-gray-600">{society.area}, {society.city} - {society.pincode}</div>
                         </div>
                       ))}
                     </div>
                   )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Start typing to see address suggestions
+                  </p>
                 </div>
                 <div>
                   <Label>{t("area")}</Label>
@@ -1119,61 +1168,47 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label>{t("fullName")}</Label>
-                <div className="relative">
-                  <Input 
-                    {...register("tenantDetails.name", { required: "Name is required" })} 
-                    placeholder={t("enterTenantFullName")}
-                    onChange={(e) => {
-                      const name = e.target.value;
-                      // Clear previous timeout
-                      if (mobileTimeout.current) {
-                        clearTimeout(mobileTimeout.current);
-                      }
-                      // Auto-lookup when user finishes typing name (3+ chars)
-                      if (name.trim().length >= 3) {
-                        mobileTimeout.current = setTimeout(() => {
-                          fetchCustomerInfo(name, 'name', 'tenant');
-                        }, 800);
-                      }
-                    }}
-                  />
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                      ✓ Auto-Fill
-                    </div>
-                  </div>
-                </div>
+                <Input 
+                  {...register("tenantDetails.name", { required: "Name is required" })} 
+                  placeholder={t("enterTenantFullName")}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    // Clear previous timeout
+                    if (mobileTimeout.current) {
+                      clearTimeout(mobileTimeout.current);
+                    }
+                    // Auto-lookup when user finishes typing name (3+ chars)
+                    if (name.trim().length >= 3) {
+                      mobileTimeout.current = setTimeout(() => {
+                        fetchCustomerInfo(name, 'name', 'tenant');
+                      }, 800);
+                    }
+                  }}
+                />
                 <p className="text-xs text-gray-500 mt-1">
                   Enter name to auto-fill mobile and address
                 </p>
               </div>
               <div>
                 <Label>{t("mobileNumber")}</Label>
-                <div className="relative">
-                  <Input 
-                    {...register("tenantDetails.mobile", { required: "Mobile is required" })} 
-                    placeholder={t("mobileNumberPlaceholder")} 
-                    onChange={(e) => {
-                      const mobile = e.target.value;
-                      // Clear previous timeout to prevent multiple lookups
-                      if (mobileTimeout.current) {
-                        clearTimeout(mobileTimeout.current);
-                      }
-                      // Auto-lookup when user finishes typing 10 digits
-                      if (mobile.replace(/\D/g, '').length === 10) {
-                        mobileTimeout.current = setTimeout(() => {
-                          fetchCustomerInfo(mobile, 'mobile', 'tenant');
-                        }, 500);
-                      }
-                    }}
-                    onBlur={(e) => fetchCustomerInfo(e.target.value, 'mobile', 'tenant')}
-                  />
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                      ✓ Auto-Fill
-                    </div>
-                  </div>
-                </div>
+                <Input 
+                  {...register("tenantDetails.mobile", { required: "Mobile is required" })} 
+                  placeholder={t("mobileNumberPlaceholder")} 
+                  onChange={(e) => {
+                    const mobile = e.target.value;
+                    // Clear previous timeout to prevent multiple lookups
+                    if (mobileTimeout.current) {
+                      clearTimeout(mobileTimeout.current);
+                    }
+                    // Auto-lookup when user finishes typing 10 digits
+                    if (mobile.replace(/\D/g, '').length === 10) {
+                      mobileTimeout.current = setTimeout(() => {
+                        fetchCustomerInfo(mobile, 'mobile', 'tenant');
+                      }, 500);
+                    }
+                  }}
+                  onBlur={(e) => fetchCustomerInfo(e.target.value, 'mobile', 'tenant')}
+                />
                 <p className="text-xs text-gray-500 mt-1">
                   Enter mobile number to auto-fill name and email
                 </p>
@@ -1214,26 +1249,30 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 <div className="relative">
                   <Label>{t("societyApartment")}</Label>
                   <Input 
-                    value={watch("tenantDetails.address.society") || ""}
-                    onChange={(e) => handleSocietyInputChange('tenant', e.target.value)}
+                    {...register("tenantDetails.address.society", { required: "Society/Apartment name is required" })}
                     placeholder={t("startTypingSociety")}
-                    onFocus={() => setShowAddressSuggestions(prev => ({ ...prev, tenant: addressSearch.tenant.length >= 2 }))}
-                    onBlur={() => setTimeout(() => setShowAddressSuggestions(prev => ({ ...prev, tenant: false })), 200)}
+                    onChange={(e) => {
+                      fetchSocietyAddresses(e.target.value);
+                    }}
+                    onBlur={() => setTimeout(() => setShowSocietySuggestions(false), 200)}
                   />
-                  {showAddressSuggestions.tenant && tenantAddresses.length > 0 && (
+                  {showSocietySuggestions && societySuggestions.length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                      {tenantAddresses.map((address) => (
+                      {societySuggestions.map((society) => (
                         <div
-                          key={address.id}
+                          key={society.id}
                           className="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
-                          onClick={() => handleAddressSelect('tenant', address)}
+                          onClick={() => handleSocietySelect(society, 'tenantDetails.address')}
                         >
-                          <div className="font-medium">{address.society}</div>
-                          <div className="text-sm text-gray-600">{address.area}, {address.city} - {address.pincode}</div>
+                          <div className="font-medium">{society.societyName}</div>
+                          <div className="text-sm text-gray-600">{society.area}, {society.city} - {society.pincode}</div>
                         </div>
                       ))}
                     </div>
                   )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Start typing to see address suggestions
+                  </p>
                 </div>
                 <div>
                   <Label>{t("area")}</Label>
@@ -1345,26 +1384,30 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <div className="relative">
                     <Label>{t("societyBuilding")}</Label>
                     <Input 
-                      value={watch("propertyDetails.address.society") || ""}
-                      onChange={(e) => handleSocietyInputChange('property', e.target.value)}
+                      {...register("propertyDetails.address.society", { required: "Society/Building name is required" })}
                       placeholder={t("startTypingSociety")}
-                      onFocus={() => setShowAddressSuggestions(prev => ({ ...prev, property: addressSearch.property.length >= 2 }))}
-                      onBlur={() => setTimeout(() => setShowAddressSuggestions(prev => ({ ...prev, property: false })), 200)}
+                      onChange={(e) => {
+                        fetchSocietyAddresses(e.target.value);
+                      }}
+                      onBlur={() => setTimeout(() => setShowSocietySuggestions(false), 200)}
                     />
-                    {showAddressSuggestions.property && propertyAddresses.length > 0 && (
+                    {showSocietySuggestions && societySuggestions.length > 0 && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                        {propertyAddresses.map((address) => (
+                        {societySuggestions.map((society) => (
                           <div
-                            key={address.id}
+                            key={society.id}
                             className="p-3 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
-                            onClick={() => handleAddressSelect('property', address)}
+                            onClick={() => handleSocietySelect(society, 'propertyDetails.address')}
                           >
-                            <div className="font-medium">{address.society}</div>
-                            <div className="text-sm text-gray-600">{address.area}, {address.city} - {address.pincode}</div>
+                            <div className="font-medium">{society.societyName}</div>
+                            <div className="text-sm text-gray-600">{society.area}, {society.city} - {society.pincode}</div>
                           </div>
                         ))}
                       </div>
                     )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Start typing to see address suggestions
+                    </p>
                   </div>
                   <div>
                     <Label>{t("area")}</Label>
