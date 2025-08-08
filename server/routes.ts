@@ -190,6 +190,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Using template:', template.name);
 
+      // Log incoming data structure
+      console.log('Raw agreementData received:', JSON.stringify({
+        propertyDetails: agreementData.propertyDetails,
+        hasPropertyDetails: !!agreementData.propertyDetails
+      }, null, 2));
+      
       // Ensure all required fields have default values
       const safeAgreementData = {
         ownerDetails: agreementData.ownerDetails || {},
@@ -209,6 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         purpose: safeAgreementData.propertyDetails?.purpose,
         furnishedStatus: safeAgreementData.propertyDetails?.furnishedStatus
       });
+      console.log('Full safeAgreementData.propertyDetails:', JSON.stringify(safeAgreementData.propertyDetails, null, 2));
 
       // Generate the HTML with mapped field values using the enhanced field mapping system
       const processedHtml = generatePdfHtml(safeAgreementData, template.htmlTemplate);
@@ -219,6 +226,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         PROPERTY_PURPOSE: mappedFields.PROPERTY_PURPOSE,
         PROPERTY_FURNISHED_STATUS: mappedFields.PROPERTY_FURNISHED_STATUS
       });
+      
+      // Force cache invalidation by adding timestamp
+      const timestamp = new Date().toISOString();
       
       // Debug: Check if placeholders are being replaced
       const stillHasPlaceholders = processedHtml.includes('{{');

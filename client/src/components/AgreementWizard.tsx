@@ -558,14 +558,17 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         
         console.log('Using template:', activeTemplate.name, 'for language:', selectedLanguage);
 
-        // Generate PDF with the active template
-        const response = await fetch('/api/generate-pdf', {
+        // Generate PDF with the active template using the correct route and data structure
+        const response = await fetch('/api/agreements/generate-pdf', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           },
           body: JSON.stringify({
-            templateId: activeTemplate.id,
+            language: selectedLanguage,
             agreementData: {
               ...formData,
               agreementNumber: agreement.agreementNumber
@@ -659,14 +662,17 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       
       console.log('Using template:', activeTemplate.name, 'for language:', selectedLanguage);
 
-      // Generate PDF with the active template
-      const response = await fetch('/api/generate-pdf', {
+      // Generate PDF with the active template using the correct route and data structure
+      const response = await fetch('/api/agreements/generate-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         },
         body: JSON.stringify({
-          templateId: activeTemplate.id,
+          language: selectedLanguage,
           agreementData: formData
         }),
       });
