@@ -425,34 +425,12 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
           if (userType === 'owner') {
             setValue("ownerDetails.name", customer.name);
             setValue("ownerDetails.email", customer.email || "");
-            // If customer has address information, copy that too
-            if (customer.address) {
-              setValue("ownerDetails.address.flatNo", customer.address.flatNo || "");
-              setValue("ownerDetails.address.society", customer.address.society || "");
-              setValue("ownerDetails.address.area", customer.address.area || "");
-              setValue("ownerDetails.address.city", customer.address.city || "");
-              setValue("ownerDetails.address.state", customer.address.state || "");
-              setValue("ownerDetails.address.pincode", customer.address.pincode || "");
-              setValue("ownerDetails.address.district", customer.address.district || "");
-              setValue("ownerDetails.address.landmark", customer.address.landmark || "");
-            }
           } else {
             setValue("tenantDetails.name", customer.name);
             setValue("tenantDetails.email", customer.email || "");
-            // If customer has address information, copy that too
-            if (customer.address) {
-              setValue("tenantDetails.address.flatNo", customer.address.flatNo || "");
-              setValue("tenantDetails.address.society", customer.address.society || "");
-              setValue("tenantDetails.address.area", customer.address.area || "");
-              setValue("tenantDetails.address.city", customer.address.city || "");
-              setValue("tenantDetails.address.state", customer.address.state || "");
-              setValue("tenantDetails.address.pincode", customer.address.pincode || "");
-              setValue("tenantDetails.address.district", customer.address.district || "");
-              setValue("tenantDetails.address.landmark", customer.address.landmark || "");
-            }
           }
           toast({
-            title: "Customer details found",
+            title: "Customer Found",
             description: `Auto-filled details for ${customer.name}`,
           });
         }
@@ -463,9 +441,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
           console.log(`No existing customer found for mobile: ${mobile}`);
         } else {
           // Other error - show error toast
+          console.error("Customer lookup error:", error);
           toast({
-            title: "Error",
-            description: "Failed to lookup customer details",
+            title: "Lookup Error",
+            description: "Could not check for existing customer details",
             variant: "destructive",
           });
         }
