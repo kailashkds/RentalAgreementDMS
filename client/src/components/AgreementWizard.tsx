@@ -400,20 +400,55 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   const fetchMobileInfo = async (mobile: string, userType: 'owner' | 'tenant') => {
     if (mobile && mobile.length >= 10) {
       try {
-        const customer = await apiRequest("GET", `/api/customers/by-mobile?mobile=${encodeURIComponent(mobile)}`) as any;
+        const customer = await apiRequest(`/api/customers/by-mobile?mobile=${encodeURIComponent(mobile)}`) as any;
         if (customer) {
           if (userType === 'owner') {
             setValue("ownerDetails.name", customer.name);
+            setValue("ownerDetails.email", customer.email || "");
+            // If customer has address information, copy that too
+            if (customer.address) {
+              setValue("ownerDetails.address.flatNo", customer.address.flatNo || "");
+              setValue("ownerDetails.address.society", customer.address.society || "");
+              setValue("ownerDetails.address.area", customer.address.area || "");
+              setValue("ownerDetails.address.city", customer.address.city || "");
+              setValue("ownerDetails.address.state", customer.address.state || "");
+              setValue("ownerDetails.address.pincode", customer.address.pincode || "");
+              setValue("ownerDetails.address.district", customer.address.district || "");
+              setValue("ownerDetails.address.landmark", customer.address.landmark || "");
+            }
           } else {
             setValue("tenantDetails.name", customer.name);
+            setValue("tenantDetails.email", customer.email || "");
+            // If customer has address information, copy that too
+            if (customer.address) {
+              setValue("tenantDetails.address.flatNo", customer.address.flatNo || "");
+              setValue("tenantDetails.address.society", customer.address.society || "");
+              setValue("tenantDetails.address.area", customer.address.area || "");
+              setValue("tenantDetails.address.city", customer.address.city || "");
+              setValue("tenantDetails.address.state", customer.address.state || "");
+              setValue("tenantDetails.address.pincode", customer.address.pincode || "");
+              setValue("tenantDetails.address.district", customer.address.district || "");
+              setValue("tenantDetails.address.landmark", customer.address.landmark || "");
+            }
           }
           toast({
-            title: "Info retrieved",
-            description: `Found existing customer: ${customer.name}`,
+            title: "Customer details found",
+            description: `Auto-filled details for ${customer.name}`,
           });
         }
       } catch (error) {
-        // Silent fail - customer not found
+        // Check if it's a 404 (customer not found) vs other errors
+        if (error instanceof Error && error.message.includes('404')) {
+          // Customer not found - this is expected behavior, no toast needed
+          console.log(`No existing customer found for mobile: ${mobile}`);
+        } else {
+          // Other error - show error toast
+          toast({
+            title: "Error",
+            description: "Failed to lookup customer details",
+            variant: "destructive",
+          });
+        }
       }
     }
   };
@@ -682,11 +717,21 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
               <div>
                 <Label htmlFor="ownerMobile">Mobile Number</Label>
-                <Input 
-                  {...register("ownerDetails.mobile", { required: "Mobile is required" })} 
-                  placeholder="+91 XXXXXXXXXX"
-                  onBlur={(e) => fetchMobileInfo(e.target.value, 'owner')}
-                />
+                <div className="relative">
+                  <Input 
+                    {...register("ownerDetails.mobile", { required: "Mobile is required" })} 
+                    placeholder="+91 XXXXXXXXXX"
+                    onBlur={(e) => fetchMobileInfo(e.target.value, 'owner')}
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded">
+                      Auto-fill
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter mobile number to auto-fill customer details if they exist
+                </p>
               </div>
               <div>
                 <Label htmlFor="ownerAge">Age</Label>
@@ -843,11 +888,21 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
               <div>
                 <Label>Mobile Number</Label>
-                <Input 
-                  {...register("tenantDetails.mobile", { required: "Mobile is required" })} 
-                  placeholder="+91 XXXXXXXXXX" 
-                  onBlur={(e) => fetchMobileInfo(e.target.value, 'tenant')}
-                />
+                <div className="relative">
+                  <Input 
+                    {...register("tenantDetails.mobile", { required: "Mobile is required" })} 
+                    placeholder="+91 XXXXXXXXXX" 
+                    onBlur={(e) => fetchMobileInfo(e.target.value, 'tenant')}
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded">
+                      Auto-fill
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter mobile number to auto-fill customer details if they exist
+                </p>
               </div>
               <div>
                 <Label>Age</Label>
