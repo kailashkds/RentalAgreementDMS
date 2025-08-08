@@ -79,17 +79,20 @@ export default function AdminUsers() {
   };
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Admin Users" subtitle="Manage admin users and their permissions">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Admin Users</h1>
-            <p className="text-muted-foreground">
-              Manage admin users and their permissions
-            </p>
+          <div className="flex items-center space-x-3">
+            <Shield className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Admin Users</h1>
+              <p className="text-muted-foreground">
+                Manage admin users and their permissions
+              </p>
+            </div>
           </div>
           
-          {currentUser?.role === "super_admin" && (
+          {(currentUser as any)?.role === "super_admin" && (
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -196,7 +199,7 @@ export default function AdminUsers() {
                     <div className="flex items-center space-x-2">
                       {getRoleBadge(user.role)}
                       {!user.isActive && <Badge variant="outline">Inactive</Badge>}
-                      {user.id === currentUser?.id && <Badge variant="outline">You</Badge>}
+                      {user.id === (currentUser as any)?.id && <Badge variant="outline">You</Badge>}
                     </div>
                   </div>
                 </CardHeader>

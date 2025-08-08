@@ -8,6 +8,8 @@ import Dashboard from "@/pages/Dashboard";
 import Agreements from "@/pages/Agreements";
 import Customers from "@/pages/Customers";
 import AdminUsers from "@/pages/AdminUsers";
+import SystemSettings from "@/pages/SystemSettings";
+import Profile from "@/pages/Profile";
 import PdfTemplates from "@/pages/PdfTemplates";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
@@ -36,6 +38,8 @@ function AuthenticatedRouter() {
       <Route path="/agreements" component={Agreements} />
       <Route path="/customers" component={Customers} />
       <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/settings" component={SystemSettings} />
+      <Route path="/profile" component={Profile} />
       <Route path="/pdf-templates" component={PdfTemplates} />
       <Route component={NotFound} />
     </Switch>
