@@ -18,6 +18,25 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
 
   if (!fileUrl) return null;
 
+  // Convert Google Cloud Storage URLs to our server proxy URLs
+  const getProxyUrl = (url: string) => {
+    if (url.includes('storage.googleapis.com')) {
+      // Extract the path after the bucket name and convert to our object route
+      const match = url.match(/storage\.googleapis\.com\/([^\/]+)\/(.+)/);
+      if (match) {
+        const [, bucket, objectPath] = match;
+        // Remove any query parameters
+        const cleanObjectPath = objectPath.split('?')[0];
+        return `/objects/${cleanObjectPath}`;
+      }
+    }
+    return url;
+  };
+
+  const proxyUrl = getProxyUrl(fileUrl);
+  console.log(`FilePreview - Original URL: ${fileUrl}`);
+  console.log(`FilePreview - Proxy URL: ${proxyUrl}`);
+
   // Determine file type from provided type, URL, or fileName
   const getFileType = (url: string, name?: string, providedType?: string) => {
     console.log(`FilePreview - Detecting file type for URL: ${url}, fileName: ${name}, providedType: ${providedType}`);
@@ -101,11 +120,10 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
       return (
         <div className="relative h-24 bg-gray-50 rounded border overflow-hidden group cursor-pointer">
           <img
-            src={fileUrl}
+            src={proxyUrl}
             alt={displayName}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
             onError={handleImageError}
-            crossOrigin="anonymous"
           />
           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
             <div className="bg-blue-600 text-white px-2 py-1 rounded text-xs flex items-center">
@@ -139,7 +157,7 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm text-gray-600">PDF Preview</span>
             <Button
-              onClick={() => window.open(fileUrl, '_blank')}
+              onClick={() => window.open(proxyUrl, '_blank')}
               variant="outline"
               size="sm"
             >
@@ -148,7 +166,7 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
             </Button>
           </div>
           <iframe
-            src={fileUrl}
+            src={proxyUrl}
             className="w-full h-full border border-gray-200 rounded"
             title={displayName}
             style={{ minHeight: '600px' }}
@@ -161,7 +179,7 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
       return (
         <div className="max-w-full max-h-[80vh] overflow-auto flex items-center justify-center bg-gray-50 rounded">
           <img
-            src={fileUrl}
+            src={proxyUrl}
             alt={displayName}
             className="max-w-full max-h-full object-contain shadow-lg"
             style={{ maxHeight: '70vh' }}
@@ -180,7 +198,7 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
           <p className="text-sm text-gray-500 mb-4">Detected type: <strong>{fileType}</strong></p>
           <div className="space-y-2">
             <Button
-              onClick={() => window.open(fileUrl, '_blank')}
+              onClick={() => window.open(proxyUrl, '_blank')}
               variant="outline"
               className="w-full"
             >
@@ -190,7 +208,7 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
             <Button
               onClick={() => {
                 // Try to force image view
-                const img = new Image();
+                const img = document.createElement('img');
                 img.onload = () => {
                   console.log('File is actually an image, updating preview');
                   setImageError(false);
@@ -201,7 +219,7 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
                 img.onerror = () => {
                   console.log('File is not an image');
                 };
-                img.src = fileUrl;
+                img.src = proxyUrl;
               }}
               variant="secondary"
               size="sm"
@@ -220,7 +238,7 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
         <p className="text-gray-600 mb-2">Preview not available for this file type</p>
         <p className="text-sm text-gray-500 mb-4">Click below to download and view the file</p>
         <Button
-          onClick={() => window.open(fileUrl, '_blank')}
+          onClick={() => window.open(proxyUrl, '_blank')}
           variant="outline"
           className="mt-4"
         >
@@ -297,7 +315,7 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
               <div className="flex items-center space-x-2">
                 <span className="text-xs text-gray-500 uppercase">{fileType}</span>
                 <Button
-                  onClick={() => window.open(fileUrl, '_blank')}
+                  onClick={() => window.open(proxyUrl, '_blank')}
                   variant="outline"
                   size="sm"
                 >
