@@ -139,7 +139,23 @@ export const translations = {
     createNewAgreement: "Create New Agreement",
     copyCustomerDetails: "Copy Customer Details",
     societyApartment: "Society/Apartment",
-    months: "Months"
+    months: "Months",
+    
+    // Additional missing keys found in AgreementWizard
+    copyFromCustomer: "Copy from Customer",
+    uploadPanCard: "Upload PAN Card",
+    panCardUploaded: "PAN Card Uploaded",
+    agreementSummary: "Agreement Summary",
+    addClause: "Add Clause",
+    clause: "Clause",
+    enterAdditionalTerms: "Enter additional terms",
+    customDuration: "Custom Duration",
+    customer: "Customer",
+    property: "Property",
+    selectTenure: "Select Tenure",
+    notSelected: "Not Selected",
+    notSet: "Not Set",
+    notSpecified: "Not Specified"
   },
   
   gujarati: {
@@ -281,7 +297,23 @@ export const translations = {
     createNewAgreement: "નવો કરાર બનાવો",
     copyCustomerDetails: "ગ્રાહકની વિગતો કોપી કરો",
     societyApartment: "સોસાયટી/એપાર્ટમેન્ટ",
-    months: "મહિના"
+    months: "મહિના",
+    
+    // Additional missing keys found in AgreementWizard
+    copyFromCustomer: "ગ્રાહક પાસેથી કૉપિ કરો",
+    uploadPanCard: "પેન કાર્ડ અપલોડ કરો",
+    panCardUploaded: "પેન કાર્ડ અપલોડ થયેલ",
+    agreementSummary: "કરારનો સારાંશ",
+    addClause: "કલમ ઉમેરો",
+    clause: "કલમ",
+    enterAdditionalTerms: "વધારાની શરતો દાખલ કરો",
+    customDuration: "કસ્ટમ અવધિ",
+    customer: "ગ્રાહક",
+    property: "મકાન",
+    selectTenure: "અવધિ પસંદ કરો",
+    notSelected: "પસંદ નથી",
+    notSet: "સેટ નથી",
+    notSpecified: "નિર્દિષ્ટ નથી"
   },
   
   hindi: {
