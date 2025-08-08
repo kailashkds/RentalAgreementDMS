@@ -130,7 +130,6 @@ const FIELD_MAPPINGS = {
   'rentalTerms.noticePeriod': 'NOTICE_PERIOD',
   'rentalTerms.minimumStay': 'MINIMUM_STAY',
   'rentalTerms.renewalPeriod': 'RENEWAL_PERIOD',
-  'rentalTerms.furniture': 'PROPERTY_FURNISHED_STATUS',
 
   // Agreement fields
   'agreementDate': 'AGREEMENT_DATE',
