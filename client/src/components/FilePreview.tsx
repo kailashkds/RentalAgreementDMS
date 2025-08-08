@@ -7,29 +7,77 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 interface FilePreviewProps {
   fileUrl: string;
   fileName?: string;
+  fileType?: string;
   onRemove?: () => void;
   className?: string;
 }
 
-export function FilePreview({ fileUrl, fileName, onRemove, className = "" }: FilePreviewProps) {
+export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onRemove, className = "" }: FilePreviewProps) {
   const [showFullPreview, setShowFullPreview] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   if (!fileUrl) return null;
 
-  // Determine file type from URL or fileName
-  const getFileType = (url: string, name?: string) => {
+  // Determine file type from provided type, URL, or fileName
+  const getFileType = (url: string, name?: string, providedType?: string) => {
+    console.log(`FilePreview - Detecting file type for URL: ${url}, fileName: ${name}, providedType: ${providedType}`);
+    
+    // Use provided file type if available
+    if (providedType) {
+      const lowerType = providedType.toLowerCase();
+      if (lowerType.includes('pdf') || lowerType === 'application/pdf') {
+        console.log('FilePreview - Using provided PDF type');
+        return 'pdf';
+      }
+      if (lowerType.startsWith('image/') || lowerType.includes('image')) {
+        console.log('FilePreview - Using provided image type');
+        return 'image';
+      }
+    }
+    
     const fullString = (url + (name || "")).toLowerCase();
-    if (fullString.includes('pdf') || fullString.endsWith('.pdf')) return 'pdf';
+    
+    // Check for PDF
+    if (fullString.includes('pdf') || fullString.endsWith('.pdf')) {
+      console.log('FilePreview - Detected as PDF from URL/name');
+      return 'pdf';
+    }
+    
+    // Check for images
     if (fullString.includes('jpg') || fullString.includes('jpeg') || fullString.includes('png') || 
         fullString.includes('gif') || fullString.includes('webp') || 
         fullString.endsWith('.jpg') || fullString.endsWith('.jpeg') || 
-        fullString.endsWith('.png') || fullString.endsWith('.gif') || fullString.endsWith('.webp')) return 'image';
+        fullString.endsWith('.png') || fullString.endsWith('.gif') || fullString.endsWith('.webp')) {
+      console.log('FilePreview - Detected as image from URL/name');
+      return 'image';
+    }
+    
+    // Additional check for common image MIME types in Google Cloud URLs
+    if (fullString.includes('image') || url.includes('content-type=image')) {
+      console.log('FilePreview - Detected as image from MIME type in URL');
+      return 'image';
+    }
+    
+    // Additional check for PDF MIME types in Google Cloud URLs
+    if (url.includes('content-type=application/pdf') || url.includes('pdf')) {
+      console.log('FilePreview - Detected as PDF from MIME type in URL');
+      return 'pdf';
+    }
+    
+    // For Google Cloud Storage URLs without clear indicators, try to make an educated guess
+    if (url.includes('storage.googleapis.com')) {
+      console.log('FilePreview - Google Cloud Storage URL detected, defaulting to image for preview attempt');
+      return 'image'; // Default to image to attempt preview
+    }
+    
+    console.log('FilePreview - File type unknown, defaulting to unknown');
     return 'unknown';
   };
 
-  const fileType = getFileType(fileUrl, fileName);
+  const fileType = getFileType(fileUrl, fileName, providedFileType);
   const displayName = fileName || fileUrl.split('/').pop() || 'Document';
+  
+  console.log(`FilePreview - Final file type: ${fileType}, displayName: ${displayName}, providedFileType: ${providedFileType}`);
 
   const handleImageError = () => {
     setImageError(true);
@@ -83,6 +131,8 @@ export function FilePreview({ fileUrl, fileName, onRemove, className = "" }: Fil
   };
 
   const renderFullPreview = () => {
+    console.log(`FilePreview - Rendering full preview for fileType: ${fileType}, URL: ${fileUrl}`);
+    
     if (fileType === 'pdf') {
       return (
         <div className="w-full h-[80vh] space-y-4">
@@ -98,11 +148,10 @@ export function FilePreview({ fileUrl, fileName, onRemove, className = "" }: Fil
             </Button>
           </div>
           <iframe
-            src={`${fileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+            src={fileUrl}
             className="w-full h-full border border-gray-200 rounded"
             title={displayName}
             style={{ minHeight: '600px' }}
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
           />
         </div>
       );
@@ -117,6 +166,50 @@ export function FilePreview({ fileUrl, fileName, onRemove, className = "" }: Fil
             className="max-w-full max-h-full object-contain shadow-lg"
             style={{ maxHeight: '70vh' }}
           />
+        </div>
+      );
+    }
+
+    // For unknown file types, try to determine what to show based on URL patterns
+    if (fileUrl.includes('storage.googleapis.com')) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64">
+          <FileText className="h-16 w-16 text-gray-400 mb-4" />
+          <p className="text-gray-600 mb-2">Unable to preview this file type</p>
+          <p className="text-sm text-gray-500 mb-2">File URL: <code className="bg-gray-100 px-1 rounded text-xs">{fileUrl.substring(0, 100)}...</code></p>
+          <p className="text-sm text-gray-500 mb-4">Detected type: <strong>{fileType}</strong></p>
+          <div className="space-y-2">
+            <Button
+              onClick={() => window.open(fileUrl, '_blank')}
+              variant="outline"
+              className="w-full"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download & View File
+            </Button>
+            <Button
+              onClick={() => {
+                // Try to force image view
+                const img = new Image();
+                img.onload = () => {
+                  console.log('File is actually an image, updating preview');
+                  setImageError(false);
+                  // Force a re-render by toggling the modal
+                  setShowFullPreview(false);
+                  setTimeout(() => setShowFullPreview(true), 100);
+                };
+                img.onerror = () => {
+                  console.log('File is not an image');
+                };
+                img.src = fileUrl;
+              }}
+              variant="secondary"
+              size="sm"
+              className="w-full"
+            >
+              Try Image Preview
+            </Button>
+          </div>
         </div>
       );
     }
