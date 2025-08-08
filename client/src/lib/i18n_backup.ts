@@ -131,6 +131,7 @@ export const translations = {
     propertyPlace: "સ્થળ/વિસ્તાર",
     propertyAddress: "મકાનનું સરનામું", 
     areaInSqFt: "વિસ્તાર (ચોરસ ફૂટ)",
+    propertyAreaSquareFeet: "મકાનનો વિસ્તાર (ચોરસ ફૂટ)",
     additionalItems: "વધારાની વસ્તુઓ/સુવિધાઓ",
     purpose: "હેતુ",
     furnishedStatus: "ફર્નિશ્ડ સ્થિતિ",
@@ -157,24 +158,106 @@ export const translations = {
     // Buttons
     previous: "પાછળ",
     next: "આગળ",
+    saveDraft: "ડ્રાફ્ટ સેવ કરો", 
+    createAgreement: "કરાર બનાવો",
+    downloadPdf: "પીડીએફ ડાઉનલોડ કરો",
     
-    // Step titles for navigation header
+    // Additional translations
+    copyCustomerDetails: "ગ્રાહકની વિગતો કૉપિ કરો",
+    copyFromCustomer: "ગ્રાહક પાસેથી કૉપિ કરો",
+    addressDetails: "સરનામાની વિગતો",
+    propertyInformation: "મકાનની માહિતી",
+    propertyDetails: "મકાનની વિગતો", 
+    documents: "દસ્તાવેજો",
+    aadharCard: "આધાર કાર્ડ",
+    panCard: "પેન કાર્ડ",
+    uploadAadharCard: "આધાર કાર્ડ અપલોડ કરો",
+    aadharCardUploaded: "આધાર કાર્ડ અપલોડ થયું",
+    optional: "(વૈકલ્પિક)",
+    autoFill: "ઓટો-ફિલ",
+    autoFillMessage: "જો તેઓ અસ્તિત્વમાં હોય તો ગ્રાહકની વિગતો ઓટો-ફિલ કરવા માટે મોબાઇલ નંબર દાખલ કરો",
+    selectPurpose: "હેતુ પસંદ કરો",
+    selectStatus: "સ્થિતિ પસંદ કરો",
+    mixedUse: "મિશ્રિત ઉપયોગ",
+    fullyFurnished: "સંપૂર્ણ ફર્નિશ્ડ",
+    semiFurnished: "અર્ધ ફર્નિશ્ડ",
+    listItems: "વોશિંગ મશીન, રેફ્રિજરેટર, એસી વગેરે જેવી વસ્તુઓની યાદી કરો...",
+    startTypingSociety: "સોસાયટીનું નામ ટાઇપ કરવાનું શરૂ કરો...",
+    fullName: "સંપૂર્ણ નામ",
+    mobileNumber: "મોબાઇલ નંબર",
+    enterLandlordFullName: "માલિકનું સંપૂર્ણ નામ દાખલ કરો",
+    enterTenantFullName: "ભાડુઆતનું સંપૂર્ણ નામ દાખલ કરો",
+    societyApartment: "સોસાયટી/એપાર્ટમેન્ટ",
+    societyBuilding: "સોસાયટી/બિલ્ડિંગ",
+    placeOfAgreement: "કરારનું સ્થળ",
+    cityName: "શહેરનું નામ",
+    
+    // Agreement duration labels
+    agreementDuration: "કરારની મુદત",
+    agreementStartDate: "કરારની શરૂઆતની તારીખ",
+    agreementTenure: "કરારની મુદત",
+    agreementEndDate: "કરારની અંતિમ તારીખ",
+    selectTenure: "મુદત પસંદ કરો",
+    customDuration: "કસ્ટમ મુદત",
+    autoCalculated: "શરૂઆતની તારીખના આધારે ઓટો-કેલ્ક્યુલેટેડ",
+    
+    // Additional terms
+    additionalTerms: "વધારાની શરતો",
+    maintenanceCharge: "જાળવણી ચાર્જ",
+    selectOption: "વિકલ્પ પસંદ કરો",
+    
+    // PAN Card label
+    panCardLabel: "પેન કાર્ડ",
+    uploadPanCard: "પેન કાર્ડ અપલોડ કરો",
+    panCardUploaded: "પેન કાર્ડ અપલોડ થયું",
+    
+    // Step 5 additional elements
+    additionalClauses: "વધારાની કલમો",
+    addClause: "કલમ ઉમેરો",
+    clause: "કલમ",
+    enterAdditionalTerms: "વધારાની શરતો અને શરતો દાખલ કરો...",
+    
+    // Agreement summary
+    agreementSummary: "કરારનો સારાંશ",
+    customer: "ગ્રાહક",
+    propertyDisplay: "મકાન",
+    rentDisplay: "માસિક ભાડું",
+    startDateDisplay: "શરૂઆતની તારીખ",
+    endDateDisplay: "અંતિમ તારીખ",
+    tenureDisplay: "મુદત",
+    notSelected: "પસંદ કરેલ નથી",
+    notSpecified: "ઉલ્લેખિત નથી",
+    notSet: "સેટ નથી",
+    
+    // Dialog title and other elements
+    createNewAgreement: "નવો કરાર બનાવો",
+    
+    // Placeholders and additional text
+    occupationPlaceholder: "વ્યવસાય",
+    stateExamplePlaceholder: "દા.ત., ગુજરાત, મહારાષ્ટ્ર",
+    pincodeExamplePlaceholder: "દા.ત., ૩૮૦૦૦૧",
+    propertyTypeExample: "દા.ત., ૨BHK એપાર્ટમેન્ટ",
+    areaSquareFeetExample: "દા.ત., ૧૨૦૦",
+    fileSizeNote: "PDF, JPG, PNG (મહત્તમ ૫MB)",
+    amountPlaceholder: "રકમ",
+    dueDateExample: "દા.ત., ૫, ૧૫",
+    noticePeriodExample: "૧-૩ મહિના",
+    minimumStayExample: "દા.ત., ૧૧ મહિના",
+    customDuration: "કસ્ટમ અવધિ",
+    
+    // Placeholders
+    startTypingSociety: "સોસાયટીનું નામ ટાઇપ કરવાનું શરૂ કરો...",
+    
+    // Due date label fix
+    dueDateLabel: "નિયત તારીખ (મહિનાનો દિવસ)",
+    months: "મહિના",
+    
+    // Step titles for wizard navigation
     stepTitle1: "ગ્રાહક અને ભાષા",
     stepTitle2: "માલિકની વિગતો", 
     stepTitle3: "ભાડૂતની વિગતો",
     stepTitle4: "મકાનની વિગતો",
     stepTitle5: "અંતિમ પગલું",
-    saveDraft: "ડ્રાફ્ટ તરીકે સાચવો",
-    createAgreement: "કરાર બનાવો",
-    downloadPdf: "પીડીએફ ડાઉનલોડ કરો",
-    
-    // Placeholders
-    mobileNumberPlaceholder: "+૯૧ XXXXXXXXXX",
-    agePlaceholder: "ઉંમર",
-    aadharPlaceholder: "XXXX XXXX XXXX",
-    panPlaceholder: "ABCDE૧૨૩૪F",
-    occupationPlaceholder: "વ્યવસાય",
-    startTypingSociety: "સોસાયટીનું નામ ટાઇપ કરવાનું શરૂ કરો...",
     
     // Options
     residential: "રહેણાંક",
@@ -214,27 +297,8 @@ export const translations = {
     ownerPan: "पैन कार्ड नंबर",
     ownerAddress: "मालिक का पता",
     
-    // Placeholders
-    mobileNumberPlaceholder: "+91 XXXXXXXXXX",
-    agePlaceholder: "आयु",
-    aadharPlaceholder: "XXXX XXXX XXXX",
-    panPlaceholder: "ABCDE1234F",
-    occupationPlaceholder: "पेशा",
-    startTypingSociety: "सोसाइटी का नाम टाइप करना शुरू करें...",
-    
     // Continue with Hindi translations...
-    // Options
-    residential: "आवासीय",
-    commercial: "वाणिज्यिक",
-    furnished: "सुसज्जित",
-    semifurnished: "अर्ध-सुसज्जित",
-    unfurnished: "बिना फर्नीचर",
-    included: "किराए में शामिल",
-    excluded: "किराए से बाहर",
-    months11: "11 महीने",
-    year1: "1 साल",
-    years2: "2 साल",
-    years3: "3 साल"
+    // (I'll add more if needed, but focusing on Gujarati for now)
   }
 };
 
@@ -250,8 +314,13 @@ export function useTranslation(language: string) {
 
 export const LANGUAGES = [
   { value: "english", label: "English" },
-  { value: "hindi", label: "हिंदी" },
-  { value: "gujarati", label: "ગુજરાતી" },
-  { value: "tamil", label: "தமிழ்" },
-  { value: "marathi", label: "मराठी" }
+  { value: "hindi", label: "Hindi (हिन्दी)" },
+  { value: "gujarati", label: "Gujarati (ગુજરાતી)" },
+  { value: "tamil", label: "Tamil (தமிழ்)" },
+  { value: "marathi", label: "Marathi (मराठी)" },
 ];
+
+export const getLanguageLabel = (value: string): string => {
+  const language = LANGUAGES.find(lang => lang.value === value);
+  return language?.label || "English";
+};
