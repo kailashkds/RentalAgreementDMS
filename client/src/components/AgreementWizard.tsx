@@ -746,7 +746,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 <div className="relative">
                   <Input 
                     {...register("ownerDetails.mobile", { required: "Mobile is required" })} 
-                    placeholder="+91 XXXXXXXXXX"
+                    placeholder={t("mobileNumberPlaceholder")}
                     onBlur={(e) => fetchMobileInfo(e.target.value, 'owner')}
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -761,19 +761,19 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
               <div>
                 <Label htmlFor="ownerAge">{t("ownerAge")}</Label>
-                <Input type="number" {...register("ownerDetails.age", { required: "Age is required" })} placeholder="Age" />
+                <Input type="number" {...register("ownerDetails.age", { required: "Age is required" })} placeholder={t("agePlaceholder")} />
               </div>
               <div>
                 <Label htmlFor="ownerOccupation">{t("ownerOccupation")}</Label>
-                <Input {...register("ownerDetails.occupation")} placeholder="Occupation" />
+                <Input {...register("ownerDetails.occupation")} placeholder={t("occupationPlaceholder")} />
               </div>
               <div>
                 <Label htmlFor="ownerAadhar">{t("ownerAadhar")}</Label>
-                <Input {...register("ownerDetails.aadhar")} placeholder="XXXX XXXX XXXX" />
+                <Input {...register("ownerDetails.aadhar")} placeholder={t("aadharPlaceholder")} />
               </div>
               <div>
                 <Label htmlFor="ownerPan">{t("ownerPan")}</Label>
-                <Input {...register("ownerDetails.pan")} placeholder="ABCDE1234F" />
+                <Input {...register("ownerDetails.pan")} placeholder={t("panPlaceholder")} />
               </div>
             </div>
 
@@ -917,7 +917,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 <div className="relative">
                   <Input 
                     {...register("tenantDetails.mobile", { required: "Mobile is required" })} 
-                    placeholder="+91 XXXXXXXXXX" 
+                    placeholder={t("mobileNumberPlaceholder")} 
                     onBlur={(e) => fetchMobileInfo(e.target.value, 'tenant')}
                   />
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -932,7 +932,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
               </div>
               <div>
                 <Label>{t("tenantAge")}</Label>
-                <Input type="number" {...register("tenantDetails.age", { required: "Age is required" })} placeholder={t("tenantAge")} />
+                <Input type="number" {...register("tenantDetails.age", { required: "Age is required" })} placeholder={t("agePlaceholder")} />
               </div>
               <div>
                 <Label>{t("tenantOccupation")}</Label>
@@ -1254,7 +1254,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   <Input type="number" {...register("rentalTerms.monthlyRent", { required: "Monthly rent is required" })} placeholder={t("amountPlaceholder")} />
                 </div>
                 <div>
-                  <Label>{t("dueDate")} (Day of Month)</Label>
+                  <Label>{t("dueDateLabel")}</Label>
                   <Input type="number" {...register("rentalTerms.dueDate", { required: "Due date is required" })} placeholder={t("dueDateExample")} />
                 </div>
               </div>
@@ -1276,7 +1276,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   </Select>
                 </div>
                 <div>
-                  <Label>{t("noticePeriod")} (Months)</Label>
+                  <Label>{t("noticePeriod")} ({t("months")})</Label>
                   <Input type="number" {...register("rentalTerms.noticePeriod")} placeholder={t("noticePeriodExample")} />
                 </div>
                 <div>

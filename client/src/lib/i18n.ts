@@ -232,6 +232,16 @@ export const translations = {
     minimumStayExample: "દા.ત., ૧૧ મહિના",
     customDuration: "કસ્ટમ અવધિ",
     
+    // Additional placeholders found
+    mobileNumberPlaceholder: "+૯૧ XXXXXXXXXX",
+    agePlaceholder: "ઉંમર",
+    aadharPlaceholder: "XXXX XXXX XXXX",
+    panPlaceholder: "ABCDE૧૨૩૪F",
+    
+    // Due date label fix
+    dueDateLabel: "નિયત તારીખ (મહિનાનો દિવસ)",
+    months: "મહિના",
+    
     // Options
     residential: "રહેણાંક",
     commercial: "વ્યાપારી",
