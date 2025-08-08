@@ -30,6 +30,9 @@ export const translations = {
     tenantAge: "Age",
     tenantOccupation: "Occupation",
     tenantAddress: "Tenant Address",
+    fullName: "Full Name",
+    mobileNumber: "Mobile Number",
+    enterTenantFullName: "Enter tenant full name",
     
     // Property details
     propertyType: "Property Type",
@@ -169,6 +172,9 @@ export const translations = {
     tenantAge: "ઉંમર",
     tenantOccupation: "ધંધો",
     tenantAddress: "ભાડુઆતનું સરનામું",
+    fullName: "પૂરું નામ",
+    mobileNumber: "મોબાઇલ નંબર",
+    enterTenantFullName: "ભાડુઆતનું પૂરું નામ દાખલ કરો",
     
     // Property details
     propertyType: "મકાનનો પ્રકાર",
