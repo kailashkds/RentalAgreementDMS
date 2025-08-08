@@ -993,10 +993,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
             {/* Document Upload for Tenant */}
             <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-4">Documents (Optional)</h4>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">{t("documents")} {t("optional")}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">Aadhar Card</Label>
+                  <Label className="text-sm font-medium text-gray-700">{t("aadharCard")}</Label>
                   <ObjectUploader
                     maxFileSize={5242880} // 5MB
                     onGetUploadParameters={getUploadParameters}
@@ -1015,7 +1015,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                           <Plus className="w-4 h-4" />
                         </div>
                         <p className="text-sm text-gray-600">
-                          {documents.tenantAadhar ? "Aadhar Card Uploaded" : "Upload Aadhar Card"}
+                          {documents.tenantAadhar ? t("aadharCardUploaded") : t("uploadAadharCard")}
                         </p>
                         <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
                       </div>
@@ -1023,7 +1023,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   </ObjectUploader>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">PAN Card</Label>
+                  <Label className="text-sm font-medium text-gray-700">{t("panCardLabel")}</Label>
                   <ObjectUploader
                     maxFileSize={5242880} // 5MB
                     onGetUploadParameters={getUploadParameters}
@@ -1042,7 +1042,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                           <Plus className="w-4 h-4" />
                         </div>
                         <p className="text-sm text-gray-600">
-                          {documents.tenantPan ? "PAN Card Uploaded" : "Upload PAN Card"}
+                          {documents.tenantPan ? t("panCardUploaded") : t("uploadPanCard")}
                         </p>
                         <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
                       </div>
@@ -1104,19 +1104,19 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     )}
                   </div>
                   <div>
-                    <Label>Area</Label>
+                    <Label>{t("area")}</Label>
                     <Input {...register("propertyDetails.address.area", { required: "Area is required" })} />
                   </div>
                   <div>
-                    <Label>City</Label>
+                    <Label>{t("city")}</Label>
                     <Input {...register("propertyDetails.address.city", { required: "City is required" })} />
                   </div>
                   <div>
-                    <Label>State</Label>
+                    <Label>{t("state")}</Label>
                     <Input {...register("propertyDetails.address.state", { required: "State is required" })} placeholder="e.g., Gujarat, Maharashtra" />
                   </div>
                   <div>
-                    <Label>Pincode</Label>
+                    <Label>{t("pincode")}</Label>
                     <Input {...register("propertyDetails.address.pincode", { required: "Pincode is required" })} placeholder="e.g., 380001" />
                   </div>
                 </div>
@@ -1296,21 +1296,21 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-md font-semibold text-gray-800">Additional Clauses</h4>
+                <h4 className="text-md font-semibold text-gray-800">{t("additionalClauses")}</h4>
                 <Button type="button" onClick={addClause} size="sm" className="bg-green-600 hover:bg-green-700">
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Clause
+                  {t("addClause")}
                 </Button>
               </div>
               {watch("additionalClauses")?.map((clause, index) => (
                 <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <Label>Clause {index + 1}</Label>
+                      <Label>{t("clause")} {index + 1}</Label>
                       <Textarea
                         {...register(`additionalClauses.${index}` as const)}
                         rows={2}
-                        placeholder="Enter additional terms and conditions..."
+                        placeholder={t("enterAdditionalTerms")}
                       />
                     </div>
                     <Button
@@ -1330,44 +1330,44 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             {/* Agreement Summary */}
             <Card className="bg-gray-50">
               <CardContent className="p-6">
-                <h4 className="text-md font-semibold text-gray-800 mb-4">Agreement Summary</h4>
+                <h4 className="text-md font-semibold text-gray-800 mb-4">{t("agreementSummary")}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-600">Customer:</span>
+                    <span className="text-gray-600">{t("customer")}:</span>
                     <span className="ml-2 font-medium">
-                      {customersData?.customers.find(c => c.id === watchedCustomerId)?.name || "Not selected"}
+                      {customersData?.customers.find(c => c.id === watchedCustomerId)?.name || t("notSelected")}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Language:</span>
+                    <span className="text-gray-600">{t("language")}:</span>
                     <span className="ml-2 font-medium">
                       {LANGUAGES.find(l => l.value === watchedLanguage)?.label || "English"}
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Property:</span>
-                    <span className="ml-2 font-medium">{watch("propertyDetails.type") || "Not specified"}</span>
+                    <span className="text-gray-600">{t("property")}:</span>
+                    <span className="ml-2 font-medium">{watch("propertyDetails.type") || t("notSpecified")}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Monthly Rent:</span>
+                    <span className="text-gray-600">{t("monthlyRent")}:</span>
                     <span className="ml-2 font-medium">₹{watch("rentalTerms.monthlyRent") || "0"}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Deposit:</span>
+                    <span className="text-gray-600">{t("deposit")}:</span>
                     <span className="ml-2 font-medium">₹{watch("rentalTerms.deposit") || "0"}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Start Date:</span>
-                    <span className="ml-2 font-medium">{watch("rentalTerms.startDate") || "Not set"}</span>
+                    <span className="text-gray-600">{t("startDate")}:</span>
+                    <span className="ml-2 font-medium">{watch("rentalTerms.startDate") || t("notSet")}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">End Date:</span>
-                    <span className="ml-2 font-medium">{watch("rentalTerms.endDate") || "Not set"}</span>
+                    <span className="text-gray-600">{t("endDate")}:</span>
+                    <span className="ml-2 font-medium">{watch("rentalTerms.endDate") || t("notSet")}</span>
                   </div>
                   <div>
-                    <span className="text-gray-600">Tenure:</span>
+                    <span className="text-gray-600">{t("tenure")}:</span>
                     <span className="ml-2 font-medium">
-                      {watch("rentalTerms.tenure") === "11_months" ? "11 Months" : "Custom Duration"}
+                      {watch("rentalTerms.tenure") === "11_months" ? t("months11") : t("customDuration")}
                     </span>
                   </div>
                 </div>
@@ -1389,7 +1389,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         <DialogContent className="max-w-4xl max-h-screen overflow-y-auto">
           <DialogHeader className="bg-gray-800 text-white p-6 -m-6 mb-6">
             <div className="flex items-center">
-              <DialogTitle className="text-xl font-bold">Create New Agreement</DialogTitle>
+              <DialogTitle className="text-xl font-bold">{t("createNewAgreement")}</DialogTitle>
             </div>
             
             {/* Progress Bar */}

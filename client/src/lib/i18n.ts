@@ -196,6 +196,29 @@ export const translations = {
     uploadPanCard: "પેન કાર્ડ અપલોડ કરો",
     panCardUploaded: "પેન કાર્ડ અપલોડ થયું",
     
+    // Step 5 additional elements
+    additionalClauses: "વધારાની કલમો",
+    addClause: "કલમ ઉમેરો",
+    clause: "કલમ",
+    enterAdditionalTerms: "વધારાની શરતો અને શરતો દાખલ કરો...",
+    
+    // Agreement summary
+    agreementSummary: "કરારનો સારાંશ",
+    customer: "ગ્રાહક",
+    language: "ભાષા",
+    property: "મકાન",
+    monthlyRent: "માસિક ભાડું",
+    startDate: "શરૂઆતની તારીખ",
+    endDate: "અંતિમ તારીખ",
+    tenure: "મુદત",
+    notSelected: "પસંદ કરેલ નથી",
+    notSpecified: "ઉલ્લેખિત નથી",
+    notSet: "સેટ નથી",
+    months11: "૧૧ મહિના",
+    
+    // Dialog title and other elements
+    createNewAgreement: "નવો કરાર બનાવો",
+    
     // Options
     residential: "રહેણાંક",
     commercial: "વ્યાપારી",
