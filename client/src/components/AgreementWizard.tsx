@@ -351,9 +351,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   const nextStep = async () => {
     if (currentStep < STEPS.length && canProceed(currentStep)) {
-      // Clear tenant fields when moving from owner to tenant step
+      // Clear fields when moving between sections
       if (currentStep === 1) {
-        // Moving from owner to tenant - clear all tenant fields to ensure clean start
+        // Moving from owner to tenant - clear all tenant fields
         setValue("tenantDetails.name", "");
         setValue("tenantDetails.mobile", "");
         setValue("tenantDetails.email", "");
@@ -368,7 +368,43 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         setValue("tenantDetails.address.pincode", "");
         
         console.log("Cleared tenant fields when moving from owner to tenant step");
+      } else if (currentStep === 2) {
+        // Moving from tenant to property - clear all property fields
+        setValue("propertyDetails.type", "");
+        setValue("propertyDetails.place", "");
+        setValue("propertyDetails.areaInSqFt", "");
+        setValue("propertyDetails.purpose", "");
+        setValue("propertyDetails.furnishedStatus", "");
+        setValue("propertyDetails.additionalItems", "");
+        setValue("propertyDetails.address.flatNo", "");
+        setValue("propertyDetails.address.society", "");
+        setValue("propertyDetails.address.area", "");
+        setValue("propertyDetails.address.city", "");
+        setValue("propertyDetails.address.state", "");
+        setValue("propertyDetails.address.pincode", "");
+        
+        console.log("Cleared property fields when moving from tenant to property step");
+      } else if (currentStep === 3) {
+        // Moving from property to rental terms - clear rental terms
+        setValue("rentalTerms.monthlyRent", "");
+        setValue("rentalTerms.deposit", "");
+        setValue("rentalTerms.tenure", "");
+        setValue("rentalTerms.startDate", "");
+        setValue("rentalTerms.endDate", "");
+        setValue("rentalTerms.dueDate", "");
+        setValue("rentalTerms.noticePeriod", "");
+        setValue("rentalTerms.minimumStay", "");
+        setValue("rentalTerms.maintenance", "");
+        setValue("rentalTerms.maintenanceAmount", "");
+        
+        console.log("Cleared rental terms when moving from property to rental terms step");
+      } else if (currentStep === 4) {
+        // Moving from rental terms to final step - clear additional clauses
+        setValue("additionalClauses", []);
+        
+        console.log("Cleared additional clauses when moving to final step");
       }
+      
       setCurrentStep(currentStep + 1);
     } else if (!canProceed(currentStep)) {
       toast({
@@ -541,19 +577,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   const fetchCustomerInfo = async (searchTerm: string, searchType: 'mobile' | 'name', userType: 'owner' | 'tenant') => {
     if (!searchTerm || searchTerm.trim().length < 3) return;
     
-    // Prevent cross-step auto-fill: only allow lookup on correct step
-    if (userType === 'owner' && currentStep !== 1) return;
-    if (userType === 'tenant' && currentStep !== 2) return;
-    
     try {
       let customer = null;
       
       if (searchType === 'mobile' && searchTerm.replace(/\D/g, '').length === 10) {
-        console.log(`Looking up customer by mobile: ${searchTerm} for ${userType} on step ${currentStep}`);
+        console.log(`Looking up customer by mobile: ${searchTerm}`);
         const response = await apiRequest("GET", `/api/customers/by-mobile?mobile=${encodeURIComponent(searchTerm)}`);
         customer = await response.json();
       } else if (searchType === 'name' && searchTerm.trim().length >= 3) {
-        console.log(`Looking up customer by name: ${searchTerm} for ${userType} on step ${currentStep}`);
+        console.log(`Looking up customer by name: ${searchTerm}`);
         const response = await apiRequest("GET", `/api/customers?search=${encodeURIComponent(searchTerm)}`);
         const data = await response.json();
         // Find exact or close match
@@ -565,12 +597,12 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       }
       
       if (customer) {
-        console.log(`Found customer for ${userType}:`, customer);
+        console.log(`Found customer:`, customer);
         fillCustomerDetails(customer, userType);
         
         toast({
           title: "Customer Found ✓",
-          description: `Auto-filled ${userType} details for ${customer.name}`,
+          description: `Auto-filled details for ${customer.name}`,
           variant: "default",
         });
       }
@@ -591,29 +623,20 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   // Fill customer details including any associated address
   const fillCustomerDetails = (customer: any, userType: 'owner' | 'tenant') => {
-    // Prevent cross-contamination: only fill fields that are completely empty
-    if (userType === 'owner' && currentStep === 1) {
-      // Only fill owner fields when on owner step
-      const currentOwnerName = watch("ownerDetails.name");
-      if (!currentOwnerName || currentOwnerName.trim() === "") {
-        setValue("ownerDetails.name", customer.name);
-        setValue("ownerDetails.mobile", customer.mobile);
-        setValue("ownerDetails.email", customer.email || "");
-        
-        // Fill address if available (from most recent agreement)
-        fillAssociatedAddress(customer.id, userType);
-      }
-    } else if (userType === 'tenant' && currentStep === 2) {
-      // Only fill tenant fields when on tenant step
-      const currentTenantName = watch("tenantDetails.name");
-      if (!currentTenantName || currentTenantName.trim() === "") {
-        setValue("tenantDetails.name", customer.name);
-        setValue("tenantDetails.mobile", customer.mobile);
-        setValue("tenantDetails.email", customer.email || "");
-        
-        // Fill address if available (from most recent agreement)
-        fillAssociatedAddress(customer.id, userType);
-      }
+    if (userType === 'owner') {
+      setValue("ownerDetails.name", customer.name);
+      setValue("ownerDetails.mobile", customer.mobile);
+      setValue("ownerDetails.email", customer.email || "");
+      
+      // Fill address if available (from most recent agreement)
+      fillAssociatedAddress(customer.id, userType);
+    } else {
+      setValue("tenantDetails.name", customer.name);
+      setValue("tenantDetails.mobile", customer.mobile);
+      setValue("tenantDetails.email", customer.email || "");
+      
+      // Fill address if available (from most recent agreement)
+      fillAssociatedAddress(customer.id, userType);
     }
   };
 
