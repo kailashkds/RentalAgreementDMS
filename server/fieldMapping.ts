@@ -170,6 +170,58 @@ function formatDateToDDMMYYYY(dateString: string): string {
   return `${day}-${month}-${year}`;
 }
 
+// Helper function to determine if a value should be formatted based on its characteristics
+function shouldFormatValue(value: string, templateField: string): { shouldFormat: boolean; formatType: 'string' | 'date' | 'none' } {
+  if (!value || typeof value !== 'string') {
+    return { shouldFormat: false, formatType: 'none' };
+  }
+
+  // Check if it's a date field based on field name or value pattern
+  const dateFieldPatterns = ['DATE', 'START', 'END', 'DUE', 'CREATED', 'UPDATED'];
+  const isDateField = dateFieldPatterns.some(pattern => templateField.includes(pattern));
+  
+  // Check if value looks like a date (YYYY-MM-DD format)
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  const looksLikeDate = datePattern.test(value);
+  
+  if (isDateField || looksLikeDate) {
+    return { shouldFormat: true, formatType: 'date' };
+  }
+  
+  // Check if it's a string that should be formatted (contains underscores or is all lowercase with multiple words)
+  const hasUnderscores = value.includes('_');
+  const isAllLowercase = value === value.toLowerCase() && value.includes(' ');
+  const shouldFormatString = hasUnderscores || isAllLowercase;
+  
+  // Skip formatting for certain field types that should remain as-is
+  const skipFormattingPatterns = ['ID', 'NUMBER', 'AMOUNT', 'PHONE', 'EMAIL', 'PINCODE'];
+  const shouldSkip = skipFormattingPatterns.some(pattern => templateField.includes(pattern));
+  
+  if (shouldFormatString && !shouldSkip) {
+    return { shouldFormat: true, formatType: 'string' };
+  }
+  
+  return { shouldFormat: false, formatType: 'none' };
+}
+
+// Generic function to apply formatting based on value characteristics
+function applySmartFormatting(value: string, templateField: string): string {
+  const { shouldFormat, formatType } = shouldFormatValue(value, templateField);
+  
+  if (!shouldFormat) {
+    return value;
+  }
+  
+  switch (formatType) {
+    case 'date':
+      return formatDateToDDMMYYYY(value);
+    case 'string':
+      return formatStringValue(value);
+    default:
+      return value;
+  }
+}
+
 // Helper function to convert number to words (Indian format)
 function numberToWords(num: number): string {
   if (num === 0) return 'Zero';
@@ -263,14 +315,8 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
       if (!templateFields[templateField]) {
         let formattedValue = String(value);
         
-        // Apply special formatting for specific fields
-        if (templateField === 'PROPERTY_PURPOSE' || templateField === 'PROPERTY_FURNISHED_STATUS') {
-          formattedValue = formatStringValue(formattedValue);
-        } else if (templateField === 'START_DATE' || templateField === 'END_DATE') {
-          formattedValue = formatDateToDDMMYYYY(formattedValue);
-        } else if (templateField === 'TENURE') {
-          formattedValue = formatStringValue(formattedValue);
-        }
+        // Apply smart formatting based on value characteristics and field patterns
+        formattedValue = applySmartFormatting(formattedValue, templateField);
         
         templateFields[templateField] = formattedValue;
       }
