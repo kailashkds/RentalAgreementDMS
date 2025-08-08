@@ -209,6 +209,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate the HTML with mapped field values
       const processedHtml = generatePdfHtml(safeAgreementData, template.htmlTemplate);
       
+      // Debug: Check if placeholders are being replaced
+      const stillHasPlaceholders = processedHtml.includes('{{');
+      console.log('Template processing complete. Remaining placeholders:', stillHasPlaceholders ? 'Yes' : 'None');
+      
       console.log('PDF generation successful');
       
       // Return HTML for client-side PDF generation

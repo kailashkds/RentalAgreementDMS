@@ -188,10 +188,11 @@ function shouldFormatValue(value: string, templateField: string): { shouldFormat
     return { shouldFormat: true, formatType: 'date' };
   }
   
-  // Check if it's a string that should be formatted (contains underscores or is all lowercase with multiple words)
+  // Check if it's a string that should be formatted (contains underscores, is all lowercase, or is a single lowercase word)
   const hasUnderscores = value.includes('_');
   const isAllLowercase = value === value.toLowerCase() && value.includes(' ');
-  const shouldFormatString = hasUnderscores || isAllLowercase;
+  const isSingleLowercaseWord = value === value.toLowerCase() && !value.includes(' ') && value.length > 2;
+  const shouldFormatString = hasUnderscores || isAllLowercase || isSingleLowercaseWord;
   
   // Skip formatting for certain field types that should remain as-is
   const skipFormattingPatterns = ['ID', 'NUMBER', 'AMOUNT', 'PHONE', 'EMAIL', 'PINCODE'];
@@ -398,8 +399,11 @@ export function processTemplate(htmlTemplate: string, fieldValues: Record<string
   // Replace all template fields with actual values
   for (const [fieldName, value] of Object.entries(fieldValues)) {
     const templateField = `{{${fieldName}}}`;
-    processedTemplate = processedTemplate.replace(new RegExp(templateField, 'g'), value || '');
+    processedTemplate = processedTemplate.replace(new RegExp(templateField.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value || '');
   }
+
+  // Replace any remaining empty placeholders with empty string
+  processedTemplate = processedTemplate.replace(/\{\{[^}]*\}\}/g, '');
 
   return processedTemplate;
 }
