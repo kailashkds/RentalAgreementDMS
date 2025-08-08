@@ -62,6 +62,13 @@ export const translations = {
     // Buttons
     previous: "Previous",
     next: "Next",
+    
+    // Step titles for navigation header
+    stepTitle1: "Customer & Language",
+    stepTitle2: "Landlord Details",
+    stepTitle3: "Tenant Details",
+    stepTitle4: "Property Details",
+    stepTitle5: "Finalize",
     saveDraft: "Save as Draft",
     createAgreement: "Create Agreement",
     downloadPdf: "Download PDF",
@@ -241,6 +248,13 @@ export const translations = {
     // Due date label fix
     dueDateLabel: "નિયત તારીખ (મહિનાનો દિવસ)",
     months: "મહિના",
+    
+    // Step titles for wizard navigation
+    stepTitle1: "ગ્રાહક અને ભાષા",
+    stepTitle2: "માલિકની વિગતો", 
+    stepTitle3: "ભાડૂતની વિગતો",
+    stepTitle4: "મકાનની વિગતો",
+    stepTitle5: "અંતિમ પગલું",
     
     // Options
     residential: "રહેણાંક",

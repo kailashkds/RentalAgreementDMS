@@ -36,12 +36,12 @@ interface AgreementFormData {
   additionalClauses: string[];
 }
 
-const STEPS = [
-  { id: 1, title: "Customer & Language" },
-  { id: 2, title: "Landlord Details" },
-  { id: 3, title: "Tenant Details" },
-  { id: 4, title: "Property Details" },
-  { id: 5, title: "Finalize" },
+const getSteps = (t: (key: string) => string) => [
+  { id: 1, title: t("stepTitle1") },
+  { id: 2, title: t("stepTitle2") },
+  { id: 3, title: t("stepTitle3") },
+  { id: 4, title: t("stepTitle4") },
+  { id: 5, title: t("stepTitle5") },
 ];
 
 const LANGUAGES = [
@@ -101,6 +101,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   // Get current language for translations
   const currentLanguage = watchedLanguage || "english";
   const t = (key: string) => getTranslation(currentLanguage, key);
+  
+  // Get dynamic steps for current language
+  const STEPS = getSteps(t);
 
   // Helper functions for address autocomplete
   const handleAddressSelect = (addressType: 'owner' | 'tenant' | 'property', address: any) => {
