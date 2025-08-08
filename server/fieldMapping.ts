@@ -155,6 +155,13 @@ const FIELD_MAPPINGS = {
   
   // Maintenance mapping
   'rentalTerms.maintenance': 'MAINTENANCE_CHARGE',
+  
+  // Document URLs - Dynamic document fields for conditional PDF display
+  'ownerDocuments.aadharUrl': 'OWNER_AADHAR_URL',
+  'ownerDocuments.panUrl': 'OWNER_PAN_URL',
+  'tenantDocuments.aadharUrl': 'TENANT_AADHAR_URL',
+  'tenantDocuments.panUrl': 'TENANT_PAN_URL',
+  'documents.propertyUrl': 'PROPERTY_DOCUMENTS_URL',
 };
 
 // Helper function to get nested object property by path

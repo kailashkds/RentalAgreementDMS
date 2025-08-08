@@ -87,6 +87,13 @@ const DYNAMIC_FIELDS = {
     { key: "{{AGREEMENT_TYPE}}", label: "Agreement Type" },
     { key: "{{ADDITIONAL_CLAUSES}}", label: "Additional Clauses" },
   ],
+  documents: [
+    { key: "{{OWNER_AADHAR_URL}}", label: "Owner Aadhar Card" },
+    { key: "{{OWNER_PAN_URL}}", label: "Owner PAN Card" },
+    { key: "{{TENANT_AADHAR_URL}}", label: "Tenant Aadhar Card" },
+    { key: "{{TENANT_PAN_URL}}", label: "Tenant PAN Card" },
+    { key: "{{PROPERTY_DOCUMENTS_URL}}", label: "Property Documents" },
+  ],
 };
 
 interface PdfTemplateEditorProps {
@@ -188,16 +195,66 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
     </ul>
   </div>
   
+  {{#if OWNER_AADHAR_URL}}
+  <div style="margin: 30px 0; page-break-inside: avoid;">
+    <h3>OWNER DOCUMENTS:</h3>
+    <div style="margin: 10px 0;">
+      <p><strong>Aadhar Card:</strong></p>
+      <img src="{{OWNER_AADHAR_URL}}" style="max-width: 300px; height: auto; border: 1px solid #ccc; margin: 10px 0;" />
+    </div>
+  </div>
+  {{/if}}
+  
+  {{#if OWNER_PAN_URL}}
+  <div style="margin: 20px 0; page-break-inside: avoid;">
+    <div style="margin: 10px 0;">
+      <p><strong>PAN Card:</strong></p>
+      <img src="{{OWNER_PAN_URL}}" style="max-width: 300px; height: auto; border: 1px solid #ccc; margin: 10px 0;" />
+    </div>
+  </div>
+  {{/if}}
+  
+  {{#if TENANT_AADHAR_URL}}
+  <div style="margin: 30px 0; page-break-inside: avoid;">
+    <h3>TENANT DOCUMENTS:</h3>
+    <div style="margin: 10px 0;">
+      <p><strong>Aadhar Card:</strong></p>
+      <img src="{{TENANT_AADHAR_URL}}" style="max-width: 300px; height: auto; border: 1px solid #ccc; margin: 10px 0;" />
+    </div>
+  </div>
+  {{/if}}
+  
+  {{#if TENANT_PAN_URL}}
+  <div style="margin: 20px 0; page-break-inside: avoid;">
+    <div style="margin: 10px 0;">
+      <p><strong>PAN Card:</strong></p>
+      <img src="{{TENANT_PAN_URL}}" style="max-width: 300px; height: auto; border: 1px solid #ccc; margin: 10px 0;" />
+    </div>
+  </div>
+  {{/if}}
+  
   <div style="margin: 40px 0; display: flex; justify-content: space-between;">
     <div>
       <p><strong>Owner Signature</strong></p>
       <p style="margin-top: 40px;">{{OWNER_NAME}}</p>
       <p>Date: ___________</p>
+      {{#if OWNER_AADHAR_URL}}
+      <p style="font-size: 12px; color: #666;">✓ Aadhar Card Attached</p>
+      {{/if}}
+      {{#if OWNER_PAN_URL}}
+      <p style="font-size: 12px; color: #666;">✓ PAN Card Attached</p>
+      {{/if}}
     </div>
     <div>
       <p><strong>Tenant Signature</strong></p>
       <p style="margin-top: 40px;">{{TENANT_NAME}}</p>
       <p>Date: ___________</p>
+      {{#if TENANT_AADHAR_URL}}
+      <p style="font-size: 12px; color: #666;">✓ Aadhar Card Attached</p>
+      {{/if}}
+      {{#if TENANT_PAN_URL}}
+      <p style="font-size: 12px; color: #666;">✓ PAN Card Attached</p>
+      {{/if}}
     </div>
   </div>
 </div>`,
@@ -460,6 +517,38 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                         </div>
                       </div>
                     ))}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm flex items-center">
+                      <Code className="h-4 w-4 mr-2" />
+                      Conditional Examples
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-xs space-y-3">
+                    <div>
+                      <strong>Show document if uploaded:</strong>
+                      <code className="block bg-gray-100 p-2 mt-1 rounded text-xs">
+{`{{#if OWNER_AADHAR_URL}}
+<div class="document-section">
+  <p><strong>Owner Aadhar:</strong></p>
+  <img src="{{OWNER_AADHAR_URL}}" 
+       style="max-width:300px;" />
+</div>
+{{/if}}`}
+                      </code>
+                    </div>
+                    <div>
+                      <strong>Show text conditionally:</strong>
+                      <code className="block bg-gray-100 p-2 mt-1 rounded text-xs">
+{`{{#if TENANT_PAN_URL}}
+<p>PAN Card: Attached</p>
+{{else}}
+<p>PAN Card: Not Provided</p>
+{{/if}}`}
+                      </code>
+                    </div>
                   </CardContent>
                 </Card>
                 <Card>

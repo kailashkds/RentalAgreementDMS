@@ -127,8 +127,10 @@ export const agreements: any = pgTable("agreements", {
   parentAgreementId: varchar("parent_agreement_id"),
   renewedFromId: varchar("renewed_from_id"),
   
-  // Document paths
+  // Document paths - storing URLs for uploaded documents
   documents: jsonb("documents").default({}), // Store document file paths
+  ownerDocuments: jsonb("owner_documents").default({}), // Owner's Aadhar, PAN, etc.
+  tenantDocuments: jsonb("tenant_documents").default({}), // Tenant's Aadhar, PAN, etc.
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
