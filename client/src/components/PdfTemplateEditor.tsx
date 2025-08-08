@@ -295,22 +295,22 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {template ? "Edit PDF Template" : "Create New PDF Template"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="editor">Template Editor</TabsTrigger>
               <TabsTrigger value="preview">Preview</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="basic" className="flex-1 space-y-4">
+            <TabsContent value="basic" className="flex-1 space-y-4 overflow-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Template Name</Label>
@@ -365,7 +365,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
               </div>
             </TabsContent>
 
-            <TabsContent value="editor" className="flex-1 flex gap-4">
+            <TabsContent value="editor" className="flex-1 flex gap-4 overflow-hidden">
               <div className="flex-1 space-y-4">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="htmlTemplate" className="text-lg font-medium">HTML Template Editor</Label>
@@ -478,7 +478,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
               </div>
             </TabsContent>
 
-            <TabsContent value="preview" className="flex-1 space-y-4">
+            <TabsContent value="preview" className="flex-1 space-y-4 overflow-auto">
               <div className="flex items-center justify-between">
                 <Label className="text-lg font-medium flex items-center">
                   <Eye className="h-5 w-5 mr-2" />
@@ -504,9 +504,9 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
             </TabsContent>
           </Tabs>
 
-          <Separator className="my-4" />
+          <Separator className="flex-shrink-0" />
 
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-2 flex-shrink-0 pt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
