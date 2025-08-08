@@ -351,6 +351,18 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
   const nextStep = async () => {
     if (currentStep < STEPS.length && canProceed(currentStep)) {
+      // Clear any automatic lookup conflicts when moving to tenant step
+      if (currentStep === 1) {
+        // Moving from owner to tenant - ensure no cross-contamination
+        const ownerDetails = watch("ownerDetails");
+        if (ownerDetails) {
+          // Just ensure tenant fields start clean
+          const currentTenantName = watch("tenantDetails.name");
+          if (!currentTenantName || currentTenantName.trim() === "") {
+            // Tenant fields are already clean, proceed normally
+          }
+        }
+      }
       setCurrentStep(currentStep + 1);
     } else if (!canProceed(currentStep)) {
       toast({
@@ -378,12 +390,50 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   };
 
   const copyFromCustomer = () => {
-    const customer = customersData?.customers.find(c => c.id === watchedCustomerId);
-    if (customer) {
-      setValue("tenantDetails.name", customer.name);
-      setValue("tenantDetails.mobile", customer.mobile);
-      // Set other fields as needed
+    const selectedCustomer = customersData?.customers.find(c => c.id === watchedCustomerId);
+    
+    if (!selectedCustomer) {
+      toast({
+        title: "No Customer Selected",
+        description: "Please select a customer first to copy their details.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    // Clear any existing tenant details first
+    setValue("tenantDetails.name", "");
+    setValue("tenantDetails.mobile", "");
+    setValue("tenantDetails.email", "");
+    setValue("tenantDetails.age", "");
+    setValue("tenantDetails.occupation", "");
+    setValue("tenantDetails.company", "");
+    setValue("tenantDetails.address.flatNo", "");
+    setValue("tenantDetails.address.society", "");
+    setValue("tenantDetails.address.area", "");
+    setValue("tenantDetails.address.city", "");
+    setValue("tenantDetails.address.state", "");
+    setValue("tenantDetails.address.pincode", "");
+
+    // Copy customer details to tenant fields
+    setValue("tenantDetails.name", selectedCustomer.name);
+    setValue("tenantDetails.mobile", selectedCustomer.mobile);
+    setValue("tenantDetails.email", selectedCustomer.email || "");
+    
+    // If customer has address information, copy that too
+    if (selectedCustomer.address) {
+      setValue("tenantDetails.address.flatNo", selectedCustomer.address.flatNo || "");
+      setValue("tenantDetails.address.society", selectedCustomer.address.society || "");
+      setValue("tenantDetails.address.area", selectedCustomer.address.area || "");
+      setValue("tenantDetails.address.city", selectedCustomer.address.city || "");
+      setValue("tenantDetails.address.state", selectedCustomer.address.state || "");
+      setValue("tenantDetails.address.pincode", selectedCustomer.address.pincode || "");
+    }
+    
+    toast({
+      title: "Details Copied",
+      description: `${selectedCustomer.name}'s details have been copied to tenant fields.`,
+    });
   };
 
   const copyCustomerAsOwner = () => {
@@ -532,19 +582,27 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   // Fill customer details including any associated address
   const fillCustomerDetails = (customer: any, userType: 'owner' | 'tenant') => {
     if (userType === 'owner') {
-      setValue("ownerDetails.name", customer.name);
-      setValue("ownerDetails.mobile", customer.mobile);
-      setValue("ownerDetails.email", customer.email || "");
-      
-      // Fill address if available (from most recent agreement)
-      fillAssociatedAddress(customer.id, userType);
+      // Only fill if owner fields are currently empty to avoid overwriting manually entered data
+      const currentOwnerName = watch("ownerDetails.name");
+      if (!currentOwnerName || currentOwnerName.trim() === "") {
+        setValue("ownerDetails.name", customer.name);
+        setValue("ownerDetails.mobile", customer.mobile);
+        setValue("ownerDetails.email", customer.email || "");
+        
+        // Fill address if available (from most recent agreement)
+        fillAssociatedAddress(customer.id, userType);
+      }
     } else {
-      setValue("tenantDetails.name", customer.name);
-      setValue("tenantDetails.mobile", customer.mobile);
-      setValue("tenantDetails.email", customer.email || "");
-      
-      // Fill address if available (from most recent agreement)
-      fillAssociatedAddress(customer.id, userType);
+      // Only fill if tenant fields are currently empty to avoid overwriting manually entered data
+      const currentTenantName = watch("tenantDetails.name");
+      if (!currentTenantName || currentTenantName.trim() === "") {
+        setValue("tenantDetails.name", customer.name);
+        setValue("tenantDetails.mobile", customer.mobile);
+        setValue("tenantDetails.email", customer.email || "");
+        
+        // Fill address if available (from most recent agreement)
+        fillAssociatedAddress(customer.id, userType);
+      }
     }
   };
 

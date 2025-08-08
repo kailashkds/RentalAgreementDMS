@@ -349,11 +349,28 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
 
   // Handle additional clauses array
   if (formData.additionalClauses && Array.isArray(formData.additionalClauses)) {
-    const clausesText = formData.additionalClauses
-      .filter(clause => clause && clause.trim()) // Filter out empty clauses
-      .map((clause, index) => `${index + 1}. ${clause}`)
-      .join('\n');
-    templateFields['ADDITIONAL_CLAUSES'] = clausesText || 'No additional clauses specified.';
+    const validClauses = formData.additionalClauses.filter(clause => clause && clause.trim());
+    if (validClauses.length > 0) {
+      const clausesText = validClauses
+        .map((clause, index) => `${index + 1}. ${clause.trim()}`)
+        .join('<br/>');
+      templateFields['ADDITIONAL_CLAUSES'] = clausesText;
+    } else {
+      templateFields['ADDITIONAL_CLAUSES'] = 'No additional clauses specified.';
+    }
+  } else if (typeof formData.additionalClauses === 'string') {
+    // Handle case where additionalClauses comes as comma-separated string
+    const clausesArray = formData.additionalClauses.split(',').filter(clause => clause && clause.trim());
+    if (clausesArray.length > 0) {
+      const clausesText = clausesArray
+        .map((clause, index) => `${index + 1}. ${clause.trim()}`)
+        .join('<br/>');
+      templateFields['ADDITIONAL_CLAUSES'] = clausesText;
+    } else {
+      templateFields['ADDITIONAL_CLAUSES'] = 'No additional clauses specified.';
+    }
+  } else {
+    templateFields['ADDITIONAL_CLAUSES'] = 'No additional clauses specified.';
   }
 
   // Add computed fields (amounts in words)
