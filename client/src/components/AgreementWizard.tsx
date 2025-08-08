@@ -547,15 +547,29 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         const selectedLanguage = formData.language || 'english';
         console.log('Generating PDF for agreement:', agreement.agreementNumber);
         
-        const response = await fetch('/api/agreements/generate-pdf', {
+        // First get the active PDF template for rental agreements in the selected language
+        const templatesResponse = await fetch(`/api/pdf-templates?documentType=rental_agreement&language=${selectedLanguage}`);
+        const templates = await templatesResponse.json();
+        const activeTemplate = templates.find((t: any) => t.isActive);
+        
+        if (!activeTemplate) {
+          throw new Error(`No active PDF template found for ${selectedLanguage} language.`);
+        }
+        
+        console.log('Using template:', activeTemplate.name, 'for language:', selectedLanguage);
+
+        // Generate PDF with the active template
+        const response = await fetch('/api/generate-pdf', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            ...formData,
-            agreementNumber: agreement.agreementNumber,
-            language: selectedLanguage
+            templateId: activeTemplate.id,
+            agreementData: {
+              ...formData,
+              agreementNumber: agreement.agreementNumber
+            }
           }),
         });
 
@@ -1562,7 +1576,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                 >
                   {t("saveDraft")}
                 </Button>
-                {currentStep < STEPS.length ? (
+                {currentStep < STEPS.length && (
                   <Button 
                     type="button" 
                     onClick={nextStep} 
@@ -1575,15 +1589,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   >
                     {t("next")}
                     <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button 
-                    type="button" 
-                    onClick={onClose}
-                    variant="outline"
-                    className="bg-gray-100 hover:bg-gray-200"
-                  >
-                    Close Wizard
                   </Button>
                 )}
               </div>
