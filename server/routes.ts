@@ -189,7 +189,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agreementType: 'rental_agreement',
         additionalClauses: agreementData.additionalClauses || [],
         agreementNumber: agreementData.agreementNumber,
-        language: language
+        language: language,
+        // Include document data if available
+        documents: agreementData.documents || {},
+        ownerDocuments: agreementData.ownerDocuments || {},
+        tenantDocuments: agreementData.tenantDocuments || {},
+        propertyDocuments: agreementData.propertyDocuments || {}
       };
 
       // Debug: Log the agreement data structure to understand what we're working with

@@ -140,6 +140,11 @@ export default function Agreements() {
           language: agreement.language || 'english',
           additionalClauses: agreement.additionalClauses || [],
           agreementNumber: agreement.agreementNumber,
+          // Include document data for embedding
+          documents: agreement.documents || {},
+          ownerDocuments: agreement.ownerDocuments || {},
+          tenantDocuments: agreement.tenantDocuments || {},
+          propertyDocuments: agreement.propertyDocuments || {}
         }),
       });
 

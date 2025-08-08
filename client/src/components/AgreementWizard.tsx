@@ -799,7 +799,20 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
           body: JSON.stringify({
             ...formData,
             language: selectedLanguage,
-            agreementNumber: agreement.agreementNumber
+            agreementNumber: agreement.agreementNumber,
+            // Include document URLs for embedding
+            documents: documents,
+            ownerDocuments: {
+              aadharUrl: documents.ownerAadhar || null,
+              panUrl: documents.ownerPan || null
+            },
+            tenantDocuments: {
+              aadharUrl: documents.tenantAadhar || null,
+              panUrl: documents.tenantPan || null
+            },
+            propertyDocuments: {
+              urls: documents.propertyDocs || null
+            }
           }),
         });
 
