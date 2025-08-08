@@ -59,7 +59,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   return (
     <div className="flex h-screen bg-muted/30">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg border-r border-gray-200">
+      <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col h-full">
         <div className="p-6 border-b border-gray-200">
           <div className="flex justify-center">
             <img 
@@ -70,7 +70,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
           </div>
         </div>
         
-        <nav className="mt-6">
+        <nav className="mt-6 flex-1 flex flex-col">
           <div className="px-4 space-y-2">
             {navigation.map((item) => {
               const isActive = location === item.href;
@@ -117,17 +117,20 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
               })}
             </div>
           </div>
+          
+          {/* Spacer to push user info to bottom */}
+          <div className="flex-1"></div>
         </nav>
         
         {/* User info and logout at bottom */}
-        <div className="mt-auto p-4 bg-gray-50 border-t">
+        <div className="p-4 bg-gray-50 border-t">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <UserCircle className="w-5 h-5 text-blue-600" />
               </div>
               <div className="text-sm">
-                <div className="font-medium text-gray-900">{(user as any)?.name || 'Admin User'}</div>
+                <div className="font-medium text-gray-900">{(user as any)?.name || 'Administrator'}</div>
                 <div className="text-gray-500">@{(user as any)?.username || 'admin'}</div>
               </div>
             </div>
