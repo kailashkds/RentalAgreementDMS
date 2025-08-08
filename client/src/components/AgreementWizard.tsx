@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +73,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
   const [createdAgreementId, setCreatedAgreementId] = useState<string | null>(null);
   
   const { toast } = useToast();
+  const mobileTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<AgreementFormData>({
     defaultValues: {
@@ -422,7 +423,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     if (mobile && mobile.replace(/\D/g, '').length === 10) {
       try {
         console.log(`Looking up customer for mobile: ${mobile}`);
-        const customer = await apiRequest(`/api/customers/by-mobile?mobile=${encodeURIComponent(mobile)}`) as any;
+        const response = await apiRequest("GET", `/api/customers/by-mobile?mobile=${encodeURIComponent(mobile)}`);
+        const customer = await response.json();
         
         if (customer) {
           console.log(`Found customer:`, customer);
@@ -838,9 +840,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     placeholder={t("mobileNumberPlaceholder")}
                     onChange={(e) => {
                       const mobile = e.target.value;
+                      // Clear previous timeout to prevent multiple lookups
+                      if (mobileTimeout.current) {
+                        clearTimeout(mobileTimeout.current);
+                      }
                       // Auto-lookup when user finishes typing 10 digits
                       if (mobile.replace(/\D/g, '').length === 10) {
-                        setTimeout(() => fetchMobileInfo(mobile, 'owner'), 500);
+                        mobileTimeout.current = setTimeout(() => {
+                          fetchMobileInfo(mobile, 'owner');
+                        }, 500);
                       }
                     }}
                     onBlur={(e) => fetchMobileInfo(e.target.value, 'owner')}
@@ -1016,9 +1024,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     placeholder={t("mobileNumberPlaceholder")} 
                     onChange={(e) => {
                       const mobile = e.target.value;
+                      // Clear previous timeout to prevent multiple lookups
+                      if (mobileTimeout.current) {
+                        clearTimeout(mobileTimeout.current);
+                      }
                       // Auto-lookup when user finishes typing 10 digits
                       if (mobile.replace(/\D/g, '').length === 10) {
-                        setTimeout(() => fetchMobileInfo(mobile, 'tenant'), 500);
+                        mobileTimeout.current = setTimeout(() => {
+                          fetchMobileInfo(mobile, 'tenant');
+                        }, 500);
                       }
                     }}
                     onBlur={(e) => fetchMobileInfo(e.target.value, 'tenant')}
