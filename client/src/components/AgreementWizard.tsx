@@ -860,7 +860,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   </ObjectUploader>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700">PAN Card</Label>
+                  <Label className="text-sm font-medium text-gray-700">{t("panCardLabel")}</Label>
                   <ObjectUploader
                     maxFileSize={5242880} // 5MB
                     onGetUploadParameters={getUploadParameters}
@@ -879,7 +879,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                           <Plus className="w-4 h-4" />
                         </div>
                         <p className="text-sm text-gray-600">
-                          {documents.ownerPan ? "PAN Card Uploaded" : "Upload PAN Card"}
+                          {documents.ownerPan ? t("panCardUploaded") : t("uploadPanCard")}
                         </p>
                         <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 5MB)</p>
                       </div>
@@ -1178,10 +1178,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             </div>
 
             <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-4">Agreement Duration</h4>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">{t("agreementDuration")}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>Agreement Start Date</Label>
+                  <Label>{t("agreementStartDate")}</Label>
                   <Input 
                     type="date" 
                     {...register("rentalTerms.startDate", { required: "Start date is required" })}
@@ -1201,7 +1201,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   )}
                 </div>
                 <div>
-                  <Label>Agreement Tenure</Label>
+                  <Label>{t("agreementTenure")}</Label>
                   <Select 
                     value={watch("rentalTerms.tenure")} 
                     onValueChange={(value) => {
@@ -1216,16 +1216,16 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select tenure" />
+                      <SelectValue placeholder={t("selectTenure")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="11_months">11 Months</SelectItem>
-                      <SelectItem value="custom">Custom Duration</SelectItem>
+                      <SelectItem value="11_months">{t("months11")}</SelectItem>
+                      <SelectItem value="custom">{t("customDuration")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Agreement End Date</Label>
+                  <Label>{t("agreementEndDate")}</Label>
                   <Input 
                     type="date" 
                     {...register("rentalTerms.endDate", { required: "End date is required" })}
@@ -1236,7 +1236,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     <p className="text-sm text-red-600 mt-1">{errors.rentalTerms.endDate.message}</p>
                   )}
                   {watch("rentalTerms.tenure") === "11_months" && (
-                    <p className="text-xs text-gray-500 mt-1">Auto-calculated based on start date</p>
+                    <p className="text-xs text-gray-500 mt-1">{t("autoCalculated")}</p>
                   )}
                 </div>
               </div>
@@ -1261,13 +1261,13 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
             </div>
 
             <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-4">Additional Terms</h4>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">{t("additionalTerms")}</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label>{t("maintenance")} Charge</Label>
+                  <Label>{t("maintenanceCharge")}</Label>
                   <Select value={watch("rentalTerms.maintenance")} onValueChange={(value) => setValue("rentalTerms.maintenance", value as "included" | "excluded")}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select option" />
+                      <SelectValue placeholder={t("selectOption")} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="included">{t("included")}</SelectItem>

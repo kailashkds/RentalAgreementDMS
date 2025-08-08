@@ -157,9 +157,7 @@ export const translations = {
     aadharCard: "આધાર કાર્ડ",
     panCard: "પેન કાર્ડ",
     uploadAadharCard: "આધાર કાર્ડ અપલોડ કરો",
-    uploadPanCard: "પેન કાર્ડ અપલોડ કરો",
     aadharCardUploaded: "આધાર કાર્ડ અપલોડ થયું",
-    panCardUploaded: "પેન કાર્ડ અપલોડ થયું",
     optional: "(વૈકલ્પિક)",
     autoFill: "ઓટો-ફિલ",
     autoFillMessage: "જો તેઓ અસ્તિત્વમાં હોય તો ગ્રાહકની વિગતો ઓટો-ફિલ કરવા માટે મોબાઇલ નંબર દાખલ કરો",
@@ -178,6 +176,25 @@ export const translations = {
     societyBuilding: "સોસાયટી/બિલ્ડિંગ",
     placeOfAgreement: "કરારનું સ્થળ",
     cityName: "શહેરનું નામ",
+    
+    // Agreement duration labels
+    agreementDuration: "કરારની મુદત",
+    agreementStartDate: "કરારની શરૂઆતની તારીખ",
+    agreementTenure: "કરારની મુદત",
+    agreementEndDate: "કરારની અંતિમ તારીખ",
+    selectTenure: "મુદત પસંદ કરો",
+    customDuration: "કસ્ટમ મુદત",
+    autoCalculated: "શરૂઆતની તારીખના આધારે ઓટો-કેલ્ક્યુલેટેડ",
+    
+    // Additional terms
+    additionalTerms: "વધારાની શરતો",
+    maintenanceCharge: "જાળવણી ચાર્જ",
+    selectOption: "વિકલ્પ પસંદ કરો",
+    
+    // PAN Card label
+    panCardLabel: "પેન કાર્ડ",
+    uploadPanCard: "પેન કાર્ડ અપલોડ કરો",
+    panCardUploaded: "પેન કાર્ડ અપલોડ થયું",
     
     // Options
     residential: "રહેણાંક",
