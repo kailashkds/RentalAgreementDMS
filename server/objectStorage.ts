@@ -130,6 +130,46 @@ export class ObjectStorageService {
     }
   }
 
+  // Get file as base64 data URL for embedding in PDFs
+  async getFileAsBase64DataURL(objectPath: string): Promise<string | null> {
+    try {
+      console.log(`[ObjectStorage] Getting file as base64 for path: ${objectPath}`);
+      
+      const objectFile = await this.getObjectEntityFile(objectPath);
+      const [metadata] = await objectFile.getMetadata();
+      const contentType = metadata.contentType || 'application/octet-stream';
+      
+      console.log(`[ObjectStorage] File content type: ${contentType}`);
+      
+      // Get file buffer
+      const [buffer] = await objectFile.download();
+      console.log(`[ObjectStorage] Downloaded file, size: ${buffer.length} bytes`);
+      
+      // Convert to base64
+      const base64 = buffer.toString('base64');
+      const dataUrl = `data:${contentType};base64,${base64}`;
+      
+      console.log(`[ObjectStorage] Successfully converted to base64 data URL`);
+      return dataUrl;
+    } catch (error) {
+      console.error(`[ObjectStorage] Error getting file as base64 for path ${objectPath}:`, error);
+      return null;
+    }
+  }
+
+  // Check if a file type is embeddable in PDF
+  isEmbeddableFileType(contentType: string): boolean {
+    const embeddableTypes = [
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/pdf'
+    ];
+    return embeddableTypes.includes(contentType.toLowerCase());
+  }
+
   // Gets the upload URL for an object entity.
   async getObjectEntityUploadURL(): Promise<string> {
     const privateObjectDir = this.getPrivateObjectDir();

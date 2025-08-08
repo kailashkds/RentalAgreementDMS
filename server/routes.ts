@@ -195,8 +195,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Debug: Log the agreement data structure to understand what we're working with
       console.log("Parsed agreement data:", JSON.stringify(safeAgreementData, null, 2));
       
-      // Generate the HTML with mapped field values using the enhanced field mapping system
-      const processedHtml = generatePdfHtml(safeAgreementData, template.htmlTemplate);
+      // Generate the HTML with mapped field values using the enhanced field mapping system (now with document embedding)
+      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate);
       
       // Debug: Log first 500 chars of processed HTML to see if replacement is working
       console.log("First 500 chars of processed HTML:", processedHtml.substring(0, 500));
@@ -563,8 +563,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "PDF template not found" });
       }
 
-      // Use the new field mapping system to generate PDF HTML
-      const processedHtml = generatePdfHtml(agreementData, template.htmlTemplate);
+      // Use the new field mapping system to generate PDF HTML (now with document embedding)
+      const processedHtml = await generatePdfHtml(agreementData, template.htmlTemplate);
 
       res.json({ 
         html: processedHtml,
@@ -606,8 +606,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agreementType: 'rental_agreement'
       };
 
-      // Generate the HTML with mapped field values
-      const processedHtml = generatePdfHtml(agreementFormData, template.htmlTemplate);
+      // Generate the HTML with mapped field values (now with document embedding)
+      const processedHtml = await generatePdfHtml(agreementFormData, template.htmlTemplate);
       
       res.json({
         html: processedHtml,

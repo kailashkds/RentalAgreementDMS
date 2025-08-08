@@ -88,11 +88,11 @@ const DYNAMIC_FIELDS = {
     { key: "{{ADDITIONAL_CLAUSES}}", label: "Additional Clauses" },
   ],
   documents: [
-    { key: "{{OWNER_AADHAR_URL}}", label: "Owner Aadhar Card" },
-    { key: "{{OWNER_PAN_URL}}", label: "Owner PAN Card" },
-    { key: "{{TENANT_AADHAR_URL}}", label: "Tenant Aadhar Card" },
-    { key: "{{TENANT_PAN_URL}}", label: "Tenant PAN Card" },
-    { key: "{{PROPERTY_DOCUMENTS_URL}}", label: "Property Documents" },
+    { key: "{{OWNER_AADHAR_URL}}", label: "Owner Aadhaar Card (Embedded Image)" },
+    { key: "{{OWNER_PAN_URL}}", label: "Owner PAN Card (Embedded Image)" },
+    { key: "{{TENANT_AADHAR_URL}}", label: "Tenant Aadhaar Card (Embedded Image)" },
+    { key: "{{TENANT_PAN_URL}}", label: "Tenant PAN Card (Embedded Image)" },
+    { key: "{{PROPERTY_DOCUMENTS_URL}}", label: "Property Documents (Embedded)" },
   ],
 };
 

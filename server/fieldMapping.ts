@@ -1,6 +1,8 @@
 // Field mapping utilities for PDF template generation
 // Maps form field names to template field names
 
+import { ObjectStorageService } from './objectStorage';
+
 export interface FormData {
   ownerDetails: {
     name: string;
@@ -466,11 +468,15 @@ export function processTemplate(htmlTemplate: string, fieldValues: Record<string
 }
 
 /**
- * Generates PDF-ready HTML from form data and template
+ * Generates PDF-ready HTML from form data and template with document embedding
  */
-export function generatePdfHtml(formData: any, htmlTemplate: string): string {
+export async function generatePdfHtml(formData: any, htmlTemplate: string): Promise<string> {
   const fieldValues = mapFormDataToTemplateFields(formData);
-  let processedHtml = processTemplate(htmlTemplate, fieldValues);
+  
+  // Process document embedding for images/PDFs
+  const processedFieldValues = await processDocumentEmbedding(fieldValues, formData);
+  
+  let processedHtml = processTemplate(htmlTemplate, processedFieldValues);
   
   // Add page break control CSS if not already present
   const pageBreakCSS = `
@@ -555,4 +561,146 @@ export function generatePdfHtml(formData: any, htmlTemplate: string): string {
   }
   
   return processedHtml;
+}
+
+/**
+ * Process document URLs and convert them to embeddable content for PDFs
+ */
+async function processDocumentEmbedding(fieldValues: Record<string, string>, formData: any): Promise<Record<string, string>> {
+  const processedFields = { ...fieldValues };
+  const objectStorage = new ObjectStorageService();
+  
+  // Document URL fields that should be processed for embedding
+  const documentFields = [
+    'OWNER_AADHAR_URL',
+    'OWNER_PAN_URL', 
+    'TENANT_AADHAR_URL',
+    'TENANT_PAN_URL',
+    'PROPERTY_DOCUMENTS_URL'
+  ];
+  
+  for (const fieldName of documentFields) {
+    const documentUrl = fieldValues[fieldName];
+    if (documentUrl && documentUrl.trim()) {
+      try {
+        console.log(`[PDF Embedding] Processing document field: ${fieldName} with URL: ${documentUrl}`);
+        
+        // Convert document URL to embedded HTML
+        const embeddedContent = await createEmbeddedDocumentHtml(documentUrl, fieldName, objectStorage);
+        if (embeddedContent) {
+          // Replace the URL with embedded HTML content
+          processedFields[fieldName] = embeddedContent;
+          console.log(`[PDF Embedding] Successfully embedded content for ${fieldName}`);
+        } else {
+          // Fallback to text reference
+          processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document attached but cannot be embedded for display.</p>`;
+          console.log(`[PDF Embedding] Could not embed ${fieldName}, using fallback text`);
+        }
+      } catch (error) {
+        console.error(`[PDF Embedding] Error processing ${fieldName}:`, error);
+        // Fallback to text reference on error
+        processedFields[fieldName] = `<p style="color: #999; font-style: italic;">Document attached but preview unavailable.</p>`;
+      }
+    }
+  }
+  
+  return processedFields;
+}
+
+/**
+ * Create embedded HTML content for documents (images/PDFs)
+ */
+async function createEmbeddedDocumentHtml(documentUrl: string, fieldName: string, objectStorage: ObjectStorageService): Promise<string | null> {
+  try {
+    // Normalize the URL to object path
+    const objectPath = objectStorage.normalizeObjectEntityPath(documentUrl);
+    console.log(`[PDF Embedding] Normalized path: ${objectPath}`);
+    
+    if (!objectPath.startsWith('/objects/')) {
+      console.log(`[PDF Embedding] Invalid object path: ${objectPath}`);
+      return null;
+    }
+    
+    // Get file as base64 data URL
+    const dataUrl = await objectStorage.getFileAsBase64DataURL(objectPath);
+    if (!dataUrl) {
+      console.log(`[PDF Embedding] Could not get base64 data for: ${objectPath}`);
+      return null;
+    }
+    
+    // Determine document type for appropriate HTML
+    const documentType = getDocumentTypeFromFieldName(fieldName);
+    const fileType = dataUrl.split(':')[1]?.split(';')[0] || 'unknown';
+    
+    console.log(`[PDF Embedding] Document type: ${documentType}, File type: ${fileType}`);
+    
+    // Create appropriate embedded HTML based on file type
+    if (fileType.startsWith('image/')) {
+      return createEmbeddedImageHtml(dataUrl, documentType);
+    } else if (fileType === 'application/pdf') {
+      return createEmbeddedPdfHtml(dataUrl, documentType);
+    } else {
+      console.log(`[PDF Embedding] Unsupported file type: ${fileType}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`[PDF Embedding] Error creating embedded content:`, error);
+    return null;
+  }
+}
+
+/**
+ * Create embedded image HTML for display in PDF
+ */
+function createEmbeddedImageHtml(dataUrl: string, documentType: string): string {
+  return `
+<div style="margin: 15px 0; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9; page-break-inside: avoid;">
+  <div style="margin-bottom: 10px;">
+    <strong style="color: #2c3e50; font-size: 16px;">📄 ${documentType}</strong>
+  </div>
+  <div style="text-align: center; margin: 10px 0;">
+    <img src="${dataUrl}" 
+         style="max-width: 100%; max-height: 400px; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
+         alt="${documentType}" />
+  </div>
+  <div style="text-align: center; margin-top: 8px;">
+    <small style="color: #666; font-style: italic;">Document image embedded in agreement</small>
+  </div>
+</div>`;
+}
+
+/**
+ * Create embedded PDF HTML for display in PDF
+ */
+function createEmbeddedPdfHtml(dataUrl: string, documentType: string): string {
+  return `
+<div style="margin: 15px 0; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9; page-break-inside: avoid;">
+  <div style="margin-bottom: 10px;">
+    <strong style="color: #2c3e50; font-size: 16px;">📄 ${documentType}</strong>
+  </div>
+  <div style="text-align: center; margin: 10px 0;">
+    <iframe src="${dataUrl}" 
+            style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 4px;" 
+            title="${documentType}">
+    </iframe>
+  </div>
+  <div style="text-align: center; margin-top: 8px;">
+    <small style="color: #666; font-style: italic;">PDF document embedded in agreement</small>
+  </div>
+</div>`;
+}
+
+/**
+ * Get human-readable document type from field name
+ */
+function getDocumentTypeFromFieldName(fieldName: string): string {
+  const typeMap: Record<string, string> = {
+    'OWNER_AADHAR_URL': 'Owner Aadhaar Card',
+    'OWNER_PAN_URL': 'Owner PAN Card',
+    'TENANT_AADHAR_URL': 'Tenant Aadhaar Card', 
+    'TENANT_PAN_URL': 'Tenant PAN Card',
+    'PROPERTY_DOCUMENTS_URL': 'Property Documents'
+  };
+  
+  return typeMap[fieldName] || 'Document';
 }
