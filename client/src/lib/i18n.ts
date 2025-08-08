@@ -48,8 +48,8 @@ export const translations = {
     monthlyRent: "Monthly Rent",
     dueDate: "Rent Due Date",
     maintenance: "Maintenance",
-    noticePeriod: "Notice Period (Days)",
-    minimumStay: "Minimum Stay (Days)",
+    noticePeriod: "Notice Period (Months)",
+    minimumStay: "Minimum Stay (Months)",
     
     // Agreement sections
     agreementDuration: "Agreement Duration",
@@ -120,7 +120,8 @@ export const translations = {
     listItems: "List items/facilities included with property",
     amountPlaceholder: "Enter amount",
     dueDateExample: "e.g., 5 (for 5th of every month)",
-    noticePeriodExample: "e.g., 1",
+    noticePeriodExample: "e.g., 1 (month)",
+    minimumStayExample: "e.g., 11 (months)",
     autoCalculated: "Auto-calculated based on start date",
     
     // Missing section headers and labels
@@ -134,7 +135,8 @@ export const translations = {
     fileSizeNote: "Max file size: 5MB",
     createNewAgreement: "Create New Agreement",
     copyCustomerDetails: "Copy Customer Details",
-    societyApartment: "Society/Apartment"
+    societyApartment: "Society/Apartment",
+    months: "Months"
   },
   
   gujarati: {
@@ -185,8 +187,8 @@ export const translations = {
     monthlyRent: "માસિક ભાડું",
     dueDate: "ભાડાની નિયત તારીખ",
     maintenance: "જાળવણી",
-    noticePeriod: "નોટિસ પીરિયડ (દિવસો)",
-    minimumStay: "ન્યૂનતમ રહેઠાણ (દિવસો)",
+    noticePeriod: "નોટિસ પીરિયડ (મહિના)",
+    minimumStay: "ન્યૂનતમ રહેઠાણ (મહિના)",
     
     // Address fields
     flatNo: "ફ્લેટ/મકાન નંબર",
@@ -257,7 +259,8 @@ export const translations = {
     listItems: "મકાન સાથે આવતી વસ્તુઓ/સુવિધાઓની યાદી",
     amountPlaceholder: "રકમ દાખલ કરો",
     dueDateExample: "દા.ત., 5 (દર મહિનાની 5મી તારીખ માટે)",
-    noticePeriodExample: "દા.ત., 1",
+    noticePeriodExample: "દા.ત., 1 (મહિનો)",
+    minimumStayExample: "દા.ત., 11 (મહિના)",
     autoCalculated: "શરૂઆતની તારીખના આધારે આપમેળે ગણવામાં આવે છે",
     
     // Missing section headers and labels (Gujarati)
@@ -271,7 +274,8 @@ export const translations = {
     fileSizeNote: "મહત્તમ ફાઇલ સાઇઝ: 5MB",
     createNewAgreement: "નવો કરાર બનાવો",
     copyCustomerDetails: "ગ્રાહકની વિગતો કોપી કરો",
-    societyApartment: "સોસાયટી/એપાર્ટમેન્ટ"
+    societyApartment: "સોસાયટી/એપાર્ટમેન્ટ",
+    months: "મહિના"
   },
   
   hindi: {

@@ -1625,12 +1625,32 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                   </Select>
                 </div>
                 <div>
-                  <Label>{t("noticePeriod")} ({t("months")})</Label>
-                  <Input type="number" {...register("rentalTerms.noticePeriod")} placeholder={t("noticePeriodExample")} />
+                  <Label>{t("noticePeriod")}</Label>
+                  <Input 
+                    type="number" 
+                    min="1"
+                    step="1"
+                    {...register("rentalTerms.noticePeriod", { required: "Notice period is required" })} 
+                    placeholder={t("noticePeriodExample")}
+                    onWheel={(e) => e.currentTarget.blur()}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter notice period in months
+                  </p>
                 </div>
                 <div>
                   <Label>{t("minimumStay")}</Label>
-                  <Input {...register("rentalTerms.minimumStay")} placeholder="e.g., 11 months" />
+                  <Input 
+                    type="number" 
+                    min="1"
+                    step="1"
+                    {...register("rentalTerms.minimumStay", { required: "Minimum stay is required" })} 
+                    placeholder={t("minimumStayExample")}
+                    onWheel={(e) => e.currentTarget.blur()}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter minimum stay period in months
+                  </p>
                 </div>
               </div>
 
