@@ -213,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Society routes
+  // Society routes - no auth required for autocomplete
   app.get("/api/societies", async (req, res) => {
     try {
       const { search, limit } = req.query;

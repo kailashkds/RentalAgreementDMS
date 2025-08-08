@@ -444,7 +444,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
 
     addressTimeout.current = setTimeout(async () => {
       try {
-        const societies = await apiRequest("GET", `/api/societies?search=${encodeURIComponent(searchValue)}&limit=10`) as any[];
+        console.log(`Fetching societies for: ${searchValue}`);
+        const response = await fetch(`/api/societies?search=${encodeURIComponent(searchValue)}&limit=10`);
+        const societies = await response.json() as any[];
+        console.log(`Found ${societies.length} societies:`, societies);
+        
         setSocietySuggestions(societies.map(society => ({
           id: society.id,
           societyName: society.societyName,
@@ -453,7 +457,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
           pincode: society.pincode,
           state: society.state || "Gujarat"
         })));
-        setShowSocietySuggestions(true);
+        setShowSocietySuggestions(societies.length > 0);
       } catch (error) {
         console.error("Error fetching society addresses:", error);
         setSocietySuggestions([]);
@@ -1045,7 +1049,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                     {...register("ownerDetails.address.society", { required: "Society/Apartment name is required" })}
                     placeholder={t("startTypingSociety")}
                     onChange={(e) => {
-                      fetchSocietyAddresses(e.target.value);
+                      const value = e.target.value;
+                      console.log(`Owner society input changed to: "${value}"`);
+                      fetchSocietyAddresses(value);
                     }}
                     onBlur={() => setTimeout(() => setShowSocietySuggestions(false), 200)}
                   />
@@ -1387,7 +1393,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                       {...register("propertyDetails.address.society", { required: "Society/Building name is required" })}
                       placeholder={t("startTypingSociety")}
                       onChange={(e) => {
-                        fetchSocietyAddresses(e.target.value);
+                        const value = e.target.value;
+                        console.log(`Property society input changed to: "${value}"`);
+                        fetchSocietyAddresses(value);
                       }}
                       onBlur={() => setTimeout(() => setShowSocietySuggestions(false), 200)}
                     />
