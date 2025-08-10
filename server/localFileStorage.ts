@@ -15,8 +15,8 @@ export class LocalFileStorage {
 
   async saveFileFromUrl(url: string, originalFileName?: string): Promise<string | null> {
     try {
-      // Fix URL case sensitivity issues (Https -> https)
-      const correctedUrl = url.replace(/^Https:\/\//, 'https://');
+      // Fix URL case sensitivity issues (Https -> https) and other URL variations
+      const correctedUrl = url.replace(/^Https:\/\//, 'https://').replace(/^Http:\/\//, 'http://');
       console.log(`[LocalStorage] Downloading file from URL: ${correctedUrl}`);
       
       // Download the file from the URL

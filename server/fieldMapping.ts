@@ -664,14 +664,21 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
           const base64DataUrl = await localFileStorage.getFileAsBase64(localFileName);
           
           if (base64DataUrl && localFileStorage.isEmbeddableFileType(localFileName)) {
-            // Create embedded HTML with professional styling
+            // Create embedded HTML with professional styling - THE ACTUAL UPLOADED IMAGE
             const documentType = getDocumentTypeFromFieldName(fieldName);
             const embeddedImage = `
-              <div style="margin: 10px 0; text-align: center; page-break-inside: avoid;">
-                <p style="margin: 5px 0; font-weight: bold; color: #333; font-size: 12px;">${documentType}</p>
-                <img src="${base64DataUrl}" 
-                     style="max-width: 200px; max-height: 150px; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" 
-                     alt="${documentType}" />
+              <div style="margin: 15px 0; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9; page-break-inside: avoid;">
+                <div style="margin-bottom: 8px;">
+                  <strong style="color: #2c3e50; font-size: 14px;">📄 ${documentType}</strong>
+                </div>
+                <div style="text-align: center; margin: 10px 0;">
+                  <img src="${base64DataUrl}" 
+                       style="max-width: 100%; max-height: 300px; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
+                       alt="${documentType}" />
+                </div>
+                <div style="text-align: center; margin-top: 6px;">
+                  <small style="color: #666; font-style: italic;">Document image embedded in agreement</small>
+                </div>
               </div>
             `;
             processedFields[fieldName] = embeddedImage;
