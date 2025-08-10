@@ -1,0 +1,58 @@
+Error saving address: TypeError: Failed to execute 'fetch' on 'Window': '/api/addresses' is not a valid HTTP method.
+    at apiRequest (queryClient.ts:15:21)
+    at saveAddressWhenSubmitting (AgreementWizard.tsx:352:15)
+    at updateAgreement (AgreementWizard.tsx:1202:13)
+    at handlePdfGeneration (AgreementWizard.tsx:948:29)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=583c4992:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=583c4992:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=583c4992:3733:39)
+    at invokeGuardedCallbackAndCatchFirstError (chunk-RPCDYKBN.js?v=583c4992:3736:33)
+    at executeDispatch (chunk-RPCDYKBN.js?v=583c4992:7014:11)
+    at processDispatchQueueItemsInOrder (chunk-RPCDYKBN.js?v=583c4992:7034:15)
+saveAddressWhenSubmitting @ AgreementWizard.tsx:354
+await in saveAddressWhenSubmitting
+updateAgreement @ AgreementWizard.tsx:1202
+handlePdfGeneration @ AgreementWizard.tsx:948
+callCallback2 @ chunk-RPCDYKBN.js?v=583c4992:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=583c4992:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=583c4992:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=583c4992:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=583c4992:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=583c4992:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=583c4992:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=583c4992:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=583c4992:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=583c4992:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=583c4992:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=583c4992:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=583c4992:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=583c4992:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=583c4992:5449Understand this error
+AgreementWizard.tsx:354 Error saving address: TypeError: Failed to execute 'fetch' on 'Window': '/api/addresses' is not a valid HTTP method.
+    at apiRequest (queryClient.ts:15:21)
+    at saveAddressWhenSubmitting (AgreementWizard.tsx:352:15)
+    at async updateAgreement (AgreementWizard.tsx:1202:7)
+    at async handlePdfGeneration (AgreementWizard.tsx:948:23)
+saveAddressWhenSubmitting @ AgreementWizard.tsx:354
+await in saveAddressWhenSubmitting
+updateAgreement @ AgreementWizard.tsx:1202
+handlePdfGeneration @ AgreementWizard.tsx:948
+callCallback2 @ chunk-RPCDYKBN.js?v=583c4992:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=583c4992:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=583c4992:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=583c4992:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=583c4992:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=583c4992:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=583c4992:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=583c4992:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=583c4992:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=583c4992:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=583c4992:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=583c4992:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=583c4992:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=583c4992:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=583c4992:5449Understand this error
+AgreementWizard.tsx:1237 Updating agreement with language: english
+AgreementWizard.tsx:949 Updated existing agreement: AGR-2025-041
+AgreementWizard.tsx:958 Generating PDF for agreement: AGR-2025-041
+AgreementWizard.tsx:969 Using template: English Rental Agreement Template for language: english

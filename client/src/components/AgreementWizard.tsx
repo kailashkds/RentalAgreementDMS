@@ -349,7 +349,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     // Save addresses to database
     for (const address of addressesToSave) {
       try {
-        await apiRequest("/api/addresses", "POST", address);
+        await apiRequest("POST", "/api/addresses", address);
       } catch (error) {
         console.error("Error saving address:", error);
       }

@@ -679,42 +679,72 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
             continue;
           }
           
-          // Read file and convert to base64 data URL
+          // Read file and detect actual format
           try {
             const fileBuffer = fs.readFileSync(filePath);
-            const mimeType = fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg') 
-              ? 'image/jpeg' 
-              : fileName.toLowerCase().endsWith('.png') 
-              ? 'image/png'
-              : fileName.toLowerCase().endsWith('.pdf')
-              ? 'application/pdf'
-              : 'application/octet-stream';
             
-            const base64Data = fileBuffer.toString('base64');
-            const dataUrl = `data:${mimeType};base64,${base64Data}`;
+            // Check actual file format by examining file header
+            const fileHeader = fileBuffer.slice(0, 8);
+            const headerString = fileHeader.toString('ascii');
+            const isPdf = headerString.startsWith('%PDF');
+            const isJpeg = fileBuffer[0] === 0xFF && fileBuffer[1] === 0xD8;
+            const isPng = fileBuffer[0] === 0x89 && fileBuffer[1] === 0x50;
             
-            console.log(`[PDF Embedding] Successfully converted ${fileName} (${mimeType}) to base64, size: ${base64Data.length} chars`);
+            console.log(`[PDF Embedding] File analysis for ${fileName}:`);
+            console.log(`[PDF Embedding] Header: ${headerString}`);
+            console.log(`[PDF Embedding] Is PDF: ${isPdf}, Is JPEG: ${isJpeg}, Is PNG: ${isPng}`);
             
-            const documentType = getDocumentTypeFromFieldName(fieldName);
-            
-            // Test base64 data by checking first few characters  
-            console.log(`[PDF Embedding] Base64 preview: ${base64Data.substring(0, 100)}...`);
-            console.log(`[PDF Embedding] Data URL preview: ${dataUrl.substring(0, 50)}...`);
-            
-            // Create a simpler embedded HTML for testing
-            const embeddedImage = `
-<div style="margin: 20px 0; padding: 15px; border: 2px solid #2c3e50; border-radius: 8px; background-color: #f9f9f9; page-break-inside: avoid; text-align: center;">
-  <h3 style="color: #2c3e50; margin-bottom: 10px;">📄 ${documentType}</h3>
-  <img src="${dataUrl}" 
-       style="max-width: 500px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px;" 
-       alt="${documentType}"
-       onload="console.log('Image loaded successfully')"
-       onerror="console.error('Image failed to load: ${fileName}')" />
-  <p style="color: #666; margin-top: 10px; font-size: 12px;">File: ${fileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
+            if (isPdf) {
+              // For PDF files, create a document placeholder instead of trying to embed as image
+              const documentType = getDocumentTypeFromFieldName(fieldName);
+              const embeddedDocument = `
+<div style="margin: 20px 0; padding: 20px; border: 2px solid #d63384; border-radius: 8px; background: linear-gradient(145deg, #fff5f5, #ffe6e6); page-break-inside: avoid; text-align: center;">
+  <h3 style="color: #d63384; margin-bottom: 15px;">📄 ${documentType}</h3>
+  <div style="background: white; border: 2px dashed #d63384; border-radius: 6px; padding: 30px; margin: 15px 0;">
+    <div style="font-size: 48px; color: #d63384; margin-bottom: 10px;">📋</div>
+    <p style="color: #d63384; font-weight: bold; margin: 10px 0; font-size: 16px;">PDF Document Attached</p>
+    <p style="color: #666; margin: 5px 0; font-size: 14px;">${documentType}</p>
+    <p style="color: #999; margin: 5px 0; font-size: 12px;">File: ${fileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
+  </div>
+  <p style="color: #d63384; margin-top: 10px; font-weight: bold; font-size: 14px;">✅ Document Successfully Attached</p>
 </div>`;
-            
-            processedFields[fieldName] = embeddedImage;
-            console.log(`[PDF Embedding] ✅ Successfully processed ${fieldName}: ${fileName} (${fileBuffer.length} bytes)`)
+              processedFields[fieldName] = embeddedDocument;
+              console.log(`[PDF Embedding] ✅ Successfully processed PDF document ${fieldName}: ${fileName}`);
+              
+            } else if (isJpeg || isPng) {
+              // Handle actual image files
+              const mimeType = isJpeg ? 'image/jpeg' : 'image/png';
+              const base64Data = fileBuffer.toString('base64');
+              const dataUrl = `data:${mimeType};base64,${base64Data}`;
+              
+              const documentType = getDocumentTypeFromFieldName(fieldName);
+              const embeddedImage = `
+<div style="margin: 20px 0; padding: 15px; border: 2px solid #28a745; border-radius: 8px; background: linear-gradient(145deg, #f8fff8, #e8f5e8); page-break-inside: avoid; text-align: center;">
+  <h3 style="color: #28a745; margin-bottom: 10px;">📄 ${documentType}</h3>
+  <div style="background: white; border: 2px solid #28a745; border-radius: 6px; padding: 10px; margin: 10px 0; display: inline-block;">
+    <img src="${dataUrl}" 
+         style="max-width: 400px; max-height: 250px; border-radius: 4px;" 
+         alt="${documentType}" />
+  </div>
+  <p style="color: #28a745; margin-top: 10px; font-weight: bold; font-size: 14px;">✅ Image Successfully Embedded</p>
+  <p style="color: #666; margin: 5px 0; font-size: 12px;">File: ${fileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
+</div>`;
+              
+              processedFields[fieldName] = embeddedImage;
+              console.log(`[PDF Embedding] ✅ Successfully processed image ${fieldName}: ${fileName}`);
+              
+            } else {
+              // Unknown format
+              console.log(`[PDF Embedding] Unknown file format for ${fileName}`);
+              const documentType = getDocumentTypeFromFieldName(fieldName);
+              const unknownDocument = `
+<div style="margin: 20px 0; padding: 15px; border: 2px solid #ffc107; border-radius: 8px; background: #fffbf0; page-break-inside: avoid; text-align: center;">
+  <h3 style="color: #856404; margin-bottom: 10px;">📄 ${documentType}</h3>
+  <p style="color: #856404; font-weight: bold;">Document Attached (Unknown Format)</p>
+  <p style="color: #666; font-size: 12px;">File: ${fileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
+</div>`;
+              processedFields[fieldName] = unknownDocument;
+            }
           } catch (readError) {
             console.error(`[PDF Embedding] Error reading file ${fileName}:`, readError);
             processedFields[fieldName] = '';
