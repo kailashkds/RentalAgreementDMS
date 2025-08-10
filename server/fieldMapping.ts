@@ -235,8 +235,14 @@ function shouldFormatValue(value: string, templateField: string): { shouldFormat
   const shouldFormatString = hasUnderscores || isAllLowercase || isSingleLowercaseWord;
   
   // Skip formatting for certain field types that should remain as-is
-  const skipFormattingPatterns = ['ID', 'NUMBER', 'AMOUNT', 'PHONE', 'EMAIL', 'PINCODE'];
+  const skipFormattingPatterns = ['ID', 'NUMBER', 'AMOUNT', 'PHONE', 'EMAIL', 'PINCODE', 'URL'];
   const shouldSkip = skipFormattingPatterns.some(pattern => templateField.includes(pattern));
+  
+  // Also skip formatting if the value looks like a URL
+  const looksLikeUrl = value.startsWith('http://') || value.startsWith('https://') || value.includes('storage.googleapis.com');
+  if (looksLikeUrl) {
+    return { shouldFormat: false, formatType: 'none' };
+  }
   
   if (shouldFormatString && !shouldSkip) {
     return { shouldFormat: true, formatType: 'string' };
@@ -713,8 +719,9 @@ async function downloadFileFromObjectStorage(documentUrl: string, fieldName: str
   try {
     console.log(`[PDF Embedding] Downloading from object storage: ${documentUrl}`);
     
-    // Parse the GCS URL to get bucket and object name
-    const urlMatch = documentUrl.match(/https:\/\/storage\.googleapis\.com\/([^\/]+)\/(.+)/);
+    // Parse the GCS URL to get bucket and object name (handle both http and https, case insensitive)
+    const normalizedUrl = documentUrl.toLowerCase().replace(/^http:/, 'https:');
+    const urlMatch = normalizedUrl.match(/https:\/\/storage\.googleapis\.com\/([^\/]+)\/(.+)/);
     if (!urlMatch) {
       console.error(`[PDF Embedding] Invalid GCS URL format: ${documentUrl}`);
       return null;
