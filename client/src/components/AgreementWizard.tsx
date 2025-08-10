@@ -136,18 +136,28 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       console.log("Property details in agreement:", existingFormData.propertyDetails);
       console.log("Rental terms in agreement:", existingFormData.rentalTerms);
       
-      // Detailed property field debugging
+      // Detailed field debugging for all sections
+      if (existingFormData.ownerDetails) {
+        console.log("=== OWNER DETAILS BREAKDOWN ===");
+        console.log("All owner keys:", Object.keys(existingFormData.ownerDetails));
+        console.log("Owner address keys:", existingFormData.ownerDetails.address ? Object.keys(existingFormData.ownerDetails.address) : "No address");
+      }
+      
+      if (existingFormData.tenantDetails) {
+        console.log("=== TENANT DETAILS BREAKDOWN ===");
+        console.log("All tenant keys:", Object.keys(existingFormData.tenantDetails));
+        console.log("Tenant address keys:", existingFormData.tenantDetails.address ? Object.keys(existingFormData.tenantDetails.address) : "No address");
+      }
+      
       if (existingFormData.propertyDetails) {
         console.log("=== PROPERTY DETAILS BREAKDOWN ===");
-        console.log("type:", existingFormData.propertyDetails.type);
-        console.log("bhk:", existingFormData.propertyDetails.bhk);
-        console.log("furnishing:", existingFormData.propertyDetails.furnishing);
-        console.log("parking:", existingFormData.propertyDetails.parking);
-        console.log("floor:", existingFormData.propertyDetails.floor);
-        console.log("area:", existingFormData.propertyDetails.area);
-        console.log("description:", existingFormData.propertyDetails.description);
-        console.log("address:", existingFormData.propertyDetails.address);
         console.log("All property keys:", Object.keys(existingFormData.propertyDetails));
+        console.log("Property address keys:", existingFormData.propertyDetails.address ? Object.keys(existingFormData.propertyDetails.address) : "No address");
+      }
+      
+      if (existingFormData.rentalTerms) {
+        console.log("=== RENTAL TERMS BREAKDOWN ===");
+        console.log("All rental terms keys:", Object.keys(existingFormData.rentalTerms));
       }
       
       // Reset form with existing data
@@ -160,16 +170,16 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           email: existingFormData.ownerDetails?.email || "",
           age: existingFormData.ownerDetails?.age || "",
           occupation: existingFormData.ownerDetails?.occupation || "",
-          fatherName: existingFormData.ownerDetails?.fatherName || "",
-          aadhar: existingFormData.ownerDetails?.aadhar || "",
-          pan: existingFormData.ownerDetails?.pan || "",
+          fatherName: existingFormData.ownerDetails?.fatherName || existingFormData.ownerDetails?.father_name || "",
+          aadhar: existingFormData.ownerDetails?.aadhar || existingFormData.ownerDetails?.aadharNumber || "",
+          pan: existingFormData.ownerDetails?.pan || existingFormData.ownerDetails?.panNumber || "",
           address: {
-            flatNo: existingFormData.ownerDetails?.address?.flatNo || "",
-            society: existingFormData.ownerDetails?.address?.society || "",
+            flatNo: existingFormData.ownerDetails?.address?.flatNo || existingFormData.ownerDetails?.address?.flat_no || "",
+            society: existingFormData.ownerDetails?.address?.society || existingFormData.ownerDetails?.address?.societyName || "",
             area: existingFormData.ownerDetails?.address?.area || "",
             city: existingFormData.ownerDetails?.address?.city || "",
             state: existingFormData.ownerDetails?.address?.state || "",
-            pincode: existingFormData.ownerDetails?.address?.pincode || "",
+            pincode: existingFormData.ownerDetails?.address?.pincode || existingFormData.ownerDetails?.address?.pin_code || "",
             district: existingFormData.ownerDetails?.address?.district || "",
             landmark: existingFormData.ownerDetails?.address?.landmark || ""
           }
@@ -180,16 +190,16 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           email: existingFormData.tenantDetails?.email || "",
           age: existingFormData.tenantDetails?.age || "",
           occupation: existingFormData.tenantDetails?.occupation || "",
-          fatherName: existingFormData.tenantDetails?.fatherName || "",
-          aadhar: existingFormData.tenantDetails?.aadhar || "",
-          pan: existingFormData.tenantDetails?.pan || "",
+          fatherName: existingFormData.tenantDetails?.fatherName || existingFormData.tenantDetails?.father_name || "",
+          aadhar: existingFormData.tenantDetails?.aadhar || existingFormData.tenantDetails?.aadharNumber || "",
+          pan: existingFormData.tenantDetails?.pan || existingFormData.tenantDetails?.panNumber || "",
           address: {
-            flatNo: existingFormData.tenantDetails?.address?.flatNo || "",
-            society: existingFormData.tenantDetails?.address?.society || "",
+            flatNo: existingFormData.tenantDetails?.address?.flatNo || existingFormData.tenantDetails?.address?.flat_no || "",
+            society: existingFormData.tenantDetails?.address?.society || existingFormData.tenantDetails?.address?.societyName || "",
             area: existingFormData.tenantDetails?.address?.area || "",
             city: existingFormData.tenantDetails?.address?.city || "",
             state: existingFormData.tenantDetails?.address?.state || "",
-            pincode: existingFormData.tenantDetails?.address?.pincode || "",
+            pincode: existingFormData.tenantDetails?.address?.pincode || existingFormData.tenantDetails?.address?.pin_code || "",
             district: existingFormData.tenantDetails?.address?.district || "",
             landmark: existingFormData.tenantDetails?.address?.landmark || ""
           }
@@ -213,15 +223,16 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           }
         },
         rentalTerms: {
-          startDate: existingFormData.rentalTerms?.startDate || "",
-          endDate: existingFormData.rentalTerms?.endDate || "",
+          startDate: existingFormData.rentalTerms?.startDate || existingFormData.rentalTerms?.start_date || "",
+          endDate: existingFormData.rentalTerms?.endDate || existingFormData.rentalTerms?.end_date || "",
           tenure: existingFormData.rentalTerms?.tenure || "11_months",
-          deposit: existingFormData.rentalTerms?.deposit || 0,
-          monthlyRent: existingFormData.rentalTerms?.monthlyRent || 0,
-          dueDate: existingFormData.rentalTerms?.dueDate || 1,
+          deposit: existingFormData.rentalTerms?.deposit || existingFormData.rentalTerms?.security_deposit || 0,
+          monthlyRent: existingFormData.rentalTerms?.monthlyRent || existingFormData.rentalTerms?.monthly_rent || 0,
+          dueDate: existingFormData.rentalTerms?.dueDate || existingFormData.rentalTerms?.due_date || 1,
           maintenance: existingFormData.rentalTerms?.maintenance || "included",
-          maintenanceAmount: existingFormData.rentalTerms?.maintenanceAmount || 0,
-          noticePeriod: existingFormData.rentalTerms?.noticePeriod || 1,
+          maintenanceAmount: existingFormData.rentalTerms?.maintenanceAmount || existingFormData.rentalTerms?.maintenance_amount || 0,
+          noticePeriod: existingFormData.rentalTerms?.noticePeriod || existingFormData.rentalTerms?.notice_period || 1,
+          minimumStay: existingFormData.rentalTerms?.minimumStay || existingFormData.rentalTerms?.minimum_stay || "",
           furniture: existingFormData.rentalTerms?.furniture || ""
         },
         additionalClauses: existingFormData.additionalClauses || [],
