@@ -522,7 +522,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           setValue("tenantDetails.name", "");
           setValue("tenantDetails.mobile", "");
           setValue("tenantDetails.email", "");
-          setValue("tenantDetails.age", "");
+          setValue("tenantDetails.age", 0);
           setValue("tenantDetails.occupation", "");
           setValue("tenantDetails.company", "");
           setValue("tenantDetails.address.flatNo", "");
@@ -537,7 +537,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           // Moving from tenant to property - clear all property fields
           setValue("propertyDetails.type", "");
           setValue("propertyDetails.place", "");
-          setValue("propertyDetails.areaInSqFt", "");
+          setValue("propertyDetails.areaInSqFt", 0);
           setValue("propertyDetails.purpose", "");
           setValue("propertyDetails.furnishedStatus", "");
           setValue("propertyDetails.additionalItems", "");
@@ -551,16 +551,16 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           console.log("Cleared property fields when moving from tenant to property step");
         } else if (currentStep === 3) {
           // Moving from property to rental terms - clear rental terms
-          setValue("rentalTerms.monthlyRent", "");
-          setValue("rentalTerms.deposit", "");
-          setValue("rentalTerms.tenure", "");
+          setValue("rentalTerms.monthlyRent", 0);
+          setValue("rentalTerms.deposit", 0);
+          setValue("rentalTerms.tenure", "11_months");
           setValue("rentalTerms.startDate", "");
           setValue("rentalTerms.endDate", "");
-          setValue("rentalTerms.dueDate", "");
-          setValue("rentalTerms.noticePeriod", "");
+          setValue("rentalTerms.dueDate", 0);
+          setValue("rentalTerms.noticePeriod", 0);
           setValue("rentalTerms.minimumStay", "");
-          setValue("rentalTerms.maintenance", "");
-          setValue("rentalTerms.maintenanceAmount", "");
+          setValue("rentalTerms.maintenance", "included");
+          setValue("rentalTerms.maintenanceCharge", "");
           
           console.log("Cleared rental terms when moving from property to rental terms step");
         } else if (currentStep === 4) {
@@ -615,7 +615,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     setValue("tenantDetails.name", "");
     setValue("tenantDetails.mobile", "");
     setValue("tenantDetails.email", "");
-    setValue("tenantDetails.age", "");
+    setValue("tenantDetails.age", 0);
     setValue("tenantDetails.occupation", "");
     setValue("tenantDetails.company", "");
     setValue("tenantDetails.address.flatNo", "");
@@ -629,16 +629,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     setValue("tenantDetails.name", selectedCustomer.name);
     setValue("tenantDetails.mobile", selectedCustomer.mobile);
     setValue("tenantDetails.email", selectedCustomer.email || "");
-    
-    // If customer has address information, copy that too
-    if (selectedCustomer.address) {
-      setValue("tenantDetails.address.flatNo", selectedCustomer.address.flatNo || "");
-      setValue("tenantDetails.address.society", selectedCustomer.address.society || "");
-      setValue("tenantDetails.address.area", selectedCustomer.address.area || "");
-      setValue("tenantDetails.address.city", selectedCustomer.address.city || "");
-      setValue("tenantDetails.address.state", selectedCustomer.address.state || "");
-      setValue("tenantDetails.address.pincode", selectedCustomer.address.pincode || "");
-    }
     
     toast({
       title: "Details Copied",
@@ -662,16 +652,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     setValue("ownerDetails.name", selectedCustomer.name);
     setValue("ownerDetails.mobile", selectedCustomer.mobile);
     setValue("ownerDetails.email", selectedCustomer.email || "");
-    
-    // If customer has address information, copy that too
-    if (selectedCustomer.address) {
-      setValue("ownerDetails.address.flatNo", selectedCustomer.address.flatNo || "");
-      setValue("ownerDetails.address.society", selectedCustomer.address.society || "");
-      setValue("ownerDetails.address.area", selectedCustomer.address.area || "");
-      setValue("ownerDetails.address.city", selectedCustomer.address.city || "");
-      setValue("ownerDetails.address.state", selectedCustomer.address.state || "");
-      setValue("ownerDetails.address.pincode", selectedCustomer.address.pincode || "");
-    }
     
     toast({
       title: "Details Copied",
@@ -727,11 +707,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   };
 
   const handleSocietySelect = (society: any, fieldPrefix: string) => {
-    setValue(`${fieldPrefix}.society`, society.societyName);
-    setValue(`${fieldPrefix}.area`, society.area);
-    setValue(`${fieldPrefix}.city`, society.city);
-    setValue(`${fieldPrefix}.pincode`, society.pincode);
-    setValue(`${fieldPrefix}.state`, society.state);
+    setValue(`${fieldPrefix}.address.society`, society.societyName);
+    setValue(`${fieldPrefix}.address.area`, society.area);
+    setValue(`${fieldPrefix}.address.city`, society.city);
+    setValue(`${fieldPrefix}.address.pincode`, society.pincode);
+    setValue(`${fieldPrefix}.address.state`, society.state);
     
     setShowSocietySuggestions(false);
     
@@ -1472,9 +1452,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   {documents.ownerAadhar ? (
                     <FilePreview
                       fileUrl={documents.ownerAadhar}
-                      fileName={documents.ownerAadhar_meta?.fileName || "Owner Aadhar Card"}
-                      fileType={documents.ownerAadhar_meta?.fileType}
-                      onRemove={() => setDocuments(prev => ({ ...prev, ownerAadhar: "", ownerAadhar_meta: undefined }))}
+                      fileName="Owner Aadhar Card"
+                      fileType="image/jpeg"
+                      onRemove={() => setDocuments(prev => ({ ...prev, ownerAadhar: "" }))}
                       className="w-full"
                     />
                   ) : (
@@ -1500,9 +1480,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   {documents.ownerPan ? (
                     <FilePreview
                       fileUrl={documents.ownerPan}
-                      fileName={documents.ownerPan_meta?.fileName || "Owner PAN Card"}
-                      fileType={documents.ownerPan_meta?.fileType}
-                      onRemove={() => setDocuments(prev => ({ ...prev, ownerPan: "", ownerPan_meta: undefined }))}
+                      fileName="Owner PAN Card"
+                      fileType="image/jpeg"
+                      onRemove={() => setDocuments(prev => ({ ...prev, ownerPan: "" }))}
                       className="w-full"
                     />
                   ) : (
@@ -1681,9 +1661,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   {documents.tenantAadhar ? (
                     <FilePreview
                       fileUrl={documents.tenantAadhar}
-                      fileName={documents.tenantAadhar_meta?.fileName || "Tenant Aadhar Card"}
-                      fileType={documents.tenantAadhar_meta?.fileType}
-                      onRemove={() => setDocuments(prev => ({ ...prev, tenantAadhar: "", tenantAadhar_meta: undefined }))}
+                      fileName="Tenant Aadhar Card"
+                      fileType="image/jpeg"
+                      onRemove={() => setDocuments(prev => ({ ...prev, tenantAadhar: "" }))}
                       className="w-full"
                     />
                   ) : (
@@ -1709,9 +1689,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   {documents.tenantPan ? (
                     <FilePreview
                       fileUrl={documents.tenantPan}
-                      fileName={documents.tenantPan_meta?.fileName || "Tenant PAN Card"}
-                      fileType={documents.tenantPan_meta?.fileType}
-                      onRemove={() => setDocuments(prev => ({ ...prev, tenantPan: "", tenantPan_meta: undefined }))}
+                      fileName="Tenant PAN Card"
+                      fileType="image/jpeg"
+                      onRemove={() => setDocuments(prev => ({ ...prev, tenantPan: "" }))}
                       className="w-full"
                     />
                   ) : (
@@ -1879,9 +1859,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                     {documents.propertyDocuments ? (
                       <FilePreview
                         fileUrl={documents.propertyDocuments}
-                        fileName={documents.propertyDocuments_meta?.fileName || "Property Documents"}
-                        fileType={documents.propertyDocuments_meta?.fileType}
-                        onRemove={() => setDocuments(prev => ({ ...prev, propertyDocuments: "", propertyDocuments_meta: undefined }))}
+                        fileName="Property Documents"
+                        fileType="application/pdf"
+                        onRemove={() => setDocuments(prev => ({ ...prev, propertyDocuments: "" }))}
                         className="w-full"
                       />
                     ) : (

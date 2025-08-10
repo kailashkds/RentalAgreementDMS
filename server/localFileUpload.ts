@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Generate unique filename with original extension
-    const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+    const uniqueName = `${randomUUID()}${path.extname(file.originalname)}`;
     cb(null, uniqueName);
   }
 });
