@@ -666,9 +666,28 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
       try {
         console.log(`[PDF Embedding] Processing document field: ${fieldName} with URL: ${documentUrl}`);
         
-        // Check if this is a local uploads URL (new approach)
-        if (documentUrl.startsWith('/uploads/')) {
-          const fileName = documentUrl.replace('/uploads/', '');
+        // Check if this is a local uploads URL (new approach) - handle various formats
+        // URLs can be: /uploads/filename.jpg, /objects/uploads/filename.jpg, or just filename.jpg
+        const isLocalFile = documentUrl.startsWith('/uploads/') || 
+                           documentUrl.includes('/uploads/') || 
+                           (!documentUrl.startsWith('http') && !documentUrl.startsWith('/objects/'));
+        
+        if (isLocalFile) {
+          // Extract filename from URL path - handle various formats
+          let fileName;
+          if (documentUrl.includes('/uploads/')) {
+            fileName = documentUrl.split('/uploads/')[1];
+          } else if (documentUrl.startsWith('/uploads/')) {
+            fileName = documentUrl.replace('/uploads/', '');
+          } else if (!documentUrl.startsWith('http') && !documentUrl.startsWith('/objects/')) {
+            // Assume it's just a filename
+            fileName = documentUrl;
+          } else {
+            fileName = documentUrl.split('/').pop() || documentUrl;
+          }
+          
+          // Clean filename
+          fileName = fileName.replace(/^\/+/, ''); // remove leading slashes
           const filePath = path.join(process.cwd(), 'uploads', fileName);
           
           console.log(`[PDF Embedding] Processing local file: ${fileName} at path: ${filePath}`);
