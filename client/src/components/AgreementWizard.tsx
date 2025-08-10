@@ -101,48 +101,67 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     if (editingAgreement && isOpen) {
       console.log("Loading existing agreement data for editing:", editingAgreement);
       
-      // Parse the formData from the existing agreement
+      // Try to get form data - either from stored formData field or from agreement structure directly
       let existingFormData;
-      try {
-        existingFormData = typeof editingAgreement.formData === 'string' ? 
-          JSON.parse(editingAgreement.formData) : editingAgreement.formData;
-      } catch (error) {
-        console.error("Error parsing existing agreement form data:", error);
-        return;
+      
+      if (editingAgreement.formData) {
+        // If formData exists (stored JSON), parse it
+        try {
+          existingFormData = typeof editingAgreement.formData === 'string' ? 
+            JSON.parse(editingAgreement.formData) : editingAgreement.formData;
+        } catch (error) {
+          console.error("Error parsing stored formData:", error);
+          existingFormData = null;
+        }
       }
       
-      if (existingFormData) {
-        // Reset form with existing data
-        reset({
-          customerId: existingFormData.customerId || "",
-          language: existingFormData.language || "english",
-          ownerDetails: existingFormData.ownerDetails || {},
-          tenantDetails: existingFormData.tenantDetails || {},
-          propertyDetails: existingFormData.propertyDetails || {},
-          rentalTerms: {
-            ...existingFormData.rentalTerms,
-            tenure: existingFormData.rentalTerms?.tenure || "11_months",
-            dueDate: existingFormData.rentalTerms?.dueDate || 1,
-            maintenance: existingFormData.rentalTerms?.maintenance || "included",
-            noticePeriod: existingFormData.rentalTerms?.noticePeriod || 1,
-          },
-          additionalClauses: existingFormData.additionalClauses || [],
-        });
-        
-        // Load existing documents
-        if (existingFormData.documents) {
-          setDocuments(existingFormData.documents);
-        }
-        
-        // Start from step 1 to allow editing from beginning
-        setCurrentStep(1);
-        setPdfState('idle');
-        
-        toast({
-          title: "Loaded for Editing",
-          description: "Agreement data loaded. You can now make changes and generate an updated PDF.",
-        });
+      // If no formData or parsing failed, construct from agreement structure
+      if (!existingFormData) {
+        console.log("No stored formData found, constructing from agreement structure");
+        existingFormData = {
+          customerId: editingAgreement.customerId || "",
+          language: editingAgreement.language || "english",
+          ownerDetails: editingAgreement.ownerDetails || {},
+          tenantDetails: editingAgreement.tenantDetails || {},
+          propertyDetails: editingAgreement.propertyDetails || {},
+          rentalTerms: editingAgreement.rentalTerms || {},
+          additionalClauses: editingAgreement.additionalClauses || [],
+          documents: editingAgreement.documents || {}
+        };
       }
+      
+      console.log("Loading form data:", existingFormData);
+      
+      // Reset form with existing data
+      reset({
+        customerId: existingFormData.customerId || "",
+        language: existingFormData.language || "english",
+        ownerDetails: existingFormData.ownerDetails || {},
+        tenantDetails: existingFormData.tenantDetails || {},
+        propertyDetails: existingFormData.propertyDetails || {},
+        rentalTerms: {
+          ...existingFormData.rentalTerms,
+          tenure: existingFormData.rentalTerms?.tenure || "11_months",
+          dueDate: existingFormData.rentalTerms?.dueDate || 1,
+          maintenance: existingFormData.rentalTerms?.maintenance || "included",
+          noticePeriod: existingFormData.rentalTerms?.noticePeriod || 1,
+        },
+        additionalClauses: existingFormData.additionalClauses || [],
+      });
+      
+      // Load existing documents
+      if (existingFormData.documents) {
+        setDocuments(existingFormData.documents);
+      }
+      
+      // Start from step 1 to allow editing from beginning
+      setCurrentStep(1);
+      setPdfState('idle');
+      
+      toast({
+        title: "Loaded for Editing",
+        description: "Agreement data loaded. You can now make changes and generate an updated PDF.",
+      });
     }
   }, [editingAgreement, isOpen, reset, toast]);
 
