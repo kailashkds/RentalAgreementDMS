@@ -751,19 +751,19 @@ async function downloadFileFromObjectStorage(documentUrl: string, fieldName: str
     const extension = getFileExtensionFromUrl(documentUrl);
     const fileName = `${fileId}${extension}`;
     const path = await import('path');
-    const filePath = path.join(process.cwd(), 'uploads', fileName);
+    const filePath = path.default.join(process.cwd(), 'uploads', fileName);
 
     // Ensure uploads directory exists
     const fs = await import('fs/promises');
-    const uploadsDir = path.join(process.cwd(), 'uploads');
+    const uploadsDir = path.default.join(process.cwd(), 'uploads');
     try {
-      await fs.access(uploadsDir);
+      await fs.default.access(uploadsDir);
     } catch {
-      await fs.mkdir(uploadsDir, { recursive: true });
+      await fs.default.mkdir(uploadsDir, { recursive: true });
     }
 
     // Write file locally
-    await fs.writeFile(filePath, buffer);
+    await fs.default.writeFile(filePath, buffer);
     console.log(`[PDF Embedding] File saved locally as: ${fileName}`);
     
     return fileName;
@@ -778,10 +778,16 @@ async function downloadFileFromObjectStorage(documentUrl: string, fieldName: str
  * Get file extension from URL
  */
 function getFileExtensionFromUrl(url: string): string {
-  const urlPath = new URL(url).pathname;
-  const lastDot = urlPath.lastIndexOf('.');
-  if (lastDot !== -1) {
-    return urlPath.substring(lastDot);
+  try {
+    const urlPath = new URL(url).pathname;
+    // Get the actual filename from the path
+    const fileName = urlPath.split('/').pop() || '';
+    const lastDot = fileName.lastIndexOf('.');
+    if (lastDot !== -1 && lastDot < fileName.length - 1) {
+      return fileName.substring(lastDot);
+    }
+  } catch (error) {
+    console.log(`[PDF Embedding] Could not parse URL for extension: ${url}`);
   }
   return '.jpg'; // Default extension
 }
