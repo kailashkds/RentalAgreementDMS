@@ -697,27 +697,24 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
             
             const documentType = getDocumentTypeFromFieldName(fieldName);
             
-            // Create embedded HTML with base64 image
+            // Test base64 data by checking first few characters  
+            console.log(`[PDF Embedding] Base64 preview: ${base64Data.substring(0, 100)}...`);
+            console.log(`[PDF Embedding] Data URL preview: ${dataUrl.substring(0, 50)}...`);
+            
+            // Create a simpler embedded HTML for testing
             const embeddedImage = `
-              <div class="document-container" style="margin: 25px 0; padding: 20px; border: 3px solid #2c3e50; border-radius: 12px; background: linear-gradient(145deg, #f8f9fa, #e9ecef); page-break-inside: avoid; text-align: center; box-shadow: 0 8px 16px rgba(0,0,0,0.1);">
-                <div style="margin-bottom: 15px;">
-                  <h2 style="color: #2c3e50; font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase; letter-spacing: 1px;">📄 ${documentType}</h2>
-                  <p style="color: #6c757d; font-size: 14px; margin: 5px 0 0 0; font-style: italic;">Document Image Embedded</p>
-                </div>
-                <div style="display: inline-block; margin: 20px 0; padding: 20px; background: white; border: 3px solid #dee2e6; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.15);">
-                  <img src="${dataUrl}" 
-                       style="display: block; max-width: 600px; max-height: 400px; width: auto; height: auto; border: 2px solid #adb5bd; border-radius: 8px;" 
-                       alt="${documentType}" />
-                </div>
-                <div style="margin-top: 15px;">
-                  <p style="color: #28a745; font-weight: bold; font-size: 16px; margin: 0;">✅ Document Successfully Embedded</p>
-                  <p style="color: #6c757d; font-size: 12px; margin: 5px 0 0 0;">File: ${fileName}</p>
-                </div>
-              </div>
-            `;
+<div style="margin: 20px 0; padding: 15px; border: 2px solid #2c3e50; border-radius: 8px; background-color: #f9f9f9; page-break-inside: avoid; text-align: center;">
+  <h3 style="color: #2c3e50; margin-bottom: 10px;">📄 ${documentType}</h3>
+  <img src="${dataUrl}" 
+       style="max-width: 500px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px;" 
+       alt="${documentType}"
+       onload="console.log('Image loaded successfully')"
+       onerror="console.error('Image failed to load: ${fileName}')" />
+  <p style="color: #666; margin-top: 10px; font-size: 12px;">File: ${fileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
+</div>`;
             
             processedFields[fieldName] = embeddedImage;
-            console.log(`[PDF Embedding] ✅ Successfully processed ${fieldName}: ${fileName}`)
+            console.log(`[PDF Embedding] ✅ Successfully processed ${fieldName}: ${fileName} (${fileBuffer.length} bytes)`)
           } catch (readError) {
             console.error(`[PDF Embedding] Error reading file ${fileName}:`, readError);
             processedFields[fieldName] = '';
