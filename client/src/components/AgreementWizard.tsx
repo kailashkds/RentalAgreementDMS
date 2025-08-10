@@ -490,58 +490,63 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
   const nextStep = async () => {
     if (currentStep < STEPS.length && canProceed(currentStep)) {
-      // Clear fields when moving between sections
-      if (currentStep === 1) {
-        // Moving from owner to tenant - clear all tenant fields
-        setValue("tenantDetails.name", "");
-        setValue("tenantDetails.mobile", "");
-        setValue("tenantDetails.email", "");
-        setValue("tenantDetails.age", "");
-        setValue("tenantDetails.occupation", "");
-        setValue("tenantDetails.company", "");
-        setValue("tenantDetails.address.flatNo", "");
-        setValue("tenantDetails.address.society", "");
-        setValue("tenantDetails.address.area", "");
-        setValue("tenantDetails.address.city", "");
-        setValue("tenantDetails.address.state", "");
-        setValue("tenantDetails.address.pincode", "");
-        
-        console.log("Cleared tenant fields when moving from owner to tenant step");
-      } else if (currentStep === 2) {
-        // Moving from tenant to property - clear all property fields
-        setValue("propertyDetails.type", "");
-        setValue("propertyDetails.place", "");
-        setValue("propertyDetails.areaInSqFt", "");
-        setValue("propertyDetails.purpose", "");
-        setValue("propertyDetails.furnishedStatus", "");
-        setValue("propertyDetails.additionalItems", "");
-        setValue("propertyDetails.address.flatNo", "");
-        setValue("propertyDetails.address.society", "");
-        setValue("propertyDetails.address.area", "");
-        setValue("propertyDetails.address.city", "");
-        setValue("propertyDetails.address.state", "");
-        setValue("propertyDetails.address.pincode", "");
-        
-        console.log("Cleared property fields when moving from tenant to property step");
-      } else if (currentStep === 3) {
-        // Moving from property to rental terms - clear rental terms
-        setValue("rentalTerms.monthlyRent", "");
-        setValue("rentalTerms.deposit", "");
-        setValue("rentalTerms.tenure", "");
-        setValue("rentalTerms.startDate", "");
-        setValue("rentalTerms.endDate", "");
-        setValue("rentalTerms.dueDate", "");
-        setValue("rentalTerms.noticePeriod", "");
-        setValue("rentalTerms.minimumStay", "");
-        setValue("rentalTerms.maintenance", "");
-        setValue("rentalTerms.maintenanceAmount", "");
-        
-        console.log("Cleared rental terms when moving from property to rental terms step");
-      } else if (currentStep === 4) {
-        // Moving from rental terms to final step - clear additional clauses
-        setValue("additionalClauses", []);
-        
-        console.log("Cleared additional clauses when moving to final step");
+      // Only clear fields when creating new agreements, not when editing
+      if (!editingAgreement) {
+        // Clear fields when moving between sections (only for new agreements)
+        if (currentStep === 1) {
+          // Moving from owner to tenant - clear all tenant fields
+          setValue("tenantDetails.name", "");
+          setValue("tenantDetails.mobile", "");
+          setValue("tenantDetails.email", "");
+          setValue("tenantDetails.age", "");
+          setValue("tenantDetails.occupation", "");
+          setValue("tenantDetails.company", "");
+          setValue("tenantDetails.address.flatNo", "");
+          setValue("tenantDetails.address.society", "");
+          setValue("tenantDetails.address.area", "");
+          setValue("tenantDetails.address.city", "");
+          setValue("tenantDetails.address.state", "");
+          setValue("tenantDetails.address.pincode", "");
+          
+          console.log("Cleared tenant fields when moving from owner to tenant step");
+        } else if (currentStep === 2) {
+          // Moving from tenant to property - clear all property fields
+          setValue("propertyDetails.type", "");
+          setValue("propertyDetails.place", "");
+          setValue("propertyDetails.areaInSqFt", "");
+          setValue("propertyDetails.purpose", "");
+          setValue("propertyDetails.furnishedStatus", "");
+          setValue("propertyDetails.additionalItems", "");
+          setValue("propertyDetails.address.flatNo", "");
+          setValue("propertyDetails.address.society", "");
+          setValue("propertyDetails.address.area", "");
+          setValue("propertyDetails.address.city", "");
+          setValue("propertyDetails.address.state", "");
+          setValue("propertyDetails.address.pincode", "");
+          
+          console.log("Cleared property fields when moving from tenant to property step");
+        } else if (currentStep === 3) {
+          // Moving from property to rental terms - clear rental terms
+          setValue("rentalTerms.monthlyRent", "");
+          setValue("rentalTerms.deposit", "");
+          setValue("rentalTerms.tenure", "");
+          setValue("rentalTerms.startDate", "");
+          setValue("rentalTerms.endDate", "");
+          setValue("rentalTerms.dueDate", "");
+          setValue("rentalTerms.noticePeriod", "");
+          setValue("rentalTerms.minimumStay", "");
+          setValue("rentalTerms.maintenance", "");
+          setValue("rentalTerms.maintenanceAmount", "");
+          
+          console.log("Cleared rental terms when moving from property to rental terms step");
+        } else if (currentStep === 4) {
+          // Moving from rental terms to final step - clear additional clauses
+          setValue("additionalClauses", []);
+          
+          console.log("Cleared additional clauses when moving to final step");
+        }
+      } else {
+        console.log("Skipping field clearing in editing mode");
       }
       
       setCurrentStep(currentStep + 1);
