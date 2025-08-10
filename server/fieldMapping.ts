@@ -665,6 +665,7 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
     if (documentUrl && documentUrl.trim() && documentUrl !== 'undefined' && documentUrl !== 'null' && documentUrl !== '[object Object]') {
       try {
         console.log(`[PDF Embedding] Processing document field: ${fieldName} with URL: ${documentUrl}`);
+        console.log(`[PDF Embedding] URL analysis: startsWith('/uploads/'): ${documentUrl.startsWith('/uploads/')}, includes('/uploads/'): ${documentUrl.includes('/uploads/')}, not http/objects: ${!documentUrl.startsWith('http') && !documentUrl.startsWith('/objects/')}`);
         
         // Check if this is a local uploads URL (new approach) - handle various formats
         // URLs can be: /uploads/filename.jpg, /objects/uploads/filename.jpg, or just filename.jpg
