@@ -131,6 +131,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       }
       
       console.log("Loading form data:", existingFormData);
+      console.log("Owner details in agreement:", existingFormData.ownerDetails);
+      console.log("Tenant details in agreement:", existingFormData.tenantDetails);
+      console.log("Property details in agreement:", existingFormData.propertyDetails);
+      console.log("Rental terms in agreement:", existingFormData.rentalTerms);
       
       // Reset form with existing data
       const formDataToLoad = {
@@ -140,6 +144,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           name: existingFormData.ownerDetails?.name || "",
           mobile: existingFormData.ownerDetails?.mobile || "",
           email: existingFormData.ownerDetails?.email || "",
+          age: existingFormData.ownerDetails?.age || "",
+          occupation: existingFormData.ownerDetails?.occupation || "",
+          fatherName: existingFormData.ownerDetails?.fatherName || "",
+          aadhar: existingFormData.ownerDetails?.aadhar || "",
+          pan: existingFormData.ownerDetails?.pan || "",
           address: {
             flatNo: existingFormData.ownerDetails?.address?.flatNo || "",
             society: existingFormData.ownerDetails?.address?.society || "",
@@ -155,6 +164,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           name: existingFormData.tenantDetails?.name || "",
           mobile: existingFormData.tenantDetails?.mobile || "",
           email: existingFormData.tenantDetails?.email || "",
+          age: existingFormData.tenantDetails?.age || "",
+          occupation: existingFormData.tenantDetails?.occupation || "",
+          fatherName: existingFormData.tenantDetails?.fatherName || "",
+          aadhar: existingFormData.tenantDetails?.aadhar || "",
+          pan: existingFormData.tenantDetails?.pan || "",
           address: {
             flatNo: existingFormData.tenantDetails?.address?.flatNo || "",
             society: existingFormData.tenantDetails?.address?.society || "",
