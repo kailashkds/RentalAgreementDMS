@@ -133,21 +133,75 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       console.log("Loading form data:", existingFormData);
       
       // Reset form with existing data
-      reset({
+      const formDataToLoad = {
         customerId: existingFormData.customerId || "",
         language: existingFormData.language || "english",
-        ownerDetails: existingFormData.ownerDetails || {},
-        tenantDetails: existingFormData.tenantDetails || {},
-        propertyDetails: existingFormData.propertyDetails || {},
+        ownerDetails: {
+          name: existingFormData.ownerDetails?.name || "",
+          mobile: existingFormData.ownerDetails?.mobile || "",
+          email: existingFormData.ownerDetails?.email || "",
+          address: {
+            flatNo: existingFormData.ownerDetails?.address?.flatNo || "",
+            society: existingFormData.ownerDetails?.address?.society || "",
+            area: existingFormData.ownerDetails?.address?.area || "",
+            city: existingFormData.ownerDetails?.address?.city || "",
+            state: existingFormData.ownerDetails?.address?.state || "",
+            pincode: existingFormData.ownerDetails?.address?.pincode || "",
+            district: existingFormData.ownerDetails?.address?.district || "",
+            landmark: existingFormData.ownerDetails?.address?.landmark || ""
+          }
+        },
+        tenantDetails: {
+          name: existingFormData.tenantDetails?.name || "",
+          mobile: existingFormData.tenantDetails?.mobile || "",
+          email: existingFormData.tenantDetails?.email || "",
+          address: {
+            flatNo: existingFormData.tenantDetails?.address?.flatNo || "",
+            society: existingFormData.tenantDetails?.address?.society || "",
+            area: existingFormData.tenantDetails?.address?.area || "",
+            city: existingFormData.tenantDetails?.address?.city || "",
+            state: existingFormData.tenantDetails?.address?.state || "",
+            pincode: existingFormData.tenantDetails?.address?.pincode || "",
+            district: existingFormData.tenantDetails?.address?.district || "",
+            landmark: existingFormData.tenantDetails?.address?.landmark || ""
+          }
+        },
+        propertyDetails: {
+          type: existingFormData.propertyDetails?.type || "",
+          bhk: existingFormData.propertyDetails?.bhk || "",
+          furnishing: existingFormData.propertyDetails?.furnishing || "",
+          parking: existingFormData.propertyDetails?.parking || "",
+          floor: existingFormData.propertyDetails?.floor || "",
+          area: existingFormData.propertyDetails?.area || "",
+          description: existingFormData.propertyDetails?.description || "",
+          address: {
+            flatNo: existingFormData.propertyDetails?.address?.flatNo || "",
+            society: existingFormData.propertyDetails?.address?.society || "",
+            area: existingFormData.propertyDetails?.address?.area || "",
+            city: existingFormData.propertyDetails?.address?.city || "",
+            state: existingFormData.propertyDetails?.address?.state || "",
+            pincode: existingFormData.propertyDetails?.address?.pincode || "",
+            district: existingFormData.propertyDetails?.address?.district || "",
+            landmark: existingFormData.propertyDetails?.address?.landmark || ""
+          }
+        },
         rentalTerms: {
-          ...existingFormData.rentalTerms,
+          startDate: existingFormData.rentalTerms?.startDate || "",
+          endDate: existingFormData.rentalTerms?.endDate || "",
           tenure: existingFormData.rentalTerms?.tenure || "11_months",
+          deposit: existingFormData.rentalTerms?.deposit || 0,
+          monthlyRent: existingFormData.rentalTerms?.monthlyRent || 0,
           dueDate: existingFormData.rentalTerms?.dueDate || 1,
           maintenance: existingFormData.rentalTerms?.maintenance || "included",
+          maintenanceAmount: existingFormData.rentalTerms?.maintenanceAmount || 0,
           noticePeriod: existingFormData.rentalTerms?.noticePeriod || 1,
+          furniture: existingFormData.rentalTerms?.furniture || ""
         },
         additionalClauses: existingFormData.additionalClauses || [],
-      });
+      };
+      
+      console.log("Form data being loaded:", formDataToLoad);
+      reset(formDataToLoad);
       
       // Load existing documents
       if (existingFormData.documents) {
