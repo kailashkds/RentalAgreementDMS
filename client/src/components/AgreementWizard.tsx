@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useSocieties } from "@/hooks/useSocieties";
 import { useAddresses } from "@/hooks/useAddresses";
-import { DirectFileUploader } from "@/components/DirectFileUploader";
+import { ObjectUploader } from "@/components/ObjectUploader";
 import { FilePreview } from "@/components/FilePreview";
 import CustomerModal from "@/components/CustomerModal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -708,35 +708,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     }
   };
 
-  // NEW: Handle direct file uploads (local storage approach)
-  const handleDirectDocumentUpload = (type: string, fileUrl: string, fileName: string) => {
-    console.log(`Direct document upload complete - Type: ${type}, URL: ${fileUrl}, FileName: ${fileName}`);
-    
-    if (fileUrl && fileName) {
-      // Store file information with metadata for better preview
-      setDocuments(prev => ({ 
-        ...prev, 
-        [type]: fileUrl,
-        [`${type}_meta`]: {
-          fileName,
-          fileType: 'image', // Most uploads will be images
-          uploadURL: fileUrl
-        }
-      }));
-      
-      toast({
-        title: "Document uploaded",
-        description: `${fileName} has been uploaded successfully to local storage.`,
-      });
-    } else {
-      // Handle removal (when fileUrl is empty)
-      setDocuments(prev => ({ 
-        ...prev, 
-        [type]: "",
-        [`${type}_meta`]: undefined
-      }));
-    }
-  };
+
 
   const getUploadParameters = async () => {
     const response = await apiRequest("POST", "/api/objects/upload");
@@ -1273,12 +1245,22 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                       className="w-full"
                     />
                   ) : (
-                    <DirectFileUploader
-                      maxSize={5} // 5MB
-                      accept="image/*,application/pdf"
-                      label={t("uploadAadharCard")}
-                      onUpload={(fileUrl, fileName) => handleDirectDocumentUpload("ownerAadhar", fileUrl, fileName)}
-                    />
+                    <ObjectUploader
+                      maxFileSize={5242880} // 5MB
+                      onGetUploadParameters={getUploadParameters}
+                      onComplete={(result) => handleDocumentUpload("ownerAadhar", result)}
+                      buttonClassName="w-full h-auto p-0"
+                    >
+                      <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-500">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <p className="text-sm text-gray-600">{t("uploadAadharCard")}</p>
+                          <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
+                        </div>
+                      </div>
+                    </ObjectUploader>
                   )}
                 </div>
                 <div>
@@ -1292,12 +1274,22 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                       className="w-full"
                     />
                   ) : (
-                    <DirectFileUploader
-                      maxSize={5} // 5MB
-                      accept="image/*,application/pdf"
-                      label={t("uploadPanCard")}
-                      onUpload={(fileUrl, fileName) => handleDirectDocumentUpload("ownerPan", fileUrl, fileName)}
-                    />
+                    <ObjectUploader
+                      maxFileSize={5242880} // 5MB
+                      onGetUploadParameters={getUploadParameters}
+                      onComplete={(result) => handleDocumentUpload("ownerPan", result)}
+                      buttonClassName="w-full h-auto p-0"
+                    >
+                      <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-500">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <p className="text-sm text-gray-600">{t("uploadPanCard")}</p>
+                          <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
+                        </div>
+                      </div>
+                    </ObjectUploader>
                   )}
                 </div>
               </div>
@@ -1464,12 +1456,22 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                       className="w-full"
                     />
                   ) : (
-                    <DirectFileUploader
-                      maxSize={5} // 5MB
-                      accept="image/*,application/pdf"
-                      label={t("uploadAadharCard")}
-                      onUpload={(fileUrl, fileName) => handleDirectDocumentUpload("tenantAadhar", fileUrl, fileName)}
-                    />
+                    <ObjectUploader
+                      maxFileSize={5242880} // 5MB
+                      onGetUploadParameters={getUploadParameters}
+                      onComplete={(result) => handleDocumentUpload("tenantAadhar", result)}
+                      buttonClassName="w-full h-auto p-0"
+                    >
+                      <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-500">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <p className="text-sm text-gray-600">{t("uploadAadharCard")}</p>
+                          <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
+                        </div>
+                      </div>
+                    </ObjectUploader>
                   )}
                 </div>
                 <div>
@@ -1654,12 +1656,22 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
                         className="w-full"
                       />
                     ) : (
-                      <DirectFileUploader
-                        maxSize={5} // 5MB
-                        accept="image/*,application/pdf"
-                        label="Upload Property Documents"
-                        onUpload={(fileUrl, fileName) => handleDirectDocumentUpload("propertyDocuments", fileUrl, fileName)}
-                      />
+                      <ObjectUploader
+                        maxFileSize={5242880} // 5MB
+                        onGetUploadParameters={getUploadParameters}
+                        onComplete={(result) => handleDocumentUpload("propertyDocuments", result)}
+                        buttonClassName="w-full h-auto p-0"
+                      >
+                        <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                          <div className="flex flex-col items-center space-y-2">
+                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                              <Plus className="w-6 h-6 text-gray-500" />
+                            </div>
+                            <p className="text-sm text-gray-600">Click to upload property documents</p>
+                            <p className="text-xs text-gray-500">NOC, Sale Deed, Property Papers (Max 5MB)</p>
+                          </div>
+                        </div>
+                      </ObjectUploader>
                     )}
                   </div>
                 </div>
