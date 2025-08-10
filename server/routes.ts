@@ -7,8 +7,10 @@ import { ObjectPermission } from "./objectAcl";
 import { mapFormDataToTemplateFields, generatePdfHtml } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
 import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
+import { directFileUpload } from "./directFileUpload";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication system
@@ -439,6 +441,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting upload URL:", error);
       res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // NEW DIRECT FILE UPLOAD SYSTEM
+  app.post("/api/upload-direct", requireAuth, async (req, res) => {
+    try {
+      if (!req.body || !req.body.file) {
+        return res.status(400).json({ error: "No file data provided" });
+      }
+
+      const { file, fileName } = req.body;
+      
+      // Convert base64 to buffer
+      const base64Data = file.replace(/^data:.*,/, '');
+      const fileBuffer = Buffer.from(base64Data, 'base64');
+      
+      // Save file directly to uploads folder
+      const savedFileName = await directFileUpload.saveFile(fileBuffer, fileName);
+      const fileUrl = directFileUpload.getFileUrl(savedFileName);
+      
+      console.log(`[DirectUpload] File uploaded: ${savedFileName} -> ${fileUrl}`);
+      
+      res.json({ 
+        success: true,
+        fileName: savedFileName,
+        fileUrl: fileUrl,
+        message: "File uploaded successfully to local storage"
+      });
+    } catch (error) {
+      console.error("Error in direct file upload:", error);
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+
+  // Serve uploaded files from local uploads folder
+  app.get("/uploads/:fileName", (req, res) => {
+    try {
+      const fileName = req.params.fileName;
+      const filePath = path.join(process.cwd(), 'uploads', fileName);
+      
+      // Check if file exists and serve it
+      res.sendFile(filePath, (err) => {
+        if (err) {
+          console.error("Error serving file:", err);
+          res.status(404).json({ error: "File not found" });
+        }
+      });
+    } catch (error) {
+      console.error("Error serving uploaded file:", error);
+      res.status(500).json({ error: "Failed to serve file" });
     }
   });
 
