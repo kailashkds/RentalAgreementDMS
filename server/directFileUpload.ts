@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import { fileProcessor } from './fileProcessor';
 
 export class DirectFileUploadService {
   private uploadsDir = path.join(process.cwd(), 'uploads');
@@ -18,7 +19,12 @@ export class DirectFileUploadService {
     }
   }
 
-  async saveFile(fileBuffer: Buffer, originalName: string): Promise<string> {
+  async saveFile(fileBuffer: Buffer, originalName: string): Promise<{
+    fileName: string;
+    imagePath?: string;
+    absolutePath?: string;
+    fileType: 'pdf' | 'image' | 'unknown';
+  }> {
     const fileExtension = path.extname(originalName);
     const fileName = `${randomUUID()}${fileExtension}`;
     const filePath = path.join(this.uploadsDir, fileName);
@@ -26,7 +32,15 @@ export class DirectFileUploadService {
     await fs.writeFile(filePath, fileBuffer);
     console.log('[DirectUpload] Saved file:', fileName);
     
-    return fileName; // Return just the filename, not full path
+    // Process the file to get image path
+    const processResult = await fileProcessor.processFileToImagePath(fileName);
+    
+    return {
+      fileName,
+      imagePath: processResult.imagePath,
+      absolutePath: processResult.absolutePath,
+      fileType: processResult.fileType
+    };
   }
 
   async getFile(fileName: string): Promise<Buffer | null> {

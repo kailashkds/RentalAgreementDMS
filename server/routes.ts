@@ -444,7 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // NEW DIRECT FILE UPLOAD SYSTEM
+  // ENHANCED FILE UPLOAD SYSTEM (auto-converts PDFs to images)
   app.post("/api/upload-direct", requireAuth, async (req, res) => {
     try {
       if (!req.body || !req.body.file) {
@@ -457,21 +457,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const base64Data = file.replace(/^data:.*,/, '');
       const fileBuffer = Buffer.from(base64Data, 'base64');
       
-      // Save file directly to uploads folder
-      const savedFileName = await directFileUpload.saveFile(fileBuffer, fileName);
-      const fileUrl = directFileUpload.getFileUrl(savedFileName);
+      // Save file and process for images (PDFs get converted to images)
+      const saveResult = await directFileUpload.saveFile(fileBuffer, fileName);
+      const fileUrl = directFileUpload.getFileUrl(saveResult.fileName);
       
-      console.log(`[DirectUpload] File uploaded: ${savedFileName} -> ${fileUrl}`);
+      console.log(`[DirectUpload] File processed:`, {
+        original: fileName,
+        saved: saveResult.fileName,
+        fileType: saveResult.fileType,
+        imagePath: saveResult.imagePath,
+        absolutePath: saveResult.absolutePath
+      });
       
       res.json({ 
         success: true,
-        fileName: savedFileName,
+        fileName: saveResult.fileName,
         fileUrl: fileUrl,
-        message: "File uploaded successfully to local storage"
+        imagePath: saveResult.imagePath, // Use this path in <img> tags
+        absolutePath: saveResult.absolutePath, // Full system path
+        fileType: saveResult.fileType, // 'pdf', 'image', or 'unknown'
+        message: `File uploaded successfully. ${saveResult.fileType === 'pdf' ? 'PDF converted to image for display.' : 'Image ready for use.'}`
       });
     } catch (error) {
       console.error("Error in direct file upload:", error);
-      res.status(500).json({ error: "Failed to upload file" });
+      res.status(500).json({ error: "Failed to upload and process file" });
     }
   });
 

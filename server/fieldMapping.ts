@@ -3,6 +3,7 @@
 
 import { ObjectStorageService } from './objectStorage';
 import { localFileStorage } from './localFileStorage';
+import { fileProcessor } from './fileProcessor';
 
 export interface FormData {
   ownerDetails: {
@@ -643,6 +644,7 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string): Prom
 
 /**
  * Process document URLs and convert them to embeddable content for PDFs
+ * NEW APPROACH: Uses local file processing with automatic PDF-to-image conversion
  */
 async function processDocumentEmbedding(fieldValues: Record<string, string>, formData: any): Promise<Record<string, string>> {
   const processedFields = { ...fieldValues };
@@ -662,47 +664,84 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
       try {
         console.log(`[PDF Embedding] Processing document field: ${fieldName} with URL: ${documentUrl}`);
         
-        // Use object storage service to download file with proper authentication
-        const objectStorageService = new ObjectStorageService();
-        const localFileName = await downloadFileFromObjectStorage(documentUrl, fieldName, objectStorageService);
-        
-        if (localFileName) {
-          // Get file as base64 data URL
-          const base64DataUrl = await localFileStorage.getFileAsBase64(localFileName);
+        // Check if this is a local uploads URL (new approach)
+        if (documentUrl.startsWith('/uploads/')) {
+          const fileName = documentUrl.replace('/uploads/', '');
           
-          if (base64DataUrl && localFileStorage.isEmbeddableFileType(localFileName)) {
-            // Debug: Log base64 data info
-            console.log(`[PDF Embedding] Base64 data length: ${base64DataUrl.length}`);
-            console.log(`[PDF Embedding] Data URL prefix: ${base64DataUrl.substring(0, 50)}...`);
+          // Process file to get image path (auto-converts PDFs)
+          const processResult = await fileProcessor.processFileToImagePath(fileName);
+          
+          if (processResult.success && processResult.imagePath) {
+            // Get the processed image as base64
+            const imageFileName = processResult.imagePath.replace('/uploads/', '');
+            const base64DataUrl = await fileProcessor.getFileAsBase64(imageFileName);
             
-            // Create embedded HTML with enhanced styling for better PDF rendering
-            const documentType = getDocumentTypeFromFieldName(fieldName);
-            const embeddedImage = `
-              <div class="document-container" style="margin: 20px 0; padding: 15px; border: 2px solid #333; border-radius: 8px; background-color: #f8f9fa; page-break-inside: avoid; text-align: center;">
-                <div style="margin-bottom: 12px;">
-                  <h4 style="color: #2c3e50; font-size: 16px; font-weight: bold; margin: 0;">📄 ${documentType}</h4>
+            if (base64DataUrl) {
+              console.log(`[PDF Embedding] Successfully processed ${fileName} (${processResult.fileType}) -> ${imageFileName}`);
+              
+              const documentType = getDocumentTypeFromFieldName(fieldName);
+              const embeddedImage = `
+                <div class="document-container" style="margin: 25px 0; padding: 20px; border: 3px solid #2c3e50; border-radius: 12px; background: linear-gradient(145deg, #f8f9fa, #e9ecef); page-break-inside: avoid; text-align: center; box-shadow: 0 8px 16px rgba(0,0,0,0.1);">
+                  <div style="margin-bottom: 15px;">
+                    <h2 style="color: #2c3e50; font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase; letter-spacing: 1px;">📄 ${documentType}</h2>
+                    <p style="color: #6c757d; font-size: 14px; margin: 5px 0 0 0; font-style: italic;">${processResult.fileType === 'pdf' ? 'PDF converted to image' : 'Image document'}</p>
+                  </div>
+                  <div style="display: inline-block; margin: 20px 0; padding: 20px; background: white; border: 3px solid #dee2e6; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.15);">
+                    <img src="${base64DataUrl}" 
+                         style="display: block; max-width: 600px; max-height: 400px; width: auto; height: auto; border: 2px solid #adb5bd; border-radius: 8px;" 
+                         alt="${documentType}" />
+                  </div>
+                  <div style="margin-top: 15px;">
+                    <p style="color: #28a745; font-weight: bold; font-size: 16px; margin: 0;">✅ Document Successfully Embedded</p>
+                    <p style="color: #6c757d; font-size: 12px; margin: 5px 0 0 0;">Absolute path: ${processResult.absolutePath}</p>
+                  </div>
                 </div>
-                <div class="image-wrapper" style="display: inline-block; margin: 15px 0; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
-                  <img src="${base64DataUrl}" 
-                       style="display: block; width: auto; height: auto; max-width: 400px; max-height: 250px; min-width: 200px; min-height: 100px; border: none; border-radius: 3px;" 
-                       alt="${documentType}" 
-                       width="300" 
-                       height="200" />
-                </div>
-                <div style="margin-top: 8px;">
-                  <p style="color: #666; font-style: italic; font-size: 12px; margin: 0;">✅ Document image embedded in agreement</p>
-                </div>
-              </div>
-            `;
-            processedFields[fieldName] = embeddedImage;
-            console.log(`[PDF Embedding] Successfully embedded ${fieldName} as image from local file`);
+              `;
+              processedFields[fieldName] = embeddedImage;
+              console.log(`[PDF Embedding] ✅ Successfully embedded ${fieldName} from processed local file`);
+            } else {
+              processedFields[fieldName] = `<p style="color: #dc3545; font-style: italic;">Could not convert processed file to base64.</p>`;
+              console.log(`[PDF Embedding] ❌ Could not convert processed file to base64: ${imageFileName}`);
+            }
           } else {
-            processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document uploaded successfully.</p>`;
-            console.log(`[PDF Embedding] Could not convert ${fieldName} to base64 or unsupported type`);
+            processedFields[fieldName] = `<p style="color: #dc3545; font-style: italic;">File processing failed: ${processResult.error}</p>`;
+            console.log(`[PDF Embedding] ❌ File processing failed: ${processResult.error}`);
           }
         } else {
-          processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document uploaded successfully.</p>`;
-          console.log(`[PDF Embedding] Could not save ${fieldName} locally`);
+          // Fallback to old cloud storage approach
+          const objectStorageService = new ObjectStorageService();
+          const localFileName = await downloadFileFromObjectStorage(documentUrl, fieldName, objectStorageService);
+          
+          if (localFileName) {
+            const base64DataUrl = await localFileStorage.getFileAsBase64(localFileName);
+            
+            if (base64DataUrl && localFileStorage.isEmbeddableFileType(localFileName)) {
+              const documentType = getDocumentTypeFromFieldName(fieldName);
+              const embeddedImage = `
+                <div class="document-container" style="margin: 20px 0; padding: 15px; border: 2px solid #333; border-radius: 8px; background-color: #f8f9fa; page-break-inside: avoid; text-align: center;">
+                  <div style="margin-bottom: 12px;">
+                    <h4 style="color: #2c3e50; font-size: 16px; font-weight: bold; margin: 0;">📄 ${documentType}</h4>
+                  </div>
+                  <div class="image-wrapper" style="display: inline-block; margin: 15px 0; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                    <img src="${base64DataUrl}" 
+                         style="display: block; width: auto; height: auto; max-width: 400px; max-height: 250px; min-width: 200px; min-height: 100px; border: none; border-radius: 3px;" 
+                         alt="${documentType}" 
+                         width="300" 
+                         height="200" />
+                  </div>
+                  <div style="margin-top: 8px;">
+                    <p style="color: #666; font-style: italic; font-size: 12px; margin: 0;">✅ Document image embedded from cloud storage</p>
+                  </div>
+                </div>
+              `;
+              processedFields[fieldName] = embeddedImage;
+              console.log(`[PDF Embedding] ✅ Successfully embedded ${fieldName} from cloud storage`);
+            } else {
+              processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document uploaded but could not be displayed.</p>`;
+            }
+          } else {
+            processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document uploaded but could not be processed.</p>`;
+          }
         }
       } catch (error) {
         console.error(`[PDF Embedding] Error processing ${fieldName}:`, error);

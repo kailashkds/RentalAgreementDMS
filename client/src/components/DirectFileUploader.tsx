@@ -15,6 +15,9 @@ interface UploadResponse {
   success: boolean;
   fileName: string;
   fileUrl: string;
+  imagePath?: string; // Path to use in <img> tags (for PDFs this will be the converted image)
+  absolutePath?: string; // Full system path
+  fileType?: 'pdf' | 'image' | 'unknown';
   message: string;
 }
 
@@ -60,13 +63,19 @@ export function DirectFileUploader({
       if (response.success) {
         const fileInfo = {
           name: response.fileName,
-          url: response.fileUrl
+          url: response.imagePath || response.fileUrl // Use imagePath if available (for PDFs converted to images)
         };
         
         setUploadedFile(fileInfo);
-        onUpload(response.fileUrl, response.fileName);
+        // Pass the image path for embedding in PDFs
+        onUpload(response.imagePath || response.fileUrl, response.fileName);
         
-        console.log(`File uploaded successfully: ${response.fileName} -> ${response.fileUrl}`);
+        console.log(`File uploaded and processed:`, {
+          fileName: response.fileName,
+          fileType: response.fileType,
+          imagePath: response.imagePath,
+          message: response.message
+        });
       } else {
         throw new Error("Upload failed");
       }
