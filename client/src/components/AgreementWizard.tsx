@@ -136,6 +136,20 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       console.log("Property details in agreement:", existingFormData.propertyDetails);
       console.log("Rental terms in agreement:", existingFormData.rentalTerms);
       
+      // Detailed property field debugging
+      if (existingFormData.propertyDetails) {
+        console.log("=== PROPERTY DETAILS BREAKDOWN ===");
+        console.log("type:", existingFormData.propertyDetails.type);
+        console.log("bhk:", existingFormData.propertyDetails.bhk);
+        console.log("furnishing:", existingFormData.propertyDetails.furnishing);
+        console.log("parking:", existingFormData.propertyDetails.parking);
+        console.log("floor:", existingFormData.propertyDetails.floor);
+        console.log("area:", existingFormData.propertyDetails.area);
+        console.log("description:", existingFormData.propertyDetails.description);
+        console.log("address:", existingFormData.propertyDetails.address);
+        console.log("All property keys:", Object.keys(existingFormData.propertyDetails));
+      }
+      
       // Reset form with existing data
       const formDataToLoad = {
         customerId: existingFormData.customerId || "",
@@ -182,12 +196,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
         },
         propertyDetails: {
           type: existingFormData.propertyDetails?.type || "",
-          bhk: existingFormData.propertyDetails?.bhk || "",
-          furnishing: existingFormData.propertyDetails?.furnishing || "",
-          parking: existingFormData.propertyDetails?.parking || "",
-          floor: existingFormData.propertyDetails?.floor || "",
-          area: existingFormData.propertyDetails?.area || "",
-          description: existingFormData.propertyDetails?.description || "",
+          place: existingFormData.propertyDetails?.place || "",
+          areaInSqFt: existingFormData.propertyDetails?.areaInSqFt || existingFormData.propertyDetails?.area || "",
+          purpose: existingFormData.propertyDetails?.purpose || "",
+          furnishedStatus: existingFormData.propertyDetails?.furnishedStatus || existingFormData.propertyDetails?.furnishing || "",
+          additionalItems: existingFormData.propertyDetails?.additionalItems || existingFormData.propertyDetails?.description || "",
           address: {
             flatNo: existingFormData.propertyDetails?.address?.flatNo || "",
             society: existingFormData.propertyDetails?.address?.society || "",
