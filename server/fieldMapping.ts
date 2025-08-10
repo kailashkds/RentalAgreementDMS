@@ -671,20 +671,26 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
           const base64DataUrl = await localFileStorage.getFileAsBase64(localFileName);
           
           if (base64DataUrl && localFileStorage.isEmbeddableFileType(localFileName)) {
-            // Create embedded HTML with professional styling - THE ACTUAL UPLOADED IMAGE
+            // Debug: Log base64 data info
+            console.log(`[PDF Embedding] Base64 data length: ${base64DataUrl.length}`);
+            console.log(`[PDF Embedding] Data URL prefix: ${base64DataUrl.substring(0, 50)}...`);
+            
+            // Create embedded HTML with enhanced styling for better PDF rendering
             const documentType = getDocumentTypeFromFieldName(fieldName);
             const embeddedImage = `
-              <div style="margin: 15px 0; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9; page-break-inside: avoid;">
-                <div style="margin-bottom: 8px;">
-                  <strong style="color: #2c3e50; font-size: 14px;">📄 ${documentType}</strong>
+              <div class="document-container" style="margin: 20px 0; padding: 15px; border: 2px solid #333; border-radius: 8px; background-color: #f8f9fa; page-break-inside: avoid; text-align: center;">
+                <div style="margin-bottom: 12px;">
+                  <h4 style="color: #2c3e50; font-size: 16px; font-weight: bold; margin: 0;">📄 ${documentType}</h4>
                 </div>
-                <div style="text-align: center; margin: 10px 0;">
+                <div class="image-wrapper" style="display: inline-block; margin: 15px 0; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
                   <img src="${base64DataUrl}" 
-                       style="max-width: 100%; max-height: 300px; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
-                       alt="${documentType}" />
+                       style="display: block; width: auto; height: auto; max-width: 400px; max-height: 250px; min-width: 200px; min-height: 100px; border: none; border-radius: 3px;" 
+                       alt="${documentType}" 
+                       width="300" 
+                       height="200" />
                 </div>
-                <div style="text-align: center; margin-top: 6px;">
-                  <small style="color: #666; font-style: italic;">Document image embedded in agreement</small>
+                <div style="margin-top: 8px;">
+                  <p style="color: #666; font-style: italic; font-size: 12px; margin: 0;">✅ Document image embedded in agreement</p>
                 </div>
               </div>
             `;
