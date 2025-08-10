@@ -656,8 +656,9 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
       try {
         console.log(`[PDF Embedding] Processing document field: ${fieldName} with URL: ${documentUrl}`);
         
-        // Save file locally from URL and convert to embedded HTML
-        const localFileName = await localFileStorage.saveFileFromUrl(documentUrl, `${fieldName}.jpg`);
+        // Use object storage service to download file with proper authentication
+        const objectStorageService = new ObjectStorageService();
+        const localFileName = await downloadFileFromObjectStorage(documentUrl, fieldName, objectStorageService);
         
         if (localFileName) {
           // Get file as base64 data URL
@@ -703,6 +704,77 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
   }
   
   return processedFields;
+}
+
+/**
+ * Download file from object storage with proper authentication and save locally
+ */
+async function downloadFileFromObjectStorage(documentUrl: string, fieldName: string, objectStorageService: ObjectStorageService): Promise<string | null> {
+  try {
+    console.log(`[PDF Embedding] Downloading from object storage: ${documentUrl}`);
+    
+    // Parse the GCS URL to get bucket and object name
+    const urlMatch = documentUrl.match(/https:\/\/storage\.googleapis\.com\/([^\/]+)\/(.+)/);
+    if (!urlMatch) {
+      console.error(`[PDF Embedding] Invalid GCS URL format: ${documentUrl}`);
+      return null;
+    }
+
+    const [, bucketName, objectName] = urlMatch;
+    console.log(`[PDF Embedding] Bucket: ${bucketName}, Object: ${objectName}`);
+
+    // Get the file from GCS using authenticated client
+    const { objectStorageClient } = await import('./objectStorage');
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    // Check if file exists
+    const [exists] = await file.exists();
+    if (!exists) {
+      console.error(`[PDF Embedding] File does not exist in GCS: ${documentUrl}`);
+      return null;
+    }
+
+    // Download file content
+    const [buffer] = await file.download();
+    
+    // Save to local storage
+    const fileId = require('crypto').randomUUID();
+    const extension = getFileExtensionFromUrl(documentUrl);
+    const fileName = `${fileId}${extension}`;
+    const filePath = require('path').join(process.cwd(), 'uploads', fileName);
+
+    // Ensure uploads directory exists
+    const fs = require('fs/promises');
+    const uploadsDir = require('path').join(process.cwd(), 'uploads');
+    try {
+      await fs.access(uploadsDir);
+    } catch {
+      await fs.mkdir(uploadsDir, { recursive: true });
+    }
+
+    // Write file locally
+    await fs.writeFile(filePath, buffer);
+    console.log(`[PDF Embedding] File saved locally as: ${fileName}`);
+    
+    return fileName;
+    
+  } catch (error) {
+    console.error(`[PDF Embedding] Error downloading from object storage:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get file extension from URL
+ */
+function getFileExtensionFromUrl(url: string): string {
+  const urlPath = new URL(url).pathname;
+  const lastDot = urlPath.lastIndexOf('.');
+  if (lastDot !== -1) {
+    return urlPath.substring(lastDot);
+  }
+  return '.jpg'; // Default extension
 }
 
 /**
