@@ -25,6 +25,7 @@ interface AgreementWizardProps {
   isOpen: boolean;
   onClose: () => void;
   agreementId?: string; // For editing existing agreements
+  editingAgreement?: any; // The agreement data to edit
 }
 
 interface AgreementFormData {
@@ -53,7 +54,7 @@ const LANGUAGES = [
   { value: "marathi", label: "Marathi (मराठी)" },
 ];
 
-export default function AgreementWizard({ isOpen, onClose, agreementId }: AgreementWizardProps) {
+export default function AgreementWizard({ isOpen, onClose, agreementId, editingAgreement }: AgreementWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [documents, setDocuments] = useState<Record<string, string>>({});
@@ -94,6 +95,56 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       }
     },
   });
+  
+  // Load existing agreement data when editing
+  useEffect(() => {
+    if (editingAgreement && isOpen) {
+      console.log("Loading existing agreement data for editing:", editingAgreement);
+      
+      // Parse the formData from the existing agreement
+      let existingFormData;
+      try {
+        existingFormData = typeof editingAgreement.formData === 'string' ? 
+          JSON.parse(editingAgreement.formData) : editingAgreement.formData;
+      } catch (error) {
+        console.error("Error parsing existing agreement form data:", error);
+        return;
+      }
+      
+      if (existingFormData) {
+        // Reset form with existing data
+        reset({
+          customerId: existingFormData.customerId || "",
+          language: existingFormData.language || "english",
+          ownerDetails: existingFormData.ownerDetails || {},
+          tenantDetails: existingFormData.tenantDetails || {},
+          propertyDetails: existingFormData.propertyDetails || {},
+          rentalTerms: {
+            ...existingFormData.rentalTerms,
+            tenure: existingFormData.rentalTerms?.tenure || "11_months",
+            dueDate: existingFormData.rentalTerms?.dueDate || 1,
+            maintenance: existingFormData.rentalTerms?.maintenance || "included",
+            noticePeriod: existingFormData.rentalTerms?.noticePeriod || 1,
+          },
+          additionalClauses: existingFormData.additionalClauses || [],
+        });
+        
+        // Load existing documents
+        if (existingFormData.documents) {
+          setDocuments(existingFormData.documents);
+        }
+        
+        // Start from step 1 to allow editing from beginning
+        setCurrentStep(1);
+        setPdfState('idle');
+        
+        toast({
+          title: "Loaded for Editing",
+          description: "Agreement data loaded. You can now make changes and generate an updated PDF.",
+        });
+      }
+    }
+  }, [editingAgreement, isOpen, reset, toast]);
 
   const { data: customersData } = useCustomers({ search: "", limit: 100 });
   const { data: societies } = useSocieties({ limit: 100 });
@@ -771,11 +822,20 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
     const formData = watch();
     
     if (pdfState === 'idle') {
-      // First, create the agreement
       setPdfState('creating');
       
       try {
-        const agreement = await finalizeAgreement(formData);
+        let agreement;
+        
+        if (editingAgreement) {
+          // Update existing agreement
+          agreement = await updateAgreement(formData, editingAgreement.id);
+          console.log('Updated existing agreement:', agreement.agreementNumber);
+        } else {
+          // Create new agreement
+          agreement = await finalizeAgreement(formData);
+          console.log('Created new agreement:', agreement.agreementNumber);
+        }
         
         // Then generate the PDF
         const selectedLanguage = formData.language || 'english';
@@ -827,8 +887,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
           setPdfState('ready');
           
           toast({
-            title: "PDF Generated Successfully",
-            description: `Agreement ${agreement.agreementNumber} PDF is ready for download.`,
+            title: "PDF Generated Successfully", 
+            description: `Agreement ${agreement.agreementNumber} PDF is ready for download.${editingAgreement ? ' (Updated)' : ''}`,
           });
         } else {
           throw new Error('Failed to generate PDF');
@@ -1017,6 +1077,75 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
         variant: "destructive",
       });
       throw error; // Re-throw to prevent step progression in nextStep
+    }
+  };
+
+  const updateAgreement = async (data: AgreementFormData, agreementId: string) => {
+    try {
+      // Save addresses to database first
+      await saveAddressWhenSubmitting();
+
+      const agreementData = {
+        customerId: data.customerId || "",
+        language: data.language || "english",
+        status: "active",
+        ownerDetails: data.ownerDetails || {},
+        tenantDetails: data.tenantDetails || {},
+        propertyDetails: data.propertyDetails || {},
+        rentalTerms: data.rentalTerms || {},
+        additionalClauses: data.additionalClauses || [],
+        documents: documents,
+        ownerDocuments: {
+          aadharUrl: documents.ownerAadhar || null,
+          panUrl: documents.ownerPan || null
+        },
+        tenantDocuments: {
+          aadharUrl: documents.tenantAadhar || null,
+          panUrl: documents.tenantPan || null
+        },
+        propertyDocuments: {
+          urls: documents.propertyDocs || null
+        },
+        // Keep the original dates if editing, use form data if available
+        startDate: data.rentalTerms?.startDate || editingAgreement?.startDate || new Date().toISOString().split('T')[0],
+        endDate: data.rentalTerms?.endDate || editingAgreement?.endDate || new Date(Date.now() + 11 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        agreementDate: editingAgreement?.agreementDate || new Date().toISOString().split('T')[0],
+        // Store complete form data for future editing
+        formData: JSON.stringify({
+          ...data,
+          documents: documents
+        }),
+        updatedAt: new Date().toISOString()
+      };
+
+      console.log('Updating agreement with language:', agreementData.language);
+
+      const response = await apiRequest("PUT", `/api/agreements/${agreementId}`, agreementData);
+      const agreement = await response.json();
+      
+      // Use the existing agreement number
+      const updatedAgreement = {
+        ...agreement,
+        agreementNumber: editingAgreement.agreementNumber
+      };
+
+      queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      toast({
+        title: "Agreement updated",
+        description: `Agreement ${updatedAgreement.agreementNumber} has been updated successfully.`,
+      });
+
+      return updatedAgreement;
+    } catch (error) {
+      console.error("Update agreement error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update agreement.",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
@@ -1978,8 +2107,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId }: Agreem
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-screen overflow-y-auto">
           <DialogHeader className="bg-gray-800 text-white p-6 -m-6 mb-6">
-            <div className="flex items-center">
-              <DialogTitle className="text-xl font-bold">{t("createNewAgreement")}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-bold">
+                {editingAgreement ? `Edit Agreement ${editingAgreement.agreementNumber || ''}` : t("createNewAgreement")}
+              </DialogTitle>
+              {editingAgreement && (
+                <div className="bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                  Editing Mode
+                </div>
+              )}
             </div>
             
             {/* Progress Bar */}
