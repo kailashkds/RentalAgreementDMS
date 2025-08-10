@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useSocieties } from "@/hooks/useSocieties";
 import { useAddresses } from "@/hooks/useAddresses";
-import { ObjectUploader } from "@/components/ObjectUploader";
+import { LocalFileUploader } from "@/components/LocalFileUploader";
 import { FilePreview } from "@/components/FilePreview";
 import CustomerModal from "@/components/CustomerModal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -848,31 +848,19 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     }
   };
 
-  const handleDocumentUpload = (type: string, result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-    if (result.successful && result.successful.length > 0) {
-      const file = result.successful[0];
-      const uploadURL = file.uploadURL;
-      const fileName = file.name || 'document';
-      const fileType = file.type || '';
-      
-      console.log(`Document upload complete - Type: ${type}, URL: ${uploadURL}, FileName: ${fileName}, FileType: ${fileType}`);
-      
-      // Store file information with metadata for better preview
-      setDocuments(prev => ({ 
-        ...prev, 
-        [type]: uploadURL || "",
-        [`${type}_meta`]: {
-          fileName,
-          fileType,
-          uploadURL
-        }
-      }));
-      
-      toast({
-        title: "Document uploaded",
-        description: `${fileName} has been uploaded successfully.`,
-      });
-    }
+  const handleDocumentUpload = (type: string, result: { url: string; filename: string; originalName: string; size: number }) => {
+    console.log(`Document upload complete - Type: ${type}, URL: ${result.url}, FileName: ${result.originalName}`);
+    
+    // Store file information for document processing
+    setDocuments(prev => ({ 
+      ...prev, 
+      [type]: result.url
+    }));
+    
+    toast({
+      title: "Document uploaded",
+      description: `${result.originalName} has been uploaded successfully.`,
+    });
   };
 
 
@@ -1490,11 +1478,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                       className="w-full"
                     />
                   ) : (
-                    <ObjectUploader
-                      maxFileSize={5242880} // 5MB
-                      onGetUploadParameters={getUploadParameters}
-                      onComplete={(result) => handleDocumentUpload("ownerAadhar", result)}
-                      buttonClassName="w-full h-auto p-0"
+                    <LocalFileUploader
+                      maxSize={5242880} // 5MB
+                      onUploadComplete={(result) => handleDocumentUpload("ownerAadhar", result)}
+                      className="w-full"
                     >
                       <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
                         <div className="flex flex-col items-center space-y-2">
@@ -1505,7 +1492,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                           <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                         </div>
                       </div>
-                    </ObjectUploader>
+                    </LocalFileUploader>
                   )}
                 </div>
                 <div>
@@ -1519,11 +1506,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                       className="w-full"
                     />
                   ) : (
-                    <ObjectUploader
-                      maxFileSize={5242880} // 5MB
-                      onGetUploadParameters={getUploadParameters}
-                      onComplete={(result) => handleDocumentUpload("ownerPan", result)}
-                      buttonClassName="w-full h-auto p-0"
+                    <LocalFileUploader
+                      maxSize={5242880} // 5MB
+                      onUploadComplete={(result) => handleDocumentUpload("ownerPan", result)}
+                      className="w-full"
                     >
                       <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
                         <div className="flex flex-col items-center space-y-2">
@@ -1534,7 +1520,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                           <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                         </div>
                       </div>
-                    </ObjectUploader>
+                    </LocalFileUploader>
                   )}
                 </div>
               </div>
@@ -1701,11 +1687,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                       className="w-full"
                     />
                   ) : (
-                    <ObjectUploader
-                      maxFileSize={5242880} // 5MB
-                      onGetUploadParameters={getUploadParameters}
-                      onComplete={(result) => handleDocumentUpload("tenantAadhar", result)}
-                      buttonClassName="w-full h-auto p-0"
+                    <LocalFileUploader
+                      maxSize={5242880} // 5MB
+                      onUploadComplete={(result) => handleDocumentUpload("tenantAadhar", result)}
+                      className="w-full"
                     >
                       <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
                         <div className="flex flex-col items-center space-y-2">
@@ -1716,7 +1701,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                           <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                         </div>
                       </div>
-                    </ObjectUploader>
+                    </LocalFileUploader>
                   )}
                 </div>
                 <div>
@@ -1730,11 +1715,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                       className="w-full"
                     />
                   ) : (
-                    <ObjectUploader
-                      maxFileSize={5242880} // 5MB
-                      onGetUploadParameters={getUploadParameters}
-                      onComplete={(result) => handleDocumentUpload("tenantPan", result)}
-                      buttonClassName="w-full h-auto p-0"
+                    <LocalFileUploader
+                      maxSize={5242880} // 5MB
+                      onUploadComplete={(result) => handleDocumentUpload("tenantPan", result)}
+                      className="w-full"
                     >
                       <div className="border-2 border-dashed rounded-lg p-4 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
                         <div className="flex flex-col items-center space-y-2">
@@ -1745,7 +1729,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                           <p className="text-xs text-gray-500">{t("fileSizeNote")}</p>
                         </div>
                       </div>
-                    </ObjectUploader>
+                    </LocalFileUploader>
                   )}
                 </div>
               </div>
@@ -1901,11 +1885,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                         className="w-full"
                       />
                     ) : (
-                      <ObjectUploader
-                        maxFileSize={5242880} // 5MB
-                        onGetUploadParameters={getUploadParameters}
-                        onComplete={(result) => handleDocumentUpload("propertyDocuments", result)}
-                        buttonClassName="w-full h-auto p-0"
+                      <LocalFileUploader
+                        maxSize={5242880} // 5MB
+                        onUploadComplete={(result) => handleDocumentUpload("propertyDocuments", result)}
+                        className="w-full"
                       >
                         <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
                           <div className="flex flex-col items-center space-y-2">
@@ -1916,7 +1899,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                             <p className="text-xs text-gray-500">NOC, Sale Deed, Property Papers (Max 5MB)</p>
                           </div>
                         </div>
-                      </ObjectUploader>
+                      </LocalFileUploader>
                     )}
                   </div>
                 </div>

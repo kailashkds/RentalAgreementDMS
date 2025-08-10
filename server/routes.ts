@@ -8,9 +8,11 @@ import { mapFormDataToTemplateFields, generatePdfHtml } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
 import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
 import { directFileUpload } from "./directFileUpload";
+import { upload, getFileInfo, deleteFile, readFileAsBase64 } from "./localFileUpload";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import path from "path";
+import fs from "fs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication system
@@ -518,6 +520,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error serving uploaded file:", error);
       res.status(500).json({ error: "Failed to serve file" });
+    }
+  });
+
+  // Local file upload endpoint - simple multipart upload
+  app.post('/api/upload-local', upload.single('document'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      console.log(`[Local Upload] File uploaded: ${req.file.filename}, Original: ${req.file.originalname}, Size: ${req.file.size}`);
+      
+      res.json({
+        success: true,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        url: `/uploads/${req.file.filename}`,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      });
+    } catch (error) {
+      console.error('[Local Upload] Error:', error);
+      res.status(500).json({ error: 'Upload failed' });
     }
   });
 
