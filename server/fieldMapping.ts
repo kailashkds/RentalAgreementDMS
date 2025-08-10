@@ -746,14 +746,16 @@ async function downloadFileFromObjectStorage(documentUrl: string, fieldName: str
     const [buffer] = await file.download();
     
     // Save to local storage
-    const fileId = require('crypto').randomUUID();
+    const { randomUUID } = await import('crypto');
+    const fileId = randomUUID();
     const extension = getFileExtensionFromUrl(documentUrl);
     const fileName = `${fileId}${extension}`;
-    const filePath = require('path').join(process.cwd(), 'uploads', fileName);
+    const path = await import('path');
+    const filePath = path.join(process.cwd(), 'uploads', fileName);
 
     // Ensure uploads directory exists
-    const fs = require('fs/promises');
-    const uploadsDir = require('path').join(process.cwd(), 'uploads');
+    const fs = await import('fs/promises');
+    const uploadsDir = path.join(process.cwd(), 'uploads');
     try {
       await fs.access(uploadsDir);
     } catch {
