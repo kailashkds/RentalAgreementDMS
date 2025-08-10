@@ -484,11 +484,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve uploaded files from local uploads folder
+  // Serve uploaded files from local uploads folder with proper headers
   app.get("/uploads/:fileName", (req, res) => {
     try {
       const fileName = req.params.fileName;
       const filePath = path.join(process.cwd(), 'uploads', fileName);
+      
+      // Set proper headers for images to work in PDF generation
+      const ext = path.extname(fileName).toLowerCase();
+      let contentType = 'application/octet-stream';
+      
+      if (ext === '.jpg' || ext === '.jpeg') {
+        contentType = 'image/jpeg';
+      } else if (ext === '.png') {
+        contentType = 'image/png';
+      } else if (ext === '.gif') {
+        contentType = 'image/gif';
+      } else if (ext === '.webp') {
+        contentType = 'image/webp';
+      }
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      res.setHeader('Access-Control-Allow-Origin', '*');
       
       // Check if file exists and serve it
       res.sendFile(filePath, (err) => {
