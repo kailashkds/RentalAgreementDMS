@@ -52,7 +52,7 @@ Preferred communication style: Simple, everyday language.
 - **Dynamic Field Formatting**: Automatic formatting for all PDF placeholders based on field characteristics (e.g., date formats, string capitalization).
 - **Conditional Logic System**: Smart field replacement and conditional display in PDF templates (e.g., showing/hiding sections based on document uploads).
 - **Amount-to-Words Conversion**: Automatic conversion of numeric amounts to Indian format words.
-- **PDF Page Break Control**: Comprehensive CSS controls to prevent content splitting across pages.
+- **PDF Page Break Control**: Comprehensive CSS controls with `page-break-before: always` for documents. Each Aadhaar card and PAN card appears on separate pages for both landlord and tenant sections.
 - **File Preview System**: Comprehensive preview functionality for all uploaded documents (PDF, image, etc.).
 
 # External Dependencies
