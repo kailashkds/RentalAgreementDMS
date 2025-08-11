@@ -1,0 +1,52 @@
+.page-break-before {
+  page-break-before: always;
+}
+.no-page-break {
+  page-break-inside: avoid;
+}
+RENT AGREEMENT
+This Agreement of Rent is made on 11-08-2025 by and between
+Nikhilesh Jangid
+Age: 20, Occupation: Student
+Address: 1,Sunset Gardens Apartment,Vastrapur,Ahmedabad,Gujarat,380015
+Hereinafter called the LANDLORD of the FIRST PART
+Kailash
+Age: 35, Occupation: Self
+Address: 35,,fg,Dff,fg,344544
+Hereinafter called the TENANT of the SECOND PART
+Property Address: 1,Sunset Gardens Apartment,Vastrapur,Ahmedabad,Gujarat,380015
+Property Purpose: Residential
+Rent Amount: ₹10000 (₹Ten Thousand) Per Month
+NOW THIS AGREEMENT WITNESSETH AND IT IS HEREBY AGREED BY AND BETWEEN THE PARTIES AS UNDER:
+1. That the tenancy shall be initially for the period of with effect from ૧૦મી ઓગસ્ટ ૨૦૨૫ to ૧૦મી જુલાઈ ૨૦૨૬ and will be renewed every 11 months with mutual consent of both the landlord and tenant.
+2. That the rent payable by the tenant to the landlord or his/her Authorized person, in respect of the said premises, shall be ₹10000 (Ten Thousand) per month   which shall be payable on or before 1 - 8 date of every succeeding month of the rental period.
+3. That the tenant has paid a sum of ₹10000/- (Rupees Ten Thousand only) as interest-free security deposit, the receipt of which is hereby acknowledged by the landlord. This advance amount shall be returned to the tenant by the landlord at the time of vacating the said premises after adjusting the dues such as rent, water charges, maintenance charges, electricity dues, and cost of damages if any.
+4. All the expenses on the said premises such as electric power, water, gas, professional tax, municipal tax, and GST (relating to the tenant business) shall be paid by the tenant. All the above-mentioned paid receipts shall be handed over to the landlord by the Tenant.
+5. That the furniture, fittings and fixtures in the house premises are in good condition, and the tenant shall return the same to the landlord in good condition except for normal wear and tear before vacating the house premises. Any damage shall be reimbursed by the tenant to the landlord.
+6. That the tenant has agreed to ensure a minimum stay of 11 months. Both parties agree to provide a notice period of 1 month(s) before vacating the premises.
+7. That the tenant shall not sub-rent or sublet either the entire or any part of the said premises. The premises shall be used only for Residential purposes.
+8. That the tenant has agreed to keep the house and surrounding premises clean and in hygienic condition. The tenant shall not undertake any action that may cause permanent or structural damages without prior consent from the landlord.
+9. That the landlord shall be at liberty to inspect the house premises personally or through any authorized person(s) as and when necessary.
+10. That the tenant has agreed to hand over  to the landlord at the time of vacating the premises.
+11. It is hereby agreed that if default is made by the tenant in the payment of rent for three months, or in the observance and performance of any of the covenants and stipulations contained herein, the landlord shall be entitled to terminate the rent agreement and eject the tenant from the premises. The landlord shall then take possession of the said premises as the full and absolute owner.
+12. That the landlord shall be responsible for the payment of all taxes and levies pertaining to the said premises including but not limited to house tax, property tax, other cesses (if any), and any other statutory taxes levied by government bodies. The landlord shall comply with all applicable statutory obligations during the term of this agreement.
+Additional Clause:
+No additional clauses specified.
+IN WITNESS WHEREOF, the parties have set their hands on the day and year first above written, without any external influence or pressure from anybody.
+Nikhilesh Jangid
+Landlord
+Passport Size Photo
+Kailash
+Tenant
+Passport Size Photo
+Witnesses
+_______________________
+_______________________
+LANDLORD DOCUMENTS
+Aadhaar Card:
+📄
+Landlord Aadhaar Card
+TENANT DOCUMENTS
+Aadhaar Card:
+📄
+Tenant Aadhaar Card

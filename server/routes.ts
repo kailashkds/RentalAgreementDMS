@@ -269,13 +269,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate);
       
       // Convert HTML to plain text for Word document
-      const plainText = processedHtml
-        .replace(/<img[^>]*>/gi, '[Image]') // Replace images with placeholder
+      let plainText = processedHtml;
+      
+      // Remove all <style> tags and their contents first
+      plainText = plainText.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      
+      // Remove all CSS class definitions that leaked through
+      plainText = plainText.replace(/\.[a-zA-Z-_]+\s*{[^}]*}/g, '');
+      
+      // Replace common HTML structures with appropriate text formatting
+      plainText = plainText
+        .replace(/<img[^>]*>/gi, '[Document/Image]') // Replace images with placeholder
+        .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '$1\n') // Extract heading text
+        .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '$1') // Extract bold text
+        .replace(/<b[^>]*>(.*?)<\/b>/gi, '$1') // Extract bold text
+        .replace(/<em[^>]*>(.*?)<\/em>/gi, '$1') // Extract italic text
+        .replace(/<i[^>]*>(.*?)<\/i>/gi, '$1') // Extract italic text
         .replace(/<br\s*\/?>/gi, '\n') // Replace <br> with newlines
         .replace(/<\/p>/gi, '\n\n') // Replace </p> with double newlines
-        .replace(/<p[^>]*>/gi, '') // Remove <p> tags
+        .replace(/<p[^>]*>/gi, '') // Remove <p> opening tags
         .replace(/<\/div>/gi, '\n') // Replace </div> with newlines
-        .replace(/<div[^>]*>/gi, '') // Remove <div> tags
+        .replace(/<div[^>]*>/gi, '') // Remove <div> opening tags
+        .replace(/<\/li>/gi, '\n') // Replace </li> with newlines
+        .replace(/<li[^>]*>/gi, '• ') // Replace <li> with bullet points
+        .replace(/<\/ul>/gi, '\n') // Replace </ul> with newlines
+        .replace(/<ul[^>]*>/gi, '') // Remove <ul> tags
+        .replace(/<\/ol>/gi, '\n') // Replace </ol> with newlines
+        .replace(/<ol[^>]*>/gi, '') // Remove <ol> tags
         .replace(/<[^>]*>/g, '') // Remove all remaining HTML tags
         .replace(/&nbsp;/g, ' ') // Replace &nbsp; with spaces
         .replace(/&amp;/g, '&') // Replace HTML entities
@@ -283,33 +303,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
-        .replace(/\n\s*\n/g, '\n\n') // Replace multiple newlines with double newlines
+        .replace(/&rsquo;/g, "'")
+        .replace(/&lsquo;/g, "'")
+        .replace(/&rdquo;/g, '"')
+        .replace(/&ldquo;/g, '"')
+        .replace(/&#8217;/g, "'")
+        .replace(/&#8220;/g, '"')
+        .replace(/&#8221;/g, '"')
+        .replace(/\n\s*\n\s*\n/g, '\n\n') // Replace triple+ newlines with double
+        .replace(/^\s+|\s+$/gm, '') // Trim whitespace from each line
         .trim();
 
       // Split into paragraphs and filter out empty ones
-      const paragraphs = plainText.split('\n\n').filter(p => p.trim().length > 0);
+      const lines = plainText.split('\n').filter(line => line.trim().length > 0);
+      
+      // Create structured paragraphs with proper formatting
+      const documentParagraphs = [];
+      
+      // Add title
+      documentParagraphs.push(new Paragraph({
+        text: `RENTAL AGREEMENT${safeAgreementData.agreementNumber ? ` - ${safeAgreementData.agreementNumber}` : ''}`,
+        heading: HeadingLevel.TITLE,
+        spacing: { after: 400 }
+      }));
+      
+      // Process each line and create appropriate paragraphs
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        
+        if (trimmedLine.match(/^RENT AGREEMENT$/i) || 
+            trimmedLine.match(/^LANDLORD DOCUMENTS$/i) ||
+            trimmedLine.match(/^TENANT DOCUMENTS$/i) ||
+            trimmedLine.match(/^Witnesses$/i)) {
+          // Section headers
+          documentParagraphs.push(new Paragraph({
+            children: [new TextRun({
+              text: trimmedLine,
+              bold: true,
+              size: 26 // 13pt font
+            })],
+            spacing: { before: 300, after: 200 }
+          }));
+        } else if (trimmedLine.match(/^\d+\./)) {
+          // Numbered clauses
+          documentParagraphs.push(new Paragraph({
+            children: [new TextRun({
+              text: trimmedLine,
+              size: 22 // 11pt font
+            })],
+            spacing: { before: 200, after: 200 },
+            indent: { left: 360 } // Indent numbered items
+          }));
+        } else if (trimmedLine === '[Document/Image]') {
+          // Skip document placeholders in Word format
+          continue;
+        } else if (trimmedLine.length > 0) {
+          // Regular paragraphs
+          documentParagraphs.push(new Paragraph({
+            children: [new TextRun({
+              text: trimmedLine,
+              size: 22 // 11pt font
+            })],
+            spacing: { after: 120 }
+          }));
+        }
+      }
 
-      // Create Word document with better structure
+      // Create Word document with structured content
       const doc = new Document({
         sections: [{
-          properties: {},
-          children: [
-            new Paragraph({
-              text: `Rental Agreement${safeAgreementData.agreementNumber ? ` - ${safeAgreementData.agreementNumber}` : ''}`,
-              heading: HeadingLevel.TITLE,
-            }),
-            new Paragraph({ text: '' }), // Empty paragraph for spacing
-            ...paragraphs.map(text => new Paragraph({
-              children: [new TextRun({
-                text: text.trim(),
-                size: 22 // 11pt font size (size is in half-points)
-              })],
-              spacing: { 
-                after: 240, // Space after paragraph
-                line: 360 // Line spacing (1.5x)
+          properties: {
+            page: {
+              margin: {
+                top: 1440, // 1 inch
+                right: 1440,
+                bottom: 1440,
+                left: 1440
               }
-            }))
-          ],
+            }
+          },
+          children: documentParagraphs
         }],
       });
 
