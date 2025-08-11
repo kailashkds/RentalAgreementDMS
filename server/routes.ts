@@ -231,8 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate Word document
   app.post("/api/agreements/generate-word", async (req, res) => {
     try {
-      // @ts-ignore - html-docx-js doesn't have TypeScript definitions
-      const HtmlDocx = (await import('html-docx-js')).default;
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
       
       const agreementData = req.body;
       const language = agreementData.language || 'english';
@@ -266,27 +265,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         propertyDocuments: agreementData.propertyDocuments || {}
       };
 
-      // Generate the HTML with mapped field values 
+      // Generate the HTML with mapped field values and convert to plain text
       const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate);
       
-      // Clean HTML for Word document (remove page-break specific styles)
-      const cleanHtmlForWord = processedHtml
-        .replace(/page-break-before:\s*always;?/gi, '')
-        .replace(/page-break-after:\s*always;?/gi, '')
-        .replace(/break-before:\s*page;?/gi, '')
-        .replace(/break-after:\s*page;?/gi, '')
-        .replace(/class="page-break-before"/gi, '')
-        .replace(/class="page-break-after"/gi, '');
+      // Convert HTML to plain text for Word document
+      const plainText = processedHtml
+        .replace(/<img[^>]*>/gi, '[Image]') // Replace images with placeholder
+        .replace(/<br\s*\/?>/gi, '\n') // Replace <br> with newlines
+        .replace(/<\/p>/gi, '\n\n') // Replace </p> with double newlines
+        .replace(/<p[^>]*>/gi, '') // Remove <p> tags
+        .replace(/<\/div>/gi, '\n') // Replace </div> with newlines
+        .replace(/<div[^>]*>/gi, '') // Remove <div> tags
+        .replace(/<[^>]*>/g, '') // Remove all remaining HTML tags
+        .replace(/&nbsp;/g, ' ') // Replace &nbsp; with spaces
+        .replace(/&amp;/g, '&') // Replace HTML entities
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\n\s*\n/g, '\n\n') // Replace multiple newlines with double newlines
+        .trim();
 
-      // Convert HTML to Word document
-      const docxBlob = HtmlDocx.asBlob(cleanHtmlForWord, {
-        orientation: 'portrait',
-        margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 } // 1 inch = 1440 twips
+      // Split into paragraphs and filter out empty ones
+      const paragraphs = plainText.split('\n\n').filter(p => p.trim().length > 0);
+
+      // Create Word document with better structure
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            new Paragraph({
+              text: `Rental Agreement${safeAgreementData.agreementNumber ? ` - ${safeAgreementData.agreementNumber}` : ''}`,
+              heading: HeadingLevel.TITLE,
+            }),
+            new Paragraph({ text: '' }), // Empty paragraph for spacing
+            ...paragraphs.map(text => new Paragraph({
+              children: [new TextRun({
+                text: text.trim(),
+                size: 22 // 11pt font size (size is in half-points)
+              })],
+              spacing: { 
+                after: 240, // Space after paragraph
+                line: 360 // Line spacing (1.5x)
+              }
+            }))
+          ],
+        }],
       });
 
-      // Convert Blob to ArrayBuffer then to Buffer
-      const arrayBuffer = await docxBlob.arrayBuffer();
-      const docxBuffer = Buffer.from(arrayBuffer);
+      // Generate the Word document buffer
+      const docxBuffer = await Packer.toBuffer(doc);
 
       // Set response headers for Word document download
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
