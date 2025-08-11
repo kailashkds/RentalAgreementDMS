@@ -181,6 +181,7 @@ const FIELD_MAPPINGS = {
   'documents.ownerPan': 'OWNER_PAN_URL',
   'documents.tenantAadhar': 'TENANT_AADHAR_URL',
   'documents.tenantPan': 'TENANT_PAN_URL',
+  'documents.propertyDocuments': 'PROPERTY_DOCUMENTS_URL',
   'documents.propertyDocs': 'PROPERTY_DOCUMENTS_URL',
 };
 
@@ -362,13 +363,13 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
   
   // Debug: Log document-related fields to see structure
   if (formData.documents) {
-    console.log("Documents object:", JSON.stringify(formData.documents, null, 2));
+    console.log("[DEBUG] Documents object:", JSON.stringify(formData.documents, null, 2));
   }
   if (formData.ownerDocuments) {
-    console.log("Owner documents:", JSON.stringify(formData.ownerDocuments, null, 2));
+    console.log("[DEBUG] Owner documents:", JSON.stringify(formData.ownerDocuments, null, 2));
   }
   if (formData.tenantDocuments) {
-    console.log("Tenant documents:", JSON.stringify(formData.tenantDocuments, null, 2));
+    console.log("[DEBUG] Tenant documents:", JSON.stringify(formData.tenantDocuments, null, 2));
   }
   
   // Map all configured fields, handling precedence for granular vs nested

@@ -957,7 +957,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
               panUrl: documents.tenantPan || null
             },
             propertyDocuments: {
-              urls: documents.propertyDocs || null
+              urls: documents.propertyDocuments || null
             }
           }),
         });
