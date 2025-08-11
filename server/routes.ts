@@ -279,17 +279,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/class="page-break-after"/gi, '');
 
       // Convert HTML to Word document
-      const docxBuffer = HtmlDocx.asBlob(cleanHtmlForWord, {
+      const docxBlob = HtmlDocx.asBlob(cleanHtmlForWord, {
         orientation: 'portrait',
         margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 } // 1 inch = 1440 twips
       });
+
+      // Convert Blob to ArrayBuffer then to Buffer
+      const arrayBuffer = await docxBlob.arrayBuffer();
+      const docxBuffer = Buffer.from(arrayBuffer);
 
       // Set response headers for Word document download
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.setHeader('Content-Disposition', `attachment; filename="rental_agreement_${agreementData.agreementNumber || 'draft'}.docx"`);
       
       // Send the Word document
-      res.send(Buffer.from(docxBuffer));
+      res.send(docxBuffer);
       
     } catch (error) {
       console.error("Error generating Word document:", error);
