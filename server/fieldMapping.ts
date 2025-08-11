@@ -717,9 +717,9 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
                 const dataUrl = `data:${mimeType};base64,${base64Data}`;
                 
                 const embeddedImage = `
-<div style="margin: 15px 0; page-break-inside: avoid; text-align: center;">
+<div style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
   <img src="${dataUrl}" 
-       style="max-width: 400px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px;" 
+       style="width: auto; height: auto; max-width: 100%; max-height: 400px; border: 1px solid #ccc; display: block; margin: 0 auto;" 
        alt="${documentType}" />
 </div>`;
                 processedFields[fieldName] = embeddedImage;
@@ -793,9 +793,9 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
               
               const documentType = getDocumentTypeFromFieldName(fieldName);
               const embeddedImage = `
-<div style="margin: 15px 0; page-break-inside: avoid; text-align: center;">
+<div style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
   <img src="${dataUrl}" 
-       style="max-width: 400px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px;" 
+       style="width: auto; height: auto; max-width: 100%; max-height: 400px; border: 1px solid #ccc; display: block; margin: 0 auto;" 
        alt="${documentType}" />
 </div>`;
               
