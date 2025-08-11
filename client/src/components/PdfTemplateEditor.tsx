@@ -197,7 +197,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
   
   {{#if OWNER_AADHAR_URL}}
   <div style="margin: 30px 0; page-break-inside: avoid;">
-    <h3>OWNER DOCUMENTS:</h3>
+    <h3>LANDLORD DOCUMENTS:</h3>
     <div style="margin: 10px 0;">
       <p><strong>Aadhar Card:</strong></p>
       <img src="{{OWNER_AADHAR_URL}}" style="max-width: 300px; height: auto; border: 1px solid #ccc; margin: 10px 0;" />
