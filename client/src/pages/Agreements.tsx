@@ -15,7 +15,8 @@ import {
   Edit,
   Trash2,
   Download,
-  Send
+  Send,
+  FileText
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -100,6 +101,65 @@ export default function Agreements() {
       toast({
         title: "Error",
         description: "Failed to delete agreement.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadWordAgreement = async (agreement: any) => {
+    try {
+      console.log('Starting Word generation for agreement:', agreement.id);
+
+      const response = await fetch('/api/agreements/generate-word', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ownerDetails: agreement.ownerDetails || {},
+          tenantDetails: agreement.tenantDetails || {},
+          propertyDetails: agreement.propertyDetails || {},
+          rentalTerms: agreement.rentalTerms || {},
+          agreementDate: agreement.agreementDate,
+          createdAt: agreement.createdAt,
+          language: agreement.language || 'english',
+          additionalClauses: agreement.additionalClauses || [],
+          agreementNumber: agreement.agreementNumber,
+          documents: agreement.documents || {},
+          ownerDocuments: agreement.ownerDocuments || {},
+          tenantDocuments: agreement.tenantDocuments || {},
+          propertyDocuments: agreement.propertyDocuments || {}
+        }),
+      });
+
+      console.log('Word generation response status:', response.status);
+
+      if (response.ok) {
+        // Create download link for Word document
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rental_agreement_${agreement.agreementNumber || 'document'}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Word Document Downloaded",
+          description: `Agreement ${agreement.agreementNumber} has been downloaded as Word document.`,
+        });
+      } else {
+        const errorData = await response.json();
+        console.error('Word generation error:', errorData);
+        throw new Error(errorData.message || 'Failed to generate Word document');
+      }
+    } catch (error) {
+      console.error('Word download error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download Word document.",
         variant: "destructive",
       });
     }
@@ -444,9 +504,18 @@ export default function Agreements() {
                             size="sm" 
                             className="text-green-600 hover:text-green-900"
                             onClick={() => handleDownloadAgreement(agreement)}
-                            title="Print/Download PDF"
+                            title="Download PDF"
                           >
                             <Download className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-blue-600 hover:text-blue-900"
+                            onClick={() => handleDownloadWordAgreement(agreement)}
+                            title="Download Word Document"
+                          >
+                            <FileText className="h-4 w-4" />
                           </Button>
                           <Button 
                             variant="ghost" 

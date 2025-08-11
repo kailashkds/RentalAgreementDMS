@@ -50,6 +50,7 @@ Preferred communication style: Simple, everyday language.
 ## Key Features
 - **5-step Document Creation Wizard**: Includes step validation and intelligent text input fields with database search and auto-fill for addresses.
 - **PDF Template Management System**: With database schema, CRUD API, professional UI, and advanced template editor featuring dynamic field insertion and live HTML preview.
+- **Multi-Format Document Generation**: Support for both PDF and Word (.docx) document downloads from both the creation wizard and existing agreement management.
 - **Dynamic Field Formatting**: Automatic formatting for all PDF placeholders based on field characteristics (e.g., date formats, string capitalization).
 - **Conditional Logic System**: Smart field replacement and conditional display in PDF templates (e.g., showing/hiding sections based on document uploads).
 - **Amount-to-Words Conversion**: Automatic conversion of numeric amounts to Indian format words.
