@@ -705,15 +705,9 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
               
               if (isPdf) {
                 const embeddedDocument = `
-<div style="margin: 20px 0; padding: 20px; border: 2px solid #d63384; border-radius: 8px; background: linear-gradient(145deg, #fff5f5, #ffe6e6); page-break-inside: avoid; text-align: center;">
-  <h3 style="color: #d63384; margin-bottom: 15px;">📄 ${documentType}</h3>
-  <div style="background: white; border: 2px dashed #d63384; border-radius: 6px; padding: 30px; margin: 15px 0;">
-    <div style="font-size: 48px; color: #d63384; margin-bottom: 10px;">📋</div>
-    <p style="color: #d63384; font-weight: bold; margin: 10px 0; font-size: 16px;">PDF Document Attached</p>
-    <p style="color: #666; margin: 5px 0; font-size: 14px;">${documentType}</p>
-    <p style="color: #999; margin: 5px 0; font-size: 12px;">File: ${localFileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
-  </div>
-  <p style="color: #d63384; margin-top: 10px; font-weight: bold; font-size: 14px;">✅ Document Successfully Attached</p>
+<div style="margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px; page-break-inside: avoid; text-align: center;">
+  <div style="font-size: 24px; color: #666; margin-bottom: 5px;">📄</div>
+  <p style="color: #333; font-weight: bold; margin: 5px 0;">${documentType}</p>
 </div>`;
                 processedFields[fieldName] = embeddedDocument;
                 console.log(`[PDF Embedding] ✅ Successfully processed cloud PDF ${fieldName}`);
@@ -723,15 +717,10 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
                 const dataUrl = `data:${mimeType};base64,${base64Data}`;
                 
                 const embeddedImage = `
-<div style="margin: 20px 0; padding: 15px; border: 2px solid #28a745; border-radius: 8px; background: linear-gradient(145deg, #f8fff8, #e8f5e8); page-break-inside: avoid; text-align: center;">
-  <h3 style="color: #28a745; margin-bottom: 10px;">📄 ${documentType}</h3>
-  <div style="background: white; border: 2px solid #28a745; border-radius: 6px; padding: 10px; margin: 10px 0; display: inline-block;">
-    <img src="${dataUrl}" 
-         style="max-width: 400px; max-height: 250px; border-radius: 4px;" 
-         alt="${documentType}" />
-  </div>
-  <p style="color: #28a745; margin-top: 10px; font-weight: bold; font-size: 14px;">✅ Image Successfully Embedded</p>
-  <p style="color: #666; margin: 5px 0; font-size: 12px;">File: ${localFileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
+<div style="margin: 15px 0; page-break-inside: avoid; text-align: center;">
+  <img src="${dataUrl}" 
+       style="max-width: 400px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px;" 
+       alt="${documentType}" />
 </div>`;
                 processedFields[fieldName] = embeddedImage;
                 console.log(`[PDF Embedding] ✅ Successfully processed cloud image ${fieldName}`);
@@ -789,15 +778,9 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
               // For PDF files, create a document placeholder instead of trying to embed as image
               const documentType = getDocumentTypeFromFieldName(fieldName);
               const embeddedDocument = `
-<div style="margin: 20px 0; padding: 20px; border: 2px solid #d63384; border-radius: 8px; background: linear-gradient(145deg, #fff5f5, #ffe6e6); page-break-inside: avoid; text-align: center;">
-  <h3 style="color: #d63384; margin-bottom: 15px;">📄 ${documentType}</h3>
-  <div style="background: white; border: 2px dashed #d63384; border-radius: 6px; padding: 30px; margin: 15px 0;">
-    <div style="font-size: 48px; color: #d63384; margin-bottom: 10px;">📋</div>
-    <p style="color: #d63384; font-weight: bold; margin: 10px 0; font-size: 16px;">PDF Document Attached</p>
-    <p style="color: #666; margin: 5px 0; font-size: 14px;">${documentType}</p>
-    <p style="color: #999; margin: 5px 0; font-size: 12px;">File: ${fileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
-  </div>
-  <p style="color: #d63384; margin-top: 10px; font-weight: bold; font-size: 14px;">✅ Document Successfully Attached</p>
+<div style="margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px; page-break-inside: avoid; text-align: center;">
+  <div style="font-size: 24px; color: #666; margin-bottom: 5px;">📄</div>
+  <p style="color: #333; font-weight: bold; margin: 5px 0;">${documentType}</p>
 </div>`;
               processedFields[fieldName] = embeddedDocument;
               console.log(`[PDF Embedding] ✅ Successfully processed PDF document ${fieldName}: ${fileName}`);
@@ -810,15 +793,10 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
               
               const documentType = getDocumentTypeFromFieldName(fieldName);
               const embeddedImage = `
-<div style="margin: 20px 0; padding: 15px; border: 2px solid #28a745; border-radius: 8px; background: linear-gradient(145deg, #f8fff8, #e8f5e8); page-break-inside: avoid; text-align: center;">
-  <h3 style="color: #28a745; margin-bottom: 10px;">📄 ${documentType}</h3>
-  <div style="background: white; border: 2px solid #28a745; border-radius: 6px; padding: 10px; margin: 10px 0; display: inline-block;">
-    <img src="${dataUrl}" 
-         style="max-width: 400px; max-height: 250px; border-radius: 4px;" 
-         alt="${documentType}" />
-  </div>
-  <p style="color: #28a745; margin-top: 10px; font-weight: bold; font-size: 14px;">✅ Image Successfully Embedded</p>
-  <p style="color: #666; margin: 5px 0; font-size: 12px;">File: ${fileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
+<div style="margin: 15px 0; page-break-inside: avoid; text-align: center;">
+  <img src="${dataUrl}" 
+       style="max-width: 400px; max-height: 300px; border: 1px solid #ddd; border-radius: 4px;" 
+       alt="${documentType}" />
 </div>`;
               
               processedFields[fieldName] = embeddedImage;
