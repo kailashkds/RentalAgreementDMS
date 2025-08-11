@@ -228,6 +228,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate Word document
+  app.post("/api/agreements/generate-word", async (req, res) => {
+    try {
+      const { HtmlDocx } = require('html-docx-js');
+      
+      const agreementData = req.body;
+      const language = agreementData.language || 'english';
+
+      // Get the appropriate template
+      const templates = await storage.getPdfTemplates('rental_agreement', language);
+      const template = templates.length > 0 ? templates[0] : null;
+      
+      if (!template) {
+        return res.status(404).json({ 
+          message: "No template found for Word document generation",
+          language: language 
+        });
+      }
+
+      // Ensure all required fields have default values
+      const safeAgreementData = {
+        ownerDetails: agreementData.ownerDetails || {},
+        tenantDetails: agreementData.tenantDetails || {},
+        propertyDetails: agreementData.propertyDetails || {},
+        rentalTerms: agreementData.rentalTerms || {},
+        agreementDate: agreementData.agreementDate,
+        createdAt: agreementData.createdAt,
+        agreementType: 'rental_agreement',
+        additionalClauses: agreementData.additionalClauses || [],
+        agreementNumber: agreementData.agreementNumber,
+        language: language,
+        documents: agreementData.documents || {},
+        ownerDocuments: agreementData.ownerDocuments || {},
+        tenantDocuments: agreementData.tenantDocuments || {},
+        propertyDocuments: agreementData.propertyDocuments || {}
+      };
+
+      // Generate the HTML with mapped field values 
+      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate);
+      
+      // Clean HTML for Word document (remove page-break specific styles)
+      const cleanHtmlForWord = processedHtml
+        .replace(/page-break-before:\s*always;?/gi, '')
+        .replace(/page-break-after:\s*always;?/gi, '')
+        .replace(/break-before:\s*page;?/gi, '')
+        .replace(/break-after:\s*page;?/gi, '')
+        .replace(/class="page-break-before"/gi, '')
+        .replace(/class="page-break-after"/gi, '');
+
+      // Convert HTML to Word document
+      const docxBuffer = HtmlDocx.asBlob(cleanHtmlForWord, {
+        orientation: 'portrait',
+        margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 } // 1 inch = 1440 twips
+      });
+
+      // Set response headers for Word document download
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="rental_agreement_${agreementData.agreementNumber || 'draft'}.docx"`);
+      
+      // Send the Word document
+      res.send(Buffer.from(docxBuffer));
+      
+    } catch (error) {
+      console.error("Error generating Word document:", error);
+      res.status(500).json({ 
+        message: "Failed to generate Word document",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Society routes - no auth required for autocomplete
   app.get("/api/societies", async (req, res) => {
     try {
