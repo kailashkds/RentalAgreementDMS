@@ -45,6 +45,7 @@ Preferred communication style: Simple, everyday language.
 ## Multi-language Support
 - **Languages**: English, Hindi, Gujarati, Tamil, Marathi
 - **Implementation**: Translation system with language-specific form labels and language-aware agreement template rendering.
+- **Gujarati PDF Templates**: Complete Gujarati rental agreement template with authentic content structure matching traditional Indian legal document format, including Gujarati numerals, date formatting, and number-to-words conversion.
 
 ## Key Features
 - **5-step Document Creation Wizard**: Includes step validation and intelligent text input fields with database search and auto-fill for addresses.

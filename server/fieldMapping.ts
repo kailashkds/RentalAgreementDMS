@@ -7,6 +7,137 @@ import { fileProcessor } from './fileProcessor';
 import path from 'path';
 import fs from 'fs';
 
+// Gujarati language constants
+const GUJARATI_MONTHS = [
+  'જાન્યુઆરી', 'ફેબ્રુઆરી', 'માર્ચ', 'એપ્રિલ', 'મે', 'જૂન',
+  'જુલાઈ', 'ઓગસ્ટ', 'સપ્ટેમ્બર', 'ઓક્ટોબર', 'નવેમ્બર', 'ડિસેમ્બર'
+];
+
+const GUJARATI_DAYS = [
+  'રવિવાર', 'સોમવાર', 'મંગળવાર', 'બુધવાર', 'ગુરુવાર', 'શુક્રવાર', 'શનિવાર'
+];
+
+const GUJARATI_NUMBERS: Record<number, string> = {
+  0: '૦', 1: '૧', 2: '૨', 3: '૩', 4: '૪', 5: '૫', 6: '૬', 7: '૭', 8: '૮', 9: '૯'
+};
+
+// Gujarati number to words conversion
+const GUJARATI_ONES = ['', 'એક', 'બે', 'ત્રણ', 'ચાર', 'પાંચ', 'છ', 'સાત', 'આઠ', 'નવ'];
+const GUJARATI_TEENS = ['દસ', 'અગિયાર', 'બાર', 'તેર', 'ચૌદ', 'પંદર', 'સોળ', 'સત્તર', 'અઢાર', 'ઓગણીસ'];
+const GUJARATI_TENS = ['', '', 'વીસ', 'ત્રીસ', 'ચાળીસ', 'પચાસ', 'સાઠ', 'સિત્તેર', 'એંસી', 'નેવું'];
+const GUJARATI_HUNDREDS = ['', 'એકસો', 'બસો', 'ત્રણસો', 'ચારસો', 'પાંચસો', 'છસો', 'સાતસો', 'આઠસો', 'નવસો'];
+
+/**
+ * Convert English numbers to Gujarati numerals
+ */
+function convertToGujaratiNumerals(text: string): string {
+  return text.replace(/[0-9]/g, (digit) => GUJARATI_NUMBERS[parseInt(digit)] || digit);
+}
+
+/**
+ * Convert date to Gujarati format
+ */
+function formatGujaratiDate(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    const day = date.getDate();
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    const dayOfWeek = date.getDay();
+
+    const gujaratiDay = convertToGujaratiNumerals(day.toString());
+    const gujaratiMonth = GUJARATI_MONTHS[month];
+    const gujaratiYear = convertToGujaratiNumerals(year.toString());
+    
+    return `${gujaratiDay}મી ${gujaratiMonth} ${gujaratiYear}`;
+  } catch (error) {
+    console.error('Error formatting Gujarati date:', error);
+    return dateStr;
+  }
+}
+
+/**
+ * Get current day name in Gujarati
+ */
+function getCurrentGujaratiDay(): string {
+  const today = new Date();
+  return GUJARATI_DAYS[today.getDay()];
+}
+
+/**
+ * Convert numbers to Gujarati words
+ */
+function numberToGujaratiWords(num: number): string {
+  if (num === 0) return 'શૂન્ય';
+  
+  function convertHundredsGujarati(n: number): string {
+    let result = '';
+    
+    if (n >= 100) {
+      const hundreds = Math.floor(n / 100);
+      result += GUJARATI_HUNDREDS[hundreds];
+      n %= 100;
+    }
+    
+    if (n >= 20) {
+      const tens = Math.floor(n / 10);
+      result += (result ? ' ' : '') + GUJARATI_TENS[tens];
+      n %= 10;
+    } else if (n >= 10) {
+      result += (result ? ' ' : '') + GUJARATI_TEENS[n - 10];
+      n = 0;
+    }
+    
+    if (n > 0) {
+      result += (result ? ' ' : '') + GUJARATI_ONES[n];
+    }
+    
+    return result;
+  }
+  
+  if (num < 1000) {
+    return convertHundredsGujarati(num);
+  } else if (num < 100000) {
+    const thousands = Math.floor(num / 1000);
+    let remainder = num % 1000;
+    let result = convertHundredsGujarati(thousands) + ' હજાર';
+    if (remainder > 0) {
+      result += ' ' + convertHundredsGujarati(remainder);
+    }
+    return result;
+  } else if (num < 10000000) {
+    const lakhs = Math.floor(num / 100000);
+    let remainder = num % 100000;
+    let result = convertHundredsGujarati(lakhs) + ' લાખ';
+    if (remainder >= 1000) {
+      result += ' ' + convertHundredsGujarati(Math.floor(remainder / 1000)) + ' હજાર';
+      remainder = remainder % 1000;
+    }
+    if (remainder > 0) {
+      result += ' ' + convertHundredsGujarati(remainder);
+    }
+    return result;
+  } else {
+    const crores = Math.floor(num / 10000000);
+    let remainder = num % 10000000;
+    let result = convertHundredsGujarati(crores) + ' કરોડ';
+    if (remainder > 0) {
+      if (remainder >= 100000) {
+        result += ' ' + convertHundredsGujarati(Math.floor(remainder / 100000)) + ' લાખ';
+        remainder = remainder % 100000;
+      }
+      if (remainder >= 1000) {
+        result += ' ' + convertHundredsGujarati(Math.floor(remainder / 1000)) + ' હજાર';
+        remainder = remainder % 1000;
+      }
+      if (remainder > 0) {
+        result += ' ' + convertHundredsGujarati(remainder);
+      }
+    }
+    return result + ' પૂરા';
+  }
+}
+
 export interface FormData {
   ownerDetails: {
     name: string;
@@ -440,6 +571,8 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
   if (rentAmount) {
     const rentAmountNum = Number(rentAmount);
     templateFields['RENT_AMOUNT_WORDS'] = numberToWords(rentAmountNum);
+    templateFields['MONTHLY_RENT'] = String(rentAmountNum);
+    templateFields['MONTHLY_RENT_WORDS'] = numberToGujaratiWords(rentAmountNum);
   }
 
   // Handle both deposit and securityDeposit fields
@@ -447,6 +580,8 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
   if (securityDeposit) {
     const securityDepositNum = Number(securityDeposit);
     templateFields['SECURITY_DEPOSIT_WORDS'] = numberToWords(securityDepositNum);
+    templateFields['DEPOSIT_AMOUNT'] = String(securityDepositNum);
+    templateFields['DEPOSIT_AMOUNT_WORDS'] = numberToGujaratiWords(securityDepositNum);
   }
 
   // Additional computed fields for payment dates
@@ -496,6 +631,54 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
       templateFields['AGREEMENT_DATE'] = new Date().toLocaleDateString('en-GB');
     }
   }
+
+  // Add Gujarati-specific date formatting
+  const currentDate = new Date();
+  templateFields['CURRENT_DAY'] = getCurrentGujaratiDay();
+  templateFields['CURRENT_DATE_GUJARATI'] = convertToGujaratiNumerals(currentDate.getDate().toString()) + 'મી';
+  templateFields['CURRENT_MONTH_GUJARATI'] = GUJARATI_MONTHS[currentDate.getMonth()];
+  templateFields['CURRENT_YEAR'] = convertToGujaratiNumerals(currentDate.getFullYear().toString());
+
+  // Format start and end dates in Gujarati
+  if (formData.rentalTerms?.startDate) {
+    templateFields['START_DATE'] = formatGujaratiDate(formData.rentalTerms.startDate);
+  }
+  if (formData.rentalTerms?.endDate) {
+    templateFields['END_DATE'] = formatGujaratiDate(formData.rentalTerms.endDate);
+  }
+
+  // Calculate agreement duration
+  if (formData.rentalTerms?.startDate && formData.rentalTerms?.endDate) {
+    const startDate = new Date(formData.rentalTerms.startDate);
+    const endDate = new Date(formData.rentalTerms.endDate);
+    const monthsDiff = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+    templateFields['AGREEMENT_DURATION'] = convertToGujaratiNumerals(monthsDiff.toString());
+  } else {
+    templateFields['AGREEMENT_DURATION'] = convertToGujaratiNumerals('11'); // Default 11 months
+  }
+
+  // Add full property address in Gujarati format
+  const propertyParts = [];
+  if (formData.propertyDetails?.houseNumber || templateFields['PROPERTY_HOUSE_NUMBER']) {
+    propertyParts.push(templateFields['PROPERTY_HOUSE_NUMBER'] || formData.propertyDetails?.houseNumber);
+  }
+  if (formData.propertyDetails?.society || templateFields['PROPERTY_SOCIETY']) {
+    propertyParts.push(templateFields['PROPERTY_SOCIETY'] || formData.propertyDetails?.society);
+  }
+  if (formData.propertyDetails?.area || templateFields['PROPERTY_AREA']) {
+    propertyParts.push(templateFields['PROPERTY_AREA'] || formData.propertyDetails?.area);
+  }
+  if (formData.propertyDetails?.city || templateFields['PROPERTY_CITY']) {
+    propertyParts.push(templateFields['PROPERTY_CITY'] || formData.propertyDetails?.city);
+  }
+  if (formData.propertyDetails?.state || templateFields['PROPERTY_STATE']) {
+    propertyParts.push(templateFields['PROPERTY_STATE'] || formData.propertyDetails?.state);
+  }
+  if (formData.propertyDetails?.pincode || templateFields['PROPERTY_PINCODE']) {
+    propertyParts.push(convertToGujaratiNumerals(templateFields['PROPERTY_PINCODE'] || formData.propertyDetails?.pincode));
+  }
+  
+  templateFields['PROPERTY_FULL_ADDRESS'] = propertyParts.filter(Boolean).join(', ');
 
   return templateFields;
 }
