@@ -231,7 +231,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate Word document
   app.post("/api/agreements/generate-word", async (req, res) => {
     try {
-      const { HtmlDocx } = require('html-docx-js');
+      // @ts-ignore - html-docx-js doesn't have TypeScript definitions
+      const HtmlDocx = (await import('html-docx-js')).default;
       
       const agreementData = req.body;
       const language = agreementData.language || 'english';
