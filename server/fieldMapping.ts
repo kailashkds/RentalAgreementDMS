@@ -668,13 +668,83 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
         console.log(`[PDF Embedding] Processing document field: ${fieldName} with URL: ${documentUrl}`);
         console.log(`[PDF Embedding] URL analysis: startsWith('/uploads/'): ${documentUrl.startsWith('/uploads/')}, includes('/uploads/'): ${documentUrl.includes('/uploads/')}, not http/objects: ${!documentUrl.startsWith('http') && !documentUrl.startsWith('/objects/')}`);
         
-        // Check if this is a local uploads URL (new approach) - handle various formats
-        // URLs can be: /uploads/filename.jpg, /objects/uploads/filename.jpg, or just filename.jpg
-        const isLocalFile = documentUrl.startsWith('/uploads/') || 
-                           documentUrl.includes('/uploads/') || 
-                           (!documentUrl.startsWith('http') && !documentUrl.startsWith('/objects/'));
+        // Check if this is a cloud storage URL or local file
+        const isCloudStorageUrl = documentUrl.includes('storage.googleapis.com') || 
+                                  (documentUrl.startsWith('https://') && !documentUrl.includes('localhost')) || 
+                                  (documentUrl.startsWith('http://') && !documentUrl.includes('localhost'));
+        const isLocalFile = !isCloudStorageUrl && (
+          documentUrl.startsWith('/uploads/') || 
+          (!documentUrl.startsWith('http') && !documentUrl.startsWith('/objects/') && !documentUrl.includes('storage.googleapis.com'))
+        );
         
-        if (isLocalFile) {
+        console.log(`[PDF Embedding] isCloudStorageUrl: ${isCloudStorageUrl}, isLocalFile: ${isLocalFile}`);
+        
+        if (isCloudStorageUrl) {
+          // Handle cloud storage URLs (Google Cloud Storage)
+          console.log(`[PDF Embedding] Processing cloud storage URL: ${documentUrl}`);
+          const objectStorageService = new ObjectStorageService();
+          const localFileName = await downloadFileFromObjectStorage(documentUrl, fieldName, objectStorageService);
+          
+          if (localFileName) {
+            console.log(`[PDF Embedding] Successfully downloaded to local file: ${localFileName}`);
+            
+            // Now process the downloaded file like a local file
+            const filePath = path.join(process.cwd(), 'uploads', localFileName);
+            
+            if (fs.existsSync(filePath)) {
+              const fileBuffer = fs.readFileSync(filePath);
+              const fileHeader = fileBuffer.slice(0, 8);
+              const headerString = fileHeader.toString('ascii');
+              const isPdf = headerString.startsWith('%PDF');
+              const isJpeg = fileBuffer[0] === 0xFF && fileBuffer[1] === 0xD8;
+              const isPng = fileBuffer[0] === 0x89 && fileBuffer[1] === 0x50;
+              
+              console.log(`[PDF Embedding] Downloaded file analysis: PDF=${isPdf}, JPEG=${isJpeg}, PNG=${isPng}`);
+              
+              const documentType = getDocumentTypeFromFieldName(fieldName);
+              
+              if (isPdf) {
+                const embeddedDocument = `
+<div style="margin: 20px 0; padding: 20px; border: 2px solid #d63384; border-radius: 8px; background: linear-gradient(145deg, #fff5f5, #ffe6e6); page-break-inside: avoid; text-align: center;">
+  <h3 style="color: #d63384; margin-bottom: 15px;">📄 ${documentType}</h3>
+  <div style="background: white; border: 2px dashed #d63384; border-radius: 6px; padding: 30px; margin: 15px 0;">
+    <div style="font-size: 48px; color: #d63384; margin-bottom: 10px;">📋</div>
+    <p style="color: #d63384; font-weight: bold; margin: 10px 0; font-size: 16px;">PDF Document Attached</p>
+    <p style="color: #666; margin: 5px 0; font-size: 14px;">${documentType}</p>
+    <p style="color: #999; margin: 5px 0; font-size: 12px;">File: ${localFileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
+  </div>
+  <p style="color: #d63384; margin-top: 10px; font-weight: bold; font-size: 14px;">✅ Document Successfully Attached</p>
+</div>`;
+                processedFields[fieldName] = embeddedDocument;
+                console.log(`[PDF Embedding] ✅ Successfully processed cloud PDF ${fieldName}`);
+              } else if (isJpeg || isPng) {
+                const mimeType = isJpeg ? 'image/jpeg' : 'image/png';
+                const base64Data = fileBuffer.toString('base64');
+                const dataUrl = `data:${mimeType};base64,${base64Data}`;
+                
+                const embeddedImage = `
+<div style="margin: 20px 0; padding: 15px; border: 2px solid #28a745; border-radius: 8px; background: linear-gradient(145deg, #f8fff8, #e8f5e8); page-break-inside: avoid; text-align: center;">
+  <h3 style="color: #28a745; margin-bottom: 10px;">📄 ${documentType}</h3>
+  <div style="background: white; border: 2px solid #28a745; border-radius: 6px; padding: 10px; margin: 10px 0; display: inline-block;">
+    <img src="${dataUrl}" 
+         style="max-width: 400px; max-height: 250px; border-radius: 4px;" 
+         alt="${documentType}" />
+  </div>
+  <p style="color: #28a745; margin-top: 10px; font-weight: bold; font-size: 14px;">✅ Image Successfully Embedded</p>
+  <p style="color: #666; margin: 5px 0; font-size: 12px;">File: ${localFileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
+</div>`;
+                processedFields[fieldName] = embeddedImage;
+                console.log(`[PDF Embedding] ✅ Successfully processed cloud image ${fieldName}`);
+              }
+            } else {
+              console.error(`[PDF Embedding] Downloaded file not found: ${filePath}`);
+              processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document uploaded but could not be processed.</p>`;
+            }
+          } else {
+            console.error(`[PDF Embedding] Failed to download from cloud storage: ${documentUrl}`);
+            processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document uploaded but could not be processed.</p>`;
+          }
+        } else if (isLocalFile) {
           // Extract filename from URL path - handle various formats
           let fileName;
           if (documentUrl.includes('/uploads/')) {
@@ -862,16 +932,16 @@ async function downloadFileFromObjectStorage(documentUrl: string, fieldName: str
     const filePath = path.default.join(process.cwd(), 'uploads', fileName);
 
     // Ensure uploads directory exists
-    const fs = await import('fs/promises');
+    const fsPromises = await import('fs/promises');
     const uploadsDir = path.default.join(process.cwd(), 'uploads');
     try {
-      await fs.default.access(uploadsDir);
+      await fsPromises.access(uploadsDir);
     } catch {
-      await fs.default.mkdir(uploadsDir, { recursive: true });
+      await fsPromises.mkdir(uploadsDir, { recursive: true });
     }
 
     // Write file locally
-    await fs.default.writeFile(filePath, buffer);
+    await fsPromises.writeFile(filePath, buffer);
     console.log(`[PDF Embedding] File saved locally as: ${fileName}`);
     
     return fileName;
