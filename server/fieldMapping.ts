@@ -1036,8 +1036,8 @@ function createEmbeddedPdfHtml(dataUrl: string, documentType: string): string {
  */
 function getDocumentTypeFromFieldName(fieldName: string): string {
   const typeMap: Record<string, string> = {
-    'OWNER_AADHAR_URL': 'Owner Aadhaar Card',
-    'OWNER_PAN_URL': 'Owner PAN Card',
+    'OWNER_AADHAR_URL': 'Landlord Aadhaar Card',
+    'OWNER_PAN_URL': 'Landlord PAN Card',
     'TENANT_AADHAR_URL': 'Tenant Aadhaar Card', 
     'TENANT_PAN_URL': 'Tenant PAN Card',
     'PROPERTY_DOCUMENTS_URL': 'Property Documents'
