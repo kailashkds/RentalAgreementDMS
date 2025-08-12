@@ -83,6 +83,7 @@ export interface IStorage {
   deleteAgreement(id: string): Promise<void>;
   renewAgreement(id: string, newStartDate: Date, newEndDate: Date): Promise<Agreement>;
   duplicateAgreement(id: string, customerId?: string): Promise<Agreement>;
+  updateAgreementNotarizedDocument(id: string, notarizedDocData: any): Promise<Agreement>;
   
   // Dashboard statistics
   getDashboardStats(): Promise<{
@@ -395,6 +396,23 @@ export class DatabaseStorage implements IStorage {
     });
 
     return duplicatedAgreement;
+  }
+
+  async updateAgreementNotarizedDocument(id: string, notarizedDocData: any): Promise<Agreement> {
+    const [updatedAgreement] = await db
+      .update(agreements)
+      .set({ 
+        notarizedDocument: notarizedDocData,
+        updatedAt: new Date()
+      })
+      .where(eq(agreements.id, id))
+      .returning();
+    
+    if (!updatedAgreement) {
+      throw new Error("Agreement not found");
+    }
+    
+    return updatedAgreement;
   }
 
   async getDashboardStats(): Promise<{

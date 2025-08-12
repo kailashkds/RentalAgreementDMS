@@ -18,7 +18,10 @@ import {
   Download,
   Send,
   FileText,
-  X
+  X,
+  Upload,
+  File,
+  CheckCircle
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +33,8 @@ export default function Agreements() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [uploadingNotarized, setUploadingNotarized] = useState(false);
+  const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
   const { toast } = useToast();
 
   const { data: agreementsData, isLoading } = useAgreements({
@@ -175,6 +180,78 @@ export default function Agreements() {
     if (agreement) {
       setViewingAgreement(agreement);
     }
+  };
+
+  const handleUploadNotarizedDocument = async (agreementId: string, file: File) => {
+    setUploadingNotarized(true);
+    try {
+      const formData = new FormData();
+      formData.append('notarizedDocument', file);
+
+      const response = await fetch(`/api/agreements/${agreementId}/upload-notarized`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update the viewing agreement with the new notarized document data
+        if (viewingAgreement && viewingAgreement.id === agreementId) {
+          setViewingAgreement({
+            ...viewingAgreement,
+            notarizedDocument: {
+              filename: result.filename,
+              originalName: result.originalName,
+              uploadDate: result.uploadDate,
+              size: result.size,
+              url: result.url
+            }
+          });
+        }
+
+        // Invalidate cache to refresh data
+        queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
+
+        toast({
+          title: "Notarized Document Uploaded",
+          description: `Successfully uploaded ${result.originalName}`,
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload notarized document');
+      }
+    } catch (error) {
+      console.error('Notarized upload error:', error);
+      toast({
+        title: "Upload Error",
+        description: error instanceof Error ? error.message : "Failed to upload notarized document.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingNotarized(false);
+    }
+  };
+
+  const handleNotarizedFileSelect = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file && viewingAgreement) {
+        if (file.type !== 'application/pdf') {
+          toast({
+            title: "Invalid File Type",
+            description: "Please select a PDF file for notarized document.",
+            variant: "destructive",
+          });
+          return;
+        }
+        handleUploadNotarizedDocument(viewingAgreement.id, file);
+      }
+    };
+    input.click();
   };
 
 
@@ -1033,6 +1110,99 @@ export default function Agreements() {
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.updatedAt ? new Date(viewingAgreement.updatedAt).toLocaleString() : 'Not available'}</p>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Notarized Document Section */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center">
+                    <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-xs font-bold text-white">8</span>
+                    </div>
+                    Notarized Document
+                  </h3>
+                </div>
+                <div className="bg-slate-50 p-6">
+                  {viewingAgreement.notarizedDocument && viewingAgreement.notarizedDocument.filename ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-200 shadow-sm">
+                        <div className="flex items-center space-x-3">
+                          <div className="p-2 bg-green-100 rounded-lg">
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">
+                              {viewingAgreement.notarizedDocument.originalName}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              Uploaded on {new Date(viewingAgreement.notarizedDocument.uploadDate).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              Size: {Math.round(viewingAgreement.notarizedDocument.size / 1024)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(viewingAgreement.notarizedDocument.url, '_blank')}
+                            className="text-slate-600 border-slate-300 hover:bg-slate-50"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = viewingAgreement.notarizedDocument.url;
+                              link.download = viewingAgreement.notarizedDocument.originalName;
+                              link.click();
+                            }}
+                            className="bg-slate-600 hover:bg-slate-700 text-white"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <Button
+                          variant="outline"
+                          onClick={handleNotarizedFileSelect}
+                          disabled={uploadingNotarized}
+                          className="border-slate-300 hover:bg-slate-50"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          {uploadingNotarized ? 'Uploading...' : 'Replace Notarized Document'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="flex flex-col items-center space-y-4">
+                        <div className="p-4 bg-slate-100 rounded-full">
+                          <File className="h-8 w-8 text-slate-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">No notarized document uploaded</p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            After getting this agreement notarized, upload the signed PDF here
+                          </p>
+                        </div>
+                        <Button
+                          onClick={handleNotarizedFileSelect}
+                          disabled={uploadingNotarized}
+                          className="bg-slate-600 hover:bg-slate-700 text-white"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          {uploadingNotarized ? 'Uploading...' : 'Upload Notarized Document'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

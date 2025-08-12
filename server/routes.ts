@@ -723,6 +723,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload notarized document for a specific agreement
+  app.post('/api/agreements/:agreementId/upload-notarized', upload.single('notarizedDocument'), async (req, res) => {
+    try {
+      const { agreementId } = req.params;
+      
+      if (!req.file) {
+        return res.status(400).json({ error: 'No notarized document uploaded' });
+      }
+
+      // Validate it's a PDF file
+      if (req.file.mimetype !== 'application/pdf') {
+        return res.status(400).json({ error: 'Only PDF files are allowed for notarized documents' });
+      }
+
+      const agreement = await storage.getAgreement(agreementId);
+      if (!agreement) {
+        return res.status(404).json({ error: 'Agreement not found' });
+      }
+
+      // Create a proper naming convention: AGR-XXXX-notarized-YYYY-MM-DD.pdf
+      const currentDate = new Date().toISOString().split('T')[0];
+      const notarizedFileName = `${agreement.agreementNumber}-notarized-${currentDate}.pdf`;
+      const notarizedFilePath = path.join('uploads', 'notarized', notarizedFileName);
+      
+      // Create notarized directory if it doesn't exist
+      const notarizedDir = path.join(process.cwd(), 'uploads', 'notarized');
+      if (!fs.existsSync(notarizedDir)) {
+        fs.mkdirSync(notarizedDir, { recursive: true });
+      }
+
+      // Move file to proper location with proper name
+      const finalPath = path.join(process.cwd(), 'uploads', 'notarized', notarizedFileName);
+      fs.renameSync(req.file.path, finalPath);
+
+      // Update agreement with notarized document details
+      const notarizedDocData = {
+        filename: notarizedFileName,
+        originalName: req.file.originalname,
+        uploadDate: new Date().toISOString(),
+        filePath: `/uploads/notarized/${notarizedFileName}`,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      };
+
+      await storage.updateAgreementNotarizedDocument(agreementId, notarizedDocData);
+
+      console.log(`[Notarized Upload] Document uploaded for agreement ${agreement.agreementNumber}: ${notarizedFileName}`);
+      
+      res.json({
+        success: true,
+        message: 'Notarized document uploaded successfully',
+        filename: notarizedFileName,
+        originalName: req.file.originalname,
+        url: `/uploads/notarized/${notarizedFileName}`,
+        size: req.file.size,
+        uploadDate: notarizedDocData.uploadDate
+      });
+
+    } catch (error) {
+      console.error('[Notarized Upload] Error:', error);
+      res.status(500).json({ error: 'Failed to upload notarized document' });
+    }
+  });
+
+  // Get notarized document for an agreement
+  app.get('/api/agreements/:agreementId/notarized-document', async (req, res) => {
+    try {
+      const { agreementId } = req.params;
+      const agreement = await storage.getAgreement(agreementId);
+      
+      if (!agreement) {
+        return res.status(404).json({ error: 'Agreement not found' });
+      }
+
+      if (!agreement.notarizedDocument || !agreement.notarizedDocument.filename) {
+        return res.status(404).json({ error: 'No notarized document found for this agreement' });
+      }
+
+      res.json({
+        success: true,
+        notarizedDocument: agreement.notarizedDocument
+      });
+
+    } catch (error) {
+      console.error('[Notarized Download] Error:', error);
+      res.status(500).json({ error: 'Failed to get notarized document' });
+    }
+  });
+
+  // Serve notarized documents
+  app.get("/uploads/notarized/:fileName", (req, res) => {
+    try {
+      const fileName = req.params.fileName;
+      const filePath = path.join(process.cwd(), 'uploads', 'notarized', fileName);
+      
+      // Set proper headers for PDF files
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      
+      // Check if file exists and serve it
+      res.sendFile(filePath, (err) => {
+        if (err) {
+          console.error("Error serving notarized document:", err);
+          res.status(404).json({ error: "Notarized document not found" });
+        }
+      });
+    } catch (error) {
+      console.error("Error serving notarized document:", error);
+      res.status(500).json({ error: "Failed to serve notarized document" });
+    }
+  });
+
   // Update agreement with document URLs
   app.put("/api/agreements/:id/documents", async (req, res) => {
     try {

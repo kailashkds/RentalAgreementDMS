@@ -131,6 +131,10 @@ export const agreements: any = pgTable("agreements", {
   documents: jsonb("documents").default({}), // Store document file paths
   ownerDocuments: jsonb("owner_documents").default({}), // Owner's Aadhar, PAN, etc.
   tenantDocuments: jsonb("tenant_documents").default({}), // Tenant's Aadhar, PAN, etc.
+  propertyDocuments: jsonb("property_documents").default({}), // Property related documents
+  
+  // Notarized document details
+  notarizedDocument: jsonb("notarized_document").default({}), // Store notarized PDF details
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
