@@ -325,53 +325,58 @@ export default function NotarizedDocuments() {
                           </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-2 lg:min-w-max">
+                        <div className="relative lg:min-w-max group">
                           {notarizedStatus === 'completed' ? (
                             <>
+                              {/* Remove button - top right corner on hover */}
                               <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => window.open(agreement.notarizedDocument.url, '_blank')}
-                                className="flex items-center gap-2"
-                                disabled={isRemoving}
-                              >
-                                <Eye className="h-4 w-4" />
-                                View
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = agreement.notarizedDocument.url;
-                                  link.download = agreement.notarizedDocument.originalName;
-                                  link.click();
-                                }}
-                                className="flex items-center gap-2 bg-slate-600 hover:bg-slate-700"
-                                disabled={isRemoving}
-                              >
-                                <Download className="h-4 w-4" />
-                                Download
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleNotarizedFileSelect(agreement.id)}
-                                disabled={isUploading || isRemoving}
-                                className="flex items-center gap-2"
-                              >
-                                <Upload className="h-4 w-4" />
-                                {isUploading ? 'Uploading...' : 'Replace'}
-                              </Button>
-                              <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => handleRemoveNotarizedDocument(agreement.id, agreement.agreementNumber)}
                                 disabled={isUploading || isRemoving}
-                                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                                className="absolute -top-2 -right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white rounded-full z-10"
+                                title="Remove notarized document"
                               >
-                                <Trash2 className="h-4 w-4" />
-                                {isRemoving ? 'Removing...' : 'Remove'}
+                                <span className="text-xs">×</span>
                               </Button>
+                              
+                              {/* Action buttons stacked vertically */}
+                              <div className="flex flex-col gap-2 min-w-32">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(agreement.notarizedDocument.url, '_blank')}
+                                  className="flex items-center gap-2 w-full justify-start"
+                                  disabled={isRemoving}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  View
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = agreement.notarizedDocument.url;
+                                    link.download = agreement.notarizedDocument.originalName;
+                                    link.click();
+                                  }}
+                                  className="flex items-center gap-2 w-full justify-start bg-slate-600 hover:bg-slate-700"
+                                  disabled={isRemoving}
+                                >
+                                  <Download className="h-4 w-4" />
+                                  Download
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleNotarizedFileSelect(agreement.id)}
+                                  disabled={isUploading || isRemoving}
+                                  className="flex items-center gap-2 w-full justify-start"
+                                >
+                                  <Upload className="h-4 w-4" />
+                                  {isUploading ? 'Uploading...' : 'Replace'}
+                                </Button>
+                              </div>
                             </>
                           ) : (
                             <Button
