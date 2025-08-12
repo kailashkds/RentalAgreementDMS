@@ -168,86 +168,98 @@ export default function Dashboard() {
                 </Button>
               </div>
             </div>
-            <div className="p-6">
+            <div>
               {agreementsLoading ? (
-                <div className="text-center text-gray-500">Loading agreements...</div>
+                <div className="p-6 text-center text-gray-500">Loading agreements...</div>
               ) : recentAgreements?.agreements?.length === 0 ? (
-                <div className="text-center text-gray-500">
+                <div className="p-6 text-center text-gray-500">
                   No agreements found. Create your first agreement to get started.
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {recentAgreements?.agreements?.slice(0, 5).map((agreement: any, index: number) => (
-                    <div key={agreement.id || index} className="p-4 bg-gray-50 rounded-lg border">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4 flex-1">
-                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                            <FileSignature className="w-5 h-5 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4">
-                              <div>
-                                <h4 className="font-medium text-gray-900 text-sm">
-                                  {agreement.agreementNumber}
-                                </h4>
-                                <p className="text-xs text-gray-400">Document ID</p>
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {agreement.customer?.name || "Unknown"}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {agreement.customer?.mobile || "No phone"}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-900">
-                                  {agreement.propertyDetails?.type || "Document"}
-                                </p>
-                                <p className="text-xs text-gray-400">Type/Details</p>
-                              </div>
-                              <div>
-                                <span
-                                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                                    agreement.status
-                                  )}`}
-                                >
-                                  {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
-                                </span>
-                              </div>
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Document ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Client
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type/Details
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {recentAgreements?.agreements?.slice(0, 5).map((agreement: any, index: number) => (
+                      <tr key={agreement.id || index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm font-medium text-gray-900">
+                            {agreement.agreementNumber}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {agreement.customer?.name || "Unknown"}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {agreement.customer?.mobile || ""}
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center space-x-2 ml-4">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-blue-600 hover:text-blue-900 p-2"
-                            title="View Agreement"
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {agreement.propertyDetails?.type || "Document"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                              agreement.status
+                            )}`}
                           >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-green-600 hover:text-green-900 p-2"
-                            title="Download PDF"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-amber-600 hover:text-amber-900 p-2"
-                            title="Edit Agreement"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                            {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-3">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-blue-600 hover:text-blue-900 p-1"
+                              title="View Agreement"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-green-600 hover:text-green-900 p-1"
+                              title="Download PDF"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-amber-600 hover:text-amber-900 p-1"
+                              title="Edit Agreement"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           </Card>
