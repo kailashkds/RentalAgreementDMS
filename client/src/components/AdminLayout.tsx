@@ -17,18 +17,20 @@ import {
   Home,
   Building,
   LogOut,
-  Shield
+  Shield,
+  FileCheck
 } from "lucide-react";
 
 interface AdminLayoutProps {
   children: ReactNode;
-  title: string;
+  title?: string;
   subtitle?: string;
 }
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Agreements", href: "/agreements", icon: FileSignature },
+  { name: "Notarized Documents", href: "/notarized-documents", icon: FileCheck },
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Documents", href: "/documents", icon: FolderOpen },
   { name: "PDF Templates", href: "/pdf-templates", icon: FileText },

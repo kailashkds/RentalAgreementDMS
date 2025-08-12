@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/pages/Dashboard";
 import Agreements from "@/pages/Agreements";
+import NotarizedDocuments from "@/pages/NotarizedDocuments";
 import Customers from "@/pages/Customers";
 import AdminUsers from "@/pages/AdminUsers";
 import SystemSettings from "@/pages/SystemSettings";
@@ -36,6 +37,7 @@ function AuthenticatedRouter() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/agreements" component={Agreements} />
+      <Route path="/notarized-documents" component={NotarizedDocuments} />
       <Route path="/customers" component={Customers} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/settings" component={SystemSettings} />
