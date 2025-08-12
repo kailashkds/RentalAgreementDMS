@@ -179,8 +179,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto">
-          <div className="p-6">{children}</div>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="p-6 h-full">{children}</div>
         </main>
       </div>
     </div>
