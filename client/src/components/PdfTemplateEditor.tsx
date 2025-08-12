@@ -580,9 +580,37 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                   </Badge>
                 </div>
                 <div className="border rounded-lg p-4 h-96 overflow-auto bg-white">
+                  <style>{`
+                    .preview-wrapper {
+                      font-family: ${formData.language === 'gujarati' 
+                        ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
+                        : formData.language === 'hindi'
+                        ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                        : formData.language === 'tamil'
+                        ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                        : formData.language === 'marathi'
+                        ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                        : 'system-ui, Arial, sans-serif'} !important;
+                    }
+                    .preview-wrapper * {
+                      font-family: inherit !important;
+                    }
+                    .preview-wrapper .party-details p {
+                      margin: 2px 0 !important;
+                      line-height: 1.4 !important;
+                    }
+                    .preview-wrapper h1, .preview-wrapper h2, .preview-wrapper h3 {
+                      font-family: inherit !important;
+                      font-weight: bold !important;
+                    }
+                    .preview-wrapper p {
+                      margin: 8px 0 !important;
+                      line-height: 1.6 !important;
+                    }
+                  `}</style>
                   <div 
                     dangerouslySetInnerHTML={{ __html: formData.htmlTemplate }}
-                    className={`preview-content ${formData.language === 'gujarati' ? 'gujarati-font' : 
+                    className={`preview-wrapper preview-content ${formData.language === 'gujarati' ? 'gujarati-font' : 
                       formData.language === 'hindi' ? 'hindi-font' :
                       formData.language === 'tamil' ? 'tamil-font' :
                       formData.language === 'marathi' ? 'marathi-font' : 'english-font'}`}
@@ -596,7 +624,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                         : formData.language === 'marathi'
                         ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
                         : 'system-ui, Arial, sans-serif',
-                      lineHeight: '1.5',
+                      lineHeight: '1.6',
                       color: '#333',
                       fontSize: '14px',
                       fontWeight: '400',

@@ -90,6 +90,31 @@
   hyphens: none;
 }
 
+/* Enhanced preview styling to match PDF output */
+.preview-wrapper .party-details p,
+.preview-content .party-details p {
+  margin: 2px 0 !important;
+  line-height: 1.4 !important;
+}
+
+.preview-wrapper h1, .preview-wrapper h2, .preview-wrapper h3,
+.preview-content h1, .preview-content h2, .preview-content h3 {
+  font-weight: bold !important;
+  margin: 15px 0 10px 0 !important;
+}
+
+.preview-wrapper p, .preview-content p {
+  margin: 8px 0 !important;
+  line-height: 1.6 !important;
+}
+
+/* Specific targeting for party details sections */
+.preview-wrapper div[class*="party-details"] p,
+.preview-content div[class*="party-details"] p {
+  margin: 2px 0 !important;
+  line-height: 1.4 !important;
+}
+
 @layer base {
   * {
     @apply border-border;

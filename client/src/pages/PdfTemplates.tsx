@@ -122,6 +122,25 @@ export default function PdfTemplates() {
               .gujarati-content, .gujarati-content * {
                 font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif !important;
               }
+              
+              .party-details p {
+                margin: 2px 0 !important;
+                line-height: 1.4 !important;
+              }
+              
+              h1, h2, h3 {
+                font-weight: bold !important;
+                margin: 15px 0 10px 0 !important;
+              }
+              
+              p {
+                margin: 8px 0 !important;
+                line-height: 1.6 !important;
+              }
+              
+              div[style*="party-details"] p {
+                margin: 2px 0 !important;
+              }
               .preview-header { border-bottom: 2px solid #ccc; margin-bottom: 20px; padding-bottom: 10px; }
               
               /* Page break control classes for PDF generation */
