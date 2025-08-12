@@ -61,7 +61,8 @@ function formatGujaratiDate(dateStr: string): string {
  */
 function getCurrentGujaratiDay(): string {
   const today = new Date();
-  return GUJARATI_DAYS[today.getDay()];
+  const dayIndex = today.getDay();
+  return GUJARATI_DAYS[dayIndex];
 }
 
 /**
@@ -314,6 +315,19 @@ const FIELD_MAPPINGS = {
   'documents.tenantPan': 'TENANT_PAN_URL',
   'documents.propertyDocuments': 'PROPERTY_DOCUMENTS_URL',
   'documents.propertyDocs': 'PROPERTY_DOCUMENTS_URL',
+  
+  // Additional fields for Gujarati template
+  'ownerDetails.powerOfAttorney': 'OWNER_POWER_OF_ATTORNEY',
+  'ownerDetails.mobileNumber': 'OWNER_MOBILE',
+  'tenantDetails.mobileNumber': 'TENANT_MOBILE',
+  
+  // Current date and time fields for Gujarati dates
+  'currentDay': 'CURRENT_DAY',
+  'currentDate': 'CURRENT_DATE_GUJARATI',
+  'currentMonth': 'CURRENT_MONTH_GUJARATI', 
+  'currentYear': 'CURRENT_YEAR',
+  'startDate': 'START_DATE_GUJARATI',
+  'endDate': 'END_DATE_GUJARATI',
 };
 
 // Helper function to get nested object property by path
@@ -641,10 +655,10 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
 
   // Format start and end dates in Gujarati
   if (formData.rentalTerms?.startDate) {
-    templateFields['START_DATE'] = formatGujaratiDate(formData.rentalTerms.startDate);
+    templateFields['START_DATE_GUJARATI'] = formatGujaratiDate(formData.rentalTerms.startDate);
   }
   if (formData.rentalTerms?.endDate) {
-    templateFields['END_DATE'] = formatGujaratiDate(formData.rentalTerms.endDate);
+    templateFields['END_DATE_GUJARATI'] = formatGujaratiDate(formData.rentalTerms.endDate);
   }
 
   // Calculate agreement duration
