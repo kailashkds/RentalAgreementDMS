@@ -584,18 +584,28 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
   const rentAmount = formData.rentalTerms?.rentAmount || formData.rentalTerms?.monthlyRent;
   if (rentAmount) {
     const rentAmountNum = Number(rentAmount);
+    // English amount in words
     templateFields['RENT_AMOUNT_WORDS'] = numberToWords(rentAmountNum);
     templateFields['MONTHLY_RENT'] = String(rentAmountNum);
-    templateFields['MONTHLY_RENT_WORDS'] = numberToGujaratiWords(rentAmountNum);
+    templateFields['MONTHLY_RENT_WORDS'] = numberToWords(rentAmountNum);
+    
+    // Gujarati amount in words
+    templateFields['MONTHLY_RENT_WORDS_GUJARATI'] = numberToGujaratiWords(rentAmountNum);
+    templateFields['RENT_AMOUNT_WORDS_GUJARATI'] = numberToGujaratiWords(rentAmountNum);
   }
 
   // Handle both deposit and securityDeposit fields
   const securityDeposit = formData.rentalTerms?.securityDeposit || formData.rentalTerms?.deposit;
   if (securityDeposit) {
     const securityDepositNum = Number(securityDeposit);
+    // English amount in words
     templateFields['SECURITY_DEPOSIT_WORDS'] = numberToWords(securityDepositNum);
     templateFields['DEPOSIT_AMOUNT'] = String(securityDepositNum);
-    templateFields['DEPOSIT_AMOUNT_WORDS'] = numberToGujaratiWords(securityDepositNum);
+    templateFields['DEPOSIT_AMOUNT_WORDS'] = numberToWords(securityDepositNum);
+    
+    // Gujarati amount in words
+    templateFields['SECURITY_DEPOSIT_WORDS_GUJARATI'] = numberToGujaratiWords(securityDepositNum);
+    templateFields['DEPOSIT_AMOUNT_WORDS_GUJARATI'] = numberToGujaratiWords(securityDepositNum);
   }
 
   // Additional computed fields for payment dates
