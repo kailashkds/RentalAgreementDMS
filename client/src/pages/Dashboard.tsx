@@ -6,6 +6,7 @@ import AgreementWizard from "@/components/AgreementWizard";
 import CustomerModal from "@/components/CustomerModal";
 import SocietyModal from "@/components/SocietyModal";
 import { useState } from "react";
+import { Link } from "wouter";
 import {
   FileSignature,
   CheckCircle,
@@ -163,9 +164,11 @@ export default function Dashboard() {
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-800">Recent Agreements</h3>
-                <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
-                  View All
-                </Button>
+                <Link href="/agreements">
+                  <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
+                    View All
+                  </Button>
+                </Link>
               </div>
             </div>
             <div>
