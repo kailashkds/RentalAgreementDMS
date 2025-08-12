@@ -762,7 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filename: notarizedFileName,
         originalName: req.file.originalname,
         uploadDate: new Date().toISOString(),
-        filePath: `/uploads/notarized/${notarizedFileName}`,
+        url: `/uploads/notarized/${notarizedFileName}`,
         size: req.file.size,
         mimetype: req.file.mimetype
       };
