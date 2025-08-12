@@ -101,17 +101,26 @@ export default function PdfTemplates() {
             <style>
               body { 
                 font-family: ${template.language === 'gujarati' 
-                  ? '"Noto Sans Gujarati", "Shruti", Arial, sans-serif' 
+                  ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
                   : template.language === 'hindi'
-                  ? '"Noto Sans Devanagari", "Mangal", Arial, sans-serif'
+                  ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
                   : template.language === 'tamil'
-                  ? '"Noto Sans Tamil", "Latha", Arial, sans-serif'
+                  ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
                   : template.language === 'marathi'
-                  ? '"Noto Sans Devanagari", "Mangal", Arial, sans-serif'
-                  : 'Arial, sans-serif'}; 
+                  ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                  : 'system-ui, Arial, sans-serif'}; 
                 margin: 20px; 
                 font-size: 14px;
-                line-height: 1.4;
+                line-height: 1.5;
+                font-weight: 400;
+                text-rendering: optimizeLegibility;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                font-feature-settings: "kern" 1, "liga" 1;
+              }
+              
+              .gujarati-content, .gujarati-content * {
+                font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif !important;
               }
               .preview-header { border-bottom: 2px solid #ccc; margin-bottom: 20px; padding-bottom: 10px; }
               

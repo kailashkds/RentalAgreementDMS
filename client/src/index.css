@@ -50,6 +50,46 @@
   --radius: 0.5rem;
 }
 
+/* Regional language font classes */
+.gujarati-font, .gujarati-font * {
+  font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif !important;
+  font-feature-settings: "kern" 1, "liga" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.hindi-font, .hindi-font * {
+  font-family: "Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif !important;
+  font-feature-settings: "kern" 1, "liga" 1;
+  text-rendering: optimizeLegibility;
+}
+
+.tamil-font, .tamil-font * {
+  font-family: "Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif !important;
+  font-feature-settings: "kern" 1, "liga" 1;
+  text-rendering: optimizeLegibility;
+}
+
+.marathi-font, .marathi-font * {
+  font-family: "Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif !important;
+  font-feature-settings: "kern" 1, "liga" 1;
+  text-rendering: optimizeLegibility;
+}
+
+.english-font, .english-font * {
+  font-family: system-ui, Arial, sans-serif !important;
+}
+
+/* Ensure proper font loading and rendering */
+.preview-content {
+  font-display: swap;
+  unicode-bidi: isolate;
+  word-spacing: normal;
+  line-break: auto;
+  hyphens: none;
+}
+
 @layer base {
   * {
     @apply border-border;

@@ -582,19 +582,29 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                 <div className="border rounded-lg p-4 h-96 overflow-auto bg-white">
                   <div 
                     dangerouslySetInnerHTML={{ __html: formData.htmlTemplate }}
+                    className={`preview-content ${formData.language === 'gujarati' ? 'gujarati-font' : 
+                      formData.language === 'hindi' ? 'hindi-font' :
+                      formData.language === 'tamil' ? 'tamil-font' :
+                      formData.language === 'marathi' ? 'marathi-font' : 'english-font'}`}
                     style={{ 
                       fontFamily: formData.language === 'gujarati' 
-                        ? '"Noto Sans Gujarati", "Shruti", Arial, sans-serif' 
+                        ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
                         : formData.language === 'hindi'
-                        ? '"Noto Sans Devanagari", "Mangal", Arial, sans-serif'
+                        ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
                         : formData.language === 'tamil'
-                        ? '"Noto Sans Tamil", "Latha", Arial, sans-serif'
+                        ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
                         : formData.language === 'marathi'
-                        ? '"Noto Sans Devanagari", "Mangal", Arial, sans-serif'
-                        : 'Arial, sans-serif',
-                      lineHeight: '1.4',
+                        ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                        : 'system-ui, Arial, sans-serif',
+                      lineHeight: '1.5',
                       color: '#333',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      fontWeight: '400',
+                      direction: formData.language === 'gujarati' ? 'ltr' : 'ltr',
+                      textRendering: 'optimizeLegibility',
+                      fontFeatureSettings: '"kern" 1',
+                      WebkitFontSmoothing: 'antialiased',
+                      MozOsxFontSmoothing: 'grayscale'
                     }}
                   />
                 </div>
