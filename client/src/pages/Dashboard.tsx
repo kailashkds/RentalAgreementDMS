@@ -238,6 +238,7 @@ export default function Dashboard() {
                               size="sm" 
                               className="text-blue-600 hover:text-blue-900 p-1"
                               title="View Agreement"
+                              onClick={() => window.open(`/api/agreements/${agreement.id}/pdf`, '_blank')}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -246,6 +247,12 @@ export default function Dashboard() {
                               size="sm" 
                               className="text-green-600 hover:text-green-900 p-1"
                               title="Download PDF"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = `/api/agreements/${agreement.id}/pdf`;
+                                link.download = `agreement-${agreement.agreementNumber}.pdf`;
+                                link.click();
+                              }}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -254,6 +261,10 @@ export default function Dashboard() {
                               size="sm" 
                               className="text-amber-600 hover:text-amber-900 p-1"
                               title="Edit Agreement"
+                              onClick={() => {
+                                // Navigate to edit page or open edit modal
+                                window.location.href = `/agreements?edit=${agreement.id}`;
+                              }}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
