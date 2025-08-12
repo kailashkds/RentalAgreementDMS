@@ -168,126 +168,47 @@ export default function Dashboard() {
                 </Button>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="p-6">
               {agreementsLoading ? (
-                <div className="p-6 text-center text-gray-500">Loading agreements...</div>
+                <div className="text-center text-gray-500">Loading documents...</div>
               ) : recentAgreements?.agreements?.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">
+                <div className="text-center text-gray-500">
                   No documents found. Create your first document to get started.
                 </div>
               ) : (
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Document ID
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Client
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Type/Details
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {recentAgreements?.agreements?.map((agreement: any, index: number) => (
-                      <tr key={agreement.id || index}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm font-mono font-medium text-gray-900">
-                            {agreement.agreementNumber}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                <div className="space-y-4">
+                  {recentAgreements?.agreements?.slice(0, 5).map((agreement: any, index: number) => (
+                    <div key={agreement.id || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <FileSignature className="w-5 h-5 text-primary" />
+                          </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {agreement.customer?.name || "Unknown"}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {agreement.customer?.mobile || ""}
-                            </div>
+                            <h4 className="font-medium text-gray-900">
+                              {agreement.agreementNumber}
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              {agreement.customer?.name || "Unknown Client"}
+                            </p>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {agreement.propertyDetails?.type || "Document"}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                              agreement.status
-                            )}`}
-                          >
-                            {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-blue-600 hover:text-blue-900"
-                              title="View Agreement"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-green-600 hover:text-green-900"
-                              title="Print/Download PDF"
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-amber-600 hover:text-amber-900"
-                              title="Edit Agreement"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            {agreement.status === "active" && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-indigo-600 hover:text-indigo-900"
-                                title="Renew Agreement"
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-purple-600 hover:text-purple-900"
-                              title="Duplicate Agreement"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                            {agreement.status === "draft" && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-red-600 hover:text-red-900"
-                                title="Delete Agreement"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                            agreement.status
+                          )}`}
+                        >
+                          {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
+                        </span>
+                        <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </Card>
