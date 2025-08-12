@@ -222,11 +222,69 @@ export default function Agreements() {
             <html>
             <head>
               <title>Rental Agreement - ${agreement.agreementNumber || 'Agreement'}</title>
+              <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
               <style>
                 body { 
-                  font-family: Arial, sans-serif; 
-                  margin: 20px; 
-                  line-height: 1.6; 
+                  font-family: ${agreement.language === 'gujarati' 
+                    ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
+                    : agreement.language === 'hindi'
+                    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                    : agreement.language === 'tamil'
+                    ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                    : agreement.language === 'marathi'
+                    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                    : 'Arial, sans-serif'}; 
+                  margin: 0;
+                  padding: 20px;
+                  line-height: 1.6;
+                  background: white;
+                  font-size: 14px;
+                  text-rendering: optimizeLegibility;
+                  -webkit-font-smoothing: antialiased;
+                  -moz-osx-font-smoothing: grayscale;
+                  font-feature-settings: "kern" 1, "liga" 1;
+                }
+                
+                .agreement-content {
+                  max-width: 800px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  background: white;
+                  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                  min-height: 1056px;
+                }
+                
+                /* Enhanced Gujarati font support */
+                .gujarati-content, .gujarati-content * {
+                  font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif !important;
+                }
+                
+                /* Party details spacing - match PDF */
+                .party-details p {
+                  margin: 2px 0 !important;
+                  line-height: 1.4 !important;
+                }
+                
+                h1, h2, h3 {
+                  font-weight: bold !important;
+                  margin: 15px 0 10px 0 !important;
+                }
+                
+                p {
+                  margin: 8px 0 !important;
+                  line-height: 1.6 !important;
+                }
+                
+                /* Passport photo styling */
+                div[style*="130px"][style*="160px"] {
+                  border: 1px dashed #000 !important;
+                  display: flex !important;
+                  align-items: center !important;
+                  justify-content: center !important;
+                  background: #f9f9f9 !important;
+                  font-size: 12px !important;
+                  text-align: center !important;
+                  color: #666 !important;
                 }
                 
                 /* Page break control classes for PDF generation */
@@ -282,7 +340,9 @@ export default function Agreements() {
                 <button onclick="window.print()">Print / Save as PDF</button>
                 <button onclick="window.close()">Close</button>
               </div>
-              ${data.html || '<p>No agreement content available</p>'}
+              <div class="agreement-content ${agreement.language === 'gujarati' ? 'gujarati-content' : ''}">
+                ${data.html || '<p>No agreement content available</p>'}
+              </div>
             </body>
             </html>
           `);
