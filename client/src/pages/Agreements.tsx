@@ -275,16 +275,28 @@ export default function Agreements() {
                   line-height: 1.6 !important;
                 }
                 
-                /* Passport photo styling */
-                div[style*="130px"][style*="160px"] {
-                  border: 1px dashed #000 !important;
-                  display: flex !important;
-                  align-items: center !important;
-                  justify-content: center !important;
-                  background: #f9f9f9 !important;
-                  font-size: 12px !important;
-                  text-align: center !important;
-                  color: #666 !important;
+                /* Passport photo styling - only for screen preview */
+                @media screen {
+                  div[style*="130px"][style*="160px"]:empty,
+                  div[style*="130px"][style*="160px"]:contains("પાસપોર્ટ સાઈઝ ફોટો"),
+                  div[style*="130px"][style*="160px"]:contains("Passport Size Photo") {
+                    border: 1px dashed #ccc !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    background: #f9f9f9 !important;
+                    font-size: 12px !important;
+                    text-align: center !important;
+                    color: #666 !important;
+                  }
+                }
+                
+                /* Remove borders for PDF/print */
+                @media print {
+                  div[style*="130px"][style*="160px"] {
+                    border: none !important;
+                    background: transparent !important;
+                  }
                 }
                 
                 /* Page break control classes for PDF generation */
