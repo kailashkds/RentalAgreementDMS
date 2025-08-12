@@ -709,8 +709,8 @@ export default function Agreements() {
           {viewingAgreement && (
             <div className="space-y-6 pt-6">
               {/* Owner Details */}
-              <div className="border border-blue-200 rounded-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
                       <span className="text-xs font-bold text-white">1</span>
@@ -718,34 +718,34 @@ export default function Agreements() {
                     Owner Details
                   </h3>
                 </div>
-                <div className="bg-blue-50 p-6">
+                <div className="bg-slate-50 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Full Name</label>
+                      <label className="text-sm font-medium text-slate-700">Full Name</label>
                       <p className="mt-1 text-sm text-gray-900 font-medium">{viewingAgreement.ownerDetails?.name || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Age</label>
+                      <label className="text-sm font-medium text-slate-700">Age</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.age || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Gender</label>
+                      <label className="text-sm font-medium text-slate-700">Gender</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.gender || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Mobile Number</label>
+                      <label className="text-sm font-medium text-slate-700">Mobile Number</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.mobile || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Email Address</label>
+                      <label className="text-sm font-medium text-slate-700">Email Address</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.email || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Occupation</label>
+                      <label className="text-sm font-medium text-slate-700">Occupation</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.occupation || 'Not provided'}</p>
                     </div>
                     <div className="col-span-full">
-                      <label className="text-sm font-medium text-blue-700">Address</label>
+                      <label className="text-sm font-medium text-slate-700">Address</label>
                       <p className="mt-1 text-sm text-gray-900">
                         {viewingAgreement.ownerDetails?.address ? 
                           `${viewingAgreement.ownerDetails.address.flatNo || ''}, ${viewingAgreement.ownerDetails.address.society || ''}, ${viewingAgreement.ownerDetails.address.area || ''}, ${viewingAgreement.ownerDetails.address.city || ''}, ${viewingAgreement.ownerDetails.address.state || ''} - ${viewingAgreement.ownerDetails.address.pincode || ''}` 
@@ -753,11 +753,11 @@ export default function Agreements() {
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Aadhar Number</label>
+                      <label className="text-sm font-medium text-slate-700">Aadhar Number</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.aadhar || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">PAN Number</label>
+                      <label className="text-sm font-medium text-slate-700">PAN Number</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.pan || 'Not provided'}</p>
                     </div>
                   </div>
@@ -765,8 +765,8 @@ export default function Agreements() {
               </div>
 
               {/* Tenant Details */}
-              <div className="border border-green-200 rounded-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
                       <span className="text-xs font-bold text-white">2</span>
@@ -774,34 +774,34 @@ export default function Agreements() {
                     Tenant Details
                   </h3>
                 </div>
-                <div className="bg-green-50 p-6">
+                <div className="bg-slate-50 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
-                      <label className="text-sm font-medium text-green-700">Full Name</label>
+                      <label className="text-sm font-medium text-slate-700">Full Name</label>
                       <p className="mt-1 text-sm text-gray-900 font-medium">{viewingAgreement.tenantDetails?.name || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-green-700">Age</label>
+                      <label className="text-sm font-medium text-slate-700">Age</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.age || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-green-700">Gender</label>
+                      <label className="text-sm font-medium text-slate-700">Gender</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.gender || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-green-700">Mobile Number</label>
+                      <label className="text-sm font-medium text-slate-700">Mobile Number</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.mobile || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-green-700">Email Address</label>
+                      <label className="text-sm font-medium text-slate-700">Email Address</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.email || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-green-700">Occupation</label>
+                      <label className="text-sm font-medium text-slate-700">Occupation</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.occupation || 'Not provided'}</p>
                     </div>
                     <div className="col-span-full">
-                      <label className="text-sm font-medium text-green-700">Address</label>
+                      <label className="text-sm font-medium text-slate-700">Address</label>
                       <p className="mt-1 text-sm text-gray-900">
                         {viewingAgreement.tenantDetails?.address ? 
                           `${viewingAgreement.tenantDetails.address.flatNo || ''}, ${viewingAgreement.tenantDetails.address.society || ''}, ${viewingAgreement.tenantDetails.address.area || ''}, ${viewingAgreement.tenantDetails.address.city || ''}, ${viewingAgreement.tenantDetails.address.state || ''} - ${viewingAgreement.tenantDetails.address.pincode || ''}` 
@@ -809,11 +809,11 @@ export default function Agreements() {
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-green-700">Aadhar Number</label>
+                      <label className="text-sm font-medium text-slate-700">Aadhar Number</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.aadhar || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-green-700">PAN Number</label>
+                      <label className="text-sm font-medium text-slate-700">PAN Number</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.pan || 'Not provided'}</p>
                     </div>
                   </div>
@@ -821,8 +821,8 @@ export default function Agreements() {
               </div>
 
               {/* Property Details */}
-              <div className="border border-purple-200 rounded-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
                       <span className="text-xs font-bold text-white">3</span>
@@ -830,34 +830,34 @@ export default function Agreements() {
                     Property Details
                   </h3>
                 </div>
-                <div className="bg-purple-50 p-6">
+                <div className="bg-slate-50 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
-                      <label className="text-sm font-medium text-purple-700">Property Type</label>
+                      <label className="text-sm font-medium text-slate-700">Property Type</label>
                       <p className="mt-1 text-sm text-gray-900 font-medium">{viewingAgreement.propertyDetails?.type || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-purple-700">Area (sq ft)</label>
+                      <label className="text-sm font-medium text-slate-700">Area (sq ft)</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.areaSqft || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-purple-700">Purpose</label>
+                      <label className="text-sm font-medium text-slate-700">Purpose</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.purpose || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-purple-700">Furnishing</label>
+                      <label className="text-sm font-medium text-slate-700">Furnishing</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.furnishing || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-purple-700">Floor</label>
+                      <label className="text-sm font-medium text-slate-700">Floor</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.floor || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-purple-700">Total Floors</label>
+                      <label className="text-sm font-medium text-slate-700">Total Floors</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.totalFloors || 'Not provided'}</p>
                     </div>
                     <div className="col-span-full">
-                      <label className="text-sm font-medium text-purple-700">Property Address</label>
+                      <label className="text-sm font-medium text-slate-700">Property Address</label>
                       <p className="mt-1 text-sm text-gray-900">
                         {viewingAgreement.propertyDetails?.address ? 
                           `${viewingAgreement.propertyDetails.address.flatNo || ''}, ${viewingAgreement.propertyDetails.address.society || ''}, ${viewingAgreement.propertyDetails.address.area || ''}, ${viewingAgreement.propertyDetails.address.city || ''}, ${viewingAgreement.propertyDetails.address.state || ''} - ${viewingAgreement.propertyDetails.address.pincode || ''}` 
@@ -869,8 +869,8 @@ export default function Agreements() {
               </div>
 
               {/* Rental Terms */}
-              <div className="border border-orange-200 rounded-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+              <div className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
                       <span className="text-xs font-bold text-white">4</span>
@@ -878,42 +878,42 @@ export default function Agreements() {
                     Rental Terms
                   </h3>
                 </div>
-                <div className="bg-orange-50 p-6">
+                <div className="bg-blue-50 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
-                      <label className="text-sm font-medium text-orange-700">Monthly Rent</label>
+                      <label className="text-sm font-medium text-blue-700">Monthly Rent</label>
                       <p className="mt-1 text-lg text-gray-900 font-bold text-green-600">₹{viewingAgreement.rentalTerms?.monthlyRent || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-orange-700">Security Deposit</label>
+                      <label className="text-sm font-medium text-blue-700">Security Deposit</label>
                       <p className="mt-1 text-lg text-gray-900 font-bold text-blue-600">₹{viewingAgreement.rentalTerms?.securityDeposit || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-orange-700">Duration</label>
+                      <label className="text-sm font-medium text-blue-700">Duration</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.duration || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-orange-700">Start Date</label>
+                      <label className="text-sm font-medium text-blue-700">Start Date</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.startDate ? new Date(viewingAgreement.rentalTerms.startDate).toLocaleDateString() : 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-orange-700">End Date</label>
+                      <label className="text-sm font-medium text-blue-700">End Date</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.endDate ? new Date(viewingAgreement.rentalTerms.endDate).toLocaleDateString() : 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-orange-700">Due Date</label>
+                      <label className="text-sm font-medium text-blue-700">Due Date</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.dueDate || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-orange-700">Maintenance</label>
+                      <label className="text-sm font-medium text-blue-700">Maintenance</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.maintenance || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-orange-700">Notice Period</label>
+                      <label className="text-sm font-medium text-blue-700">Notice Period</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.noticePeriod || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-orange-700">Minimum Stay</label>
+                      <label className="text-sm font-medium text-blue-700">Minimum Stay</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.minimumStay || 'Not provided'}</p>
                     </div>
                   </div>
@@ -922,8 +922,8 @@ export default function Agreements() {
 
               {/* Additional Clauses */}
               {viewingAgreement.additionalClauses && viewingAgreement.additionalClauses.length > 0 && (
-                <div className="border border-teal-200 rounded-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4">
+                <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                  <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                     <h3 className="text-lg font-semibold text-white flex items-center">
                       <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
                         <span className="text-xs font-bold text-white">5</span>
@@ -931,10 +931,10 @@ export default function Agreements() {
                       Additional Clauses
                     </h3>
                   </div>
-                  <div className="bg-teal-50 p-6">
+                  <div className="bg-slate-50 p-6">
                     <div className="space-y-3">
                       {viewingAgreement.additionalClauses.map((clause: any, index: number) => (
-                        <div key={index} className="bg-white p-4 rounded-lg border border-teal-200">
+                        <div key={index} className="bg-white p-4 rounded-lg border border-slate-200">
                           <p className="text-sm text-gray-900">{clause.text || clause}</p>
                         </div>
                       ))}
@@ -944,8 +944,8 @@ export default function Agreements() {
               )}
 
               {/* Documents */}
-              <div className="border border-indigo-200 rounded-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4">
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
                       <span className="text-xs font-bold text-white">6</span>
@@ -953,38 +953,38 @@ export default function Agreements() {
                     Documents
                   </h3>
                 </div>
-                <div className="bg-indigo-50 p-6">
+                <div className="bg-slate-50 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="text-sm font-semibold text-indigo-700 mb-3">Owner Documents</h4>
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3">Owner Documents</h4>
                       <div className="space-y-2">
                         <div>
-                          <label className="text-xs font-medium text-indigo-600">Aadhar Card</label>
+                          <label className="text-xs font-medium text-slate-600">Aadhar Card</label>
                           <p className="text-sm text-gray-900">{viewingAgreement.ownerDocuments?.aadhar ? 'Uploaded' : 'Not uploaded'}</p>
                         </div>
                         <div>
-                          <label className="text-xs font-medium text-indigo-600">PAN Card</label>
+                          <label className="text-xs font-medium text-slate-600">PAN Card</label>
                           <p className="text-sm text-gray-900">{viewingAgreement.ownerDocuments?.pan ? 'Uploaded' : 'Not uploaded'}</p>
                         </div>
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-sm font-semibold text-indigo-700 mb-3">Tenant Documents</h4>
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3">Tenant Documents</h4>
                       <div className="space-y-2">
                         <div>
-                          <label className="text-xs font-medium text-indigo-600">Aadhar Card</label>
+                          <label className="text-xs font-medium text-slate-600">Aadhar Card</label>
                           <p className="text-sm text-gray-900">{viewingAgreement.tenantDocuments?.aadhar ? 'Uploaded' : 'Not uploaded'}</p>
                         </div>
                         <div>
-                          <label className="text-xs font-medium text-indigo-600">PAN Card</label>
+                          <label className="text-xs font-medium text-slate-600">PAN Card</label>
                           <p className="text-sm text-gray-900">{viewingAgreement.tenantDocuments?.pan ? 'Uploaded' : 'Not uploaded'}</p>
                         </div>
                       </div>
                     </div>
                     <div className="md:col-span-2">
-                      <h4 className="text-sm font-semibold text-indigo-700 mb-3">Property Documents</h4>
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3">Property Documents</h4>
                       <div>
-                        <label className="text-xs font-medium text-indigo-600">Property Documents</label>
+                        <label className="text-xs font-medium text-slate-600">Property Documents</label>
                         <p className="text-sm text-gray-900">{viewingAgreement.propertyDocuments?.urls ? 'Uploaded' : 'Not uploaded'}</p>
                       </div>
                     </div>
@@ -993,8 +993,8 @@ export default function Agreements() {
               </div>
 
               {/* Agreement Information */}
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="bg-gradient-to-r from-gray-500 to-gray-600 px-6 py-4">
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
                       <span className="text-xs font-bold text-white">7</span>
@@ -1002,22 +1002,22 @@ export default function Agreements() {
                     Agreement Information
                   </h3>
                 </div>
-                <div className="bg-gray-50 p-6">
+                <div className="bg-slate-50 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Agreement Number</label>
+                      <label className="text-sm font-medium text-slate-700">Agreement Number</label>
                       <p className="mt-1 text-sm text-gray-900 font-mono font-bold">{viewingAgreement.agreementNumber || 'Not assigned'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Agreement Date</label>
+                      <label className="text-sm font-medium text-slate-700">Agreement Date</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.agreementDate ? new Date(viewingAgreement.agreementDate).toLocaleDateString() : 'Not set'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Language</label>
+                      <label className="text-sm font-medium text-slate-700">Language</label>
                       <p className="mt-1 text-sm text-gray-900 capitalize">{viewingAgreement.language || 'English'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Status</label>
+                      <label className="text-sm font-medium text-slate-700">Status</label>
                       <p className="mt-1">
                         <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(viewingAgreement.status)}`}>
                           {viewingAgreement.status ? viewingAgreement.status.charAt(0).toUpperCase() + viewingAgreement.status.slice(1) : 'Unknown'}
@@ -1025,11 +1025,11 @@ export default function Agreements() {
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Created At</label>
+                      <label className="text-sm font-medium text-slate-700">Created At</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.createdAt ? new Date(viewingAgreement.createdAt).toLocaleString() : 'Not available'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Last Updated</label>
+                      <label className="text-sm font-medium text-slate-700">Last Updated</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.updatedAt ? new Date(viewingAgreement.updatedAt).toLocaleString() : 'Not available'}</p>
                     </div>
                   </div>
@@ -1037,28 +1037,28 @@ export default function Agreements() {
               </div>
 
               {/* Action Buttons */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+              <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-lg border border-slate-200 shadow-sm">
                 <div className="flex flex-wrap justify-center gap-3">
                   <Button
                     onClick={() => {
                       setEditingAgreement(viewingAgreement);
                       setViewingAgreement(null);
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-sm"
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Agreement
                   </Button>
                   <Button
                     onClick={() => handleDownloadAgreement(viewingAgreement)}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
+                    className="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 shadow-sm"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download PDF
                   </Button>
                   <Button
                     onClick={() => handleDownloadWordAgreement(viewingAgreement)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2"
+                    className="bg-slate-700 hover:bg-slate-800 text-white px-6 py-2 shadow-sm"
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     Download Word
@@ -1066,7 +1066,7 @@ export default function Agreements() {
                   <Button
                     variant="outline"
                     onClick={() => setViewingAgreement(null)}
-                    className="border-gray-300 hover:bg-gray-50 px-6 py-2"
+                    className="border-slate-300 hover:bg-slate-50 px-6 py-2 shadow-sm"
                   >
                     <X className="h-4 w-4 mr-2" />
                     Close
