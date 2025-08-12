@@ -499,7 +499,8 @@ function numberToWords(num: number): string {
  * Converts form field paths (like 'owner.area') to template fields (like {{OWNER_AREA}})
  * Handles both granular fields and legacy nested address structure
  */
-export function mapFormDataToTemplateFields(formData: any): Record<string, string> {
+export function mapFormDataToTemplateFields(formData: any, language?: string): Record<string, string> {
+  const templateLanguage = language || formData.language || 'english';
   const templateFields: Record<string, string> = {};
 
   // Debug: Log the form data to understand its structure
@@ -656,53 +657,56 @@ export function mapFormDataToTemplateFields(formData: any): Record<string, strin
     }
   }
 
-  // Add Gujarati-specific date formatting
-  const currentDate = new Date();
-  templateFields['CURRENT_DAY'] = getCurrentGujaratiDay();
-  templateFields['CURRENT_DATE_GUJARATI'] = convertToGujaratiNumerals(currentDate.getDate().toString()) + 'મી';
-  templateFields['CURRENT_MONTH_GUJARATI'] = GUJARATI_MONTHS[currentDate.getMonth()];
-  templateFields['CURRENT_YEAR'] = convertToGujaratiNumerals(currentDate.getFullYear().toString());
+  // Add language-specific formatting
+  if (templateLanguage === 'gujarati') {
+    // Add Gujarati-specific date formatting
+    const currentDate = new Date();
+    templateFields['CURRENT_DAY'] = getCurrentGujaratiDay();
+    templateFields['CURRENT_DATE_GUJARATI'] = convertToGujaratiNumerals(currentDate.getDate().toString()) + 'મી';
+    templateFields['CURRENT_MONTH_GUJARATI'] = GUJARATI_MONTHS[currentDate.getMonth()];
+    templateFields['CURRENT_YEAR'] = convertToGujaratiNumerals(currentDate.getFullYear().toString());
 
-  // Format start and end dates in Gujarati
-  if (formData.rentalTerms?.startDate) {
-    templateFields['START_DATE_GUJARATI'] = formatGujaratiDate(formData.rentalTerms.startDate);
-  }
-  if (formData.rentalTerms?.endDate) {
-    templateFields['END_DATE_GUJARATI'] = formatGujaratiDate(formData.rentalTerms.endDate);
-  }
+    // Format start and end dates in Gujarati
+    if (formData.rentalTerms?.startDate) {
+      templateFields['START_DATE_GUJARATI'] = formatGujaratiDate(formData.rentalTerms.startDate);
+    }
+    if (formData.rentalTerms?.endDate) {
+      templateFields['END_DATE_GUJARATI'] = formatGujaratiDate(formData.rentalTerms.endDate);
+    }
 
-  // Calculate agreement duration
-  if (formData.rentalTerms?.startDate && formData.rentalTerms?.endDate) {
-    const startDate = new Date(formData.rentalTerms.startDate);
-    const endDate = new Date(formData.rentalTerms.endDate);
-    const monthsDiff = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
-    templateFields['AGREEMENT_DURATION'] = convertToGujaratiNumerals(monthsDiff.toString());
-  } else {
-    templateFields['AGREEMENT_DURATION'] = convertToGujaratiNumerals('11'); // Default 11 months
-  }
+    // Calculate agreement duration
+    if (formData.rentalTerms?.startDate && formData.rentalTerms?.endDate) {
+      const startDate = new Date(formData.rentalTerms.startDate);
+      const endDate = new Date(formData.rentalTerms.endDate);
+      const monthsDiff = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+      templateFields['AGREEMENT_DURATION'] = convertToGujaratiNumerals(monthsDiff.toString());
+    } else {
+      templateFields['AGREEMENT_DURATION'] = convertToGujaratiNumerals('11'); // Default 11 months
+    }
 
-  // Add full property address in Gujarati format
-  const propertyParts = [];
-  if (formData.propertyDetails?.houseNumber || templateFields['PROPERTY_HOUSE_NUMBER']) {
-    propertyParts.push(templateFields['PROPERTY_HOUSE_NUMBER'] || formData.propertyDetails?.houseNumber);
+    // Add full property address in Gujarati format
+    const propertyParts = [];
+    if (formData.propertyDetails?.houseNumber || templateFields['PROPERTY_HOUSE_NUMBER']) {
+      propertyParts.push(templateFields['PROPERTY_HOUSE_NUMBER'] || formData.propertyDetails?.houseNumber);
+    }
+    if (formData.propertyDetails?.society || templateFields['PROPERTY_SOCIETY']) {
+      propertyParts.push(templateFields['PROPERTY_SOCIETY'] || formData.propertyDetails?.society);
+    }
+    if (formData.propertyDetails?.area || templateFields['PROPERTY_AREA']) {
+      propertyParts.push(templateFields['PROPERTY_AREA'] || formData.propertyDetails?.area);
+    }
+    if (formData.propertyDetails?.city || templateFields['PROPERTY_CITY']) {
+      propertyParts.push(templateFields['PROPERTY_CITY'] || formData.propertyDetails?.city);
+    }
+    if (formData.propertyDetails?.state || templateFields['PROPERTY_STATE']) {
+      propertyParts.push(templateFields['PROPERTY_STATE'] || formData.propertyDetails?.state);
+    }
+    if (formData.propertyDetails?.pincode || templateFields['PROPERTY_PINCODE']) {
+      propertyParts.push(convertToGujaratiNumerals(templateFields['PROPERTY_PINCODE'] || formData.propertyDetails?.pincode));
+    }
+    
+    templateFields['PROPERTY_FULL_ADDRESS'] = propertyParts.filter(Boolean).join(', ');
   }
-  if (formData.propertyDetails?.society || templateFields['PROPERTY_SOCIETY']) {
-    propertyParts.push(templateFields['PROPERTY_SOCIETY'] || formData.propertyDetails?.society);
-  }
-  if (formData.propertyDetails?.area || templateFields['PROPERTY_AREA']) {
-    propertyParts.push(templateFields['PROPERTY_AREA'] || formData.propertyDetails?.area);
-  }
-  if (formData.propertyDetails?.city || templateFields['PROPERTY_CITY']) {
-    propertyParts.push(templateFields['PROPERTY_CITY'] || formData.propertyDetails?.city);
-  }
-  if (formData.propertyDetails?.state || templateFields['PROPERTY_STATE']) {
-    propertyParts.push(templateFields['PROPERTY_STATE'] || formData.propertyDetails?.state);
-  }
-  if (formData.propertyDetails?.pincode || templateFields['PROPERTY_PINCODE']) {
-    propertyParts.push(convertToGujaratiNumerals(templateFields['PROPERTY_PINCODE'] || formData.propertyDetails?.pincode));
-  }
-  
-  templateFields['PROPERTY_FULL_ADDRESS'] = propertyParts.filter(Boolean).join(', ');
 
   return templateFields;
 }
@@ -759,8 +763,8 @@ function processConditionalLogic(template: string, fieldValues: Record<string, s
 /**
  * Generates PDF-ready HTML from form data and template with document embedding
  */
-export async function generatePdfHtml(formData: any, htmlTemplate: string): Promise<string> {
-  const fieldValues = mapFormDataToTemplateFields(formData);
+export async function generatePdfHtml(formData: any, htmlTemplate: string, language?: string): Promise<string> {
+  const fieldValues = mapFormDataToTemplateFields(formData, language);
   
   // Process document embedding for images/PDFs
   const processedFieldValues = await processDocumentEmbedding(fieldValues, formData);
