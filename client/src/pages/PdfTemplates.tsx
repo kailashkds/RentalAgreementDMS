@@ -109,7 +109,8 @@ export default function PdfTemplates() {
                   : template.language === 'marathi'
                   ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
                   : 'system-ui, Arial, sans-serif'}; 
-                margin: 20px; 
+                margin: 0;
+                padding: 20px;
                 font-size: 14px;
                 line-height: 1.5;
                 font-weight: 400;
@@ -117,6 +118,16 @@ export default function PdfTemplates() {
                 -webkit-font-smoothing: antialiased;
                 -moz-osx-font-smoothing: grayscale;
                 font-feature-settings: "kern" 1, "liga" 1;
+                background: white;
+              }
+              
+              .template-content {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                background: white;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                min-height: 1056px;
               }
               
               .gujarati-content, .gujarati-content * {
@@ -140,6 +151,17 @@ export default function PdfTemplates() {
               
               div[style*="party-details"] p {
                 margin: 2px 0 !important;
+              }
+              
+              /* Passport photo styling */
+              div[style*="130px"][style*="160px"] {
+                border: 1px dashed #000 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                background: #f9f9f9 !important;
+                font-size: 12px !important;
+                text-align: center !important;
               }
               .preview-header { border-bottom: 2px solid #ccc; margin-bottom: 20px; padding-bottom: 10px; }
               

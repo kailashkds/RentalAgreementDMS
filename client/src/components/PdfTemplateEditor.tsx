@@ -579,7 +579,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                     Real-time HTML rendering
                   </Badge>
                 </div>
-                <div className="border rounded-lg p-4 h-96 overflow-auto bg-white">
+                <div className="border rounded-lg overflow-auto bg-white" style={{ height: '600px' }}>
                   <style>{`
                     .preview-wrapper {
                       font-family: ${formData.language === 'gujarati' 
@@ -591,6 +591,13 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                         : formData.language === 'marathi'
                         ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
                         : 'system-ui, Arial, sans-serif'} !important;
+                      max-width: 800px;
+                      margin: 0 auto;
+                      padding: 20px;
+                      background: white;
+                      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                      min-height: 1056px; /* A4 height simulation */
+                      width: 800px; /* A4 width simulation */
                     }
                     .preview-wrapper * {
                       font-family: inherit !important;
@@ -606,6 +613,13 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                     .preview-wrapper p {
                       margin: 8px 0 !important;
                       line-height: 1.6 !important;
+                    }
+                    .preview-wrapper div[style*="130px"] {
+                      border: 1px dashed #000 !important;
+                      display: flex !important;
+                      align-items: center !important;
+                      justify-content: center !important;
+                      background: #f9f9f9 !important;
                     }
                   `}</style>
                   <div 

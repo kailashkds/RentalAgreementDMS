@@ -115,6 +115,26 @@
   line-height: 1.4 !important;
 }
 
+/* PDF-like preview styling */
+.preview-wrapper {
+  transform-origin: top left;
+  transform: scale(0.75);
+  width: 133.33%; /* Compensate for scale */
+}
+
+/* Passport photo styling for previews */
+.preview-wrapper div[style*="130px"][style*="160px"],
+.preview-content div[style*="130px"][style*="160px"] {
+  border: 1px dashed #000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #f9f9f9 !important;
+  font-size: 12px !important;
+  text-align: center !important;
+  color: #666 !important;
+}
+
 @layer base {
   * {
     @apply border-border;
