@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AgreementWizard from "@/components/AgreementWizard";
 import { useAgreements } from "@/hooks/useAgreements";
 import {
@@ -16,7 +17,8 @@ import {
   Trash2,
   Download,
   Send,
-  FileText
+  FileText,
+  X
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function Agreements() {
   const [showWizard, setShowWizard] = useState(false);
   const [editingAgreement, setEditingAgreement] = useState<any>(null);
+  const [viewingAgreement, setViewingAgreement] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -106,6 +109,8 @@ export default function Agreements() {
     }
   };
 
+
+
   const handleDownloadWordAgreement = async (agreement: any) => {
     try {
       console.log('Starting Word generation for agreement:', agreement.id);
@@ -168,7 +173,7 @@ export default function Agreements() {
   const handleViewAgreement = (agreementId: string) => {
     const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
     if (agreement) {
-      setEditingAgreement(agreement);
+      setViewingAgreement(agreement);
     }
   };
 
@@ -676,6 +681,195 @@ export default function Agreements() {
           editingAgreement={editingAgreement}
         />
       )}
+
+      {/* Read-only Agreement Viewer */}
+      <Dialog open={!!viewingAgreement} onOpenChange={() => setViewingAgreement(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Agreement Details - {viewingAgreement?.agreementNumber}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewingAgreement(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {viewingAgreement && (
+            <div className="space-y-6">
+              {/* Owner Details */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3">Owner Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Name</label>
+                    <p className="text-sm">{viewingAgreement.ownerDetails?.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Age</label>
+                    <p className="text-sm">{viewingAgreement.ownerDetails?.age || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Mobile</label>
+                    <p className="text-sm">{viewingAgreement.ownerDetails?.mobile || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Email</label>
+                    <p className="text-sm">{viewingAgreement.ownerDetails?.email || 'N/A'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium text-gray-600">Address</label>
+                    <p className="text-sm">
+                      {viewingAgreement.ownerDetails?.address ? 
+                        `${viewingAgreement.ownerDetails.address.flatNo || ''}, ${viewingAgreement.ownerDetails.address.society || ''}, ${viewingAgreement.ownerDetails.address.area || ''}, ${viewingAgreement.ownerDetails.address.city || ''} - ${viewingAgreement.ownerDetails.address.pincode || ''}` 
+                        : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tenant Details */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3">Tenant Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Name</label>
+                    <p className="text-sm">{viewingAgreement.tenantDetails?.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Age</label>
+                    <p className="text-sm">{viewingAgreement.tenantDetails?.age || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Mobile</label>
+                    <p className="text-sm">{viewingAgreement.tenantDetails?.mobile || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Email</label>
+                    <p className="text-sm">{viewingAgreement.tenantDetails?.email || 'N/A'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium text-gray-600">Address</label>
+                    <p className="text-sm">
+                      {viewingAgreement.tenantDetails?.address ? 
+                        `${viewingAgreement.tenantDetails.address.flatNo || ''}, ${viewingAgreement.tenantDetails.address.society || ''}, ${viewingAgreement.tenantDetails.address.area || ''}, ${viewingAgreement.tenantDetails.address.city || ''} - ${viewingAgreement.tenantDetails.address.pincode || ''}` 
+                        : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Property Details */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3">Property Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Type</label>
+                    <p className="text-sm">{viewingAgreement.propertyDetails?.type || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Area (sq ft)</label>
+                    <p className="text-sm">{viewingAgreement.propertyDetails?.areaSqft || 'N/A'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium text-gray-600">Address</label>
+                    <p className="text-sm">
+                      {viewingAgreement.propertyDetails?.address ? 
+                        `${viewingAgreement.propertyDetails.address.flatNo || ''}, ${viewingAgreement.propertyDetails.address.society || ''}, ${viewingAgreement.propertyDetails.address.area || ''}, ${viewingAgreement.propertyDetails.address.city || ''} - ${viewingAgreement.propertyDetails.address.pincode || ''}` 
+                        : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rental Terms */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3">Rental Terms</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Monthly Rent</label>
+                    <p className="text-sm">₹{viewingAgreement.rentalTerms?.monthlyRent || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Security Deposit</label>
+                    <p className="text-sm">₹{viewingAgreement.rentalTerms?.securityDeposit || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Start Date</label>
+                    <p className="text-sm">{viewingAgreement.rentalTerms?.startDate ? new Date(viewingAgreement.rentalTerms.startDate).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">End Date</label>
+                    <p className="text-sm">{viewingAgreement.rentalTerms?.endDate ? new Date(viewingAgreement.rentalTerms.endDate).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Duration</label>
+                    <p className="text-sm">{viewingAgreement.rentalTerms?.duration || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Maintenance</label>
+                    <p className="text-sm">{viewingAgreement.rentalTerms?.maintenance || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Agreement Meta */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3">Agreement Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Agreement Date</label>
+                    <p className="text-sm">{viewingAgreement.agreementDate ? new Date(viewingAgreement.agreementDate).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Language</label>
+                    <p className="text-sm">{viewingAgreement.language || 'English'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Status</label>
+                    <p className="text-sm">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(viewingAgreement.status)}`}>
+                        {viewingAgreement.status ? viewingAgreement.status.charAt(0).toUpperCase() + viewingAgreement.status.slice(1) : 'Unknown'}
+                      </span>
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Created At</label>
+                    <p className="text-sm">{viewingAgreement.createdAt ? new Date(viewingAgreement.createdAt).toLocaleString() : 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingAgreement(viewingAgreement)}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Agreement
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleDownloadAgreement(viewingAgreement)}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setViewingAgreement(null)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
