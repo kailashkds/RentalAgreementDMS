@@ -62,8 +62,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     <div className="flex h-screen bg-muted/30">
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col h-full">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex justify-center">
+        <div className="px-6 py-4 border-b border-gray-200 h-20 flex items-center">
+          <div className="flex justify-center w-full">
             <img 
               src="https://quickkaraar.com/images/logo.png" 
               alt="QuickKaraar" 
@@ -147,8 +147,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="px-6 py-4">
-            <div className="flex items-center justify-between">
+          <div className="px-6 py-4 h-20 flex items-center">
+            <div className="flex items-center justify-between w-full">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
                 {subtitle && <p className="text-gray-600 mt-1">{subtitle}</p>}
