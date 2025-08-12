@@ -177,59 +177,73 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {recentAgreements?.agreements?.slice(0, 4).map((agreement: any, index: number) => (
-                    <div key={agreement.id || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
-                      <div className="flex items-center space-x-4 flex-1">
-                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                          <FileSignature className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-4">
-                            <div>
-                              <h4 className="font-medium text-gray-900 text-sm">
-                                {agreement.agreementNumber}
-                              </h4>
-                              <p className="text-xs text-gray-500">
-                                {agreement.customer?.name || "Unknown Client"}
-                              </p>
-                            </div>
-                            <div className="hidden sm:block">
-                              <span
-                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                                  agreement.status
-                                )}`}
-                              >
-                                {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
-                              </span>
+                  {recentAgreements?.agreements?.slice(0, 5).map((agreement: any, index: number) => (
+                    <div key={agreement.id || index} className="p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4 flex-1">
+                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <FileSignature className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 md:gap-4">
+                              <div>
+                                <h4 className="font-medium text-gray-900 text-sm">
+                                  {agreement.agreementNumber}
+                                </h4>
+                                <p className="text-xs text-gray-400">Document ID</p>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">
+                                  {agreement.customer?.name || "Unknown"}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {agreement.customer?.mobile || "No phone"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-900">
+                                  {agreement.propertyDetails?.type || "Document"}
+                                </p>
+                                <p className="text-xs text-gray-400">Type/Details</p>
+                              </div>
+                              <div>
+                                <span
+                                  className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                                    agreement.status
+                                  )}`}
+                                >
+                                  {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-2 ml-4">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-blue-600 hover:text-blue-900 p-2"
-                          title="View Agreement"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-green-600 hover:text-green-900 p-2"
-                          title="Download PDF"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-amber-600 hover:text-amber-900 p-2"
-                          title="Edit Agreement"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center space-x-2 ml-4">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-blue-600 hover:text-blue-900 p-2"
+                            title="View Agreement"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-green-600 hover:text-green-900 p-2"
+                            title="Download PDF"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-amber-600 hover:text-amber-900 p-2"
+                            title="Edit Agreement"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
