@@ -869,8 +869,8 @@ export default function Agreements() {
               </div>
 
               {/* Rental Terms */}
-              <div className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
                       <span className="text-xs font-bold text-white">4</span>
@@ -878,42 +878,42 @@ export default function Agreements() {
                     Rental Terms
                   </h3>
                 </div>
-                <div className="bg-blue-50 p-6">
+                <div className="bg-slate-50 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Monthly Rent</label>
+                      <label className="text-sm font-medium text-slate-700">Monthly Rent</label>
                       <p className="mt-1 text-lg text-gray-900 font-bold text-green-600">₹{viewingAgreement.rentalTerms?.monthlyRent || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Security Deposit</label>
+                      <label className="text-sm font-medium text-slate-700">Security Deposit</label>
                       <p className="mt-1 text-lg text-gray-900 font-bold text-blue-600">₹{viewingAgreement.rentalTerms?.securityDeposit || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Duration</label>
+                      <label className="text-sm font-medium text-slate-700">Duration</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.duration || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Start Date</label>
+                      <label className="text-sm font-medium text-slate-700">Start Date</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.startDate ? new Date(viewingAgreement.rentalTerms.startDate).toLocaleDateString() : 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">End Date</label>
+                      <label className="text-sm font-medium text-slate-700">End Date</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.endDate ? new Date(viewingAgreement.rentalTerms.endDate).toLocaleDateString() : 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Due Date</label>
+                      <label className="text-sm font-medium text-slate-700">Due Date</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.dueDate || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Maintenance</label>
+                      <label className="text-sm font-medium text-slate-700">Maintenance</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.maintenance || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Notice Period</label>
+                      <label className="text-sm font-medium text-slate-700">Notice Period</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.noticePeriod || 'Not provided'}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-blue-700">Minimum Stay</label>
+                      <label className="text-sm font-medium text-slate-700">Minimum Stay</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.minimumStay || 'Not provided'}</p>
                     </div>
                   </div>
