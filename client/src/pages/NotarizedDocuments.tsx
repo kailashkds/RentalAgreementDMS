@@ -178,9 +178,9 @@ export default function NotarizedDocuments() {
 
   return (
     <AdminLayout>
-      <div className="h-full flex flex-col space-y-6 overflow-hidden">
+      <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Notarized Documents</h1>
             <p className="text-gray-600 mt-2">Manage and track notarized rental agreements</p>
@@ -188,7 +188,7 @@ export default function NotarizedDocuments() {
         </div>
 
         {/* Filters */}
-        <Card className="flex-shrink-0">
+        <Card>
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
@@ -215,7 +215,7 @@ export default function NotarizedDocuments() {
         </Card>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-shrink-0">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Agreements</CardTitle>
@@ -250,11 +250,11 @@ export default function NotarizedDocuments() {
         </div>
 
         {/* Agreements List */}
-        <Card className="flex-1 flex flex-col overflow-hidden">
-          <CardHeader className="flex-shrink-0">
+        <Card>
+          <CardHeader>
             <CardTitle>Agreements Overview</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto">
+          <CardContent>
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
