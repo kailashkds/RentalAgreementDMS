@@ -125,7 +125,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         </nav>
         
         {/* User info and logout at bottom */}
-        <div className="px-4 py-3 bg-gray-50 border-t">
+        <div className="px-4 py-2 bg-gray-50 border-t">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -147,7 +147,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="px-6 py-4">
+          <div className="px-6 py-3">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
@@ -168,8 +168,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                       className="w-full h-full object-contain"
                     />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{(user as any)?.name || "Admin User"}</p>
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-800">{(user as any)?.name || "System Administrator"}</p>
                     <p className="text-xs text-gray-600">Administrator</p>
                   </div>
                 </div>
@@ -180,7 +180,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto">
-          <div className="p-6 pb-4">{children}</div>
+          <div className="p-6 pb-2">{children}</div>
         </main>
       </div>
     </div>
