@@ -812,6 +812,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Remove notarized document for an agreement
+  app.delete('/api/agreements/:agreementId/notarized-document', async (req, res) => {
+    try {
+      const { agreementId } = req.params;
+      const agreement = await storage.getAgreement(agreementId);
+      
+      if (!agreement) {
+        return res.status(404).json({ error: 'Agreement not found' });
+      }
+
+      if (!agreement.notarizedDocument || !agreement.notarizedDocument.filename) {
+        return res.status(404).json({ error: 'No notarized document found for this agreement' });
+      }
+
+      // Delete the physical file
+      const filePath = path.join(process.cwd(), 'uploads', 'notarized', agreement.notarizedDocument.filename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`[Notarized Remove] File deleted: ${agreement.notarizedDocument.filename}`);
+      }
+
+      // Clear notarized document from database
+      await storage.updateAgreementNotarizedDocument(agreementId, null);
+
+      console.log(`[Notarized Remove] Document removed for agreement ${agreement.agreementNumber}`);
+      
+      res.json({
+        success: true,
+        message: 'Notarized document removed successfully'
+      });
+
+    } catch (error) {
+      console.error('[Notarized Remove] Error:', error);
+      res.status(500).json({ error: 'Failed to remove notarized document' });
+    }
+  });
+
   // Serve notarized documents
   app.get("/uploads/notarized/:fileName", (req, res) => {
     try {

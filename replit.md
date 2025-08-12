@@ -56,6 +56,7 @@ Preferred communication style: Simple, everyday language.
 - **Amount-to-Words Conversion**: Automatic conversion of numeric amounts to Indian format words.
 - **PDF Page Break Control**: Comprehensive CSS controls with `page-break-before: always` for documents. Each Aadhaar card and PAN card appears on separate pages for both landlord and tenant sections.
 - **File Preview System**: Comprehensive preview functionality for all uploaded documents (PDF, image, etc.).
+- **Notarized Document Management**: Complete lifecycle management including upload, view, download, replace, and remove functionality with dedicated management interface and status tracking.
 
 # External Dependencies
 

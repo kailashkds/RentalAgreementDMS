@@ -16,7 +16,8 @@ import {
   Clock,
   FileText,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +27,7 @@ export default function NotarizedDocuments() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadingNotarized, setUploadingNotarized] = useState<string | null>(null);
+  const [removingNotarized, setRemovingNotarized] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: agreementsData, isLoading } = useAgreements({
@@ -93,6 +95,41 @@ export default function NotarizedDocuments() {
       }
     };
     input.click();
+  };
+
+  const handleRemoveNotarizedDocument = async (agreementId: string, agreementNumber: string) => {
+    if (!confirm(`Are you sure you want to remove the notarized document for agreement ${agreementNumber}? This action cannot be undone.`)) {
+      return;
+    }
+
+    setRemovingNotarized(agreementId);
+    try {
+      const response = await fetch(`/api/agreements/${agreementId}/notarized-document`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Invalidate cache to refresh data
+        queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
+
+        toast({
+          title: "Notarized Document Removed",
+          description: `Successfully removed notarized document for ${agreementNumber}`,
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to remove notarized document');
+      }
+    } catch (error) {
+      console.error('Notarized remove error:', error);
+      toast({
+        title: "Remove Error",
+        description: error instanceof Error ? error.message : "Failed to remove notarized document.",
+        variant: "destructive",
+      });
+    } finally {
+      setRemovingNotarized(null);
+    }
   };
 
   const getNotarizedStatus = (agreement: any) => {
@@ -236,6 +273,7 @@ export default function NotarizedDocuments() {
                 {filteredAgreements.map((agreement) => {
                   const notarizedStatus = getNotarizedStatus(agreement);
                   const isUploading = uploadingNotarized === agreement.id;
+                  const isRemoving = removingNotarized === agreement.id;
                   
                   return (
                     <div key={agreement.id} className="border border-gray-200 rounded-lg p-6 bg-white hover:bg-gray-50 transition-colors">
@@ -295,6 +333,7 @@ export default function NotarizedDocuments() {
                                 size="sm"
                                 onClick={() => window.open(agreement.notarizedDocument.url, '_blank')}
                                 className="flex items-center gap-2"
+                                disabled={isRemoving}
                               >
                                 <Eye className="h-4 w-4" />
                                 View
@@ -308,6 +347,7 @@ export default function NotarizedDocuments() {
                                   link.click();
                                 }}
                                 className="flex items-center gap-2 bg-slate-600 hover:bg-slate-700"
+                                disabled={isRemoving}
                               >
                                 <Download className="h-4 w-4" />
                                 Download
@@ -316,11 +356,21 @@ export default function NotarizedDocuments() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleNotarizedFileSelect(agreement.id)}
-                                disabled={isUploading}
+                                disabled={isUploading || isRemoving}
                                 className="flex items-center gap-2"
                               >
                                 <Upload className="h-4 w-4" />
                                 {isUploading ? 'Uploading...' : 'Replace'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRemoveNotarizedDocument(agreement.id, agreement.agreementNumber)}
+                                disabled={isUploading || isRemoving}
+                                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                {isRemoving ? 'Removing...' : 'Remove'}
                               </Button>
                             </>
                           ) : (
