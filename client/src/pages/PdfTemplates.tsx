@@ -96,8 +96,23 @@ export default function PdfTemplates() {
         <html>
           <head>
             <title>Template Preview - ${template.name}</title>
+            <meta charset="UTF-8">
+            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
             <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
+              body { 
+                font-family: ${template.language === 'gujarati' 
+                  ? '"Noto Sans Gujarati", "Shruti", Arial, sans-serif' 
+                  : template.language === 'hindi'
+                  ? '"Noto Sans Devanagari", "Mangal", Arial, sans-serif'
+                  : template.language === 'tamil'
+                  ? '"Noto Sans Tamil", "Latha", Arial, sans-serif'
+                  : template.language === 'marathi'
+                  ? '"Noto Sans Devanagari", "Mangal", Arial, sans-serif'
+                  : 'Arial, sans-serif'}; 
+                margin: 20px; 
+                font-size: 14px;
+                line-height: 1.4;
+              }
               .preview-header { border-bottom: 2px solid #ccc; margin-bottom: 20px; padding-bottom: 10px; }
               
               /* Page break control classes for PDF generation */
@@ -177,7 +192,7 @@ export default function PdfTemplates() {
   };
 
   return (
-    <AdminLayout>
+    <AdminLayout title="PDF Templates">
       <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -282,7 +297,7 @@ export default function PdfTemplates() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(template.createdAt).toLocaleDateString()}
+                      {template.createdAt ? new Date(template.createdAt).toLocaleDateString() : '-'}
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">

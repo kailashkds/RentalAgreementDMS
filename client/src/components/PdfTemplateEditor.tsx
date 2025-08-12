@@ -583,9 +583,18 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                   <div 
                     dangerouslySetInnerHTML={{ __html: formData.htmlTemplate }}
                     style={{ 
-                      fontFamily: 'Arial, sans-serif',
+                      fontFamily: formData.language === 'gujarati' 
+                        ? '"Noto Sans Gujarati", "Shruti", Arial, sans-serif' 
+                        : formData.language === 'hindi'
+                        ? '"Noto Sans Devanagari", "Mangal", Arial, sans-serif'
+                        : formData.language === 'tamil'
+                        ? '"Noto Sans Tamil", "Latha", Arial, sans-serif'
+                        : formData.language === 'marathi'
+                        ? '"Noto Sans Devanagari", "Mangal", Arial, sans-serif'
+                        : 'Arial, sans-serif',
                       lineHeight: '1.4',
-                      color: '#333'
+                      color: '#333',
+                      fontSize: '14px'
                     }}
                   />
                 </div>
