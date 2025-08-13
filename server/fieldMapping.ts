@@ -401,7 +401,7 @@ function shouldFormatValue(value: string, templateField: string): { shouldFormat
 }
 
 // Generic function to apply formatting based on value characteristics
-function applySmartFormatting(value: string, templateField: string): string {
+function applySmartFormatting(value: string, templateField: string, language?: string): string {
   const { shouldFormat, formatType } = shouldFormatValue(value, templateField);
   
   if (!shouldFormat) {
@@ -410,7 +410,12 @@ function applySmartFormatting(value: string, templateField: string): string {
   
   switch (formatType) {
     case 'date':
-      return formatDateToDDMMYYYY(value);
+      const formattedDate = formatDateToDDMMYYYY(value);
+      // Convert to Gujarati numerals if language is Gujarati
+      if (language === 'gujarati') {
+        return convertToGujaratiNumerals(formattedDate);
+      }
+      return formattedDate;
     case 'string':
       return formatStringValue(value);
     default:
@@ -544,7 +549,7 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
       // This gives precedence to granular fields over nested address fields
       if (!templateFields[templateField]) {
         // Apply smart formatting based on value characteristics and field patterns
-        formattedValue = applySmartFormatting(formattedValue, templateField);
+        formattedValue = applySmartFormatting(formattedValue, templateField, templateLanguage);
         
         templateFields[templateField] = formattedValue;
         
