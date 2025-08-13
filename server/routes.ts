@@ -308,44 +308,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
                text.match(/^TENANT DOCUMENTS$/i);
       };
       
-      // Split the HTML into logical sections and create Word paragraphs
+      // Process HTML elements in the order they appear in the document
       const paragraphElements = [];
       
-      // Extract title (h1)
-      const titleMatch = workingHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-      if (titleMatch) {
-        const { text, style } = extractTextAndStyle(titleMatch[0]);
-        if (text) {
-          paragraphElements.push({
-            text,
-            alignment: getAlignment(style),
-            bold: true,
-            size: 32,
-            spacing: { after: 480 },
-            type: 'title'
-          });
-        }
-      }
+      // Create a simplified approach: parse the entire HTML sequentially
+      // Remove style and script tags first
+      let cleanedHtml = workingHtml
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
       
-      // Extract all paragraphs in order
-      const pMatches = workingHtml.match(/<p[^>]*>[\s\S]*?<\/p>/gi);
-      if (pMatches) {
-        for (const pMatch of pMatches) {
-          const { text, style } = extractTextAndStyle(pMatch);
-          if (text && text !== '[Document/Image]') {
-            // Handle line breaks within paragraphs
-            const lines = text.split(/\s*\n\s*/).filter(line => line.trim());
+      // Split into all HTML elements and process in order
+      const allElements = cleanedHtml.match(/<[^>]+>[\s\S]*?<\/[^>]+>|<[^/>]+\/>/gi) || [];
+      
+      for (const element of allElements) {
+        // Skip if it contains nested elements (will be processed separately)
+        if (element.includes('<p') || element.includes('<h') || element.includes('<div')) {
+          const { text, style } = extractTextAndStyle(element);
+          
+          if (text && text.trim() && text !== '[Document/Image]') {
+            // Handle multiple lines in content
+            const lines = text.split(/\s*\n\s*|\s*<br[^>]*>\s*/i).filter(line => line.trim());
             
             for (const line of lines) {
-              if (line.trim()) {
+              const trimmedLine = line.trim();
+              if (trimmedLine) {
+                // Determine element properties
+                const isHeading = element.match(/<h[1-6]/i) || 
+                                 trimmedLine.match(/^RENT AGREEMENT$/i) ||
+                                 trimmedLine.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
+                                 trimmedLine.match(/^IN WITNESS WHEREOF/i) ||
+                                 trimmedLine.match(/^LANDLORD DOCUMENTS$/i) ||
+                                 trimmedLine.match(/^TENANT DOCUMENTS$/i);
+                
                 paragraphElements.push({
-                  text: line.trim(),
+                  text: trimmedLine,
                   alignment: getAlignment(style),
-                  bold: shouldBeBold(line, style),
+                  bold: shouldBeBold(trimmedLine, style) || isHeading,
                   italic: style.includes('font-style: italic'),
-                  size: 22,
-                  spacing: { after: 180 },
-                  type: 'paragraph'
+                  size: isHeading ? 26 : 22,
+                  spacing: isHeading ? { before: 360, after: 240 } : { after: 180 },
+                  type: isHeading ? 'heading' : 'paragraph'
                 });
               }
             }
@@ -353,44 +355,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Extract h3 headings 
-      const h3Matches = workingHtml.match(/<h3[^>]*>[\s\S]*?<\/h3>/gi);
-      if (h3Matches) {
-        for (const h3Match of h3Matches) {
-          const { text, style } = extractTextAndStyle(h3Match);
-          if (text) {
-            paragraphElements.push({
-              text,
-              alignment: getAlignment(style),
-              bold: true,
-              size: 26,
-              spacing: { before: 360, after: 240 },
-              type: 'heading'
-            });
-          }
-        }
-      }
-      
-      // Extract divs that contain structured content
-      const divMatches = workingHtml.match(/<div[^>]*>[\s\S]*?<\/div>/gi);
-      if (divMatches) {
-        for (const divMatch of divMatches) {
-          // Skip divs that contain paragraphs or headings (already processed)
-          if (divMatch.includes('<p') || divMatch.includes('<h')) continue;
+      // If the above approach didn't capture everything, fall back to regex-based extraction
+      if (paragraphElements.length === 0) {
+        // Extract content in document order using a single pass
+        const contentRegex = /<(?:h[1-6]|p|div)[^>]*>([\s\S]*?)<\/(?:h[1-6]|p|div)>/gi;
+        let match;
+        
+        while ((match = contentRegex.exec(cleanedHtml)) !== null) {
+          const rawContent = match[1];
+          const fullElement = match[0];
           
-          const { text, style } = extractTextAndStyle(divMatch);
-          if (text && text !== '[Document/Image]') {
-            const lines = text.split(/\s*\n\s*/).filter(line => line.trim());
+          const { text, style } = extractTextAndStyle(fullElement);
+          
+          if (text && text.trim() && text !== '[Document/Image]') {
+            const lines = text.split(/\s*\n\s*|\s*<br[^>]*>\s*/i).filter(line => line.trim());
             
             for (const line of lines) {
-              if (line.trim()) {
+              const trimmedLine = line.trim();
+              if (trimmedLine) {
+                const isHeading = fullElement.match(/<h[1-6]/i) || 
+                                 trimmedLine.match(/^RENT AGREEMENT$/i) ||
+                                 trimmedLine.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
+                                 trimmedLine.match(/^IN WITNESS WHEREOF/i) ||
+                                 trimmedLine.match(/^LANDLORD DOCUMENTS$/i) ||
+                                 trimmedLine.match(/^TENANT DOCUMENTS$/i);
+                
                 paragraphElements.push({
-                  text: line.trim(),
+                  text: trimmedLine,
                   alignment: getAlignment(style),
-                  bold: shouldBeBold(line, style),
-                  size: 22,
-                  spacing: { after: 180 },
-                  type: 'paragraph'
+                  bold: shouldBeBold(trimmedLine, style) || isHeading,
+                  italic: style.includes('font-style: italic'),
+                  size: isHeading ? 26 : 22,
+                  spacing: isHeading ? { before: 360, after: 240 } : { after: 180 },
+                  type: isHeading ? 'heading' : 'paragraph'
                 });
               }
             }
