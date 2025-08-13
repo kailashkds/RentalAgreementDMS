@@ -168,10 +168,6 @@ function PDFPreview({ fileUrl, fileName, onDownload }: PDFPreviewProps) {
     <div className="w-full space-y-4">
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm text-gray-600">PDF Preview ({pdfPages.length} pages)</span>
-        <Button onClick={onDownload} variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Download PDF
-        </Button>
       </div>
       
       <div className="space-y-4 max-h-[70vh] overflow-y-auto">
@@ -352,7 +348,13 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
     console.log(`FilePreview - Rendering full preview for fileType: ${fileType}, URL: ${fileUrl}`);
     
     if (fileType === 'pdf') {
-      return <PDFViewer fileUrl={proxyUrl} fileName={displayName} />;
+      return (
+        <PDFPreview 
+          fileUrl={proxyUrl} 
+          fileName={displayName}
+          onDownload={() => {}}
+        />
+      );
     }
     
     if (fileType === 'image') {
