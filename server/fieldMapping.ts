@@ -640,16 +640,34 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
   // Handle conditional logic for maintenance charge
   const maintenanceCharge = formData.rentalTerms?.maintenanceCharge;
   if (maintenanceCharge) {
-    if (maintenanceCharge.toLowerCase() === 'included in rent') {
-      templateFields['MAINTENANCE_INCLUSION'] = 'Inclusion of Maintenance';
-      templateFields['MAINTENANCE_EXCLUSION'] = '';
+    if (maintenanceCharge.toLowerCase() === 'included' || maintenanceCharge.toLowerCase() === 'included in rent') {
+      // When maintenance is INCLUDED - show text with maintenance charges
+      if (templateLanguage === 'gujarati') {
+        templateFields['MAINTENANCE_INCLUSION'] = 'એસ.એમ. સી. ટેક્ષ અને મેન્ટેનન્સ સાથે';
+        templateFields['MAINTENANCE_EXCLUSION'] = '';
+      } else {
+        templateFields['MAINTENANCE_INCLUSION'] = 'with SMC Tax and Maintenance';
+        templateFields['MAINTENANCE_EXCLUSION'] = '';
+      }
     } else {
-      templateFields['MAINTENANCE_INCLUSION'] = '';
-      templateFields['MAINTENANCE_EXCLUSION'] = 'Exclusion of Maintenance';
+      // When maintenance is EXCLUDED - show text without maintenance charges
+      if (templateLanguage === 'gujarati') {
+        templateFields['MAINTENANCE_INCLUSION'] = '';
+        templateFields['MAINTENANCE_EXCLUSION'] = 'પુરા ';
+      } else {
+        templateFields['MAINTENANCE_INCLUSION'] = '';
+        templateFields['MAINTENANCE_EXCLUSION'] = 'complete ';
+      }
     }
   } else {
-    templateFields['MAINTENANCE_INCLUSION'] = '';
-    templateFields['MAINTENANCE_EXCLUSION'] = '';
+    // Default to excluded if not specified
+    if (templateLanguage === 'gujarati') {
+      templateFields['MAINTENANCE_INCLUSION'] = '';
+      templateFields['MAINTENANCE_EXCLUSION'] = 'પુરા ';
+    } else {
+      templateFields['MAINTENANCE_INCLUSION'] = '';
+      templateFields['MAINTENANCE_EXCLUSION'] = 'complete ';
+    }
   }
 
   // Handle conditional logic for property purpose (for GST clause)
