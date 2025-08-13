@@ -1,8 +1,117 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, FileText, Image, Eye, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+// PDF Preview Component
+interface PDFPreviewProps {
+  fileUrl: string;
+  fileName: string;
+  onDownload: () => void;
+}
+
+function PDFPreview({ fileUrl, fileName, onDownload }: PDFPreviewProps) {
+  const [pdfPages, setPdfPages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Convert PDF to images for preview
+  const convertPdfToImages = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log(`PDFPreview - Converting PDF to images: ${fileUrl}`);
+      
+      const response = await fetch('/api/pdf-to-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pdfUrl: fileUrl })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to convert PDF: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.images) {
+        setPdfPages(data.images);
+        console.log(`PDFPreview - Successfully converted PDF to ${data.images.length} pages`);
+      } else {
+        throw new Error(data.error || 'PDF conversion failed');
+      }
+    } catch (err) {
+      console.error('PDFPreview - Error converting PDF:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load PDF preview');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Convert PDF when component mounts
+  useEffect(() => {
+    convertPdfToImages();
+  }, [fileUrl]);
+
+  if (loading) {
+    return (
+      <div className="w-full h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Converting PDF for preview...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <FileText className="h-16 w-16 text-red-400 mx-auto mb-4" />
+          <p className="text-red-600 mb-2">Failed to load PDF preview</p>
+          <p className="text-sm text-gray-500 mb-4">{error}</p>
+          <Button onClick={onDownload} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Download PDF
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-sm text-gray-600">PDF Preview ({pdfPages.length} pages)</span>
+        <Button onClick={onDownload} variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          Download PDF
+        </Button>
+      </div>
+      
+      <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+        {pdfPages.map((pageImageUrl, index) => (
+          <div key={index} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+            <div className="bg-gray-50 px-3 py-2 text-xs text-gray-600">
+              Page {index + 1}
+            </div>
+            <div className="p-2 bg-white">
+              <img
+                src={pageImageUrl}
+                alt={`${fileName} - Page ${index + 1}`}
+                className="w-full h-auto rounded border"
+                style={{ maxWidth: '100%' }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface FilePreviewProps {
   fileUrl: string;
@@ -162,25 +271,11 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
     
     if (fileType === 'pdf') {
       return (
-        <div className="w-full h-[80vh] space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-gray-600">PDF Preview</span>
-            <Button
-              onClick={() => window.open(proxyUrl, '_blank')}
-              variant="outline"
-              size="sm"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Open in New Tab
-            </Button>
-          </div>
-          <iframe
-            src={proxyUrl}
-            className="w-full h-full border border-gray-200 rounded"
-            title={displayName}
-            style={{ minHeight: '600px' }}
-          />
-        </div>
+        <PDFPreview 
+          fileUrl={proxyUrl} 
+          fileName={displayName}
+          onDownload={() => window.open(proxyUrl, '_blank')}
+        />
       );
     }
     

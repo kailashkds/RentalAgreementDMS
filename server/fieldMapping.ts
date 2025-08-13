@@ -1419,7 +1419,7 @@ function getDocumentTypeFromFieldName(fieldName: string): string {
 /**
  * Convert PDF to images and return HTML for embedding
  */
-async function convertPdfToImages(pdfPath: string, documentType: string): Promise<string | null> {
+export async function convertPdfToImages(pdfPath: string, documentType: string): Promise<string | null> {
   try {
     console.log(`[PDF Conversion] Converting PDF to images: ${pdfPath}`);
     

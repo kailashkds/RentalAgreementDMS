@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import type { Address } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { mapFormDataToTemplateFields, generatePdfHtml } from "./fieldMapping";
+import { mapFormDataToTemplateFields, generatePdfHtml, convertPdfToImages } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
 import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
 import { directFileUpload } from "./directFileUpload";
@@ -1011,6 +1011,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating PDF:", error);
       res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
+  // PDF to images conversion endpoint for preview
+  app.post('/api/pdf-to-images', async (req, res) => {
+    try {
+      const { pdfUrl } = req.body;
+      
+      if (!pdfUrl) {
+        return res.status(400).json({ error: 'pdfUrl is required' });
+      }
+
+      console.log(`[PDF-to-Images API] Converting PDF: ${pdfUrl}`);
+
+      // Check if it's a local URL (starts with /objects/ or /uploads/)
+      if (pdfUrl.startsWith('/objects/') || pdfUrl.startsWith('/uploads/')) {
+        // Handle local files
+        const filePath = pdfUrl.startsWith('/objects/') 
+          ? pdfUrl.replace('/objects/', 'uploads/')
+          : pdfUrl.replace('/uploads/', 'uploads/');
+        
+        const fullPath = path.join(process.cwd(), filePath);
+        
+        if (!fs.existsSync(fullPath)) {
+          console.error(`[PDF-to-Images API] File not found: ${fullPath}`);
+          return res.status(404).json({ error: 'PDF file not found' });
+        }
+
+        // Convert PDF to images using the existing function
+        const documentType = 'PDF Document';
+        const imageHtml = await convertPdfToImages(fullPath, documentType);
+        
+        if (imageHtml) {
+          // Extract base64 image data from HTML
+          const base64Pattern = /data:image\/png;base64,([^"]+)/g;
+          const images: string[] = [];
+          let match;
+          
+          while ((match = base64Pattern.exec(imageHtml)) !== null) {
+            images.push(`data:image/png;base64,${match[1]}`);
+          }
+          
+          console.log(`[PDF-to-Images API] Successfully converted PDF to ${images.length} images`);
+          
+          res.json({
+            success: true,
+            images,
+            pageCount: images.length
+          });
+        } else {
+          console.error(`[PDF-to-Images API] Failed to convert PDF: ${pdfUrl}`);
+          res.status(500).json({ error: 'Failed to convert PDF to images' });
+        }
+      } else {
+        // Handle external URLs or other cases
+        res.status(400).json({ error: 'Unsupported PDF URL format' });
+      }
+    } catch (error) {
+      console.error('[PDF-to-Images API] Error:', error);
+      res.status(500).json({ error: 'Internal server error while converting PDF' });
     }
   });
 
