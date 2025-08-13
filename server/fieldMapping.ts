@@ -4,6 +4,7 @@
 import { ObjectStorageService } from './objectStorage';
 import { localFileStorage } from './localFileStorage';
 import { fileProcessor } from './fileProcessor';
+import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
@@ -1067,19 +1068,16 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
               const documentType = getDocumentTypeFromFieldName(fieldName);
               
               if (isPdf) {
-                const base64Data = fileBuffer.toString('base64');
-                const dataUrl = `data:application/pdf;base64,${base64Data}`;
+                const imageHtml = await convertPdfToImages(filePath, documentType);
                 
-                const embeddedPdf = `
-<div style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
-  <p style="color: #333; font-weight: bold; margin: 10px 0;">${documentType}</p>
-  <embed src="${dataUrl}" 
-         type="application/pdf" 
-         style="width: 100%; height: 600px; border: none; display: block; margin: 0 auto;" 
-         title="${documentType}" />
-</div>`;
-                processedFields[fieldName] = embeddedPdf;
-                console.log(`[PDF Embedding] ✅ Successfully processed cloud PDF ${fieldName}`);
+                if (imageHtml) {
+                  processedFields[fieldName] = imageHtml;
+                  console.log(`[PDF Embedding] ✅ Successfully processed cloud PDF ${fieldName}`);
+                } else {
+                  console.error(`[PDF Embedding] Failed to convert PDF to images: ${filePath}`);
+                  const fallbackHtml = `<p style="color: #666; font-style: italic;">${documentType} - Could not process PDF</p>`;
+                  processedFields[fieldName] = fallbackHtml;
+                }
               } else if (isJpeg || isPng) {
                 const mimeType = isJpeg ? 'image/jpeg' : 'image/png';
                 const base64Data = fileBuffer.toString('base64');
@@ -1144,21 +1142,18 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
             console.log(`[PDF Embedding] Is PDF: ${isPdf}, Is JPEG: ${isJpeg}, Is PNG: ${isPng}`);
             
             if (isPdf) {
-              // For PDF files, convert to base64 and embed as iframe or data URL
+              // For PDF files, convert to images and embed each page as an image
               const documentType = getDocumentTypeFromFieldName(fieldName);
-              const base64Data = fileBuffer.toString('base64');
-              const dataUrl = `data:application/pdf;base64,${base64Data}`;
+              const imageHtml = await convertPdfToImages(filePath, documentType);
               
-              const embeddedPdf = `
-<div style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
-  <p style="color: #333; font-weight: bold; margin: 10px 0;">${documentType}</p>
-  <embed src="${dataUrl}" 
-         type="application/pdf" 
-         style="width: 100%; height: 600px; border: none; display: block; margin: 0 auto;" 
-         title="${documentType}" />
-</div>`;
-              processedFields[fieldName] = embeddedPdf;
-              console.log(`[PDF Embedding] ✅ Successfully processed PDF document ${fieldName}: ${fileName}`);
+              if (imageHtml) {
+                processedFields[fieldName] = imageHtml;
+                console.log(`[PDF Embedding] ✅ Successfully processed PDF document ${fieldName}: ${fileName}`);
+              } else {
+                console.error(`[PDF Embedding] Failed to convert PDF to images: ${fileName}`);
+                const fallbackHtml = `<p style="color: #666; font-style: italic;">${documentType} - Could not process PDF</p>`;
+                processedFields[fieldName] = fallbackHtml;
+              }
               
             } else if (isJpeg || isPng) {
               // Handle actual image files
@@ -1419,4 +1414,79 @@ function getDocumentTypeFromFieldName(fieldName: string): string {
   };
   
   return typeMap[fieldName] || 'Document';
+}
+
+/**
+ * Convert PDF to images and return HTML for embedding
+ */
+async function convertPdfToImages(pdfPath: string, documentType: string): Promise<string | null> {
+  try {
+    console.log(`[PDF Conversion] Converting PDF to images: ${pdfPath}`);
+    
+    // Create a temporary directory for images
+    const tempDir = path.join(process.cwd(), 'uploads', 'temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    
+    // Generate a unique filename for the images
+    const timestamp = Date.now();
+    const baseFileName = `pdf_${timestamp}`;
+    const outputPath = path.join(tempDir, `${baseFileName}-%d.png`);
+    
+    // Convert PDF to PNG images using ImageMagick
+    const command = `convert -density 150 "${pdfPath}" "${path.join(tempDir, baseFileName)}-%d.png"`;
+    console.log(`[PDF Conversion] Executing command: ${command}`);
+    
+    execSync(command, { timeout: 30000 });
+    
+    // Find all generated image files
+    const files = fs.readdirSync(tempDir);
+    const imageFiles = files
+      .filter(file => file.startsWith(baseFileName) && file.endsWith('.png'))
+      .sort(); // Sort to maintain page order
+    
+    console.log(`[PDF Conversion] Generated ${imageFiles.length} image(s): ${imageFiles.join(', ')}`);
+    
+    if (imageFiles.length === 0) {
+      console.error(`[PDF Conversion] No images generated from PDF: ${pdfPath}`);
+      return null;
+    }
+    
+    // Generate HTML for each image
+    let htmlContent = `<div style="margin: 20px 0; page-break-inside: avoid;">
+      <p style="color: #333; font-weight: bold; margin: 10px 0; text-align: center;">${documentType}</p>`;
+    
+    for (let i = 0; i < imageFiles.length; i++) {
+      const imageFile = imageFiles[i];
+      const imagePath = path.join(tempDir, imageFile);
+      
+      // Read the image and convert to base64
+      const imageBuffer = fs.readFileSync(imagePath);
+      const base64Data = imageBuffer.toString('base64');
+      const dataUrl = `data:image/png;base64,${base64Data}`;
+      
+      // Add page break before each image except the first one
+      const pageBreakClass = i > 0 ? 'page-break-before' : '';
+      
+      htmlContent += `
+      <div style="margin: 15px 0; text-align: center;" class="${pageBreakClass}">
+        <img src="${dataUrl}" 
+             style="width: auto; height: auto; max-width: 100%; max-height: 600px; border: none; display: block; margin: 0 auto;" 
+             alt="${documentType} - Page ${i + 1}" />
+      </div>`;
+      
+      // Clean up the temporary image file
+      fs.unlinkSync(imagePath);
+    }
+    
+    htmlContent += `</div>`;
+    
+    console.log(`[PDF Conversion] Successfully converted PDF to ${imageFiles.length} images`);
+    return htmlContent;
+    
+  } catch (error) {
+    console.error(`[PDF Conversion] Error converting PDF to images:`, error);
+    return null;
+  }
 }
