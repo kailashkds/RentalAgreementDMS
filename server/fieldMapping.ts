@@ -632,6 +632,14 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     templateFields['MAINTENANCE_EXCLUSION'] = '';
   }
 
+  // Handle conditional logic for property purpose (for GST clause)
+  const propertyPurpose = formData.propertyDetails?.purpose;
+  if (propertyPurpose && propertyPurpose.toLowerCase().includes('commercial')) {
+    templateFields['PROPERTY_PURPOSE_COMMERCIAL'] = 'true';
+  } else {
+    templateFields['PROPERTY_PURPOSE_COMMERCIAL'] = '';
+  }
+
   // Default values for common fields if not provided
   if (!templateFields['TENURE']) {
     templateFields['TENURE'] = '11 Month';
