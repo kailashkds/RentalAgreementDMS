@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate Word document
   app.post("/api/agreements/generate-word", async (req, res) => {
     try {
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType } = await import('docx');
       
       const agreementData = req.body;
       const language = agreementData.language || 'english';
@@ -268,58 +268,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate the HTML with mapped field values and process it properly for Word
       const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate);
       
-      // Parse HTML content more intelligently to preserve document structure
+      // Parse HTML content while preserving CSS styling and formatting
       let workingHtml = processedHtml;
       
-      // Remove all <style> tags and their contents first
-      workingHtml = workingHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      // Extract and parse CSS styles first
+      const styleMatches = workingHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+      const cssRules = new Map();
       
-      // Remove all CSS class definitions that leaked through
-      workingHtml = workingHtml.replace(/\.[a-zA-Z-_]+\s*{[^}]*}/g, '');
-      
-      // Split content into structured elements - preserve paragraph breaks
-      const paragraphElements = [];
-      
-      // Extract content between paragraph tags while preserving structure
-      const pTagRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-      const divTagRegex = /<div[^>]*>([\s\S]*?)<\/div>/gi;
-      const headingRegex = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi;
-      
-      let match;
-      
-      // Extract headings
-      while ((match = headingRegex.exec(workingHtml)) !== null) {
-        const content = match[1].replace(/<[^>]*>/g, '').trim();
-        if (content.length > 0) {
-          paragraphElements.push({ type: 'heading', content });
+      if (styleMatches) {
+        for (const styleMatch of styleMatches) {
+          const cssContent = styleMatch.replace(/<\/?style[^>]*>/gi, '');
+          // Parse CSS rules to apply to Word formatting
+          const rules = cssContent.match(/([^{]+)\{([^}]+)\}/g);
+          if (rules) {
+            for (const rule of rules) {
+              const [selector, properties] = rule.split('{');
+              if (selector && properties) {
+                const cleanSelector = selector.trim();
+                const cleanProperties = properties.replace('}', '').trim();
+                cssRules.set(cleanSelector, cleanProperties);
+              }
+            }
+          }
         }
       }
       
-      // Extract paragraphs
+      // Function to parse CSS properties into Word formatting
+      function parseStyleToWordFormat(styleAttr, elementType = 'p') {
+        const format = {
+          alignment: AlignmentType.LEFT,
+          spacing: { after: 120 },
+          indent: {},
+          border: {},
+          textFormat: {}
+        };
+        
+        if (styleAttr) {
+          // Parse text-align
+          if (styleAttr.includes('text-align: right') || styleAttr.includes('text-align:right')) {
+            format.alignment = AlignmentType.RIGHT;
+          } else if (styleAttr.includes('text-align: center') || styleAttr.includes('text-align:center')) {
+            format.alignment = AlignmentType.CENTER;
+          } else if (styleAttr.includes('text-align: justify') || styleAttr.includes('text-align:justify')) {
+            format.alignment = AlignmentType.JUSTIFIED;
+          }
+          
+          // Parse margin and padding for spacing
+          const marginMatch = styleAttr.match(/margin[^:]*:\s*([^;]+)/);
+          if (marginMatch) {
+            const margin = marginMatch[1].trim();
+            if (margin.includes('em') || margin.includes('px')) {
+              const value = parseFloat(margin) * (margin.includes('em') ? 240 : 15);
+              format.spacing.after = Math.max(120, value);
+            }
+          }
+          
+          // Parse text styling
+          if (styleAttr.includes('font-weight: bold') || styleAttr.includes('font-weight:bold')) {
+            format.textFormat.bold = true;
+          }
+          if (styleAttr.includes('font-style: italic') || styleAttr.includes('font-style:italic')) {
+            format.textFormat.italic = true;
+          }
+          if (styleAttr.includes('text-decoration: underline') || styleAttr.includes('text-decoration:underline')) {
+            format.textFormat.underline = true;
+          }
+          
+          // Parse font size
+          const fontSizeMatch = styleAttr.match(/font-size[^:]*:\s*([^;]+)/);
+          if (fontSizeMatch) {
+            const fontSize = fontSizeMatch[1].trim();
+            if (fontSize.includes('px')) {
+              format.textFormat.size = Math.round(parseFloat(fontSize) * 1.5); // Convert px to half-points
+            } else if (fontSize.includes('pt')) {
+              format.textFormat.size = Math.round(parseFloat(fontSize) * 2); // Convert pt to half-points
+            }
+          }
+          
+          // Parse borders
+          if (styleAttr.includes('border') && !styleAttr.includes('border: none')) {
+            format.border.top = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
+            format.border.bottom = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
+            format.border.left = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
+            format.border.right = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
+          }
+        }
+        
+        return format;
+      }
+      
+      // Split content into structured elements while preserving styling
+      const paragraphElements = [];
+      
+      // Enhanced regex patterns that capture style attributes
+      const pTagRegex = /<p([^>]*)>([\s\S]*?)<\/p>/gi;
+      const divTagRegex = /<div([^>]*)>([\s\S]*?)<\/div>/gi;
+      const headingRegex = /<h[1-6]([^>]*)>([\s\S]*?)<\/h[1-6]>/gi;
+      const tableRegex = /<table([^>]*)>([\s\S]*?)<\/table>/gi;
+      
+      let match;
+      
+      // Extract headings with styling
+      while ((match = headingRegex.exec(workingHtml)) !== null) {
+        const attributes = match[1] || '';
+        const content = match[2].replace(/<[^>]*>/g, '').trim();
+        const styleAttr = attributes.match(/style\s*=\s*["']([^"']+)["']/);
+        
+        if (content.length > 0) {
+          paragraphElements.push({
+            type: 'heading',
+            content,
+            style: styleAttr ? styleAttr[1] : '',
+            attributes
+          });
+        }
+      }
+      
+      // Extract paragraphs with styling
       while ((match = pTagRegex.exec(workingHtml)) !== null) {
-        const content = match[1]
-          .replace(/<br\s*\/?>/gi, ' ') // Convert br to spaces within paragraphs
-          .replace(/<[^>]*>/g, '') // Remove remaining HTML tags
+        const attributes = match[1] || '';
+        const rawContent = match[2];
+        const content = rawContent
+          .replace(/<br\s*\/?>/gi, ' ')
+          .replace(/<[^>]*>/g, '')
           .replace(/&nbsp;/g, ' ')
           .replace(/&amp;/g, '&')
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/&quot;/g, '"')
           .replace(/&#39;/g, "'")
-          .replace(/\s+/g, ' ') // Normalize spaces
+          .replace(/\s+/g, ' ')
           .trim();
         
+        const styleAttr = attributes.match(/style\s*=\s*["']([^"']+)["']/);
+        
         if (content.length > 0 && content !== '[Document/Image]') {
-          paragraphElements.push({ type: 'paragraph', content });
+          paragraphElements.push({
+            type: 'paragraph',
+            content,
+            style: styleAttr ? styleAttr[1] : '',
+            attributes
+          });
         }
       }
       
-      // If no paragraphs were found, extract from divs
+      // Extract divs with styling if no paragraphs found
       if (paragraphElements.filter(p => p.type === 'paragraph').length === 0) {
         while ((match = divTagRegex.exec(workingHtml)) !== null) {
-          const content = match[1]
-            .replace(/<br\s*\/?>/gi, '\n') // Convert br to newlines
-            .replace(/<[^>]*>/g, '') // Remove HTML tags
+          const attributes = match[1] || '';
+          const rawContent = match[2];
+          const content = rawContent
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]*>/g, '')
             .replace(/&nbsp;/g, ' ')
             .replace(/&amp;/g, '&')
             .replace(/&lt;/g, '<')
@@ -328,42 +428,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .replace(/&#39;/g, "'")
             .trim();
           
-          // Split by newlines to create multiple paragraphs if needed
+          const styleAttr = attributes.match(/style\s*=\s*["']([^"']+)["']/);
           const lines = content.split('\n').filter(line => line.trim().length > 0);
+          
           for (const line of lines) {
             const cleanLine = line.replace(/\s+/g, ' ').trim();
             if (cleanLine.length > 0 && cleanLine !== '[Document/Image]') {
-              paragraphElements.push({ type: 'paragraph', content: cleanLine });
+              paragraphElements.push({
+                type: 'paragraph',
+                content: cleanLine,
+                style: styleAttr ? styleAttr[1] : '',
+                attributes
+              });
             }
-          }
-        }
-      }
-      
-      // If still no content, fall back to text extraction
-      if (paragraphElements.length === 0) {
-        const fallbackText = workingHtml
-          .replace(/<[^>]*>/g, '') // Remove all HTML tags
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/\s+/g, ' ') // Normalize spaces
-          .trim();
-        
-        if (fallbackText.length > 0) {
-          // Split into sentences/logical breaks for better paragraph structure
-          const sentences = fallbackText.split(/(?<=[.।])\s+/).filter(s => s.trim().length > 0);
-          for (const sentence of sentences) {
-            paragraphElements.push({ type: 'paragraph', content: sentence.trim() });
           }
         }
       }
       
       // Debug: Log the parsed elements to see what we're working with
       console.log(`[Word Generation] Parsed ${paragraphElements.length} elements from HTML`);
-      console.log('[Word Generation] Sample elements:', paragraphElements.slice(0, 3));
+      console.log('[Word Generation] Sample elements with styling:', paragraphElements.slice(0, 3).map(el => ({
+        type: el.type,
+        content: el.content.substring(0, 50) + (el.content.length > 50 ? '...' : ''),
+        style: el.style,
+        hasAttributes: !!el.attributes
+      })));
       
       // Create structured paragraphs with proper formatting
       const documentParagraphs = [];
@@ -380,45 +469,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         alignment: AlignmentType.CENTER
       }));
       
-      // Process each parsed element and create appropriate paragraphs
+      // Process each parsed element and create appropriately styled paragraphs
       for (const element of paragraphElements) {
         const trimmedContent = element.content.trim();
         
-        if (element.type === 'heading' || 
-            trimmedContent.match(/^RENT AGREEMENT$/i) || 
-            trimmedContent.match(/^LANDLORD DOCUMENTS$/i) ||
-            trimmedContent.match(/^TENANT DOCUMENTS$/i) ||
-            trimmedContent.match(/^Witnesses$/i)) {
-          // Section headers
-          documentParagraphs.push(new Paragraph({
-            children: [new TextRun({
-              text: trimmedContent,
-              bold: true,
-              size: 26 // 13pt font
-            })],
-            spacing: { before: 300, after: 200 }
-          }));
-        } else if (trimmedContent.match(/^\d+\./)) {
-          // Numbered clauses
-          documentParagraphs.push(new Paragraph({
-            children: [new TextRun({
-              text: trimmedContent,
-              size: 22 // 11pt font
-            })],
-            spacing: { before: 200, after: 200 },
-            indent: { left: 720 } // Indent numbered items (0.5 inch)
-          }));
-        } else if (trimmedContent.length > 0) {
-          // Regular paragraphs - maintain proper spacing
-          documentParagraphs.push(new Paragraph({
-            children: [new TextRun({
-              text: trimmedContent,
-              size: 22 // 11pt font
-            })],
-            spacing: { after: 200 }, // More spacing between paragraphs
-            alignment: AlignmentType.JUSTIFIED // Justify text
-          }));
+        if (trimmedContent.length === 0) continue;
+        
+        // Parse the style attributes to get Word formatting
+        const wordFormat = parseStyleToWordFormat(element.style, element.type);
+        
+        // Create text run with appropriate formatting
+        const textRunOptions = {
+          text: trimmedContent,
+          size: wordFormat.textFormat.size || 22, // Default 11pt font
+          bold: wordFormat.textFormat.bold || element.type === 'heading' || 
+                trimmedContent.match(/^RENT AGREEMENT$/i) || 
+                trimmedContent.match(/^LANDLORD DOCUMENTS$/i) ||
+                trimmedContent.match(/^TENANT DOCUMENTS$/i) ||
+                trimmedContent.match(/^Witnesses$/i),
+          italic: wordFormat.textFormat.italic || false,
+          underline: wordFormat.textFormat.underline || false
+        };
+        
+        // Create paragraph with appropriate formatting
+        const paragraphOptions = {
+          children: [new TextRun(textRunOptions)],
+          alignment: wordFormat.alignment,
+          spacing: wordFormat.spacing
+        };
+        
+        // Add indentation for numbered clauses
+        if (trimmedContent.match(/^\d+\./)) {
+          paragraphOptions.indent = { left: 720 }; // 0.5 inch indent
+          paragraphOptions.spacing = { before: 200, after: 200 };
         }
+        
+        // Apply borders if present
+        if (wordFormat.border.top) {
+          paragraphOptions.border = wordFormat.border;
+        }
+        
+        // Adjust spacing for section headers
+        if (element.type === 'heading' || textRunOptions.bold) {
+          paragraphOptions.spacing = { before: 300, after: 200 };
+          if (element.type === 'heading') {
+            paragraphOptions.heading = HeadingLevel.HEADING_2;
+          }
+        }
+        
+        documentParagraphs.push(new Paragraph(paragraphOptions));
       }
 
       // Create Word document with structured content
