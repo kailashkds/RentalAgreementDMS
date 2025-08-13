@@ -384,12 +384,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Extract paragraphs with styling
+      // Extract paragraphs with styling - preserve line breaks
       while ((match = pTagRegex.exec(workingHtml)) !== null) {
         const attributes = match[1] || '';
         const rawContent = match[2];
+        
+        // Process content while preserving natural breaks
+        let content = rawContent
+          .replace(/<br\s*\/?>/gi, '\n') // Keep line breaks as newlines for now
+          .replace(/<[^>]*>/g, '') // Remove HTML tags
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .trim();
+        
+        const styleAttr = attributes.match(/style\s*=\s*["']([^"']+)["']/);
+        
+        if (content.length > 0 && content !== '[Document/Image]') {
+          // Split by line breaks to create separate paragraphs
+          const lines = content.split('\n').filter(line => line.trim().length > 0);
+          
+          if (lines.length === 1) {
+            // Single line content
+            paragraphElements.push({
+              type: 'paragraph',
+              content: lines[0].replace(/\s+/g, ' ').trim(),
+              style: styleAttr ? styleAttr[1] : '',
+              attributes
+            });
+          } else {
+            // Multiple lines - create separate paragraphs for each
+            for (const line of lines) {
+              const cleanLine = line.replace(/\s+/g, ' ').trim();
+              if (cleanLine.length > 0) {
+                paragraphElements.push({
+                  type: 'paragraph',
+                  content: cleanLine,
+                  style: styleAttr ? styleAttr[1] : '',
+                  attributes
+                });
+              }
+            }
+          }
+        }
+      }
+      
+      // Extract divs with styling - always process to catch content that might be missed
+      while ((match = divTagRegex.exec(workingHtml)) !== null) {
+        const attributes = match[1] || '';
+        const rawContent = match[2];
+        
+        // Check if this div contains paragraph tags - if so, skip it to avoid duplication
+        if (rawContent.includes('<p')) {
+          continue;
+        }
+        
         const content = rawContent
-          .replace(/<br\s*\/?>/gi, ' ')
+          .replace(/<br\s*\/?>/gi, '\n')
           .replace(/<[^>]*>/g, '')
           .replace(/&nbsp;/g, ' ')
           .replace(/&amp;/g, '&')
@@ -397,43 +451,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/&gt;/g, '>')
           .replace(/&quot;/g, '"')
           .replace(/&#39;/g, "'")
-          .replace(/\s+/g, ' ')
           .trim();
         
         const styleAttr = attributes.match(/style\s*=\s*["']([^"']+)["']/);
         
         if (content.length > 0 && content !== '[Document/Image]') {
-          paragraphElements.push({
-            type: 'paragraph',
-            content,
-            style: styleAttr ? styleAttr[1] : '',
-            attributes
-          });
-        }
-      }
-      
-      // Extract divs with styling if no paragraphs found
-      if (paragraphElements.filter(p => p.type === 'paragraph').length === 0) {
-        while ((match = divTagRegex.exec(workingHtml)) !== null) {
-          const attributes = match[1] || '';
-          const rawContent = match[2];
-          const content = rawContent
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<[^>]*>/g, '')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'")
-            .trim();
-          
-          const styleAttr = attributes.match(/style\s*=\s*["']([^"']+)["']/);
           const lines = content.split('\n').filter(line => line.trim().length > 0);
           
           for (const line of lines) {
             const cleanLine = line.replace(/\s+/g, ' ').trim();
-            if (cleanLine.length > 0 && cleanLine !== '[Document/Image]') {
+            if (cleanLine.length > 0) {
               paragraphElements.push({
                 type: 'paragraph',
                 content: cleanLine,
@@ -478,15 +505,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Parse the style attributes to get Word formatting
         const wordFormat = parseStyleToWordFormat(element.style, element.type);
         
+        // Determine if this is a section header
+        const isSectionHeader = element.type === 'heading' || 
+                               trimmedContent.match(/^RENT AGREEMENT$/i) || 
+                               trimmedContent.match(/^LANDLORD DOCUMENTS$/i) ||
+                               trimmedContent.match(/^TENANT DOCUMENTS$/i) ||
+                               trimmedContent.match(/^Witnesses$/i) ||
+                               trimmedContent.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
+                               trimmedContent.match(/^IN WITNESS WHEREOF/i);
+        
+        // Determine if this is a numbered clause
+        const isNumberedClause = trimmedContent.match(/^\d+\./);
+        
         // Create text run with appropriate formatting
         const textRunOptions = {
           text: trimmedContent,
-          size: wordFormat.textFormat.size || 22, // Default 11pt font
-          bold: wordFormat.textFormat.bold || element.type === 'heading' || 
-                trimmedContent.match(/^RENT AGREEMENT$/i) || 
-                trimmedContent.match(/^LANDLORD DOCUMENTS$/i) ||
-                trimmedContent.match(/^TENANT DOCUMENTS$/i) ||
-                trimmedContent.match(/^Witnesses$/i),
+          size: isSectionHeader ? 26 : 22, // Larger font for headers
+          bold: wordFormat.textFormat.bold || isSectionHeader,
           italic: wordFormat.textFormat.italic || false,
           underline: wordFormat.textFormat.underline || false
         };
@@ -495,13 +530,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const paragraphOptions: any = {
           children: [new TextRun(textRunOptions)],
           alignment: wordFormat.alignment,
-          spacing: wordFormat.spacing
+          spacing: { after: 240 } // Default spacing between paragraphs
         };
         
-        // Add indentation for numbered clauses
-        if (trimmedContent.match(/^\d+\./)) {
-          paragraphOptions.indent = { left: 720 }; // 0.5 inch indent
-          paragraphOptions.spacing = { before: 200, after: 200 };
+        // Apply specific formatting based on content type
+        if (isSectionHeader) {
+          paragraphOptions.spacing = { before: 480, after: 240 }; // More spacing around headers
+          if (element.type === 'heading') {
+            paragraphOptions.heading = HeadingLevel.HEADING_2;
+          }
+        } else if (isNumberedClause) {
+          paragraphOptions.indent = { left: 720 }; // 0.5 inch indent for numbered items
+          paragraphOptions.spacing = { before: 120, after: 240 };
+        } else {
+          // Regular paragraph
+          paragraphOptions.spacing = { after: 180 }; // Standard paragraph spacing
         }
         
         // Apply borders if present
@@ -509,11 +552,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paragraphOptions.border = wordFormat.border;
         }
         
-        // Adjust spacing for section headers
-        if (element.type === 'heading' || textRunOptions.bold) {
-          paragraphOptions.spacing = { before: 300, after: 200 };
-          if (element.type === 'heading') {
-            paragraphOptions.heading = HeadingLevel.HEADING_2;
+        // Override alignment if specified in style
+        if (element.style) {
+          if (element.style.includes('text-align: center')) {
+            paragraphOptions.alignment = AlignmentType.CENTER;
+          } else if (element.style.includes('text-align: right')) {
+            paragraphOptions.alignment = AlignmentType.RIGHT;
+          } else if (element.style.includes('text-align: justify')) {
+            paragraphOptions.alignment = AlignmentType.JUSTIFIED;
           }
         }
         
