@@ -154,11 +154,7 @@ function PDFPreview({ fileUrl, fileName, onDownload }: PDFPreviewProps) {
         <div className="text-center">
           <FileText className="h-16 w-16 text-red-400 mx-auto mb-4" />
           <p className="text-red-600 mb-2">Failed to load PDF preview</p>
-          <p className="text-sm text-gray-500 mb-4">{error}</p>
-          <Button onClick={onDownload} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Download PDF
-          </Button>
+          <p className="text-sm text-gray-500">{error}</p>
         </div>
       </div>
     );
