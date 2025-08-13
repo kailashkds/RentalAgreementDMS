@@ -859,9 +859,18 @@ html, body {
 }
 
 /* Remove any shadows, borders, or background styling */
-* {
+*, *::before, *::after {
   box-shadow: none !important;
   text-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Specific overrides for agreement content */
+div, p, h1, h2, h3, h4, h5, h6, span, img, iframe {
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
 }
 
 /* Page break control for PDF generation */
@@ -1302,13 +1311,13 @@ async function createEmbeddedDocumentHtml(documentUrl: string, fieldName: string
  */
 function createEmbeddedImageHtml(dataUrl: string, documentType: string): string {
   return `
-<div style="margin: 15px 0; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9; page-break-inside: avoid;">
+<div style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid;">
   <div style="margin-bottom: 10px;">
     <strong style="color: #2c3e50; font-size: 16px;">📄 ${documentType}</strong>
   </div>
   <div style="text-align: center; margin: 10px 0;">
     <img src="${dataUrl}" 
-         style="max-width: 100%; max-height: 400px; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
+         style="max-width: 100%; max-height: 400px; border: none; border-radius: 0; box-shadow: none;" 
          alt="${documentType}" />
   </div>
   <div style="text-align: center; margin-top: 8px;">
@@ -1322,13 +1331,13 @@ function createEmbeddedImageHtml(dataUrl: string, documentType: string): string 
  */
 function createEmbeddedPdfHtml(dataUrl: string, documentType: string): string {
   return `
-<div style="margin: 15px 0; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9; page-break-inside: avoid;">
+<div style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid;">
   <div style="margin-bottom: 10px;">
     <strong style="color: #2c3e50; font-size: 16px;">📄 ${documentType}</strong>
   </div>
   <div style="text-align: center; margin: 10px 0;">
     <iframe src="${dataUrl}" 
-            style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 4px;" 
+            style="width: 100%; height: 400px; border: none; border-radius: 0;" 
             title="${documentType}">
     </iframe>
   </div>
