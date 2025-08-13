@@ -271,11 +271,14 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
     
     if (fileType === 'pdf') {
       return (
-        <PDFPreview 
-          fileUrl={proxyUrl} 
-          fileName={displayName}
-          onDownload={() => window.open(proxyUrl, '_blank')}
-        />
+        <div className="w-full h-full flex items-center justify-center bg-white rounded">
+          <iframe
+            src={proxyUrl}
+            className="w-full border rounded-lg"
+            style={{ height: '500px', minHeight: '500px' }}
+            title={displayName}
+          />
+        </div>
       );
     }
     
