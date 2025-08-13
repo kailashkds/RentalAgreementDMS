@@ -358,42 +358,43 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
   // Step validation functions
   const validateStep = (stepNumber: number): boolean => {
+    const currentFormData = watch(); // Get live form data
     switch (stepNumber) {
       case 1:
-        return !!(formData.language); // Only require language selection, customer is optional
+        return !!(currentFormData.language); // Only require language selection, customer is optional
       case 2:
         return !!(
-          formData.ownerDetails?.name &&
-          formData.ownerDetails?.mobile &&
-          formData.ownerDetails?.age &&
-          formData.ownerDetails?.address?.flatNo &&
-          formData.ownerDetails?.address?.society &&
-          formData.ownerDetails?.address?.area &&
-          formData.ownerDetails?.address?.city &&
-          formData.ownerDetails?.address?.state &&
-          formData.ownerDetails?.address?.pincode
+          currentFormData.ownerDetails?.name &&
+          currentFormData.ownerDetails?.mobile &&
+          currentFormData.ownerDetails?.age &&
+          currentFormData.ownerDetails?.address?.flatNo &&
+          currentFormData.ownerDetails?.address?.society &&
+          currentFormData.ownerDetails?.address?.area &&
+          currentFormData.ownerDetails?.address?.city &&
+          currentFormData.ownerDetails?.address?.state &&
+          currentFormData.ownerDetails?.address?.pincode
         );
       case 3:
         return !!(
-          formData.tenantDetails?.name &&
-          formData.tenantDetails?.mobile &&
-          formData.tenantDetails?.age &&
-          formData.tenantDetails?.address?.flatNo &&
-          formData.tenantDetails?.address?.society &&
-          formData.tenantDetails?.address?.area &&
-          formData.tenantDetails?.address?.city &&
-          formData.tenantDetails?.address?.state &&
-          formData.tenantDetails?.address?.pincode
+          currentFormData.tenantDetails?.name &&
+          currentFormData.tenantDetails?.mobile &&
+          currentFormData.tenantDetails?.age &&
+          currentFormData.tenantDetails?.address?.flatNo &&
+          currentFormData.tenantDetails?.address?.society &&
+          currentFormData.tenantDetails?.address?.area &&
+          currentFormData.tenantDetails?.address?.city &&
+          currentFormData.tenantDetails?.address?.state &&
+          currentFormData.tenantDetails?.address?.pincode
         );
       case 4:
         return !!(
-          formData.propertyDetails?.address &&
-          formData.propertyDetails?.type &&
-          formData.rentalTerms?.monthlyRent &&
-          formData.rentalTerms?.startDate &&
-          formData.rentalTerms?.endDate &&
-          formData.rentalTerms?.tenure &&
-          formData.rentalTerms?.deposit
+          currentFormData.propertyDetails?.address &&
+          currentFormData.propertyDetails?.type &&
+          currentFormData.rentalTerms?.monthlyRent &&
+          currentFormData.rentalTerms?.startDate &&
+          currentFormData.rentalTerms?.endDate &&
+          currentFormData.rentalTerms?.tenure &&
+          currentFormData.rentalTerms?.deposit
         );
       case 5:
         return true; // Finalize step doesn't need validation
