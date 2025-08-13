@@ -363,39 +363,17 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       case 1:
         return !!(currentFormData.language); // Only require language selection, customer is optional
       case 2:
-        console.log("=== STEP 2 VALIDATION DEBUG ===");
-        console.log("currentFormData:", JSON.stringify(currentFormData, null, 2));
-        console.log("ownerDetails name:", currentFormData.ownerDetails?.name);
-        console.log("ownerDetails mobile:", currentFormData.ownerDetails?.mobile);
-        console.log("ownerDetails age:", currentFormData.ownerDetails?.age);
-        console.log("address flatNo:", currentFormData.ownerDetails?.address?.flatNo);
-        console.log("address society:", currentFormData.ownerDetails?.address?.society);
-        console.log("address area:", currentFormData.ownerDetails?.address?.area);
-        console.log("address city:", currentFormData.ownerDetails?.address?.city);
-        console.log("address state:", currentFormData.ownerDetails?.address?.state);
-        console.log("address pincode:", currentFormData.ownerDetails?.address?.pincode);
-        
-        const checks = {
-          name: !!currentFormData.ownerDetails?.name,
-          mobile: !!currentFormData.ownerDetails?.mobile,
-          age: !!currentFormData.ownerDetails?.age,
-          flatNo: !!currentFormData.ownerDetails?.address?.flatNo,
-          society: !!currentFormData.ownerDetails?.address?.society,
-          area: !!currentFormData.ownerDetails?.address?.area,
-          city: !!currentFormData.ownerDetails?.address?.city,
-          state: !!currentFormData.ownerDetails?.address?.state,
-          pincode: !!currentFormData.ownerDetails?.address?.pincode
-        };
-        
-        console.log("Field validation checks:", checks);
-        
-        const isValid = checks.name && checks.mobile && checks.age && 
-                       checks.flatNo && checks.society && checks.area && 
-                       checks.city && checks.state && checks.pincode;
-        
-        console.log("Step 2 is valid:", isValid);
-        console.log("=== END STEP 2 VALIDATION DEBUG ===");
-        return isValid;
+        return !!(
+          currentFormData.ownerDetails?.name &&
+          currentFormData.ownerDetails?.mobile &&
+          currentFormData.ownerDetails?.age &&
+          currentFormData.ownerDetails?.address?.flatNo &&
+          currentFormData.ownerDetails?.address?.society &&
+          currentFormData.ownerDetails?.address?.area &&
+          currentFormData.ownerDetails?.address?.city &&
+          currentFormData.ownerDetails?.address?.state &&
+          currentFormData.ownerDetails?.address?.pincode
+        );
       case 3:
         return !!(
           currentFormData.tenantDetails?.name &&
@@ -1644,21 +1622,23 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
               <div>
                 <Label>{t("fullName")}</Label>
                 <Input 
-                  {...register("tenantDetails.name", { required: "Name is required" })} 
+                  {...register("tenantDetails.name", { 
+                    required: "Name is required",
+                    onChange: (e) => {
+                      const name = e.target.value;
+                      // Clear previous timeout
+                      if (mobileTimeout.current) {
+                        clearTimeout(mobileTimeout.current);
+                      }
+                      // Auto-lookup when user finishes typing name (3+ chars)
+                      if (name.trim().length >= 3) {
+                        mobileTimeout.current = setTimeout(() => {
+                          fetchCustomerInfo(name, 'name', 'tenant');
+                        }, 800);
+                      }
+                    }
+                  })} 
                   placeholder={t("enterTenantFullName")}
-                  onChange={(e) => {
-                    const name = e.target.value;
-                    // Clear previous timeout
-                    if (mobileTimeout.current) {
-                      clearTimeout(mobileTimeout.current);
-                    }
-                    // Auto-lookup when user finishes typing name (3+ chars)
-                    if (name.trim().length >= 3) {
-                      mobileTimeout.current = setTimeout(() => {
-                        fetchCustomerInfo(name, 'name', 'tenant');
-                      }, 800);
-                    }
-                  }}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Enter name to auto-fill mobile and address
@@ -1667,21 +1647,23 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
               <div>
                 <Label>{t("mobileNumber")}</Label>
                 <Input 
-                  {...register("tenantDetails.mobile", { required: "Mobile is required" })} 
+                  {...register("tenantDetails.mobile", { 
+                    required: "Mobile is required",
+                    onChange: (e) => {
+                      const mobile = e.target.value;
+                      // Clear previous timeout to prevent multiple lookups
+                      if (mobileTimeout.current) {
+                        clearTimeout(mobileTimeout.current);
+                      }
+                      // Auto-lookup when user finishes typing 10 digits
+                      if (mobile.replace(/\D/g, '').length === 10) {
+                        mobileTimeout.current = setTimeout(() => {
+                          fetchCustomerInfo(mobile, 'mobile', 'tenant');
+                        }, 500);
+                      }
+                    }
+                  })} 
                   placeholder={t("mobileNumberPlaceholder")} 
-                  onChange={(e) => {
-                    const mobile = e.target.value;
-                    // Clear previous timeout to prevent multiple lookups
-                    if (mobileTimeout.current) {
-                      clearTimeout(mobileTimeout.current);
-                    }
-                    // Auto-lookup when user finishes typing 10 digits
-                    if (mobile.replace(/\D/g, '').length === 10) {
-                      mobileTimeout.current = setTimeout(() => {
-                        fetchCustomerInfo(mobile, 'mobile', 'tenant');
-                      }, 500);
-                    }
-                  }}
                   onBlur={(e) => fetchCustomerInfo(e.target.value, 'mobile', 'tenant')}
                 />
                 <p className="text-xs text-gray-500 mt-1">
