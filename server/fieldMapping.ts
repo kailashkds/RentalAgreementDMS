@@ -640,6 +640,23 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     templateFields['PROPERTY_PURPOSE_COMMERCIAL'] = '';
   }
 
+  // Convert property purpose to Gujarati
+  if (propertyPurpose) {
+    const purposeMapping: Record<string, string> = {
+      'residential': 'રહેઠાણ',
+      'commercial': 'વ્યાપારિક',
+      'office': 'કાર્યાલય',
+      'shop': 'દુકાન',
+      'warehouse': 'ગોદામ',
+      'industrial': 'ઉદ્યોગિક'
+    };
+    
+    const purposeLower = propertyPurpose.toLowerCase();
+    templateFields['PROPERTY_PURPOSE_GUJARATI'] = purposeMapping[purposeLower] || propertyPurpose;
+  } else {
+    templateFields['PROPERTY_PURPOSE_GUJARATI'] = 'રહેઠાણ'; // Default to residential
+  }
+
   // Default values for common fields if not provided
   if (!templateFields['TENURE']) {
     templateFields['TENURE'] = '11 Month';
