@@ -1415,21 +1415,23 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
               <div>
                 <Label htmlFor="ownerName">{t("ownerName")}</Label>
                 <Input 
-                  {...register("ownerDetails.name", { required: "Name is required" })} 
+                  {...register("ownerDetails.name", { 
+                    required: "Name is required",
+                    onChange: (e) => {
+                      const name = e.target.value;
+                      // Clear previous timeout
+                      if (mobileTimeout.current) {
+                        clearTimeout(mobileTimeout.current);
+                      }
+                      // Auto-lookup when user finishes typing name (3+ chars)
+                      if (name.trim().length >= 3) {
+                        mobileTimeout.current = setTimeout(() => {
+                          fetchCustomerInfo(name, 'name', 'owner');
+                        }, 800);
+                      }
+                    }
+                  })} 
                   placeholder={t("ownerName")}
-                  onChange={(e) => {
-                    const name = e.target.value;
-                    // Clear previous timeout
-                    if (mobileTimeout.current) {
-                      clearTimeout(mobileTimeout.current);
-                    }
-                    // Auto-lookup when user finishes typing name (3+ chars)
-                    if (name.trim().length >= 3) {
-                      mobileTimeout.current = setTimeout(() => {
-                        fetchCustomerInfo(name, 'name', 'owner');
-                      }, 800);
-                    }
-                  }}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Enter name to auto-fill mobile and address
@@ -1441,21 +1443,23 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
               <div>
                 <Label htmlFor="ownerMobile">{t("ownerMobile")}</Label>
                 <Input 
-                  {...register("ownerDetails.mobile", { required: "Mobile is required" })} 
+                  {...register("ownerDetails.mobile", { 
+                    required: "Mobile is required",
+                    onChange: (e) => {
+                      const mobile = e.target.value;
+                      // Clear previous timeout to prevent multiple lookups
+                      if (mobileTimeout.current) {
+                        clearTimeout(mobileTimeout.current);
+                      }
+                      // Auto-lookup when user finishes typing 10 digits
+                      if (mobile.replace(/\D/g, '').length === 10) {
+                        mobileTimeout.current = setTimeout(() => {
+                          fetchCustomerInfo(mobile, 'mobile', 'owner');
+                        }, 500);
+                      }
+                    }
+                  })} 
                   placeholder={t("mobileNumberPlaceholder")}
-                  onChange={(e) => {
-                    const mobile = e.target.value;
-                    // Clear previous timeout to prevent multiple lookups
-                    if (mobileTimeout.current) {
-                      clearTimeout(mobileTimeout.current);
-                    }
-                    // Auto-lookup when user finishes typing 10 digits
-                    if (mobile.replace(/\D/g, '').length === 10) {
-                      mobileTimeout.current = setTimeout(() => {
-                        fetchCustomerInfo(mobile, 'mobile', 'owner');
-                      }, 500);
-                    }
-                  }}
                   onBlur={(e) => fetchCustomerInfo(e.target.value, 'mobile', 'owner')}
                 />
                 <p className="text-xs text-gray-500 mt-1">
