@@ -294,13 +294,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Function to parse CSS properties into Word formatting
-      function parseStyleToWordFormat(styleAttr, elementType = 'p') {
+      const parseStyleToWordFormat = (styleAttr: string, elementType: string = 'p') => {
         const format = {
           alignment: AlignmentType.LEFT,
-          spacing: { after: 120 },
-          indent: {},
-          border: {},
-          textFormat: {}
+          spacing: { after: 120 } as any,
+          indent: {} as any,
+          border: {} as any,
+          textFormat: {} as any
         };
         
         if (styleAttr) {
@@ -308,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (styleAttr.includes('text-align: right') || styleAttr.includes('text-align:right')) {
             format.alignment = AlignmentType.RIGHT;
           } else if (styleAttr.includes('text-align: center') || styleAttr.includes('text-align:center')) {
-            format.alignment = AlignmentType.CENTER;
+            format.alignment = AlignmentType.CENTER;  
           } else if (styleAttr.includes('text-align: justify') || styleAttr.includes('text-align:justify')) {
             format.alignment = AlignmentType.JUSTIFIED;
           }
@@ -355,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         return format;
-      }
+      };
       
       // Split content into structured elements while preserving styling
       const paragraphElements = [];
@@ -492,7 +492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
         
         // Create paragraph with appropriate formatting
-        const paragraphOptions = {
+        const paragraphOptions: any = {
           children: [new TextRun(textRunOptions)],
           alignment: wordFormat.alignment,
           spacing: wordFormat.spacing
@@ -505,7 +505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Apply borders if present
-        if (wordFormat.border.top) {
+        if (wordFormat.border && wordFormat.border.top) {
           paragraphOptions.border = wordFormat.border;
         }
         
