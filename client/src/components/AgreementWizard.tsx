@@ -57,7 +57,7 @@ const LANGUAGES = [
 export default function AgreementWizard({ isOpen, onClose, agreementId, editingAgreement }: AgreementWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [documents, setDocuments] = useState<Record<string, string>>({});
+  const [documents, setDocuments] = useState<Record<string, string | { filename: string; fileType: string; size: number } | undefined>>({});
   const [addressSearch, setAddressSearch] = useState({
     owner: "",
     tenant: "",
@@ -842,10 +842,26 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   const handleDocumentUpload = (type: string, result: { url: string; filename: string; originalName: string; size: number }) => {
     console.log(`Document upload complete - Type: ${type}, URL: ${result.url}, FileName: ${result.originalName}`);
     
+    // Determine file type from original name
+    const getFileTypeFromName = (filename: string) => {
+      const ext = filename.toLowerCase().split('.').pop();
+      if (ext === 'pdf') return 'application/pdf';
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) return `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+      return 'application/octet-stream';
+    };
+    
+    const fileType = getFileTypeFromName(result.originalName);
+    console.log(`Detected file type: ${fileType} for file: ${result.originalName}`);
+    
     // Store file information for document processing
     setDocuments(prev => ({ 
       ...prev, 
-      [type]: result.url
+      [type]: result.url,
+      [`${type}_metadata`]: {
+        filename: result.originalName,
+        fileType: fileType,
+        size: result.size
+      }
     }));
     
     toast({
@@ -1551,9 +1567,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   {documents.ownerAadhar ? (
                     <FilePreview
                       fileUrl={documents.ownerAadhar}
-                      fileName="Owner Aadhar Card"
-                      fileType="image/jpeg"
-                      onRemove={() => setDocuments(prev => ({ ...prev, ownerAadhar: "" }))}
+                      fileName={documents.ownerAadhar_metadata?.filename || "Owner Aadhar Card"}
+                      fileType={documents.ownerAadhar_metadata?.fileType}
+                      onRemove={() => setDocuments(prev => ({ ...prev, ownerAadhar: "", ownerAadhar_metadata: undefined }))}
                       className="w-full"
                     />
                   ) : (
@@ -1579,9 +1595,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   {documents.ownerPan ? (
                     <FilePreview
                       fileUrl={documents.ownerPan}
-                      fileName="Owner PAN Card"
-                      fileType="image/jpeg"
-                      onRemove={() => setDocuments(prev => ({ ...prev, ownerPan: "" }))}
+                      fileName={documents.ownerPan_metadata?.filename || "Owner PAN Card"}
+                      fileType={documents.ownerPan_metadata?.fileType}
+                      onRemove={() => setDocuments(prev => ({ ...prev, ownerPan: "", ownerPan_metadata: undefined }))}
                       className="w-full"
                     />
                   ) : (
@@ -1769,9 +1785,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   {documents.tenantAadhar ? (
                     <FilePreview
                       fileUrl={documents.tenantAadhar}
-                      fileName="Tenant Aadhar Card"
-                      fileType="image/jpeg"
-                      onRemove={() => setDocuments(prev => ({ ...prev, tenantAadhar: "" }))}
+                      fileName={documents.tenantAadhar_metadata?.filename || "Tenant Aadhar Card"}
+                      fileType={documents.tenantAadhar_metadata?.fileType}
+                      onRemove={() => setDocuments(prev => ({ ...prev, tenantAadhar: "", tenantAadhar_metadata: undefined }))}
                       className="w-full"
                     />
                   ) : (
@@ -1797,9 +1813,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   {documents.tenantPan ? (
                     <FilePreview
                       fileUrl={documents.tenantPan}
-                      fileName="Tenant PAN Card"
-                      fileType="image/jpeg"
-                      onRemove={() => setDocuments(prev => ({ ...prev, tenantPan: "" }))}
+                      fileName={documents.tenantPan_metadata?.filename || "Tenant PAN Card"}
+                      fileType={documents.tenantPan_metadata?.fileType}
+                      onRemove={() => setDocuments(prev => ({ ...prev, tenantPan: "", tenantPan_metadata: undefined }))}
                       className="w-full"
                     />
                   ) : (
@@ -1969,9 +1985,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                     {documents.propertyDocuments ? (
                       <FilePreview
                         fileUrl={documents.propertyDocuments}
-                        fileName="Property Documents"
-                        fileType="application/pdf"
-                        onRemove={() => setDocuments(prev => ({ ...prev, propertyDocuments: "" }))}
+                        fileName={documents.propertyDocuments_metadata?.filename || "Property Documents"}
+                        fileType={documents.propertyDocuments_metadata?.fileType}
+                        onRemove={() => setDocuments(prev => ({ ...prev, propertyDocuments: "", propertyDocuments_metadata: undefined }))}
                         className="w-full"
                       />
                     ) : (

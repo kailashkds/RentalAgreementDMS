@@ -281,12 +281,16 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
     
     if (fileType === 'image') {
       return (
-        <div className="max-w-full max-h-[80vh] overflow-auto flex items-center justify-center bg-gray-50 rounded">
+        <div className="w-full h-full flex items-center justify-center bg-white rounded">
           <img
             src={proxyUrl}
             alt={displayName}
-            className="max-w-full max-h-full object-contain shadow-lg"
-            style={{ maxHeight: '70vh' }}
+            className="max-w-full max-h-full object-contain shadow-lg rounded-lg border"
+            style={{ maxHeight: '500px', maxWidth: '100%' }}
+            onError={() => {
+              console.error(`Failed to load image from: ${proxyUrl}`);
+              setImageError(true);
+            }}
           />
         </div>
       );
@@ -408,7 +412,7 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
       </Card>
 
       <Dialog open={showFullPreview} onOpenChange={setShowFullPreview}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -429,8 +433,10 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
               </div>
             </DialogTitle>
           </DialogHeader>
-          <div className="overflow-auto" style={{ maxHeight: 'calc(95vh - 100px)' }}>
-            {renderFullPreview()}
+          <div className="overflow-auto bg-gray-50 rounded-lg border" style={{ maxHeight: 'calc(90vh - 120px)', minHeight: '500px' }}>
+            <div className="p-4 flex items-center justify-center min-h-full">
+              {renderFullPreview()}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
