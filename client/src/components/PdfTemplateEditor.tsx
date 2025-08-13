@@ -620,7 +620,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                       margin: 0 auto;
                       padding: 20px;
                       background: white;
-                      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                      border: 1px solid #e5e5e5;
                       min-height: 1056px; /* A4 height simulation */
                       width: 800px; /* A4 width simulation */
                     }

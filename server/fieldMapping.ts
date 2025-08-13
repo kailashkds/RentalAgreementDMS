@@ -843,6 +843,27 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
   // Add page break control CSS if not already present
   const pageBreakCSS = `
 <style>
+/* PDF-specific styling - clean, professional appearance */
+@page {
+  margin: 20mm;
+  size: A4;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background: white;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Remove any shadows, borders, or background styling */
+* {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
 /* Page break control for PDF generation */
 .no-page-break {
   page-break-inside: avoid;
@@ -895,6 +916,12 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
   .no-page-break, .keep-together, .agreement-section, .clause-section, .signature-section, .terms-section {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+  
+  body {
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 }
 </style>`;
