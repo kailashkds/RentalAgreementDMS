@@ -4,6 +4,88 @@ import { Button } from "@/components/ui/button";
 import { X, FileText, Image, Eye, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
+// PDF Viewer Component - uses blob URL approach
+interface PDFViewerProps {
+  fileUrl: string;
+  fileName: string;
+}
+
+function PDFViewer({ fileUrl, fileName }: PDFViewerProps) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPdfAsBlob = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        console.log(`PDFViewer - Fetching PDF as blob: ${fileUrl}`);
+        
+        const response = await fetch(fileUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setBlobUrl(url);
+      } catch (err) {
+        console.error('Error fetching PDF as blob:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load PDF');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPdfAsBlob();
+
+    // Cleanup blob URL on unmount
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [fileUrl, blobUrl]);
+
+  if (loading) {
+    return (
+      <div className="w-full h-96 flex items-center justify-center bg-gray-50 rounded-lg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Loading PDF...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-96 flex items-center justify-center bg-gray-50 rounded-lg">
+        <div className="text-center">
+          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm text-red-600 mb-2">Failed to load PDF</p>
+          <p className="text-xs text-gray-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full bg-white rounded-lg">
+      {blobUrl && (
+        <iframe
+          src={blobUrl}
+          className="w-full border rounded-lg"
+          style={{ height: '500px', minHeight: '500px' }}
+          title={fileName}
+        />
+      )}
+    </div>
+  );
+}
+
 // PDF Preview Component
 interface PDFPreviewProps {
   fileUrl: string;
@@ -270,16 +352,7 @@ export function FilePreview({ fileUrl, fileName, fileType: providedFileType, onR
     console.log(`FilePreview - Rendering full preview for fileType: ${fileType}, URL: ${fileUrl}`);
     
     if (fileType === 'pdf') {
-      return (
-        <div className="w-full h-full flex items-center justify-center bg-white rounded">
-          <iframe
-            src={proxyUrl}
-            className="w-full border rounded-lg"
-            style={{ height: '500px', minHeight: '500px' }}
-            title={displayName}
-          />
-        </div>
-      );
+      return <PDFViewer fileUrl={proxyUrl} fileName={displayName} />;
     }
     
     if (fileType === 'image') {
