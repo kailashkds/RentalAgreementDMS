@@ -1468,13 +1468,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 <div className="relative">
                   <Label>{t("society")}</Label>
                   <Input 
-                    {...register("ownerDetails.address.society", { required: "Society/Apartment name is required" })}
+                    {...register("ownerDetails.address.society", { 
+                      required: "Society/Apartment name is required",
+                      onChange: (e) => {
+                        const value = e.target.value;
+                        console.log(`Owner society input changed to: "${value}"`);
+                        fetchSocietyAddresses(value);
+                      }
+                    })}
                     placeholder={t("startTypingSociety")}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      console.log(`Owner society input changed to: "${value}"`);
-                      fetchSocietyAddresses(value);
-                    }}
                     onBlur={() => setTimeout(() => setShowSocietySuggestions(false), 200)}
                   />
                   {showSocietySuggestions && societySuggestions.length > 0 && (
@@ -1679,11 +1681,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 <div className="relative">
                   <Label>{t("society")}</Label>
                   <Input 
-                    {...register("tenantDetails.address.society", { required: "Society/Apartment name is required" })}
+                    {...register("tenantDetails.address.society", { 
+                      required: "Society/Apartment name is required",
+                      onChange: (e) => {
+                        const value = e.target.value;
+                        console.log(`Tenant society input changed to: "${value}"`);
+                        fetchSocietyAddresses(value);
+                      }
+                    })}
                     placeholder={t("startTypingSociety")}
-                    onChange={(e) => {
-                      fetchSocietyAddresses(e.target.value);
-                    }}
                     onBlur={() => setTimeout(() => setShowSocietySuggestions(false), 200)}
                   />
                   {showSocietySuggestions && societySuggestions.length > 0 && (
@@ -1816,13 +1822,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   <div className="relative">
                     <Label>{t("societyBuilding")}</Label>
                     <Input 
-                      {...register("propertyDetails.address.society", { required: "Society/Building name is required" })}
+                      {...register("propertyDetails.address.society", { 
+                        required: "Society/Building name is required",
+                        onChange: (e) => {
+                          const value = e.target.value;
+                          console.log(`Property society input changed to: "${value}"`);
+                          fetchSocietyAddresses(value);
+                        }
+                      })}
                       placeholder={t("startTypingSociety")}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        console.log(`Property society input changed to: "${value}"`);
-                        fetchSocietyAddresses(value);
-                      }}
                       onBlur={() => setTimeout(() => setShowSocietySuggestions(false), 200)}
                     />
                     {showSocietySuggestions && societySuggestions.length > 0 && (
