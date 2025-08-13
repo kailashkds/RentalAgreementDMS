@@ -1314,12 +1314,12 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="customerId">{t("selectCustomer")} <span className="text-sm text-gray-500">(Optional)</span></Label>
-                <Select value={watch("customerId") || ""} onValueChange={(value) => setValue("customerId", value)}>
+                <Select value={watch("customerId") || "none"} onValueChange={(value) => setValue("customerId", value === "none" ? "" : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select existing customer (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No customer selected - Enter details manually</SelectItem>
+                    <SelectItem value="none">No customer selected - Enter details manually</SelectItem>
                     {customersData?.customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name} - {customer.mobile}
