@@ -845,8 +845,13 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
 <style>
 /* PDF-specific styling - clean, professional appearance */
 @page {
-  margin: 20mm;
-  size: A4;
+  margin: 15mm 10mm 15mm 10mm;
+  @bottom-center { content: none; }
+  @bottom-left { content: none; }
+  @bottom-right { content: none; }
+  @top-center { content: none; }
+  @top-left { content: none; }
+  @top-right { content: none; }
 }
 
 html, body {
@@ -856,6 +861,37 @@ html, body {
   background: white;
   box-shadow: none !important;
   border: none !important;
+  line-height: 1.4 !important;
+}
+
+/* Reduce excessive line spacing and margins */
+p, div, span, h1, h2, h3, h4, h5, h6 {
+  line-height: 1.4 !important;
+  margin: 0.3em 0 !important;
+}
+
+/* Specific overrides for common paragraph spacing */
+p {
+  margin: 0.5em 0 !important;
+  line-height: 1.4 !important;
+}
+
+/* Remove excessive spacing from br tags */
+br {
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+/* Compact spacing for list items */
+li {
+  line-height: 1.4 !important;
+  margin: 0.2em 0 !important;
+}
+
+/* Reduce spacing in table cells */
+td, th {
+  line-height: 1.4 !important;
+  padding: 4px 8px !important;
 }
 
 /* Remove any shadows, borders, or background styling */
@@ -927,10 +963,21 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe {
     break-inside: avoid !important;
   }
   
-  body {
+  body, html {
     background: white !important;
     box-shadow: none !important;
     border: none !important;
+    line-height: 1.4 !important;
+  }
+  
+  p, div, span {
+    line-height: 1.4 !important;
+    margin: 0.3em 0 !important;
+  }
+  
+  br {
+    line-height: 1.2 !important;
+    margin: 0 !important;
   }
 }
 </style>`;
