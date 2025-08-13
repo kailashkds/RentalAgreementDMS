@@ -268,130 +268,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate the HTML with mapped field values and process it properly for Word
       const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate);
       
-      // Parse HTML content while preserving CSS styling and formatting
+      // Create a simple but effective approach - convert HTML to structured document sections
       let workingHtml = processedHtml;
       
-      // Extract and parse CSS styles first
-      const styleMatches = workingHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
-      const cssRules = new Map();
-      
-      if (styleMatches) {
-        for (const styleMatch of styleMatches) {
-          const cssContent = styleMatch.replace(/<\/?style[^>]*>/gi, '');
-          // Parse CSS rules to apply to Word formatting
-          const rules = cssContent.match(/([^{]+)\{([^}]+)\}/g);
-          if (rules) {
-            for (const rule of rules) {
-              const [selector, properties] = rule.split('{');
-              if (selector && properties) {
-                const cleanSelector = selector.trim();
-                const cleanProperties = properties.replace('}', '').trim();
-                cssRules.set(cleanSelector, cleanProperties);
-              }
-            }
-          }
-        }
-      }
-      
-      // Function to parse CSS properties into Word formatting
-      const parseStyleToWordFormat = (styleAttr: string, elementType: string = 'p') => {
-        const format = {
-          alignment: AlignmentType.LEFT,
-          spacing: { after: 120 } as any,
-          indent: {} as any,
-          border: {} as any,
-          textFormat: {} as any
-        };
+      // Helper function to extract text and styling from HTML elements
+      const extractTextAndStyle = (htmlElement: string) => {
+        const styleMatch = htmlElement.match(/style\s*=\s*["']([^"']+)["']/);
+        const style = styleMatch ? styleMatch[1] : '';
         
-        if (styleAttr) {
-          // Parse text-align
-          if (styleAttr.includes('text-align: right') || styleAttr.includes('text-align:right')) {
-            format.alignment = AlignmentType.RIGHT;
-          } else if (styleAttr.includes('text-align: center') || styleAttr.includes('text-align:center')) {
-            format.alignment = AlignmentType.CENTER;  
-          } else if (styleAttr.includes('text-align: justify') || styleAttr.includes('text-align:justify')) {
-            format.alignment = AlignmentType.JUSTIFIED;
-          }
-          
-          // Parse margin and padding for spacing
-          const marginMatch = styleAttr.match(/margin[^:]*:\s*([^;]+)/);
-          if (marginMatch) {
-            const margin = marginMatch[1].trim();
-            if (margin.includes('em') || margin.includes('px')) {
-              const value = parseFloat(margin) * (margin.includes('em') ? 240 : 15);
-              format.spacing.after = Math.max(120, value);
-            }
-          }
-          
-          // Parse text styling
-          if (styleAttr.includes('font-weight: bold') || styleAttr.includes('font-weight:bold')) {
-            format.textFormat.bold = true;
-          }
-          if (styleAttr.includes('font-style: italic') || styleAttr.includes('font-style:italic')) {
-            format.textFormat.italic = true;
-          }
-          if (styleAttr.includes('text-decoration: underline') || styleAttr.includes('text-decoration:underline')) {
-            format.textFormat.underline = true;
-          }
-          
-          // Parse font size
-          const fontSizeMatch = styleAttr.match(/font-size[^:]*:\s*([^;]+)/);
-          if (fontSizeMatch) {
-            const fontSize = fontSizeMatch[1].trim();
-            if (fontSize.includes('px')) {
-              format.textFormat.size = Math.round(parseFloat(fontSize) * 1.5); // Convert px to half-points
-            } else if (fontSize.includes('pt')) {
-              format.textFormat.size = Math.round(parseFloat(fontSize) * 2); // Convert pt to half-points
-            }
-          }
-          
-          // Parse borders
-          if (styleAttr.includes('border') && !styleAttr.includes('border: none')) {
-            format.border.top = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
-            format.border.bottom = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
-            format.border.left = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
-            format.border.right = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
-          }
-        }
-        
-        return format;
-      };
-      
-      // Split content into structured elements while preserving styling
-      const paragraphElements = [];
-      
-      // Enhanced regex patterns that capture style attributes
-      const pTagRegex = /<p([^>]*)>([\s\S]*?)<\/p>/gi;
-      const divTagRegex = /<div([^>]*)>([\s\S]*?)<\/div>/gi;
-      const headingRegex = /<h[1-6]([^>]*)>([\s\S]*?)<\/h[1-6]>/gi;
-      const tableRegex = /<table([^>]*)>([\s\S]*?)<\/table>/gi;
-      
-      let match;
-      
-      // Extract headings with styling
-      while ((match = headingRegex.exec(workingHtml)) !== null) {
-        const attributes = match[1] || '';
-        const content = match[2].replace(/<[^>]*>/g, '').trim();
-        const styleAttr = attributes.match(/style\s*=\s*["']([^"']+)["']/);
-        
-        if (content.length > 0) {
-          paragraphElements.push({
-            type: 'heading',
-            content,
-            style: styleAttr ? styleAttr[1] : '',
-            attributes
-          });
-        }
-      }
-      
-      // Extract paragraphs with styling - preserve line breaks
-      while ((match = pTagRegex.exec(workingHtml)) !== null) {
-        const attributes = match[1] || '';
-        const rawContent = match[2];
-        
-        // Process content while preserving natural breaks
-        let content = rawContent
-          .replace(/<br\s*\/?>/gi, '\n') // Keep line breaks as newlines for now
+        let text = htmlElement
           .replace(/<[^>]*>/g, '') // Remove HTML tags
           .replace(/&nbsp;/g, ' ')
           .replace(/&amp;/g, '&')
@@ -399,32 +284,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/&gt;/g, '>')
           .replace(/&quot;/g, '"')
           .replace(/&#39;/g, "'")
+          .replace(/\s+/g, ' ')
           .trim();
         
-        const styleAttr = attributes.match(/style\s*=\s*["']([^"']+)["']/);
-        
-        if (content.length > 0 && content !== '[Document/Image]') {
-          // Split by line breaks to create separate paragraphs
-          const lines = content.split('\n').filter(line => line.trim().length > 0);
-          
-          if (lines.length === 1) {
-            // Single line content
-            paragraphElements.push({
-              type: 'paragraph',
-              content: lines[0].replace(/\s+/g, ' ').trim(),
-              style: styleAttr ? styleAttr[1] : '',
-              attributes
-            });
-          } else {
-            // Multiple lines - create separate paragraphs for each
+        return { text, style };
+      };
+      
+      // Helper function to determine alignment from style
+      const getAlignment = (style: string) => {
+        if (style.includes('text-align: center')) return AlignmentType.CENTER;
+        if (style.includes('text-align: right')) return AlignmentType.RIGHT;
+        if (style.includes('text-align: justify')) return AlignmentType.JUSTIFIED;
+        return AlignmentType.LEFT;
+      };
+      
+      // Helper function to check if text should be bold
+      const shouldBeBold = (text: string, style: string) => {
+        return style.includes('font-weight: bold') || 
+               text.match(/^RENT AGREEMENT$/i) ||
+               text.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
+               text.match(/^IN WITNESS WHEREOF/i) ||
+               text.match(/^LANDLORD DOCUMENTS$/i) ||
+               text.match(/^TENANT DOCUMENTS$/i);
+      };
+      
+      // Split the HTML into logical sections and create Word paragraphs
+      const paragraphElements = [];
+      
+      // Extract title (h1)
+      const titleMatch = workingHtml.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+      if (titleMatch) {
+        const { text, style } = extractTextAndStyle(titleMatch[0]);
+        if (text) {
+          paragraphElements.push({
+            text,
+            alignment: getAlignment(style),
+            bold: true,
+            size: 32,
+            spacing: { after: 480 },
+            type: 'title'
+          });
+        }
+      }
+      
+      // Extract all paragraphs in order
+      const pMatches = workingHtml.match(/<p[^>]*>[\s\S]*?<\/p>/gi);
+      if (pMatches) {
+        for (const pMatch of pMatches) {
+          const { text, style } = extractTextAndStyle(pMatch);
+          if (text && text !== '[Document/Image]') {
+            // Handle line breaks within paragraphs
+            const lines = text.split(/\s*\n\s*/).filter(line => line.trim());
+            
             for (const line of lines) {
-              const cleanLine = line.replace(/\s+/g, ' ').trim();
-              if (cleanLine.length > 0) {
+              if (line.trim()) {
                 paragraphElements.push({
-                  type: 'paragraph',
-                  content: cleanLine,
-                  style: styleAttr ? styleAttr[1] : '',
-                  attributes
+                  text: line.trim(),
+                  alignment: getAlignment(style),
+                  bold: shouldBeBold(line, style),
+                  italic: style.includes('font-style: italic'),
+                  size: 22,
+                  spacing: { after: 180 },
+                  type: 'paragraph'
                 });
               }
             }
@@ -432,135 +353,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Extract divs with styling - always process to catch content that might be missed
-      while ((match = divTagRegex.exec(workingHtml)) !== null) {
-        const attributes = match[1] || '';
-        const rawContent = match[2];
-        
-        // Check if this div contains paragraph tags - if so, skip it to avoid duplication
-        if (rawContent.includes('<p')) {
-          continue;
+      // Extract h3 headings 
+      const h3Matches = workingHtml.match(/<h3[^>]*>[\s\S]*?<\/h3>/gi);
+      if (h3Matches) {
+        for (const h3Match of h3Matches) {
+          const { text, style } = extractTextAndStyle(h3Match);
+          if (text) {
+            paragraphElements.push({
+              text,
+              alignment: getAlignment(style),
+              bold: true,
+              size: 26,
+              spacing: { before: 360, after: 240 },
+              type: 'heading'
+            });
+          }
         }
-        
-        const content = rawContent
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<[^>]*>/g, '')
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .trim();
-        
-        const styleAttr = attributes.match(/style\s*=\s*["']([^"']+)["']/);
-        
-        if (content.length > 0 && content !== '[Document/Image]') {
-          const lines = content.split('\n').filter(line => line.trim().length > 0);
+      }
+      
+      // Extract divs that contain structured content
+      const divMatches = workingHtml.match(/<div[^>]*>[\s\S]*?<\/div>/gi);
+      if (divMatches) {
+        for (const divMatch of divMatches) {
+          // Skip divs that contain paragraphs or headings (already processed)
+          if (divMatch.includes('<p') || divMatch.includes('<h')) continue;
           
-          for (const line of lines) {
-            const cleanLine = line.replace(/\s+/g, ' ').trim();
-            if (cleanLine.length > 0) {
-              paragraphElements.push({
-                type: 'paragraph',
-                content: cleanLine,
-                style: styleAttr ? styleAttr[1] : '',
-                attributes
-              });
+          const { text, style } = extractTextAndStyle(divMatch);
+          if (text && text !== '[Document/Image]') {
+            const lines = text.split(/\s*\n\s*/).filter(line => line.trim());
+            
+            for (const line of lines) {
+              if (line.trim()) {
+                paragraphElements.push({
+                  text: line.trim(),
+                  alignment: getAlignment(style),
+                  bold: shouldBeBold(line, style),
+                  size: 22,
+                  spacing: { after: 180 },
+                  type: 'paragraph'
+                });
+              }
             }
           }
         }
       }
       
-      // Debug: Log the parsed elements to see what we're working with
       console.log(`[Word Generation] Parsed ${paragraphElements.length} elements from HTML`);
       console.log('[Word Generation] Sample elements with styling:', paragraphElements.slice(0, 3).map(el => ({
         type: el.type,
-        content: el.content.substring(0, 50) + (el.content.length > 50 ? '...' : ''),
-        style: el.style,
-        hasAttributes: !!el.attributes
+        text: el.text?.substring(0, 50) + '...',
+        bold: el.bold,
+        alignment: el.alignment
       })));
       
-      // Create structured paragraphs with proper formatting
+      // Create Word document elements from parsed content
       const documentParagraphs = [];
       
-      // Add title
-      documentParagraphs.push(new Paragraph({
-        children: [new TextRun({
-          text: `RENTAL AGREEMENT${safeAgreementData.agreementNumber ? ` - ${safeAgreementData.agreementNumber}` : ''}`,
-          bold: true,
-          size: 32 // 16pt font for title
-        })],
-        heading: HeadingLevel.TITLE,
-        spacing: { after: 400 },
-        alignment: AlignmentType.CENTER
-      }));
-      
-      // Process each parsed element and create appropriately styled paragraphs
       for (const element of paragraphElements) {
-        const trimmedContent = element.content.trim();
+        if (!element.text || element.text.trim() === '[Document/Image]') continue;
         
-        if (trimmedContent.length === 0) continue;
+        // Create text run with formatting
+        const textRun = new TextRun({
+          text: element.text,
+          size: element.size || 22,
+          bold: element.bold || false,
+          italic: element.italic || false
+        });
         
-        // Parse the style attributes to get Word formatting
-        const wordFormat = parseStyleToWordFormat(element.style, element.type);
-        
-        // Determine if this is a section header
-        const isSectionHeader = element.type === 'heading' || 
-                               trimmedContent.match(/^RENT AGREEMENT$/i) || 
-                               trimmedContent.match(/^LANDLORD DOCUMENTS$/i) ||
-                               trimmedContent.match(/^TENANT DOCUMENTS$/i) ||
-                               trimmedContent.match(/^Witnesses$/i) ||
-                               trimmedContent.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
-                               trimmedContent.match(/^IN WITNESS WHEREOF/i);
-        
-        // Determine if this is a numbered clause
-        const isNumberedClause = trimmedContent.match(/^\d+\./);
-        
-        // Create text run with appropriate formatting
-        const textRunOptions = {
-          text: trimmedContent,
-          size: isSectionHeader ? 26 : 22, // Larger font for headers
-          bold: wordFormat.textFormat.bold || isSectionHeader,
-          italic: wordFormat.textFormat.italic || false,
-          underline: wordFormat.textFormat.underline || false
-        };
-        
-        // Create paragraph with appropriate formatting
+        // Create paragraph with formatting
         const paragraphOptions: any = {
-          children: [new TextRun(textRunOptions)],
-          alignment: wordFormat.alignment,
-          spacing: { after: 240 } // Default spacing between paragraphs
+          children: [textRun],
+          alignment: element.alignment || AlignmentType.LEFT,
+          spacing: element.spacing || { after: 180 }
         };
         
-        // Apply specific formatting based on content type
-        if (isSectionHeader) {
-          paragraphOptions.spacing = { before: 480, after: 240 }; // More spacing around headers
-          if (element.type === 'heading') {
-            paragraphOptions.heading = HeadingLevel.HEADING_2;
-          }
-        } else if (isNumberedClause) {
-          paragraphOptions.indent = { left: 720 }; // 0.5 inch indent for numbered items
+        // Add special formatting for numbered clauses
+        if (element.text.match(/^\d+\./)) {
+          paragraphOptions.indent = { left: 720 }; // 0.5 inch indent
           paragraphOptions.spacing = { before: 120, after: 240 };
-        } else {
-          // Regular paragraph
-          paragraphOptions.spacing = { after: 180 }; // Standard paragraph spacing
         }
         
-        // Apply borders if present
-        if (wordFormat.border && wordFormat.border.top) {
-          paragraphOptions.border = wordFormat.border;
-        }
-        
-        // Override alignment if specified in style
-        if (element.style) {
-          if (element.style.includes('text-align: center')) {
-            paragraphOptions.alignment = AlignmentType.CENTER;
-          } else if (element.style.includes('text-align: right')) {
-            paragraphOptions.alignment = AlignmentType.RIGHT;
-          } else if (element.style.includes('text-align: justify')) {
-            paragraphOptions.alignment = AlignmentType.JUSTIFIED;
-          }
+        // Add heading style if specified
+        if (element.type === 'heading') {
+          paragraphOptions.heading = HeadingLevel.HEADING_2;
         }
         
         documentParagraphs.push(new Paragraph(paragraphOptions));

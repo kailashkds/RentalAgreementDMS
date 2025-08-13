@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.page-break-before {
+  page-break-before: always;
+}
+.no-page-break {
+  page-break-inside: avoid;
+}
+</style>
+</head>
+<body>
+<div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+  
+  <h1 style="text-align: center; margin-bottom: 30px;">
+    <strong>RENT AGREEMENT</strong>
+  </h1>
+
+  <p style="text-align: justify;">
+    This Agreement of Rent is made on <strong>{{AGREEMENT_DATE}}</strong> by and between
+  </p>
+
+  <p style="text-align: justify; margin: 10px 0;">
+    <br>
+     <strong style="text-transform: uppercase;">{{OWNER_NAME}}</strong><br>
+    Age: {{OWNER_AGE}}, Occupation: {{OWNER_OCCUPATION}}<br>
+    Address: <span style="text-transform: uppercase;">
+        {{OWNER_HOUSE_NUMBER}}, {{OWNER_SOCIETY}}, {{OWNER_AREA}}, {{OWNER_CITY}}, {{OWNER_STATE}}, {{OWNER_PINCODE}}
+    </span>
+  </p>
+  <p style="text-align: right; font-style: italic;">
+    <strong>Hereinafter called the LANDLORD of the FIRST PART</strong>
+  </p>
+
+  <p style="text-align: justify; margin: 20px 0 10px 0;">
+     <strong style="text-transform: uppercase;">{{TENANT_NAME}}</strong><br>
+    Age: {{TENANT_AGE}}, Occupation: {{TENANT_OCCUPATION}}<br>
+    Address: <span style="text-transform: uppercase;">
+        {{TENANT_HOUSE_NUMBER}}, {{TENANT_SOCIETY}}, {{TENANT_AREA}}, {{TENANT_CITY}}, {{TENANT_STATE}}, {{TENANT_PINCODE}}
+    </span>
+  </p>
+  <p style="text-align: right; font-style: italic;">
+    <strong>Hereinafter called the TENANT of the SECOND PART </strong>
+  </p>
+
+  <p style="text-align: justify; margin: 20px 0;">
+    Property Address: <span style="text-transform: uppercase;">
+        {{PROPERTY_HOUSE_NUMBER}}, {{PROPERTY_SOCIETY}}, {{PROPERTY_AREA}}, {{PROPERTY_CITY}}, {{PROPERTY_STATE}}, {{PROPERTY_PINCODE}}
+    </span><br>
+    Property Purpose: {{PROPERTY_PURPOSE}}<br>
+    Rent Amount: ₹{{RENT_AMOUNT}} (₹{{RENT_AMOUNT_WORDS}}) Per Month<br>
+  </p>
+
+  <div style="margin: 20px 0;">
+    <h3><strong>NOW THIS AGREEMENT WITNESSETH AND IT IS HEREBY AGREED BY AND BETWEEN THE PARTIES AS UNDER:</strong></h3>
+    <br>
+    <p>1. That the tenancy shall be initially for the period of with effect from {{START_DATE}} to {{END_DATE}} and will be renewed every 11 months with mutual consent of both the landlord and tenant.</p>
+    <br>
+    <p>2. That the rent payable by the tenant to the landlord or his/her Authorized person, in respect of the said premises, shall be ₹{{RENT_AMOUNT}} ({{RENT_AMOUNT_WORDS}}) per month {{MAINTENANCE_INCLUSION}} {{MAINTENANCE_EXCLUSION}} which shall be payable on or before {{PAYMENT_DUE_DATE_FROM}} - {{PAYMENT_DUE_DATE_TO}} date of every succeeding month of the rental period.</p>
+    <br>
+    <p>3. That the tenant has paid a sum of ₹{{SECURITY_DEPOSIT}}/- (Rupees {{SECURITY_DEPOSIT_WORDS}} only) as interest-free security deposit, the receipt of which is hereby acknowledged by the landlord. This advance amount shall be returned to the tenant by the landlord at the time of vacating the said premises after adjusting the dues such as rent, water charges, maintenance charges, electricity dues, and cost of damages if any.</p>
+    <br>
+    <p>4. All the expenses on the said premises such as electric power, water, gas, professional tax, municipal tax, and GST (relating to the tenant business) shall be paid by the tenant. All the above-mentioned paid receipts shall be handed over to the landlord by the Tenant.</p>
+    <br>
+    <p>5. That the furniture, fittings and fixtures in the house premises are in good condition, and the tenant shall return the same to the landlord in good condition except for normal wear and tear before vacating the house premises. Any damage shall be reimbursed by the tenant to the landlord.</p>
+    <br>
+    <p>6. That the tenant has agreed to ensure a minimum stay of {{MINIMUM_STAY}} months. Both parties agree to provide a notice period of {{NOTICE_PERIOD}} month(s) before vacating the premises.</p>
+    <br>
+    <p>7. That the tenant shall not sub-rent or sublet either the entire or any part of the said premises. The premises shall be used only for {{PROPERTY_PURPOSE}} purposes.</p>
+    <br>
+    <p>8. That the tenant has agreed to keep the house and surrounding premises clean and in hygienic condition. The tenant shall not undertake any action that may cause permanent or structural damages without prior consent from the landlord.</p>
+    <br>
+    <p>9. That the landlord shall be at liberty to inspect the house premises personally or through any authorized person(s) as and when necessary.</p>
+    <br>
+    <p>10. That the tenant has agreed to hand over {{ADDITIONAL_ITEMS}} to the landlord at the time of vacating the premises.</p>
+    <br>
+    <p>11. It is hereby agreed that if default is made by the tenant in the payment of rent for three months, or in the observance and performance of any of the covenants and stipulations contained herein, the landlord shall be entitled to terminate the rent agreement and eject the tenant from the premises. The landlord shall then take possession of the said premises as the full and absolute owner.</p>
+    <br>
+    <p>12. That the landlord shall be responsible for the payment of all taxes and levies pertaining to the said premises including but not limited to house tax, property tax, other cesses (if any), and any other statutory taxes levied by government bodies. The landlord shall comply with all applicable statutory obligations during the term of this agreement.</p>
+    <br>
+    <div>
+    <strong>Additional Clause:</strong><br>
+      {{ADDITIONAL_CLAUSES}}
+    </div>
+    <br>
+    <h3><strong>IN WITNESS WHEREOF, the parties have set their hands on the day and year first above written, without any external influence or pressure from anybody.</strong></h3>
+  </div>
+
+  
+  <br>
+  <!-- Signatures Section (prevent page break) -->
+  <div class="no-page-break"
+    style="border: 1px solid #ccc; padding: 20px; margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-start;">
+    <div style="flex: 1;">
+      <p style="font-weight: bold; font-size: 16px; text-transform: uppercase;">{{OWNER_NAME}}</p>
+      <p style="font-style: italic;">Landlord</p>
+      <div style="margin-top: 60px; width: 120px; border-top: 1px solid #000;"></div>
+    </div>
+    <div
+      style="width: 130px; height: 160px; border: 1px dashed #000; text-align: center; font-size: 12px; padding-top: 65px;">
+      Passport Size Photo
+    </div>
+  </div>
+
+  <div class="no-page-break"
+    style="border: 1px solid #ccc; padding: 20px; margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-start;">
+    <div style="flex: 1;">
+      <p style="font-weight: bold; font-size: 16px; text-transform: uppercase;">{{TENANT_NAME}}</p>
+      <p style="font-style: italic;">Tenant</p>
+      <div style="margin-top: 60px; width: 120px; border-top: 1px solid #000;"></div>
+    </div>
+    <div
+      style="width: 130px; height: 160px; border: 1px dashed #000; text-align: center; font-size: 12px; padding-top: 65px;">
+      Passport Size Photo
+    </div>
+  </div>
+
+  <div class="no-page-break"
+    style="border: 1px solid #ccc; padding: 20px; margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-start;">
+    <p>Witnesses
+      <br><br><br>_______________________
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      _______________________
+    </p>
+  </div>
+
+  <!-- Landlord Documents Section -->
+  {{#if OWNER_AADHAR_URL}}
+  <div class="page-break-before" style="margin-top: 30px;">
+    <h3 style="text-align: center; margin-bottom: 20px;"><strong>LANDLORD DOCUMENTS</strong></h3>
+    <div style="text-align: center; margin: 20px 0;">
+      <p><strong>Aadhaar Card:</strong></p>
+      {{OWNER_AADHAR_URL}}
+    </div>
+  </div>
+  {{/if}}
+  
+  {{#if OWNER_PAN_URL}}
+  <div class="page-break-before" style="margin-top: 30px;">
+    <div style="text-align: center; margin: 20px 0;">
+      <p><strong>PAN Card:</strong></p>
+      {{OWNER_PAN_URL}}
+    </div>
+  </div>
+  {{/if}}
+  
+  <!-- Tenant Documents Section -->
+  {{#if TENANT_AADHAR_URL}}
+  <div class="page-break-before" style="margin-top: 30px;">
+    <h3 style="text-align: center; margin-bottom: 20px;"><strong>TENANT DOCUMENTS</strong></h3>
+    <div style="text-align: center; margin: 20px 0;">
+      <p><strong>Aadhaar Card:</strong></p>
+      {{TENANT_AADHAR_URL}}
+    </div>
+  </div>
+  {{/if}}
+  
+  {{#if TENANT_PAN_URL}}
+  <div class="page-break-before" style="margin-top: 30px;">
+    <div style="text-align: center; margin: 20px 0;">
+      <p><strong>PAN Card:</strong></p>
+      {{TENANT_PAN_URL}}
+    </div>
+  </div>
+  {{/if}}
+  
+  <!-- Property Documents Section -->
+  {{#if PROPERTY_DOCUMENTS_URL}}
+  <div class="page-break-before" style="margin-top: 30px;">
+    <h3 style="text-align: center; margin-bottom: 20px;"><strong>PROPERTY DOCUMENTS</strong></h3>
+    <div style="text-align: center; margin: 20px 0;">
+      {{PROPERTY_DOCUMENTS_URL}}
+    </div>
+  </div>
+  {{/if}}
+</div>
+</body>
+</html>
