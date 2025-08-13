@@ -363,7 +363,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       case 1:
         return !!(currentFormData.language); // Only require language selection, customer is optional
       case 2:
-        return !!(
+        console.log("Step 2 validation - current form data:", currentFormData);
+        console.log("Owner details:", currentFormData.ownerDetails);
+        console.log("Address details:", currentFormData.ownerDetails?.address);
+        const isValid = !!(
           currentFormData.ownerDetails?.name &&
           currentFormData.ownerDetails?.mobile &&
           currentFormData.ownerDetails?.age &&
@@ -374,6 +377,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           currentFormData.ownerDetails?.address?.state &&
           currentFormData.ownerDetails?.address?.pincode
         );
+        console.log("Step 2 is valid:", isValid);
+        return isValid;
       case 3:
         return !!(
           currentFormData.tenantDetails?.name &&
