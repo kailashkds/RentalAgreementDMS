@@ -865,34 +865,62 @@ html, body {
   line-height: 1.4 !important;
 }
 
-/* Reduce excessive line spacing and margins */
-p, div, span, h1, h2, h3, h4, h5, h6 {
-  line-height: 1.4 !important;
-  margin: 0.3em 0 !important;
-}
-
-/* Specific overrides for common paragraph spacing */
+/* Proper paragraph and heading spacing for readability */
 p {
+  margin: 1em 0 !important;
+  line-height: 1.6 !important;
+  text-align: justify;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.4 !important;
+  margin: 1.5em 0 1em 0 !important;
+  font-weight: bold;
+}
+
+div {
   margin: 0.5em 0 !important;
-  line-height: 1.4 !important;
+  line-height: 1.6 !important;
 }
 
-/* Remove excessive spacing from br tags */
+span {
+  line-height: inherit !important;
+}
+
+/* Proper spacing for line breaks */
 br {
-  line-height: 1.2 !important;
-  margin: 0 !important;
+  line-height: 1.6 !important;
+  margin: 0.5em 0 !important;
 }
 
-/* Compact spacing for list items */
+/* Proper spacing for list items */
+ul, ol {
+  margin: 1em 0 !important;
+  padding-left: 2em !important;
+}
+
 li {
-  line-height: 1.4 !important;
-  margin: 0.2em 0 !important;
+  line-height: 1.6 !important;
+  margin: 0.5em 0 !important;
 }
 
-/* Reduce spacing in table cells */
+/* Proper table formatting */
+table {
+  border-collapse: collapse !important;
+  margin: 1em 0 !important;
+  width: 100% !important;
+}
+
 td, th {
-  line-height: 1.4 !important;
-  padding: 4px 8px !important;
+  line-height: 1.6 !important;
+  padding: 8px 12px !important;
+  border: 1px solid #ddd !important;
+  text-align: left !important;
+}
+
+th {
+  font-weight: bold !important;
+  background-color: #f5f5f5 !important;
 }
 
 /* Remove any shadows, borders, or background styling */
@@ -901,6 +929,17 @@ td, th {
   text-shadow: none !important;
   border: none !important;
   outline: none !important;
+}
+
+/* Ensure proper content formatting */
+.agreement-content, .document-section {
+  margin: 2em 0 !important;
+  padding: 1em !important;
+}
+
+.clause-content {
+  margin: 1.5em 0 !important;
+  text-indent: 1em !important;
 }
 
 /* Specific overrides for agreement content */
