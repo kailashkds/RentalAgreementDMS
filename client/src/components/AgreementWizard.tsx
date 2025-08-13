@@ -366,14 +366,24 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           formData.ownerDetails?.name &&
           formData.ownerDetails?.mobile &&
           formData.ownerDetails?.age &&
-          formData.ownerDetails?.address
+          formData.ownerDetails?.address?.flatNo &&
+          formData.ownerDetails?.address?.society &&
+          formData.ownerDetails?.address?.area &&
+          formData.ownerDetails?.address?.city &&
+          formData.ownerDetails?.address?.state &&
+          formData.ownerDetails?.address?.pincode
         );
       case 3:
         return !!(
           formData.tenantDetails?.name &&
           formData.tenantDetails?.mobile &&
           formData.tenantDetails?.age &&
-          formData.tenantDetails?.address
+          formData.tenantDetails?.address?.flatNo &&
+          formData.tenantDetails?.address?.society &&
+          formData.tenantDetails?.address?.area &&
+          formData.tenantDetails?.address?.city &&
+          formData.tenantDetails?.address?.state &&
+          formData.tenantDetails?.address?.pincode
         );
       case 4:
         return !!(
