@@ -327,30 +327,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { text, style } = extractTextAndStyle(element);
         
         if (text && text.trim() && text !== '[Document/Image]') {
-          // Keep the entire text content together, but split on explicit line breaks
+          // Replace <br> tags with newlines to respect line breaks
           const content = text.replace(/<br\s*\/?>/gi, '\n').trim();
           
-          // For elements that naturally should be together (like address blocks), keep as single paragraph
-          // Only split on double line breaks or significant structural breaks
-          const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim());
+          // Split on line breaks to create separate paragraphs for each line
+          const lines = content.split(/\n/).filter(line => line.trim());
           
-          if (paragraphs.length === 0) {
-            // Single paragraph with possible line breaks - keep together but handle breaks
-            const lines = content.split(/\n/).filter(line => line.trim());
-            const combinedText = lines.join(' ').replace(/\s+/g, ' ').trim();
+          if (lines.length === 1) {
+            // Single line - create one paragraph
+            const cleanText = lines[0].replace(/\s+/g, ' ').trim();
             
-            if (combinedText) {
+            if (cleanText) {
               const isHeading = element.match(/<h[1-6]/i) || 
-                               combinedText.match(/^RENT AGREEMENT$/i) ||
-                               combinedText.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
-                               combinedText.match(/^IN WITNESS WHEREOF/i) ||
-                               combinedText.match(/^LANDLORD DOCUMENTS$/i) ||
-                               combinedText.match(/^TENANT DOCUMENTS$/i);
+                               cleanText.match(/^RENT AGREEMENT$/i) ||
+                               cleanText.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
+                               cleanText.match(/^IN WITNESS WHEREOF/i) ||
+                               cleanText.match(/^LANDLORD DOCUMENTS$/i) ||
+                               cleanText.match(/^TENANT DOCUMENTS$/i);
               
               paragraphElements.push({
-                text: combinedText,
+                text: cleanText,
                 alignment: getAlignment(style),
-                bold: shouldBeBold(combinedText, style) || isHeading,
+                bold: shouldBeBold(cleanText, style) || isHeading,
                 italic: style.includes('font-style: italic'),
                 size: isHeading ? 26 : 22,
                 spacing: isHeading ? { before: 360, after: 240 } : { after: 180 },
@@ -358,25 +356,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
           } else {
-            // Multiple paragraphs - process each separately
-            for (const paragraph of paragraphs) {
-              const cleanParagraph = paragraph.replace(/\s+/g, ' ').trim();
+            // Multiple lines - create separate paragraphs for each line to respect <br> tags
+            for (const line of lines) {
+              const cleanLine = line.replace(/\s+/g, ' ').trim();
               
-              if (cleanParagraph) {
+              if (cleanLine) {
                 const isHeading = element.match(/<h[1-6]/i) || 
-                                 cleanParagraph.match(/^RENT AGREEMENT$/i) ||
-                                 cleanParagraph.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
-                                 cleanParagraph.match(/^IN WITNESS WHEREOF/i) ||
-                                 cleanParagraph.match(/^LANDLORD DOCUMENTS$/i) ||
-                                 cleanParagraph.match(/^TENANT DOCUMENTS$/i);
+                                 cleanLine.match(/^RENT AGREEMENT$/i) ||
+                                 cleanLine.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
+                                 cleanLine.match(/^IN WITNESS WHEREOF/i) ||
+                                 cleanLine.match(/^LANDLORD DOCUMENTS$/i) ||
+                                 cleanLine.match(/^TENANT DOCUMENTS$/i);
                 
                 paragraphElements.push({
-                  text: cleanParagraph,
+                  text: cleanLine,
                   alignment: getAlignment(style),
-                  bold: shouldBeBold(cleanParagraph, style) || isHeading,
+                  bold: shouldBeBold(cleanLine, style) || isHeading,
                   italic: style.includes('font-style: italic'),
                   size: isHeading ? 26 : 22,
-                  spacing: isHeading ? { before: 360, after: 240 } : { after: 180 },
+                  spacing: isHeading ? { before: 360, after: 240 } : { after: 120 }, // Smaller spacing between related lines
                   type: isHeading ? 'heading' : 'paragraph'
                 });
               }
