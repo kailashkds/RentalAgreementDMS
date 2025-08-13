@@ -903,7 +903,7 @@ td, th {
 }
 
 /* Specific overrides for agreement content */
-div, p, h1, h2, h3, h4, h5, h6, span, img, iframe {
+div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
   box-shadow: none !important;
   border: none !important;
   outline: none !important;
@@ -1067,12 +1067,18 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
               const documentType = getDocumentTypeFromFieldName(fieldName);
               
               if (isPdf) {
-                const embeddedDocument = `
-<div style="margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px; page-break-inside: avoid; text-align: center;">
-  <div style="font-size: 24px; color: #666; margin-bottom: 5px;">📄</div>
-  <p style="color: #333; font-weight: bold; margin: 5px 0;">${documentType}</p>
+                const base64Data = fileBuffer.toString('base64');
+                const dataUrl = `data:application/pdf;base64,${base64Data}`;
+                
+                const embeddedPdf = `
+<div style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
+  <p style="color: #333; font-weight: bold; margin: 10px 0;">${documentType}</p>
+  <embed src="${dataUrl}" 
+         type="application/pdf" 
+         style="width: 100%; height: 600px; border: none; display: block; margin: 0 auto;" 
+         title="${documentType}" />
 </div>`;
-                processedFields[fieldName] = embeddedDocument;
+                processedFields[fieldName] = embeddedPdf;
                 console.log(`[PDF Embedding] ✅ Successfully processed cloud PDF ${fieldName}`);
               } else if (isJpeg || isPng) {
                 const mimeType = isJpeg ? 'image/jpeg' : 'image/png';
@@ -1138,14 +1144,20 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
             console.log(`[PDF Embedding] Is PDF: ${isPdf}, Is JPEG: ${isJpeg}, Is PNG: ${isPng}`);
             
             if (isPdf) {
-              // For PDF files, create a document placeholder instead of trying to embed as image
+              // For PDF files, convert to base64 and embed as iframe or data URL
               const documentType = getDocumentTypeFromFieldName(fieldName);
-              const embeddedDocument = `
-<div style="margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px; page-break-inside: avoid; text-align: center;">
-  <div style="font-size: 24px; color: #666; margin-bottom: 5px;">📄</div>
-  <p style="color: #333; font-weight: bold; margin: 5px 0;">${documentType}</p>
+              const base64Data = fileBuffer.toString('base64');
+              const dataUrl = `data:application/pdf;base64,${base64Data}`;
+              
+              const embeddedPdf = `
+<div style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
+  <p style="color: #333; font-weight: bold; margin: 10px 0;">${documentType}</p>
+  <embed src="${dataUrl}" 
+         type="application/pdf" 
+         style="width: 100%; height: 600px; border: none; display: block; margin: 0 auto;" 
+         title="${documentType}" />
 </div>`;
-              processedFields[fieldName] = embeddedDocument;
+              processedFields[fieldName] = embeddedPdf;
               console.log(`[PDF Embedding] ✅ Successfully processed PDF document ${fieldName}: ${fileName}`);
               
             } else if (isJpeg || isPng) {
