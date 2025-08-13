@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate Word document
   app.post("/api/agreements/generate-word", async (req, res) => {
     try {
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel } = await import('docx');
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
       
       const agreementData = req.body;
       const language = agreementData.language || 'english';
@@ -265,106 +265,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
         propertyDocuments: agreementData.propertyDocuments || {}
       };
 
-      // Generate the HTML with mapped field values and convert to plain text
+      // Generate the HTML with mapped field values and process it properly for Word
       const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate);
       
-      // Convert HTML to plain text for Word document
-      let plainText = processedHtml;
+      // Parse HTML content more intelligently to preserve document structure
+      let workingHtml = processedHtml;
       
       // Remove all <style> tags and their contents first
-      plainText = plainText.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      workingHtml = workingHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
       
       // Remove all CSS class definitions that leaked through
-      plainText = plainText.replace(/\.[a-zA-Z-_]+\s*{[^}]*}/g, '');
+      workingHtml = workingHtml.replace(/\.[a-zA-Z-_]+\s*{[^}]*}/g, '');
       
-      // Replace common HTML structures with appropriate text formatting
-      plainText = plainText
-        .replace(/<img[^>]*>/gi, '[Document/Image]') // Replace images with placeholder
-        .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '$1\n') // Extract heading text
-        .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '$1') // Extract bold text
-        .replace(/<b[^>]*>(.*?)<\/b>/gi, '$1') // Extract bold text
-        .replace(/<em[^>]*>(.*?)<\/em>/gi, '$1') // Extract italic text
-        .replace(/<i[^>]*>(.*?)<\/i>/gi, '$1') // Extract italic text
-        .replace(/<br\s*\/?>/gi, '\n') // Replace <br> with newlines
-        .replace(/<\/p>/gi, '\n\n') // Replace </p> with double newlines
-        .replace(/<p[^>]*>/gi, '') // Remove <p> opening tags
-        .replace(/<\/div>/gi, '\n') // Replace </div> with newlines
-        .replace(/<div[^>]*>/gi, '') // Remove <div> opening tags
-        .replace(/<\/li>/gi, '\n') // Replace </li> with newlines
-        .replace(/<li[^>]*>/gi, '• ') // Replace <li> with bullet points
-        .replace(/<\/ul>/gi, '\n') // Replace </ul> with newlines
-        .replace(/<ul[^>]*>/gi, '') // Remove <ul> tags
-        .replace(/<\/ol>/gi, '\n') // Replace </ol> with newlines
-        .replace(/<ol[^>]*>/gi, '') // Remove <ol> tags
-        .replace(/<[^>]*>/g, '') // Remove all remaining HTML tags
-        .replace(/&nbsp;/g, ' ') // Replace &nbsp; with spaces
-        .replace(/&amp;/g, '&') // Replace HTML entities
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&rsquo;/g, "'")
-        .replace(/&lsquo;/g, "'")
-        .replace(/&rdquo;/g, '"')
-        .replace(/&ldquo;/g, '"')
-        .replace(/&#8217;/g, "'")
-        .replace(/&#8220;/g, '"')
-        .replace(/&#8221;/g, '"')
-        .replace(/\n\s*\n\s*\n/g, '\n\n') // Replace triple+ newlines with double
-        .replace(/^\s+|\s+$/gm, '') // Trim whitespace from each line
-        .trim();
-
-      // Split into paragraphs and filter out empty ones
-      const lines = plainText.split('\n').filter(line => line.trim().length > 0);
+      // Split content into structured elements - preserve paragraph breaks
+      const paragraphElements = [];
+      
+      // Extract content between paragraph tags while preserving structure
+      const pTagRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+      const divTagRegex = /<div[^>]*>([\s\S]*?)<\/div>/gi;
+      const headingRegex = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi;
+      
+      let match;
+      
+      // Extract headings
+      while ((match = headingRegex.exec(workingHtml)) !== null) {
+        const content = match[1].replace(/<[^>]*>/g, '').trim();
+        if (content.length > 0) {
+          paragraphElements.push({ type: 'heading', content });
+        }
+      }
+      
+      // Extract paragraphs
+      while ((match = pTagRegex.exec(workingHtml)) !== null) {
+        const content = match[1]
+          .replace(/<br\s*\/?>/gi, ' ') // Convert br to spaces within paragraphs
+          .replace(/<[^>]*>/g, '') // Remove remaining HTML tags
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/\s+/g, ' ') // Normalize spaces
+          .trim();
+        
+        if (content.length > 0 && content !== '[Document/Image]') {
+          paragraphElements.push({ type: 'paragraph', content });
+        }
+      }
+      
+      // If no paragraphs were found, extract from divs
+      if (paragraphElements.filter(p => p.type === 'paragraph').length === 0) {
+        while ((match = divTagRegex.exec(workingHtml)) !== null) {
+          const content = match[1]
+            .replace(/<br\s*\/?>/gi, '\n') // Convert br to newlines
+            .replace(/<[^>]*>/g, '') // Remove HTML tags
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .trim();
+          
+          // Split by newlines to create multiple paragraphs if needed
+          const lines = content.split('\n').filter(line => line.trim().length > 0);
+          for (const line of lines) {
+            const cleanLine = line.replace(/\s+/g, ' ').trim();
+            if (cleanLine.length > 0 && cleanLine !== '[Document/Image]') {
+              paragraphElements.push({ type: 'paragraph', content: cleanLine });
+            }
+          }
+        }
+      }
+      
+      // If still no content, fall back to text extraction
+      if (paragraphElements.length === 0) {
+        const fallbackText = workingHtml
+          .replace(/<[^>]*>/g, '') // Remove all HTML tags
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/\s+/g, ' ') // Normalize spaces
+          .trim();
+        
+        if (fallbackText.length > 0) {
+          // Split into sentences/logical breaks for better paragraph structure
+          const sentences = fallbackText.split(/(?<=[.।])\s+/).filter(s => s.trim().length > 0);
+          for (const sentence of sentences) {
+            paragraphElements.push({ type: 'paragraph', content: sentence.trim() });
+          }
+        }
+      }
+      
+      // Debug: Log the parsed elements to see what we're working with
+      console.log(`[Word Generation] Parsed ${paragraphElements.length} elements from HTML`);
+      console.log('[Word Generation] Sample elements:', paragraphElements.slice(0, 3));
       
       // Create structured paragraphs with proper formatting
       const documentParagraphs = [];
       
       // Add title
       documentParagraphs.push(new Paragraph({
-        text: `RENTAL AGREEMENT${safeAgreementData.agreementNumber ? ` - ${safeAgreementData.agreementNumber}` : ''}`,
+        children: [new TextRun({
+          text: `RENTAL AGREEMENT${safeAgreementData.agreementNumber ? ` - ${safeAgreementData.agreementNumber}` : ''}`,
+          bold: true,
+          size: 32 // 16pt font for title
+        })],
         heading: HeadingLevel.TITLE,
-        spacing: { after: 400 }
+        spacing: { after: 400 },
+        alignment: AlignmentType.CENTER
       }));
       
-      // Process each line and create appropriate paragraphs
-      for (const line of lines) {
-        const trimmedLine = line.trim();
+      // Process each parsed element and create appropriate paragraphs
+      for (const element of paragraphElements) {
+        const trimmedContent = element.content.trim();
         
-        if (trimmedLine.match(/^RENT AGREEMENT$/i) || 
-            trimmedLine.match(/^LANDLORD DOCUMENTS$/i) ||
-            trimmedLine.match(/^TENANT DOCUMENTS$/i) ||
-            trimmedLine.match(/^Witnesses$/i)) {
+        if (element.type === 'heading' || 
+            trimmedContent.match(/^RENT AGREEMENT$/i) || 
+            trimmedContent.match(/^LANDLORD DOCUMENTS$/i) ||
+            trimmedContent.match(/^TENANT DOCUMENTS$/i) ||
+            trimmedContent.match(/^Witnesses$/i)) {
           // Section headers
           documentParagraphs.push(new Paragraph({
             children: [new TextRun({
-              text: trimmedLine,
+              text: trimmedContent,
               bold: true,
               size: 26 // 13pt font
             })],
             spacing: { before: 300, after: 200 }
           }));
-        } else if (trimmedLine.match(/^\d+\./)) {
+        } else if (trimmedContent.match(/^\d+\./)) {
           // Numbered clauses
           documentParagraphs.push(new Paragraph({
             children: [new TextRun({
-              text: trimmedLine,
+              text: trimmedContent,
               size: 22 // 11pt font
             })],
             spacing: { before: 200, after: 200 },
-            indent: { left: 360 } // Indent numbered items
+            indent: { left: 720 } // Indent numbered items (0.5 inch)
           }));
-        } else if (trimmedLine === '[Document/Image]') {
-          // Skip document placeholders in Word format
-          continue;
-        } else if (trimmedLine.length > 0) {
-          // Regular paragraphs
+        } else if (trimmedContent.length > 0) {
+          // Regular paragraphs - maintain proper spacing
           documentParagraphs.push(new Paragraph({
             children: [new TextRun({
-              text: trimmedLine,
+              text: trimmedContent,
               size: 22 // 11pt font
             })],
-            spacing: { after: 120 }
+            spacing: { after: 200 }, // More spacing between paragraphs
+            alignment: AlignmentType.JUSTIFIED // Justify text
           }));
         }
       }
