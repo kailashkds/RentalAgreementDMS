@@ -686,8 +686,9 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
   // Convert property purpose to Gujarati
   if (propertyPurpose) {
     const purposeMapping: Record<string, string> = {
-      'residential': 'રહેઠાણ',
-      'commercial': 'વ્યાપારિક',
+      'residential': 'રહેણાંક',
+      'commercial': 'કોમર્શિયલ', 
+      'mixed': 'મિશ્ર ઉપયોગ',
       'office': 'કાર્યાલય',
       'shop': 'દુકાન',
       'warehouse': 'ગોદામ',
@@ -697,7 +698,7 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     const purposeLower = propertyPurpose.toLowerCase();
     templateFields['PROPERTY_PURPOSE_GUJARATI'] = purposeMapping[purposeLower] || propertyPurpose;
   } else {
-    templateFields['PROPERTY_PURPOSE_GUJARATI'] = 'રહેઠાણ'; // Default to residential
+    templateFields['PROPERTY_PURPOSE_GUJARATI'] = 'રહેણાંક'; // Default to residential
   }
 
   // Default values for common fields if not provided
