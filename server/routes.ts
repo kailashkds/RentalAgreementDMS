@@ -292,9 +292,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Helper function to determine alignment from style
       const getAlignment = (style: string) => {
-        if (style.includes('text-align: center')) return AlignmentType.CENTER;
-        if (style.includes('text-align: right')) return AlignmentType.RIGHT;
-        if (style.includes('text-align: justify')) return AlignmentType.JUSTIFIED;
+        if (style.includes('text-align:center') || style.includes('text-align: center')) return AlignmentType.CENTER;
+        if (style.includes('text-align:right') || style.includes('text-align: right')) return AlignmentType.RIGHT;
+        if (style.includes('text-align:justify') || style.includes('text-align: justify')) return AlignmentType.JUSTIFIED;
         return AlignmentType.LEFT;
       };
       
@@ -330,8 +330,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Replace <br> tags with newlines to respect line breaks
           const content = text.replace(/<br\s*\/?>/gi, '\n').trim();
           
+          console.log(`[Line Break Debug] Original text: "${text}"`);
+          console.log(`[Line Break Debug] After BR replacement: "${content}"`);
+          
           // Split on line breaks to create separate paragraphs for each line
           const lines = content.split(/\n/).filter(line => line.trim());
+          
+          console.log(`[Line Break Debug] Split into ${lines.length} lines:`, lines);
           
           if (lines.length === 1) {
             // Single line - create one paragraph
@@ -345,9 +350,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                cleanText.match(/^LANDLORD DOCUMENTS$/i) ||
                                cleanText.match(/^TENANT DOCUMENTS$/i);
               
+              // Special handling for RENT AGREEMENT title - always center it
+              const alignment = cleanText.match(/^RENT AGREEMENT$/i) ? 
+                               AlignmentType.CENTER : getAlignment(style);
+              
               paragraphElements.push({
                 text: cleanText,
-                alignment: getAlignment(style),
+                alignment: alignment,
                 bold: shouldBeBold(cleanText, style) || isHeading,
                 italic: style.includes('font-style: italic'),
                 size: isHeading ? 26 : 22,
@@ -368,9 +377,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                  cleanLine.match(/^LANDLORD DOCUMENTS$/i) ||
                                  cleanLine.match(/^TENANT DOCUMENTS$/i);
                 
+                // Special handling for RENT AGREEMENT title - always center it
+                const alignment = cleanLine.match(/^RENT AGREEMENT$/i) ? 
+                                 AlignmentType.CENTER : getAlignment(style);
+                
                 paragraphElements.push({
                   text: cleanLine,
-                  alignment: getAlignment(style),
+                  alignment: alignment,
                   bold: shouldBeBold(cleanLine, style) || isHeading,
                   italic: style.includes('font-style: italic'),
                   size: isHeading ? 26 : 22,
