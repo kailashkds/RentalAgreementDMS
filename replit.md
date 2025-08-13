@@ -45,7 +45,7 @@ Preferred communication style: Simple, everyday language.
 ## Multi-language Support
 - **Languages**: English, Hindi, Gujarati, Tamil, Marathi
 - **Implementation**: Translation system with language-specific form labels and language-aware agreement template rendering.
-- **Gujarati PDF Templates**: Complete Gujarati rental agreement template with authentic content structure matching traditional Indian legal document format, including Gujarati numerals, date formatting, and number-to-words conversion. Updated on August 13, 2025 to include points 14 & 15 with conditional logic: GST compliance for commercial agreements and police verification requirements when documents are uploaded.
+- **Gujarati PDF Templates**: Complete Gujarati rental agreement template with authentic content structure matching traditional Indian legal document format, including Gujarati numerals, date formatting, and number-to-words conversion. Updated on August 13, 2025 to include points 14 & 15 with conditional logic: GST compliance for commercial agreements and police verification requirements when documents are uploaded. Maintenance conditional logic fixed to properly display "એસ.એમ. સી. ટેક્ષ અને મેન્ટેનન્સ સાથે" (with SMC Tax and Maintenance) when included, or "પુરા " (complete) when excluded.
 
 ## Key Features
 - **5-step Document Creation Wizard**: Includes step validation and intelligent text input fields with database search and auto-fill for addresses. Customer selection is required in step 1, with manual entry supported for landlord and tenant details in steps 2-3.
