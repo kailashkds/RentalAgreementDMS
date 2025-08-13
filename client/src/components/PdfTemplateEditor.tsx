@@ -91,6 +91,7 @@ const DYNAMIC_FIELDS = {
     { key: "{{PAYMENT_DUE_DATE_TO}}", label: "Payment Due Date To (15)" },
     { key: "{{MINIMUM_STAY}}", label: "Minimum Stay Period" },
     { key: "{{NOTICE_PERIOD}}", label: "Notice Period (2 month)" },
+    { key: "{{NOTICE_PERIOD_WORDS}}", label: "Notice Period (English Words)" },
     { key: "{{RENEWAL_PERIOD}}", label: "Renewal Period" },
   ],
   agreement: [
@@ -107,6 +108,7 @@ const DYNAMIC_FIELDS = {
     { key: "{{END_DATE_GUJARATI}}", label: "End Date (Gujarati)" },
     { key: "{{MONTHLY_RENT_WORDS_GUJARATI}}", label: "Monthly Rent (Gujarati Words)" },
     { key: "{{SECURITY_DEPOSIT_WORDS_GUJARATI}}", label: "Security Deposit (Gujarati Words)" },
+    { key: "{{NOTICE_PERIOD_WORDS_GUJARATI}}", label: "Notice Period (Gujarati Words)" },
     { key: "{{PROPERTY_PURPOSE_GUJARATI}}", label: "Property Purpose (Gujarati)" },
     { key: "{{PROPERTY_PURPOSE_COMMERCIAL}}", label: "Commercial Property Check (For Conditional Logic)" },
   ],

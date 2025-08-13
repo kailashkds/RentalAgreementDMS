@@ -614,6 +614,21 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     templateFields['DEPOSIT_AMOUNT_WORDS_GUJARATI'] = numberToGujaratiWords(securityDepositNum);
   }
 
+  // Handle notice period conversion to words
+  const noticePeriod = formData.rentalTerms?.noticePeriod;
+  if (noticePeriod) {
+    const noticePeriodNum = Number(noticePeriod);
+    if (!isNaN(noticePeriodNum) && noticePeriodNum > 0) {
+      // English notice period in words
+      templateFields['NOTICE_PERIOD_WORDS'] = numberToWords(noticePeriodNum);
+      
+      // Gujarati notice period in words
+      templateFields['NOTICE_PERIOD_WORDS_GUJARATI'] = numberToGujaratiWords(noticePeriodNum);
+      
+      console.log(`Notice period conversion: ${noticePeriodNum} -> English: "${templateFields['NOTICE_PERIOD_WORDS']}" -> Gujarati: "${templateFields['NOTICE_PERIOD_WORDS_GUJARATI']}"`);
+    }
+  }
+
   // Additional computed fields for payment dates
   if (formData.rentalTerms?.dueDate && !templateFields['PAYMENT_DUE_DATE_TO']) {
     // If we only have a single due date, set both from and to
