@@ -70,6 +70,7 @@ const DYNAMIC_FIELDS = {
     { key: "{{PROPERTY_PINCODE}}", label: "Property Pincode" },
     { key: "{{PROPERTY_AREA_SQFT}}", label: "Property Area (Sq Ft)" },
     { key: "{{PROPERTY_PURPOSE}}", label: "Property Purpose (Resident/Commercial)" },
+    { key: "{{PROPERTY_PURPOSE_GUJARATI}}", label: "Property Purpose (Gujarati)" },
     { key: "{{PROPERTY_FURNISHED_STATUS}}", label: "Furnished Status" },
     { key: "{{ADDITIONAL_ITEMS}}", label: "Additional Items to Handover" },
   ],
@@ -106,6 +107,8 @@ const DYNAMIC_FIELDS = {
     { key: "{{END_DATE_GUJARATI}}", label: "End Date (Gujarati)" },
     { key: "{{MONTHLY_RENT_WORDS_GUJARATI}}", label: "Monthly Rent (Gujarati Words)" },
     { key: "{{SECURITY_DEPOSIT_WORDS_GUJARATI}}", label: "Security Deposit (Gujarati Words)" },
+    { key: "{{PROPERTY_PURPOSE_GUJARATI}}", label: "Property Purpose (Gujarati)" },
+    { key: "{{PROPERTY_PURPOSE_COMMERCIAL}}", label: "Commercial Property Check (For Conditional Logic)" },
   ],
   documents: [
     { key: "{{OWNER_AADHAR_URL}}", label: "Owner Aadhaar Card (Embedded Image)" },
