@@ -48,7 +48,7 @@ Preferred communication style: Simple, everyday language.
 - **Gujarati PDF Templates**: Complete Gujarati rental agreement template with authentic content structure matching traditional Indian legal document format, including Gujarati numerals, date formatting, and number-to-words conversion. Updated on August 13, 2025 to include points 14 & 15 with conditional logic: GST compliance for commercial agreements and police verification requirements when documents are uploaded.
 
 ## Key Features
-- **5-step Document Creation Wizard**: Includes step validation and intelligent text input fields with database search and auto-fill for addresses. Customer selection is optional - allows manual entry of landlord and tenant details without requiring pre-registration.
+- **5-step Document Creation Wizard**: Includes step validation and intelligent text input fields with database search and auto-fill for addresses. Customer selection is required in step 1, with manual entry supported for landlord and tenant details in steps 2-3.
 - **PDF Template Management System**: With database schema, CRUD API, professional UI, and advanced template editor featuring dynamic field insertion and live HTML preview.
 - **Multi-Format Document Generation**: Support for both PDF and Word (.docx) document downloads from both the creation wizard and existing agreement management.
 - **Dynamic Field Formatting**: Automatic formatting for all PDF placeholders based on field characteristics (e.g., date formats, string capitalization).

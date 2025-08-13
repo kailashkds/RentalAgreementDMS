@@ -361,7 +361,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     const currentFormData = watch(); // Get live form data
     switch (stepNumber) {
       case 1:
-        return !!(currentFormData.language); // Only require language selection, customer is optional
+        return !!(currentFormData.language && currentFormData.customerId && currentFormData.customerId !== "none"); // Require both language and valid customer selection
       case 2:
         return !!(
           currentFormData.ownerDetails?.name &&
@@ -1324,13 +1324,16 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="customerId">{t("selectCustomer")} <span className="text-sm text-gray-500">(Optional)</span></Label>
-                <Select value={watch("customerId") || "none"} onValueChange={(value) => setValue("customerId", value === "none" ? "" : value)}>
+                <Label htmlFor="customerId">{t("selectCustomer")} <span className="text-red-500">*</span></Label>
+                <Select 
+                  {...register("customerId", { required: "Customer selection is required" })}
+                  value={watch("customerId") || ""} 
+                  onValueChange={(value) => setValue("customerId", value)}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select existing customer (optional)" />
+                    <SelectValue placeholder="Select a customer" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No customer selected - Enter details manually</SelectItem>
                     {customersData?.customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name} - {customer.mobile}
@@ -1338,8 +1341,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.customerId && (
+                  <p className="text-sm text-red-600 mt-1">{errors.customerId.message}</p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
-                  You can select an existing customer to copy their details, or leave blank to enter landlord/tenant details manually
+                  Select an existing customer to copy their details for the agreement
                 </p>
                 <Button
                   type="button"
