@@ -669,7 +669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const fileName = req.params.fileName;
       const filePath = path.join(process.cwd(), 'uploads', fileName);
       
-      // Set proper headers for images to work in PDF generation
+      // Set proper headers for different file types
       const ext = path.extname(fileName).toLowerCase();
       let contentType = 'application/octet-stream';
       
@@ -681,11 +681,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contentType = 'image/gif';
       } else if (ext === '.webp') {
         contentType = 'image/webp';
+      } else if (ext === '.pdf') {
+        contentType = 'application/pdf';
       }
       
       res.setHeader('Content-Type', contentType);
       res.setHeader('Cache-Control', 'public, max-age=31536000');
       res.setHeader('Access-Control-Allow-Origin', '*');
+      
+      // For PDFs, set inline display to prevent auto-download
+      if (ext === '.pdf') {
+        res.setHeader('Content-Disposition', 'inline');
+      }
       
       // Check if file exists and serve it
       res.sendFile(filePath, (err) => {
