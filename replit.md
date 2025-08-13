@@ -48,12 +48,12 @@ Preferred communication style: Simple, everyday language.
 - **Gujarati PDF Templates**: Complete Gujarati rental agreement template with authentic content structure matching traditional Indian legal document format, including Gujarati numerals, date formatting, and number-to-words conversion. Updated on August 13, 2025 to include points 14 & 15 with conditional logic: GST compliance for commercial agreements and police verification requirements when documents are uploaded.
 
 ## Key Features
-- **5-step Document Creation Wizard**: Includes step validation and intelligent text input fields with database search and auto-fill for addresses.
+- **5-step Document Creation Wizard**: Includes step validation and intelligent text input fields with database search and auto-fill for addresses. Customer selection is optional - allows manual entry of landlord and tenant details without requiring pre-registration.
 - **PDF Template Management System**: With database schema, CRUD API, professional UI, and advanced template editor featuring dynamic field insertion and live HTML preview.
 - **Multi-Format Document Generation**: Support for both PDF and Word (.docx) document downloads from both the creation wizard and existing agreement management.
 - **Dynamic Field Formatting**: Automatic formatting for all PDF placeholders based on field characteristics (e.g., date formats, string capitalization).
 - **Conditional Logic System**: Smart field replacement and conditional display in PDF templates (e.g., showing/hiding sections based on document uploads).
-- **Amount-to-Words Conversion**: Automatic conversion of numeric amounts to Indian format words in both English and Gujarati languages. Supports separate variables for English (`MONTHLY_RENT_WORDS`, `SECURITY_DEPOSIT_WORDS`) and Gujarati (`MONTHLY_RENT_WORDS_GUJARATI`, `SECURITY_DEPOSIT_WORDS_GUJARATI`) templates. Template editor includes dedicated Gujarati field section with all Gujarati-specific dynamic fields.
+- **Amount-to-Words Conversion**: Automatic conversion of numeric amounts to Indian format words in both English and Gujarati languages. Supports separate variables for English (`MONTHLY_RENT_WORDS`, `SECURITY_DEPOSIT_WORDS`, `NOTICE_PERIOD_WORDS`) and Gujarati (`MONTHLY_RENT_WORDS_GUJARATI`, `SECURITY_DEPOSIT_WORDS_GUJARATI`, `NOTICE_PERIOD_WORDS_GUJARATI`) templates. Template editor includes dedicated Gujarati field section with all Gujarati-specific dynamic fields.
 - **PDF Page Break Control**: Comprehensive CSS controls with `page-break-before: always` for documents. Each Aadhaar card and PAN card appears on separate pages for both landlord and tenant sections.
 - **File Preview System**: Comprehensive preview functionality for all uploaded documents (PDF, image, etc.).
 - **Notarized Document Management**: Complete lifecycle management including upload, view, download, replace, and remove functionality with dedicated management interface and status tracking.

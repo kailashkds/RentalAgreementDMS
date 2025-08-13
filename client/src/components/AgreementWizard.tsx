@@ -29,7 +29,7 @@ interface AgreementWizardProps {
 }
 
 interface AgreementFormData {
-  customerId: string;
+  customerId?: string; // Make optional since manual entry is now allowed
   language: string;
   ownerDetails: OwnerDetails;
   tenantDetails: TenantDetails;
@@ -360,7 +360,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   const validateStep = (stepNumber: number): boolean => {
     switch (stepNumber) {
       case 1:
-        return !!(formData.customerId && formData.language);
+        return !!(formData.language); // Only require language selection, customer is optional
       case 2:
         return !!(
           formData.ownerDetails?.name &&
@@ -1090,7 +1090,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
   const downloadAgreement = async () => {
     const formData = watch();
-    if (!formData || !formData.customerId) {
+    if (!formData || !formData.language) {
       toast({
         title: "Error",
         description: "Please complete the agreement form first.",
@@ -1313,12 +1313,13 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="customerId">{t("selectCustomer")}</Label>
-                <Select value={watch("customerId")} onValueChange={(value) => setValue("customerId", value)}>
+                <Label htmlFor="customerId">{t("selectCustomer")} <span className="text-sm text-gray-500">(Optional)</span></Label>
+                <Select value={watch("customerId") || ""} onValueChange={(value) => setValue("customerId", value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder={t("searchCustomer")} />
+                    <SelectValue placeholder="Select existing customer (optional)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">No customer selected - Enter details manually</SelectItem>
                     {customersData?.customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name} - {customer.mobile}
@@ -1326,6 +1327,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  You can select an existing customer to copy their details, or leave blank to enter landlord/tenant details manually
+                </p>
                 <Button
                   type="button"
                   variant="ghost"
@@ -1367,6 +1371,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 variant="outline"
                 onClick={copyCustomerAsOwner}
                 disabled={!watchedCustomerId}
+                className={!watchedCustomerId ? "opacity-50" : ""}
               >
                 <Copy className="mr-2 h-4 w-4" />
                 {t("copyCustomerDetails")}
@@ -1591,6 +1596,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 variant="outline"
                 onClick={copyFromCustomer}
                 disabled={!watchedCustomerId}
+                className={!watchedCustomerId ? "opacity-50" : ""}
               >
                 <Copy className="mr-2 h-4 w-4" />
                 {t("copyFromCustomer")}
