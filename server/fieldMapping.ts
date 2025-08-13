@@ -585,6 +585,42 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     templateFields['ADDITIONAL_CLAUSES'] = 'No additional clauses specified.';
   }
 
+  // Handle conditional logic for maintenance charge
+  // Check both maintenanceCharge and maintenance fields as the form might use either
+  const maintenanceCharge = formData.rentalTerms?.maintenanceCharge || formData.rentalTerms?.maintenance;
+  
+  if (maintenanceCharge) {
+    const maintenanceLower = String(maintenanceCharge).toLowerCase();
+    if (maintenanceLower === 'included' || maintenanceLower === 'included in rent') {
+      // When maintenance is INCLUDED - show text with maintenance charges
+      if (templateLanguage === 'gujarati') {
+        templateFields['MAINTENANCE_INCLUSION'] = 'એસ.એમ. સી. ટેક્ષ અને મેન્ટેનન્સ સાથે';
+        templateFields['MAINTENANCE_EXCLUSION'] = '';
+      } else {
+        templateFields['MAINTENANCE_INCLUSION'] = 'with SMC Tax and Maintenance';
+        templateFields['MAINTENANCE_EXCLUSION'] = '';
+      }
+    } else {
+      // When maintenance is EXCLUDED - show text without maintenance charges
+      if (templateLanguage === 'gujarati') {
+        templateFields['MAINTENANCE_INCLUSION'] = '';
+        templateFields['MAINTENANCE_EXCLUSION'] = 'પુરા ';
+      } else {
+        templateFields['MAINTENANCE_INCLUSION'] = '';
+        templateFields['MAINTENANCE_EXCLUSION'] = 'complete ';
+      }
+    }
+  } else {
+    // Default to excluded if not specified
+    if (templateLanguage === 'gujarati') {
+      templateFields['MAINTENANCE_INCLUSION'] = '';
+      templateFields['MAINTENANCE_EXCLUSION'] = 'પુરા ';
+    } else {
+      templateFields['MAINTENANCE_INCLUSION'] = '';
+      templateFields['MAINTENANCE_EXCLUSION'] = 'complete ';
+    }
+  }
+
   // Add computed fields (amounts in words)
   // Handle both monthlyRent and rentAmount fields
   const rentAmount = formData.rentalTerms?.rentAmount || formData.rentalTerms?.monthlyRent;
@@ -637,38 +673,7 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     templateFields['PAYMENT_DUE_DATE_TO'] = String(Math.min(Number(dueDate) + 7, 31)); // Default 7-day window
   }
 
-  // Handle conditional logic for maintenance charge
-  const maintenanceCharge = formData.rentalTerms?.maintenanceCharge;
-  if (maintenanceCharge) {
-    if (maintenanceCharge.toLowerCase() === 'included' || maintenanceCharge.toLowerCase() === 'included in rent') {
-      // When maintenance is INCLUDED - show text with maintenance charges
-      if (templateLanguage === 'gujarati') {
-        templateFields['MAINTENANCE_INCLUSION'] = 'એસ.એમ. સી. ટેક્ષ અને મેન્ટેનન્સ સાથે';
-        templateFields['MAINTENANCE_EXCLUSION'] = '';
-      } else {
-        templateFields['MAINTENANCE_INCLUSION'] = 'with SMC Tax and Maintenance';
-        templateFields['MAINTENANCE_EXCLUSION'] = '';
-      }
-    } else {
-      // When maintenance is EXCLUDED - show text without maintenance charges
-      if (templateLanguage === 'gujarati') {
-        templateFields['MAINTENANCE_INCLUSION'] = '';
-        templateFields['MAINTENANCE_EXCLUSION'] = 'પુરા ';
-      } else {
-        templateFields['MAINTENANCE_INCLUSION'] = '';
-        templateFields['MAINTENANCE_EXCLUSION'] = 'complete ';
-      }
-    }
-  } else {
-    // Default to excluded if not specified
-    if (templateLanguage === 'gujarati') {
-      templateFields['MAINTENANCE_INCLUSION'] = '';
-      templateFields['MAINTENANCE_EXCLUSION'] = 'પુરા ';
-    } else {
-      templateFields['MAINTENANCE_INCLUSION'] = '';
-      templateFields['MAINTENANCE_EXCLUSION'] = 'complete ';
-    }
-  }
+
 
   // Handle conditional logic for property purpose (for GST clause)
   const propertyPurpose = formData.propertyDetails?.purpose;
