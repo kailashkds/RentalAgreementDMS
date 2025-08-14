@@ -662,7 +662,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                         ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
                         : formData.language === 'marathi'
                         ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
-                        : '"Times New Roman", serif',
+                        : 'Arial, sans-serif',
                       lineHeight: '1.6',
                       color: '#333',
                       fontSize: '14px',

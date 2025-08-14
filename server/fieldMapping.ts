@@ -850,27 +850,34 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
     ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
     : language === 'marathi'
     ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
-    : '"Times New Roman", serif';
+    : 'Arial, sans-serif';
 
   // Replace inline font-family styles in the HTML template to match the language
-  // Always perform font replacement for all languages (including English -> Times New Roman)
+  // Always perform font replacement for all languages
   if (language !== 'gujarati') {
-    // Replace all Arial font-family declarations with the appropriate font for the language
-    // This handles: font-family: Arial, sans-serif
-    processedHtml = processedHtml.replace(/font-family:\s*Arial,\s*sans-serif/gi, `font-family: ${fontFamily}`);
+    // Replace Times New Roman with the appropriate font for the language (including Arial for English)
+    processedHtml = processedHtml.replace(/font-family:\s*"Times New Roman",?\s*serif/gi, `font-family: ${fontFamily}`);
+    processedHtml = processedHtml.replace(/font-family:\s*Times New Roman,?\s*serif/gi, `font-family: ${fontFamily}`);
     
-    // This handles: font-family: Arial
-    processedHtml = processedHtml.replace(/font-family:\s*["']?Arial["']?/gi, `font-family: ${fontFamily}`);
+    // Only replace Arial if we're not setting it as the target font (to avoid duplicates)
+    if (fontFamily !== 'Arial, sans-serif') {
+      processedHtml = processedHtml.replace(/font-family:\s*Arial,\s*sans-serif/gi, `font-family: ${fontFamily}`);
+      processedHtml = processedHtml.replace(/font-family:\s*["']?Arial["']?/gi, `font-family: ${fontFamily}`);
+      processedHtml = processedHtml.replace(/font-family:\s*system-ui,\s*Arial,\s*sans-serif/gi, `font-family: ${fontFamily}`);
+    }
     
-    // This handles: font-family: system-ui, Arial, sans-serif
-    processedHtml = processedHtml.replace(/font-family:\s*system-ui,\s*Arial,\s*sans-serif/gi, `font-family: ${fontFamily}`);
-    
-    // Also handle any style attribute with Arial font
-    processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*Arial,?\s*sans-serif([^"]*?)"/gi, 
+    // Handle style attributes with different font declarations
+    processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*"Times New Roman",?\s*serif([^"]*?)"/gi, 
       (match, before, after) => `style="${before}font-family: ${fontFamily}${after}"`);
     
-    processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*Arial([^"]*?)"/gi, 
-      (match, before, after) => `style="${before}font-family: ${fontFamily}${after}"`);
+    // Only replace Arial style attributes if we're not setting it as the target font
+    if (fontFamily !== 'Arial, sans-serif') {
+      processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*Arial,?\s*sans-serif([^"]*?)"/gi, 
+        (match, before, after) => `style="${before}font-family: ${fontFamily}${after}"`);
+      
+      processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*Arial([^"]*?)"/gi, 
+        (match, before, after) => `style="${before}font-family: ${fontFamily}${after}"`);
+    }
   }
   
   // Add page break control CSS if not already present
