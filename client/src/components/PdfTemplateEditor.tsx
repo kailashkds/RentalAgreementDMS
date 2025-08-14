@@ -615,7 +615,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                         ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
                         : formData.language === 'marathi'
                         ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
-                        : 'system-ui, Arial, sans-serif'} !important;
+                        : '"Times New Roman", serif'} !important;
                       max-width: 800px;
                       margin: 0 auto;
                       padding: 20px;
@@ -662,7 +662,7 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
                         ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
                         : formData.language === 'marathi'
                         ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
-                        : 'system-ui, Arial, sans-serif',
+                        : '"Times New Roman", serif',
                       lineHeight: '1.6',
                       color: '#333',
                       fontSize: '14px',

@@ -1023,7 +1023,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           <head>
             <title>Rental Agreement - ${pdfData.agreementNumber}</title>
             <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
+              body { font-family: "Times New Roman", serif; margin: 20px; }
               @media print { 
                 body { margin: 0; }
                 .no-print { display: none; }
@@ -1170,7 +1170,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
             <head>
               <title>Rental Agreement</title>
               <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
+                body { font-family: "Times New Roman", serif; margin: 20px; }
                 @media print { 
                   body { margin: 0; }
                   .no-print { display: none; }
