@@ -265,8 +265,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         propertyDocuments: agreementData.propertyDocuments || {}
       };
 
-      // Generate the HTML with mapped field values and process it properly for Word
-      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate);
+      // Force English language for Word documents and generate the HTML with mapped field values
+      const englishAgreementData = { ...safeAgreementData, language: 'english' };
+      const processedHtml = await generatePdfHtml(englishAgreementData, template.htmlTemplate, 'english');
       
       // Create a simple but effective approach - convert HTML to structured document sections
       let workingHtml = processedHtml;
@@ -330,13 +331,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Replace <br> tags with newlines to respect line breaks
           const content = text.replace(/<br\s*\/?>/gi, '\n').trim();
           
-          console.log(`[Line Break Debug] Original text: "${text}"`);
-          console.log(`[Line Break Debug] After BR replacement: "${content}"`);
-          
           // Split on line breaks to create separate paragraphs for each line
           const lines = content.split(/\n/).filter(line => line.trim());
-          
-          console.log(`[Line Break Debug] Split into ${lines.length} lines:`, lines);
           
           if (lines.length === 1) {
             // Single line - create one paragraph
@@ -359,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 alignment: alignment,
                 bold: shouldBeBold(cleanText, style) || isHeading,
                 italic: style.includes('font-style: italic'),
-                size: isHeading ? 26 : 22,
+                size: isHeading ? 28 : 24, // Increased font sizes
                 spacing: isHeading ? { before: 360, after: 240 } : { after: 180 },
                 type: isHeading ? 'heading' : 'paragraph'
               });
@@ -386,7 +382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   alignment: alignment,
                   bold: shouldBeBold(cleanLine, style) || isHeading,
                   italic: style.includes('font-style: italic'),
-                  size: isHeading ? 26 : 22,
+                  size: isHeading ? 28 : 24, // Increased font sizes
                   spacing: isHeading ? { before: 360, after: 240 } : { after: 120 }, // Smaller spacing between related lines
                   type: isHeading ? 'heading' : 'paragraph'
                 });
@@ -450,12 +446,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const element of paragraphElements) {
         if (!element.text || element.text.trim() === '[Document/Image]') continue;
         
-        // Create text run with formatting
+        // Create text run with formatting and proper font
         const textRun = new TextRun({
           text: element.text,
-          size: element.size || 22,
+          size: element.size || 24,
           bold: element.bold || false,
-          italic: element.italic || false
+          italic: element.italic || false,
+          font: "Times New Roman"
         });
         
         // Create paragraph with formatting
@@ -479,8 +476,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         documentParagraphs.push(new Paragraph(paragraphOptions));
       }
 
-      // Create Word document with structured content
+      // Create Word document with structured content and proper styling
       const doc = new Document({
+        styles: {
+          default: {
+            document: {
+              run: {
+                font: "Times New Roman",
+                size: 24,
+              },
+              paragraph: {
+                spacing: {
+                  line: 1.15 * 240, // 1.15 line spacing (standard for legal documents)
+                  after: 120,
+                }
+              }
+            }
+          }
+        },
         sections: [{
           properties: {
             page: {
@@ -489,6 +502,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 right: 1440,
                 bottom: 1440,
                 left: 1440
+              },
+              size: {
+                orientation: "portrait",
               }
             }
           },
