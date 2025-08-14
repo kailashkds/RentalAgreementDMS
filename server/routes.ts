@@ -272,20 +272,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a simple but effective approach - convert HTML to structured document sections
       let workingHtml = processedHtml;
       
-      // Helper function to extract text and styling from HTML elements
+      // Helper function to extract text and styling from HTML elements with proper line break handling
       const extractTextAndStyle = (htmlElement: string) => {
         const styleMatch = htmlElement.match(/style\s*=\s*["']([^"']+)["']/);
         const style = styleMatch ? styleMatch[1] : '';
         
+        // First, convert <br> tags to newlines, then remove other HTML tags
         let text = htmlElement
-          .replace(/<[^>]*>/g, '') // Remove HTML tags
+          .replace(/<br\s*\/?>/gi, '\n') // Convert BR tags to newlines
+          .replace(/<[^>]*>/g, '') // Remove other HTML tags
           .replace(/&nbsp;/g, ' ')
           .replace(/&amp;/g, '&')
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/&quot;/g, '"')
           .replace(/&#39;/g, "'")
-          .replace(/\s+/g, ' ')
+          .replace(/[ \t]+/g, ' ') // Clean up spaces but preserve newlines
+          .replace(/[ \t]*\n[ \t]*/g, '\n') // Clean up around newlines
           .trim();
         
         return { text, style };
@@ -332,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const content = text.replace(/<br\s*\/?>/gi, '\n').trim();
           
           // Split on line breaks to create separate paragraphs for each line
-          const lines = content.split(/\n/).filter(line => line.trim());
+          const lines = content.split(/\n/).map(line => line.trim()).filter(line => line);
           
           if (lines.length === 1) {
             // Single line - create one paragraph
