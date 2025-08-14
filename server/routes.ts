@@ -268,238 +268,350 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the original language for Word documents and generate the HTML with mapped field values
       const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate, language);
       
-      // Create a simple but effective approach - convert HTML to structured document sections
-      let workingHtml = processedHtml;
-      
-      // Helper function to extract text and styling from HTML elements with proper line break handling
-      const extractTextAndStyle = (htmlElement: string) => {
-        const styleMatch = htmlElement.match(/style\s*=\s*["']([^"']+)["']/);
-        const style = styleMatch ? styleMatch[1] : '';
-        
-        // First, convert <br> tags to newlines, then remove other HTML tags
-        let text = htmlElement
-          .replace(/<br\s*\/?>/gi, '\n') // Convert BR tags to newlines
-          .replace(/<[^>]*>/g, '') // Remove other HTML tags
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/[ \t]+/g, ' ') // Clean up spaces but preserve newlines
-          .replace(/[ \t]*\n[ \t]*/g, '\n') // Clean up around newlines
-          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters that can corrupt Word docs
-          .replace(/\uFFFD/g, '') // Remove replacement characters
-          .trim();
-        
-        return { text, style };
-      };
-      
-      // Helper function to determine alignment from style
-      const getAlignment = (style: string) => {
-        if (style.includes('text-align:center') || style.includes('text-align: center')) return AlignmentType.CENTER;
-        if (style.includes('text-align:right') || style.includes('text-align: right')) return AlignmentType.RIGHT;
-        if (style.includes('text-align:justify') || style.includes('text-align: justify')) return AlignmentType.JUSTIFIED;
-        return AlignmentType.LEFT;
-      };
-      
-      // Helper function to check if text should be bold
-      const shouldBeBold = (text: string, style: string) => {
-        return style.includes('font-weight: bold') || 
-               text.match(/^RENT AGREEMENT$/i) ||
-               text.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
-               text.match(/^IN WITNESS WHEREOF/i) ||
-               text.match(/^LANDLORD DOCUMENTS$/i) ||
-               text.match(/^TENANT DOCUMENTS$/i);
-      };
-      
-      // Process HTML elements in the order they appear in the document
-      const paragraphElements = [];
-      
-      // Create a simplified approach: parse the entire HTML sequentially
-      // Remove style and script tags first
-      let cleanedHtml = workingHtml
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-      
-      // Use a more direct approach - extract all content-containing elements sequentially
-      const contentElements = [];
-      
-      // Extract all paragraph, heading, and div elements in document order
-      const elementMatches = cleanedHtml.match(/<(?:h[1-6]|p|div)[^>]*>[\s\S]*?<\/(?:h[1-6]|p|div)>/gi) || [];
-      
-      for (const element of elementMatches) {
-        const { text, style } = extractTextAndStyle(element);
-        
-        if (text && text.trim() && text !== '[Document/Image]') {
-          // Replace <br> tags with newlines to respect line breaks
-          const content = text.replace(/<br\s*\/?>/gi, '\n').trim();
-          
-          // Split on line breaks to create separate paragraphs for each line
-          const lines = content.split(/\n/).map(line => line.trim()).filter(line => line);
-          
-          if (lines.length === 1) {
-            // Single line - create one paragraph
-            const cleanText = lines[0].replace(/\s+/g, ' ').trim();
-            
-            if (cleanText) {
-              const isHeading = element.match(/<h[1-6]/i) || 
-                               cleanText.match(/^RENT AGREEMENT$/i) ||
-                               cleanText.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
-                               cleanText.match(/^IN WITNESS WHEREOF/i) ||
-                               cleanText.match(/^LANDLORD DOCUMENTS$/i) ||
-                               cleanText.match(/^TENANT DOCUMENTS$/i);
-              
-              // Special handling for RENT AGREEMENT title - always center it
-              const alignment = cleanText.match(/^RENT AGREEMENT$/i) ? 
-                               AlignmentType.CENTER : getAlignment(style);
-              
-              paragraphElements.push({
-                text: cleanText,
-                alignment: alignment,
-                bold: shouldBeBold(cleanText, style) || isHeading,
-                italic: style.includes('font-style: italic'),
-                size: isHeading ? 36 : 28, // 18pt for headings, 14pt for text (in half-points)
-                spacing: isHeading ? { before: 240, after: 160 } : { after: 120 },
-                type: isHeading ? 'heading' : 'paragraph'
-              });
-            }
-          } else {
-            // Multiple lines - create separate paragraphs for each line to respect <br> tags
-            for (const line of lines) {
-              const cleanLine = line.replace(/\s+/g, ' ').trim();
-              
-              if (cleanLine) {
-                const isHeading = element.match(/<h[1-6]/i) || 
-                                 cleanLine.match(/^RENT AGREEMENT$/i) ||
-                                 cleanLine.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
-                                 cleanLine.match(/^IN WITNESS WHEREOF/i) ||
-                                 cleanLine.match(/^LANDLORD DOCUMENTS$/i) ||
-                                 cleanLine.match(/^TENANT DOCUMENTS$/i);
-                
-                // Special handling for RENT AGREEMENT title - always center it
-                const alignment = cleanLine.match(/^RENT AGREEMENT$/i) ? 
-                                 AlignmentType.CENTER : getAlignment(style);
-                
-                paragraphElements.push({
-                  text: cleanLine,
-                  alignment: alignment,
-                  bold: shouldBeBold(cleanLine, style) || isHeading,
-                  italic: style.includes('font-style: italic'),
-                  size: isHeading ? 36 : 28, // 18pt for headings, 14pt for text (in half-points)
-                  spacing: isHeading ? { before: 240, after: 160 } : { after: 100 }, // Smaller spacing between related lines
-                  type: isHeading ? 'heading' : 'paragraph'
-                });
-              }
-            }
-          }
-        }
-      }
-      
-      // If the above approach didn't capture everything, fall back to regex-based extraction
-      if (paragraphElements.length === 0) {
-        // Extract content in document order using a single pass
-        const contentRegex = /<(?:h[1-6]|p|div)[^>]*>([\s\S]*?)<\/(?:h[1-6]|p|div)>/gi;
-        let match;
-        
-        while ((match = contentRegex.exec(cleanedHtml)) !== null) {
-          const rawContent = match[1];
-          const fullElement = match[0];
-          
-          const { text, style } = extractTextAndStyle(fullElement);
-          
-          if (text && text.trim() && text !== '[Document/Image]') {
-            const lines = text.split(/\s*\n\s*|\s*<br[^>]*>\s*/i).filter(line => line.trim());
-            
-            for (const line of lines) {
-              const trimmedLine = line.trim();
-              if (trimmedLine) {
-                const isHeading = fullElement.match(/<h[1-6]/i) || 
-                                 trimmedLine.match(/^RENT AGREEMENT$/i) ||
-                                 trimmedLine.match(/^NOW THIS AGREEMENT WITNESSETH/i) ||
-                                 trimmedLine.match(/^IN WITNESS WHEREOF/i) ||
-                                 trimmedLine.match(/^LANDLORD DOCUMENTS$/i) ||
-                                 trimmedLine.match(/^TENANT DOCUMENTS$/i);
-                
-                paragraphElements.push({
-                  text: trimmedLine,
-                  alignment: getAlignment(style),
-                  bold: shouldBeBold(trimmedLine, style) || isHeading,
-                  italic: style.includes('font-style: italic'),
-                  size: isHeading ? 36 : 28, // 18pt for headings, 14pt for text (in half-points)
-                  spacing: isHeading ? { before: 240, after: 160 } : { after: 120 },
-                  type: isHeading ? 'heading' : 'paragraph'
-                });
-              }
-            }
-          }
-        }
-      }
-      
-      console.log(`[Word Generation] Parsed ${paragraphElements.length} elements from HTML`);
-      console.log('[Word Generation] Sample elements with styling:', paragraphElements.slice(0, 3).map(el => ({
-        type: el.type,
-        text: el.text?.substring(0, 50) + '...',
-        bold: el.bold,
-        alignment: el.alignment
-      })));
-      
-      // Create Word document elements from parsed content
+      // Create Word document elements that match PDF layout exactly
       const documentParagraphs = [];
       
-      for (const element of paragraphElements) {
-        if (!element.text || element.text.trim() === '[Document/Image]') continue;
+      // Parse the HTML to extract structured content with proper formatting
+      let cleanedHtml = processedHtml
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+
+      // Helper function to create paragraph with proper styling
+      const createParagraph = (text: string, options: any = {}) => {
+        if (!text || !text.trim()) return null;
         
-        // Sanitize text for Word document to prevent corruption
-        const sanitizedText = element.text
-          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
-          .replace(/\uFFFD/g, '') // Remove replacement characters
-          .replace(/[\u2028\u2029]/g, '\n') // Replace unusual line separators with normal newlines
+        const sanitizedText = text
+          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+          .replace(/\uFFFD/g, '')
+          .replace(/[\u2028\u2029]/g, '\n')
           .trim();
 
-        if (!sanitizedText) continue; // Skip empty elements
+        if (!sanitizedText) return null;
 
-        // Create text run with formatting and proper font (Arial to match PDF)
-        const textRun = new TextRun({
-          text: sanitizedText,
-          size: element.size || 28, // Adjusted to match PDF sizing (14pt = 28 half-points)
-          bold: Boolean(element.bold),
-          italics: Boolean(element.italic),
-          font: "Arial" // Use Arial to match PDF font
-        });
-        
-        // Create paragraph with formatting
-        const paragraphOptions: any = {
-          children: [textRun],
-          alignment: element.alignment || AlignmentType.LEFT,
-          spacing: element.spacing || { after: 180 }
-        };
-        
-        // Add special formatting for numbered clauses
-        if (element.text.match(/^\d+\./)) {
-          paragraphOptions.indent = { left: 720 }; // 0.5 inch indent
-          paragraphOptions.spacing = { before: 120, after: 240 };
-        }
-        
-        // Add heading style if specified
-        if (element.type === 'heading') {
-          paragraphOptions.heading = HeadingLevel.HEADING_2;
-        }
-        
-        documentParagraphs.push(new Paragraph(paragraphOptions));
-      }
-
-      // If no paragraphs were created, add a default message
-      if (documentParagraphs.length === 0) {
-        documentParagraphs.push(new Paragraph({
-          children: [new TextRun({ 
-            text: "Document content could not be processed properly.", 
+        return new Paragraph({
+          children: [new TextRun({
+            text: sanitizedText,
             font: "Arial",
-            size: 28
+            size: options.size || 28,
+            bold: options.bold || false,
+            italics: options.italic || false,
           })],
-          alignment: AlignmentType.LEFT
-        }));
+          alignment: options.alignment || AlignmentType.LEFT,
+          spacing: options.spacing || { after: 120 },
+          indent: options.indent || undefined,
+          ...options.paragraphOptions
+        });
+      };
+
+      // 1. Title
+      const titlePara = createParagraph("RENT AGREEMENT", {
+        size: 44, // 22pt for title
+        bold: true,
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 0, after: 240 }
+      });
+      if (titlePara) documentParagraphs.push(titlePara);
+
+      // 2. Opening statement
+      const openingText = `This Agreement of Rent is made on ${safeAgreementData.agreementDate || '[DATE]'} by and between`;
+      const openingPara = createParagraph(openingText, {
+        alignment: AlignmentType.JUSTIFIED,
+        spacing: { after: 120 }
+      });
+      if (openingPara) documentParagraphs.push(openingPara);
+
+      // 3. Owner details
+      const ownerDetails = `${(safeAgreementData.ownerDetails?.name || '[OWNER_NAME]').toUpperCase()}
+Age:${safeAgreementData.ownerDetails?.age || '[AGE]'}, Occupation:${safeAgreementData.ownerDetails?.occupation || '[OCCUPATION]'}
+Address:${[
+        safeAgreementData.ownerDetails?.houseNumber,
+        safeAgreementData.ownerDetails?.society,
+        safeAgreementData.ownerDetails?.area,
+        safeAgreementData.ownerDetails?.city,
+        safeAgreementData.ownerDetails?.state,
+        safeAgreementData.ownerDetails?.pincode
+      ].filter(Boolean).join(',').toUpperCase() || '[ADDRESS]'}`;
+      
+      const ownerPara = createParagraph(ownerDetails, {
+        alignment: AlignmentType.JUSTIFIED,
+        spacing: { after: 80 }
+      });
+      if (ownerPara) documentParagraphs.push(ownerPara);
+
+      const landlordLabel = createParagraph("Hereinafter called the LANDLORD of the FIRST PART", {
+        bold: true,
+        italic: true,
+        alignment: AlignmentType.RIGHT,
+        spacing: { after: 160 }
+      });
+      if (landlordLabel) documentParagraphs.push(landlordLabel);
+
+      // 4. Tenant details
+      const tenantDetails = `${(safeAgreementData.tenantDetails?.name || '[TENANT_NAME]').toUpperCase()}
+Age:${safeAgreementData.tenantDetails?.age || '[AGE]'}, Occupation:${(safeAgreementData.tenantDetails?.occupation || '[OCCUPATION]').toUpperCase()}
+Address:${[
+        safeAgreementData.tenantDetails?.houseNumber,
+        safeAgreementData.tenantDetails?.society,
+        safeAgreementData.tenantDetails?.area,
+        safeAgreementData.tenantDetails?.city,
+        safeAgreementData.tenantDetails?.state,
+        safeAgreementData.tenantDetails?.pincode
+      ].filter(Boolean).join(',') || '[ADDRESS]'}`;
+      
+      const tenantPara = createParagraph(tenantDetails, {
+        alignment: AlignmentType.JUSTIFIED,
+        spacing: { after: 80 }
+      });
+      if (tenantPara) documentParagraphs.push(tenantPara);
+
+      const tenantLabel = createParagraph("Hereinafter called the TENANT of the SECOND PART", {
+        bold: true,
+        italic: true,
+        alignment: AlignmentType.RIGHT,
+        spacing: { after: 160 }
+      });
+      if (tenantLabel) documentParagraphs.push(tenantLabel);
+
+      // 5. Property details
+      const propertyDetails = `Property Address:${[
+        safeAgreementData.propertyDetails?.houseNumber,
+        safeAgreementData.propertyDetails?.society,
+        safeAgreementData.propertyDetails?.area,
+        safeAgreementData.propertyDetails?.city,
+        safeAgreementData.propertyDetails?.state,
+        safeAgreementData.propertyDetails?.pincode
+      ].filter(Boolean).join(',').toUpperCase() || '[PROPERTY_ADDRESS]'}
+Property Purpose:${safeAgreementData.propertyDetails?.purpose || '[PURPOSE]'}
+Rent Amount:Rs.${safeAgreementData.rentalTerms?.monthlyRent || '[AMOUNT]'} (Rupees ${safeAgreementData.rentalTerms?.monthlyRentWords || '[AMOUNT_WORDS]'}) Per Month`;
+      
+      const propertyPara = createParagraph(propertyDetails, {
+        alignment: AlignmentType.JUSTIFIED,
+        spacing: { after: 160 }
+      });
+      if (propertyPara) documentParagraphs.push(propertyPara);
+
+      // 6. Agreement header
+      const agreementHeader = createParagraph("NOW THIS AGREEMENT WITNESSETH AND IT IS HEREBY AGREED BY AND BETWEEN THE PARTIES AS UNDER:", {
+        size: 32, // 16pt
+        bold: true,
+        alignment: AlignmentType.LEFT,
+        spacing: { before: 160, after: 160 }
+      });
+      if (agreementHeader) documentParagraphs.push(agreementHeader);
+
+      // 7. Agreement clauses (numbered list)
+      const clauses = [
+        `That the tenancy shall be initially for the period of with effect from ${safeAgreementData.rentalTerms?.startDate || '[START_DATE]'} to ${safeAgreementData.rentalTerms?.endDate || '[END_DATE]'} and will be renewed every 11 months with mutual consent of both the landlord and tenant.`,
+        
+        `That the rent payable by the tenant to the landlord or his/her Authorized person, in respect of the said premises, shall be ₹${safeAgreementData.rentalTerms?.monthlyRent || '[AMOUNT]'} (${safeAgreementData.rentalTerms?.monthlyRentWords || '[AMOUNT_WORDS]'}) per month which shall be payable on or before ${safeAgreementData.rentalTerms?.paymentDueDateFrom || '[DATE_FROM]'} - ${safeAgreementData.rentalTerms?.paymentDueDateTo || '[DATE_TO]'} date of every succeeding month of the rental period.`,
+        
+        `That the tenant has paid a sum of ₹${safeAgreementData.rentalTerms?.securityDeposit || '[DEPOSIT]'}/- (Rupees ${safeAgreementData.rentalTerms?.securityDepositWords || '[DEPOSIT_WORDS]'} only) as interest-free security deposit, the receipt of which is hereby acknowledged by the landlord. This advance amount shall be returned to the tenant by the landlord at the time of vacating the said premises after adjusting the dues such as rent, water charges, maintenance charges, electricity dues, and cost of damages if any.`,
+        
+        `All the expenses on the said premises such as electric power, water, gas, professional tax, municipal tax, and GST (relating to the tenant business) shall be paid by the tenant. All the above-mentioned paid receipts shall be handed over to the landlord by the Tenant.`,
+        
+        `That the furniture, fittings and fixtures in the house premises are in good condition, and the tenant shall return the same to the landlord in good condition except for normal wear and tear before vacating the house premises. Any damage shall be reimbursed by the tenant to the landlord.`,
+        
+        `That the tenant has agreed to ensure a minimum stay of ${safeAgreementData.rentalTerms?.minimumStay || '[MINIMUM_STAY]'} months. Both parties agree to provide a notice period of ${safeAgreementData.rentalTerms?.noticePeriod || '[NOTICE_PERIOD]'} month(s) before vacating the premises.`,
+        
+        `Tenant affirm that there is no pending or any criminal antecedent against him and he is responsible to file police verification document before appropriate authority within 15 days from the date of this agreement.`,
+        
+        `That the tenant shall not sub-rent or sublet either the entire or any part of the said premises. The premises shall be used only for ${safeAgreementData.propertyDetails?.purpose || '[PURPOSE]'} purposes.`,
+        
+        `That the tenant has agreed to keep the house premises clean and in hygienic condition including the surrounding areas and the tenant has agreed not to do any action that would cause permanent / structural damages / changes without obtaining prior consent from the owner on impact and costs.`,
+        
+        `That the landlord shall be at liberty to inspect the house premises personally or through any authorized person(s) as and when necessary.`,
+        
+        `It is hereby agreed that if default is made by the tenant in payment of the rent for a period of three months, or in observance and performance of any of the covenants and stipulations hereby contained, then on such default, the landlord shall be entitled in addition to or in the alternative to any other remedy that may be available to him at this discretion, to terminate the Rent and eject the tenant from the said premises; and to take possession thereof as full and absolute owner thereof.`,
+        
+        `That the landlord shall be responsible for the payment of all taxes and levies pertaining to the said premises including but not limited to House Tax, Property Tax, other ceases, if any, and any other statutory taxes, levied by the Government or Governmental Departments. During the term of this Agreement, the landlord shall comply with all rules, regulations and requirements of any statutory authority, local, state and central government and governmental departments in respect of the said premises.`
+      ];
+
+      // Add commercial clause if applicable
+      if (safeAgreementData.propertyDetails?.purpose && safeAgreementData.propertyDetails.purpose !== 'Residential') {
+        clauses.push(`The Licensee shall be solely responsible for cancelling or surrendering any registration number, GST number, or any other licenses, permissions, or registrations obtained on the basis of the licensed premises, within one (1) month from the date of vacating the said premises. Deposit shall withhold till the evidence for cancellation of all the documents.`);
       }
+
+      // Generate numbered clauses
+      clauses.forEach((clause, index) => {
+        const clausePara = createParagraph(`${index + 1}. ${clause}`, {
+          alignment: AlignmentType.JUSTIFIED,
+          spacing: { after: 160 },
+          indent: { left: 720 } // 0.5 inch indent
+        });
+        if (clausePara) documentParagraphs.push(clausePara);
+      });
+
+      // Add additional clauses if present
+      if (safeAgreementData.additionalClauses && safeAgreementData.additionalClauses !== 'No additional clauses specified.') {
+        const additionalTitle = createParagraph("Additional Clause:", {
+          bold: true,
+          spacing: { before: 160, after: 80 }
+        });
+        if (additionalTitle) documentParagraphs.push(additionalTitle);
+        
+        const additionalPara = createParagraph(safeAgreementData.additionalClauses, {
+          alignment: AlignmentType.JUSTIFIED,
+          spacing: { after: 160 }
+        });
+        if (additionalPara) documentParagraphs.push(additionalPara);
+      }
+
+      // 8. Witness statement
+      const witnessStatement = createParagraph("IN WITNESS WHEREOF, the parties have set their hands on the day and year first above written, without any external influence or pressure from anybody.", {
+        size: 32, // 16pt
+        bold: true,
+        alignment: AlignmentType.LEFT,
+        spacing: { before: 240, after: 320 }
+      });
+      if (witnessStatement) documentParagraphs.push(witnessStatement);
+
+      // 9. Signature sections
+      // Create signature table for landlord
+      const landlordSigTable = new Table({
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1 },
+          bottom: { style: BorderStyle.SINGLE, size: 1 },
+          left: { style: BorderStyle.SINGLE, size: 1 },
+          right: { style: BorderStyle.SINGLE, size: 1 },
+        },
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE,
+        },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: (safeAgreementData.ownerDetails?.name || '[OWNER_NAME]').toUpperCase(), font: "Arial", size: 28, bold: true })],
+                    spacing: { after: 80 }
+                  }),
+                  new Paragraph({
+                    children: [new TextRun({ text: "Landlord", font: "Arial", size: 28, italics: true })],
+                    spacing: { after: 400 }
+                  }),
+                  new Paragraph({
+                    children: [new TextRun({ text: "________________________", font: "Arial", size: 24 })],
+                  })
+                ],
+                width: { size: 70, type: WidthType.PERCENTAGE }
+              }),
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: "Passport Size Photo", font: "Arial", size: 20 })],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { before: 800, after: 800 }
+                  })
+                ],
+                borders: {
+                  top: { style: BorderStyle.DOT_DASH, size: 1 },
+                  bottom: { style: BorderStyle.DOT_DASH, size: 1 },
+                  left: { style: BorderStyle.DOT_DASH, size: 1 },
+                  right: { style: BorderStyle.DOT_DASH, size: 1 },
+                },
+                width: { size: 30, type: WidthType.PERCENTAGE }
+              })
+            ]
+          })
+        ]
+      });
+      documentParagraphs.push(landlordSigTable);
+
+      // Add spacing
+      documentParagraphs.push(new Paragraph({ spacing: { after: 320 } }));
+
+      // Create signature table for tenant
+      const tenantSigTable = new Table({
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1 },
+          bottom: { style: BorderStyle.SINGLE, size: 1 },
+          left: { style: BorderStyle.SINGLE, size: 1 },
+          right: { style: BorderStyle.SINGLE, size: 1 },
+        },
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE,
+        },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: (safeAgreementData.tenantDetails?.name || '[TENANT_NAME]').toUpperCase(), font: "Arial", size: 28, bold: true })],
+                    spacing: { after: 80 }
+                  }),
+                  new Paragraph({
+                    children: [new TextRun({ text: "Tenant", font: "Arial", size: 28, italics: true })],
+                    spacing: { after: 400 }
+                  }),
+                  new Paragraph({
+                    children: [new TextRun({ text: "________________________", font: "Arial", size: 24 })],
+                  })
+                ],
+                width: { size: 70, type: WidthType.PERCENTAGE }
+              }),
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: "Passport Size Photo", font: "Arial", size: 20 })],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { before: 800, after: 800 }
+                  })
+                ],
+                borders: {
+                  top: { style: BorderStyle.DOT_DASH, size: 1 },
+                  bottom: { style: BorderStyle.DOT_DASH, size: 1 },
+                  left: { style: BorderStyle.DOT_DASH, size: 1 },
+                  right: { style: BorderStyle.DOT_DASH, size: 1 },
+                },
+                width: { size: 30, type: WidthType.PERCENTAGE }
+              })
+            ]
+          })
+        ]
+      });
+      documentParagraphs.push(tenantSigTable);
+
+      // Add spacing
+      documentParagraphs.push(new Paragraph({ spacing: { after: 320 } }));
+
+      // Witnesses section
+      const witnessTable = new Table({
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1 },
+          bottom: { style: BorderStyle.SINGLE, size: 1 },
+          left: { style: BorderStyle.SINGLE, size: 1 },
+          right: { style: BorderStyle.SINGLE, size: 1 },
+        },
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE,
+        },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: "Witnesses", font: "Arial", size: 28, bold: true })],
+                    spacing: { after: 240 }
+                  }),
+                  new Paragraph({
+                    children: [new TextRun({ text: "_______________________          _______________________", font: "Arial", size: 24 })],
+                    spacing: { after: 240 }
+                  })
+                ],
+              })
+            ]
+          })
+        ]
+      });
+      documentParagraphs.push(witnessTable);
+
+      console.log(`[Word Generation] Created ${documentParagraphs.length} structured elements for Word document`);
 
       // Create Word document with structured content and proper styling
       const doc = new Document({
