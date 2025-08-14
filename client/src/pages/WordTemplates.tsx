@@ -104,10 +104,7 @@ export default function WordTemplates() {
 
   const createTemplateMutation = useMutation({
     mutationFn: async (data: InsertWordTemplate) => {
-      return apiRequest("/api/word-templates", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("POST", "/api/word-templates", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/word-templates"] });
@@ -126,10 +123,7 @@ export default function WordTemplates() {
 
   const updateTemplateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<WordTemplate> }) => {
-      return apiRequest(`/api/word-templates/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("PUT", `/api/word-templates/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/word-templates"] });
@@ -147,9 +141,7 @@ export default function WordTemplates() {
 
   const deleteTemplateMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/word-templates/${id}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/word-templates/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/word-templates"] });
@@ -169,7 +161,18 @@ export default function WordTemplates() {
   ) || [];
 
   const onSubmit = (data: z.infer<typeof wordTemplateSchema>) => {
-    createTemplateMutation.mutate(data);
+    createTemplateMutation.mutate({
+      ...data,
+      templateStructure: data.templateStructure || {
+        sections: [],
+        pageSettings: {
+          margins: { top: 1080, right: 720, bottom: 1080, left: 720 },
+          orientation: 'portrait'
+        },
+        defaultFont: "Arial",
+        defaultSize: 28
+      }
+    });
   };
 
   const toggleTemplateStatus = (template: WordTemplate) => {
@@ -191,9 +194,9 @@ export default function WordTemplates() {
       name: `${template.name} - Copy`,
       documentType: template.documentType,
       language: template.language,
-      templateStructure: template.templateStructure,
-      dynamicFields: template.dynamicFields,
-      conditionalRules: template.conditionalRules,
+      templateStructure: template.templateStructure as any,
+      dynamicFields: template.dynamicFields as any,
+      conditionalRules: template.conditionalRules as any,
       isActive: false,
       isDefault: false,
     };
@@ -508,7 +511,7 @@ export default function WordTemplates() {
                     )}
                     
                     <Switch
-                      checked={template.isActive}
+                      checked={template.isActive ?? true}
                       onCheckedChange={() => toggleTemplateStatus(template)}
                       data-testid={`toggle-status-${template.id}`}
                     />
@@ -526,7 +529,7 @@ export default function WordTemplates() {
                       variant="outline"
                       size="sm"
                       onClick={() => deleteTemplateMutation.mutate(template.id)}
-                      disabled={template.isDefault}
+                      disabled={template.isDefault ?? false}
                       data-testid={`delete-template-${template.id}`}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -551,7 +554,7 @@ export default function WordTemplates() {
                     <div className="text-sm">
                       <strong>Dynamic Fields ({template.dynamicFields.length}):</strong>
                       <div className="mt-1 flex flex-wrap gap-1">
-                        {template.dynamicFields.slice(0, 8).map((field: string, idx: number) => (
+                        {(template.dynamicFields as string[]).slice(0, 8).map((field: string, idx: number) => (
                           <Badge key={idx} variant="secondary" className="text-xs">
                             {field}
                           </Badge>
