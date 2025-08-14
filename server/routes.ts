@@ -359,8 +359,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 alignment: alignment,
                 bold: shouldBeBold(cleanText, style) || isHeading,
                 italic: style.includes('font-style: italic'),
-                size: isHeading ? 28 : 24, // Increased font sizes
-                spacing: isHeading ? { before: 360, after: 240 } : { after: 180 },
+                size: isHeading ? 36 : 28, // 18pt for headings, 14pt for text (in half-points)
+                spacing: isHeading ? { before: 240, after: 160 } : { after: 120 },
                 type: isHeading ? 'heading' : 'paragraph'
               });
             }
@@ -386,8 +386,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   alignment: alignment,
                   bold: shouldBeBold(cleanLine, style) || isHeading,
                   italic: style.includes('font-style: italic'),
-                  size: isHeading ? 28 : 24, // Increased font sizes
-                  spacing: isHeading ? { before: 360, after: 240 } : { after: 120 }, // Smaller spacing between related lines
+                  size: isHeading ? 36 : 28, // 18pt for headings, 14pt for text (in half-points)
+                  spacing: isHeading ? { before: 240, after: 160 } : { after: 100 }, // Smaller spacing between related lines
                   type: isHeading ? 'heading' : 'paragraph'
                 });
               }
@@ -426,8 +426,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   alignment: getAlignment(style),
                   bold: shouldBeBold(trimmedLine, style) || isHeading,
                   italic: style.includes('font-style: italic'),
-                  size: isHeading ? 26 : 22,
-                  spacing: isHeading ? { before: 360, after: 240 } : { after: 180 },
+                  size: isHeading ? 36 : 28, // 18pt for headings, 14pt for text (in half-points)
+                  spacing: isHeading ? { before: 240, after: 160 } : { after: 120 },
                   type: isHeading ? 'heading' : 'paragraph'
                 });
               }
@@ -459,13 +459,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (!sanitizedText) continue; // Skip empty elements
 
-        // Create text run with formatting and proper font
+        // Create text run with formatting and proper font (Arial to match PDF)
         const textRun = new TextRun({
           text: sanitizedText,
-          size: element.size || 24,
+          size: element.size || 28, // Adjusted to match PDF sizing (14pt = 28 half-points)
           bold: Boolean(element.bold),
           italics: Boolean(element.italic),
-          font: "Times New Roman"
+          font: "Arial" // Use Arial to match PDF font
         });
         
         // Create paragraph with formatting
@@ -494,8 +494,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         documentParagraphs.push(new Paragraph({
           children: [new TextRun({ 
             text: "Document content could not be processed properly.", 
-            font: "Times New Roman",
-            size: 24
+            font: "Arial",
+            size: 28
           })],
           alignment: AlignmentType.LEFT
         }));
@@ -507,13 +507,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           default: {
             document: {
               run: {
-                font: "Times New Roman",
-                size: 24,
+                font: "Arial", // Use Arial to match PDF
+                size: 28, // 14pt font size (28 half-points)
               },
               paragraph: {
                 spacing: {
-                  line: 1.15 * 240, // 1.15 line spacing (standard for legal documents)
-                  after: 120,
+                  line: 1.6 * 240, // 1.6 line spacing to match PDF
+                  after: 160, // Paragraph spacing to match PDF
                 }
               }
             }
@@ -523,10 +523,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           properties: {
             page: {
               margin: {
-                top: 1440, // 1 inch
-                right: 1440,
-                bottom: 1440,
-                left: 1440
+                top: 1080, // 0.75 inch to match PDF
+                right: 720, // 0.5 inch to match PDF
+                bottom: 1080, // 0.75 inch to match PDF  
+                left: 720 // 0.5 inch to match PDF
               },
               size: {
                 orientation: "portrait",
