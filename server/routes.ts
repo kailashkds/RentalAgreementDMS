@@ -464,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           text: sanitizedText,
           size: element.size || 24,
           bold: Boolean(element.bold),
-          italic: Boolean(element.italic),
+          italics: Boolean(element.italic),
           font: "Times New Roman"
         });
         
