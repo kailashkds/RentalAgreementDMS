@@ -853,29 +853,32 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
     : 'Arial, sans-serif';
 
   // Replace inline font-family styles in the HTML template to match the language
-  // Always perform font replacement for all languages
+  // Always perform font replacement for all languages (except Gujarati which needs special handling)
+  
+  // Always replace Times New Roman with the appropriate font for the language
+  processedHtml = processedHtml.replace(/font-family:\s*"Times New Roman",?\s*serif/gi, `font-family: ${fontFamily}`);
+  processedHtml = processedHtml.replace(/font-family:\s*Times New Roman,?\s*serif/gi, `font-family: ${fontFamily}`);
+  processedHtml = processedHtml.replace(/font-family:\s*["']?Times New Roman["']?/gi, `font-family: ${fontFamily}`);
+  
+  // Handle style attributes with Times New Roman
+  processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*"Times New Roman",?\s*serif([^"]*?)"/gi, 
+    (match, before, after) => `style="${before}font-family: ${fontFamily}${after}"`);
+  processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*Times New Roman,?\s*serif([^"]*?)"/gi, 
+    (match, before, after) => `style="${before}font-family: ${fontFamily}${after}"`);
+  processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*["']?Times New Roman["']?([^"]*?)"/gi, 
+    (match, before, after) => `style="${before}font-family: ${fontFamily}${after}"`);
+  
+  // For non-Gujarati languages, also replace other common system fonts that might interfere
   if (language !== 'gujarati') {
-    // Replace Times New Roman with the appropriate font for the language (including Arial for English)
-    processedHtml = processedHtml.replace(/font-family:\s*"Times New Roman",?\s*serif/gi, `font-family: ${fontFamily}`);
-    processedHtml = processedHtml.replace(/font-family:\s*Times New Roman,?\s*serif/gi, `font-family: ${fontFamily}`);
-    
-    // Only replace Arial if we're not setting it as the target font (to avoid duplicates)
+    // Replace any remaining system fonts that aren't the target font
     if (fontFamily !== 'Arial, sans-serif') {
       processedHtml = processedHtml.replace(/font-family:\s*Arial,\s*sans-serif/gi, `font-family: ${fontFamily}`);
       processedHtml = processedHtml.replace(/font-family:\s*["']?Arial["']?/gi, `font-family: ${fontFamily}`);
       processedHtml = processedHtml.replace(/font-family:\s*system-ui,\s*Arial,\s*sans-serif/gi, `font-family: ${fontFamily}`);
-    }
-    
-    // Handle style attributes with different font declarations
-    processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*"Times New Roman",?\s*serif([^"]*?)"/gi, 
-      (match, before, after) => `style="${before}font-family: ${fontFamily}${after}"`);
-    
-    // Only replace Arial style attributes if we're not setting it as the target font
-    if (fontFamily !== 'Arial, sans-serif') {
+      
       processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*Arial,?\s*sans-serif([^"]*?)"/gi, 
         (match, before, after) => `style="${before}font-family: ${fontFamily}${after}"`);
-      
-      processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*Arial([^"]*?)"/gi, 
+      processedHtml = processedHtml.replace(/style="([^"]*?)font-family:\s*["']?Arial["']?([^"]*?)"/gi, 
         (match, before, after) => `style="${before}font-family: ${fontFamily}${after}"`);
     }
   }
@@ -905,10 +908,11 @@ html, body {
   font-size: 14px;
 }
 
-/* Professional paragraph and heading spacing */
+/* Professional paragraph and heading spacing with explicit font */
 p, div, span, h1, h2, h3, h4, h5, h6 {
   line-height: 1.6 !important;
   margin: 8px 0 !important;
+  font-family: ${fontFamily} !important;
 }
 
 /* Specific overrides for common paragraph spacing */
@@ -953,12 +957,13 @@ td, th {
   padding: 4px 8px !important;
 }
 
-/* Remove any shadows, borders, or background styling */
+/* Remove any shadows, borders, or background styling and enforce font */
 *, *::before, *::after {
   box-shadow: none !important;
   text-shadow: none !important;
   border: none !important;
   outline: none !important;
+  font-family: ${fontFamily} !important;
 }
 
 /* Specific overrides for agreement content */
@@ -1027,11 +1032,13 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
     box-shadow: none !important;
     border: none !important;
     line-height: 1.4 !important;
+    font-family: ${fontFamily} !important;
   }
   
-  p, div, span {
+  p, div, span, h1, h2, h3, h4, h5, h6, strong, b, li, td, th {
     line-height: 1.4 !important;
     margin: 0.3em 0 !important;
+    font-family: ${fontFamily} !important;
   }
   
   br {
