@@ -306,6 +306,11 @@ export default function Agreements() {
               <title>Rental Agreement - ${agreement.agreementNumber || 'Agreement'}</title>
               <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
               <style>
+                @page {
+                  size: legal;
+                  margin: 0.75in;
+                }
+                
                 body { 
                   font-family: ${agreement.language === 'gujarati' 
                     ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
@@ -325,14 +330,16 @@ export default function Agreements() {
                   -webkit-font-smoothing: antialiased;
                   -moz-osx-font-smoothing: grayscale;
                   font-feature-settings: "kern" 1, "liga" 1;
+                  width: 8.5in;
+                  min-height: 14in;
                 }
                 
                 .agreement-content {
-                  max-width: 800px;
+                  max-width: 8.5in;
                   margin: 0 auto;
                   padding: 20px;
                   background: white;
-                  min-height: 1056px;
+                  min-height: 14in;
                 }
                 
                 /* Enhanced Gujarati font support */
