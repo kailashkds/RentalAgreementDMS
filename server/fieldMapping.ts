@@ -841,6 +841,17 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
   
   let processedHtml = processTemplate(htmlTemplate, processedFieldValues);
   
+  // Determine font family based on language
+  const fontFamily = language === 'gujarati' 
+    ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif'
+    : language === 'hindi'
+    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+    : language === 'tamil'
+    ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+    : language === 'marathi'
+    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+    : '"Times New Roman", serif';
+  
   // Add page break control CSS if not already present
   const pageBreakCSS = `
 <style>
@@ -858,23 +869,42 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
 html, body {
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
+  font-family: ${fontFamily};
   background: white;
   box-shadow: none !important;
   border: none !important;
-  line-height: 1.4 !important;
+  line-height: 1.6 !important;
+  font-size: 14px;
 }
 
-/* Reduce excessive line spacing and margins */
+/* Professional paragraph and heading spacing */
 p, div, span, h1, h2, h3, h4, h5, h6 {
-  line-height: 1.4 !important;
-  margin: 0.3em 0 !important;
+  line-height: 1.6 !important;
+  margin: 8px 0 !important;
 }
 
 /* Specific overrides for common paragraph spacing */
 p {
-  margin: 0.5em 0 !important;
-  line-height: 1.4 !important;
+  margin: 10px 0 !important;
+  line-height: 1.6 !important;
+  text-align: justify !important;
+}
+
+/* Title styling */
+h1, h2, h3 {
+  font-weight: bold !important;
+  text-align: center !important;
+  margin: 20px 0 15px 0 !important;
+}
+
+h1 {
+  font-size: 18px !important;
+  margin-bottom: 25px !important;
+}
+
+/* Strong text styling */
+strong, b {
+  font-weight: bold !important;
 }
 
 /* Remove excessive spacing from br tags */

@@ -1239,7 +1239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Generate the HTML with mapped field values (now with document embedding)
-      const processedHtml = await generatePdfHtml(agreementFormData, template.htmlTemplate);
+      const processedHtml = await generatePdfHtml(agreementFormData, template.htmlTemplate, template.language);
       
       res.json({
         html: processedHtml,
