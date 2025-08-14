@@ -1023,33 +1023,26 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           <head>
             <title>Rental Agreement - ${pdfData.agreementNumber}</title>
             <style>
-              @page {
-                margin: 15mm 10mm 15mm 10mm;
-                @bottom-center { 
-                  content: "Page " counter(page) " of " counter(pages);
-                  font-size: 10px;
-                  color: #666;
+              @media print {
+                @page {
+                  margin: 0.5in 0.4in 0.75in 0.4in;
+                  size: A4;
                 }
-                @bottom-left { content: none; }
-                @bottom-right { content: none; }
-                @top-center { content: none; }
-                @top-left { content: none; }
-                @top-right { content: none; }
-              }
-              
-              /* Remove page numbers from document image pages */
-              .document-page {
-                page: document-pages;
-              }
-              
-              @page document-pages {
-                margin: 15mm 10mm 15mm 10mm;
-                @bottom-center { content: none; }
-                @bottom-left { content: none; }
-                @bottom-right { content: none; }
-                @top-center { content: none; }
-                @top-left { content: none; }
-                @top-right { content: none; }
+                
+                body {
+                  margin: 0;
+                  padding: 20px;
+                  -webkit-print-color-adjust: exact;
+                  color-adjust: exact;
+                }
+                
+                .page-break-before {
+                  page-break-before: always;
+                }
+                
+                .no-page-break {
+                  page-break-inside: avoid;
+                }
               }
               
               body { 
@@ -1066,9 +1059,18 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
             </style>
           </head>
           <body>
-            <div class="no-print" style="margin-bottom: 20px;">
-              <button onclick="window.print()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px;">Print PDF</button>
-              <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; margin-left: 10px;">Close</button>
+            <div class="no-print" style="margin-bottom: 20px; padding: 15px; background: #f0f8ff; border: 1px solid #0066cc; border-radius: 5px;">
+              <h3 style="margin: 0 0 10px 0; color: #0066cc;">PDF Generation Instructions</h3>
+              <p style="margin: 5px 0; font-size: 13px;"><strong>To get clean PDFs without browser headers/footers:</strong></p>
+              <ol style="margin: 5px 0; font-size: 12px; padding-left: 20px;">
+                <li>Click "Print / Save as PDF" below</li>
+                <li>In the print dialog, click "More settings"</li>
+                <li>UNCHECK "Headers and footers" option</li>
+                <li>Set margins to "Minimum" for best results</li>
+                <li>Click "Save" or "Print"</li>
+              </ol>
+              <button onclick="window.print()" style="background: #0066cc; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Print / Save as PDF</button>
+              <button onclick="window.close()" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Close</button>
             </div>
             ${pdfData.html}
           </body>
