@@ -13,7 +13,6 @@ import SystemSettings from "@/pages/SystemSettings";
 import Profile from "@/pages/Profile";
 import PdfTemplates from "@/pages/PdfTemplates";
 import Login from "@/pages/Login";
-import WordTemplates from "@/pages/WordTemplates";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRouter() {
@@ -44,7 +43,6 @@ function AuthenticatedRouter() {
       <Route path="/settings" component={SystemSettings} />
       <Route path="/profile" component={Profile} />
       <Route path="/pdf-templates" component={PdfTemplates} />
-      <Route path="/word-templates" component={WordTemplates} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -6,7 +6,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { mapFormDataToTemplateFields, generatePdfHtml, convertPdfToImages } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
-import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema, insertPdfTemplateSchema, insertWordTemplateSchema } from "@shared/schema";
+import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
 import { directFileUpload } from "./directFileUpload";
 import { upload, getFileInfo, deleteFile, readFileAsBase64 } from "./localFileUpload";
 import { z } from "zod";
@@ -1260,71 +1260,7 @@ Rent Amount:Rs.${safeAgreementData.rentalTerms?.monthlyRent || '[AMOUNT]'} (Rupe
     }
   });
 
-  // Word Templates management endpoints
-  app.get("/api/word-templates", requireAuth, async (req, res) => {
-    try {
-      const { documentType, language } = req.query;
-      const templates = await storage.getWordTemplates(
-        documentType as string,
-        language as string
-      );
-      res.json(templates);
-    } catch (error) {
-      console.error("Error fetching Word templates:", error);
-      res.status(500).json({ message: "Failed to fetch Word templates" });
-    }
-  });
 
-  app.get("/api/word-templates/:id", requireAuth, async (req, res) => {
-    try {
-      const template = await storage.getWordTemplate(req.params.id);
-      if (!template) {
-        return res.status(404).json({ message: "Word template not found" });
-      }
-      res.json(template);
-    } catch (error) {
-      console.error("Error fetching Word template:", error);
-      res.status(500).json({ message: "Failed to fetch Word template" });
-    }
-  });
-
-  app.post("/api/word-templates", requireAuth, async (req, res) => {
-    try {
-      const templateData = insertWordTemplateSchema.parse(req.body);
-      const template = await storage.createWordTemplate(templateData);
-      res.status(201).json(template);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid template data", errors: error.errors });
-      }
-      console.error("Error creating Word template:", error);
-      res.status(500).json({ message: "Failed to create Word template" });
-    }
-  });
-
-  app.put("/api/word-templates/:id", requireAuth, async (req, res) => {
-    try {
-      const templateData = insertWordTemplateSchema.partial().parse(req.body);
-      const template = await storage.updateWordTemplate(req.params.id, templateData);
-      res.json(template);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid template data", errors: error.errors });
-      }
-      console.error("Error updating Word template:", error);
-      res.status(500).json({ message: "Failed to update Word template" });
-    }
-  });
-
-  app.delete("/api/word-templates/:id", requireAuth, async (req, res) => {
-    try {
-      await storage.deleteWordTemplate(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting Word template:", error);
-      res.status(500).json({ message: "Failed to delete Word template" });
-    }
-  });
 
   // Test field mapping (temporary endpoint for debugging)
   app.post("/api/test-field-mapping", requireAuth, async (req, res) => {

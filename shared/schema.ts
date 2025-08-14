@@ -164,20 +164,7 @@ export const pdfTemplates = pgTable("pdf_templates", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Word Templates for Word document generation
-export const wordTemplates = pgTable("word_templates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  documentType: text("document_type").notNull(), // 'rental_agreement', 'promissory_note', etc.
-  language: varchar("language", { length: 20 }).notNull(),
-  templateStructure: jsonb("template_structure").notNull(), // Structure for Word document generation
-  dynamicFields: jsonb("dynamic_fields").notNull().default('[]'), // Array of field configurations
-  conditionalRules: jsonb("conditional_rules").notNull().default('[]'), // Conditional display rules
-  isActive: boolean("is_active").default(true),
-  isDefault: boolean("is_default").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+
 
 // Relations
 export const customersRelations = relations(customers, ({ many }) => ({
@@ -251,11 +238,7 @@ export const insertPdfTemplateSchema = createInsertSchema(pdfTemplates).omit({
   updatedAt: true,
 });
 
-export const insertWordTemplateSchema = createInsertSchema(wordTemplates).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+
 
 export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
   id: true,
@@ -278,8 +261,7 @@ export type InsertAgreementTemplate = z.infer<typeof insertAgreementTemplateSche
 export type AgreementTemplate = typeof agreementTemplates.$inferSelect;
 export type InsertPdfTemplate = z.infer<typeof insertPdfTemplateSchema>;
 export type PdfTemplate = typeof pdfTemplates.$inferSelect;
-export type InsertWordTemplate = z.infer<typeof insertWordTemplateSchema>;
-export type WordTemplate = typeof wordTemplates.$inferSelect;
+
 export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
 export type AdminUser = typeof adminUsers.$inferSelect;
 

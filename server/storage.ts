@@ -6,7 +6,7 @@ import {
   agreements,
   agreementTemplates,
   pdfTemplates,
-  wordTemplates,
+
   adminUsers,
   type User,
   type UpsertUser,
@@ -22,8 +22,7 @@ import {
   type InsertAgreementTemplate,
   type PdfTemplate,
   type InsertPdfTemplate,
-  type WordTemplate,
-  type InsertWordTemplate,
+
   type AdminUser,
   type InsertAdminUser,
 } from "@shared/schema";
@@ -63,12 +62,7 @@ export interface IStorage {
   updatePdfTemplate(id: string, template: Partial<InsertPdfTemplate>): Promise<PdfTemplate>;
   deletePdfTemplate(id: string): Promise<void>;
   
-  // Word Template operations
-  getWordTemplates(documentType?: string, language?: string): Promise<WordTemplate[]>;
-  getWordTemplate(id: string): Promise<WordTemplate | undefined>;
-  createWordTemplate(template: InsertWordTemplate): Promise<WordTemplate>;
-  updateWordTemplate(id: string, template: Partial<InsertWordTemplate>): Promise<WordTemplate>;
-  deleteWordTemplate(id: string): Promise<void>;
+
   
   // Admin user operations
   getAdminUsers(): Promise<AdminUser[]>;
@@ -318,7 +312,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
 
       let nextNumber = 1;
-      if (Array.isArray(lastAgreement) && lastAgreement.length > 0) {
+      if (lastAgreement && lastAgreement.length > 0) {
         const lastNumber = parseInt(lastAgreement[0].agreementNumber.split('-')[2]);
         nextNumber = lastNumber + 1;
       }
@@ -368,9 +362,9 @@ export class DatabaseStorage implements IStorage {
       ...originalAgreement,
       id: undefined as any,
       agreementNumber: undefined as any,
-      startDate: newStartDate.toISOString().split('T')[0] as any,
-      endDate: newEndDate.toISOString().split('T')[0] as any,
-      agreementDate: new Date().toISOString().split('T')[0] as any,
+      startDate: newStartDate.toISOString().split('T')[0],
+      endDate: newEndDate.toISOString().split('T')[0],
+      agreementDate: new Date().toISOString().split('T')[0],
       status: "active",
       renewedFromId: id,
       parentAgreementId: originalAgreement.parentAgreementId || id,
@@ -546,43 +540,7 @@ export class DatabaseStorage implements IStorage {
     await db.update(pdfTemplates).set({ isActive: false }).where(eq(pdfTemplates.id, id));
   }
 
-  // Word Template operations
-  async getWordTemplates(documentType?: string, language?: string): Promise<WordTemplate[]> {
-    const whereConditions = and(
-      eq(wordTemplates.isActive, true),
-      documentType ? eq(wordTemplates.documentType, documentType) : undefined,
-      language ? eq(wordTemplates.language, language) : undefined
-    );
 
-    return db
-      .select()
-      .from(wordTemplates)
-      .where(whereConditions)
-      .orderBy(wordTemplates.createdAt);
-  }
-
-  async getWordTemplate(id: string): Promise<WordTemplate | undefined> {
-    const [template] = await db.select().from(wordTemplates).where(eq(wordTemplates.id, id));
-    return template;
-  }
-
-  async createWordTemplate(templateData: InsertWordTemplate): Promise<WordTemplate> {
-    const [template] = await db.insert(wordTemplates).values(templateData).returning();
-    return template;
-  }
-
-  async updateWordTemplate(id: string, templateData: Partial<InsertWordTemplate>): Promise<WordTemplate> {
-    const [template] = await db
-      .update(wordTemplates)
-      .set({ ...templateData, updatedAt: new Date() })
-      .where(eq(wordTemplates.id, id))
-      .returning();
-    return template;
-  }
-
-  async deleteWordTemplate(id: string): Promise<void> {
-    await db.update(wordTemplates).set({ isActive: false }).where(eq(wordTemplates.id, id));
-  }
 
   async createAgreementTemplate(templateData: InsertAgreementTemplate): Promise<AgreementTemplate> {
     const [template] = await db
