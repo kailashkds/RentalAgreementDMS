@@ -278,9 +278,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to create paragraph with proper styling
       const createParagraph = (text: string, options: any = {}) => {
-        if (!text || !text.trim()) return null;
+        if (!text) return null;
         
-        const sanitizedText = text
+        // Ensure text is a string
+        const textStr = String(text);
+        if (!textStr.trim()) return null;
+        
+        const sanitizedText = textStr
           .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
           .replace(/\uFFFD/g, '')
           .replace(/[\u2028\u2029]/g, '\n')
