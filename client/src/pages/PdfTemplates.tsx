@@ -99,6 +99,35 @@ export default function PdfTemplates() {
             <meta charset="UTF-8">
             <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
             <style>
+              @page {
+                margin: 15mm 10mm 15mm 10mm;
+                @bottom-center { 
+                  content: "Page " counter(page) " of " counter(pages);
+                  font-size: 10px;
+                  color: #666;
+                }
+                @bottom-left { content: none; }
+                @bottom-right { content: none; }
+                @top-center { content: none; }
+                @top-left { content: none; }
+                @top-right { content: none; }
+              }
+              
+              /* Remove page numbers from document image pages */
+              .document-page {
+                page: document-pages;
+              }
+              
+              @page document-pages {
+                margin: 15mm 10mm 15mm 10mm;
+                @bottom-center { content: none; }
+                @bottom-left { content: none; }
+                @bottom-right { content: none; }
+                @top-center { content: none; }
+                @top-left { content: none; }
+                @top-right { content: none; }
+              }
+              
               body { 
                 font-family: ${template.language === 'gujarati' 
                   ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 

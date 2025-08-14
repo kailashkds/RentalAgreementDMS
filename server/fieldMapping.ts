@@ -1524,11 +1524,11 @@ export async function convertPdfToImages(pdfPath: string, documentType: string):
       const base64Data = imageBuffer.toString('base64');
       const dataUrl = `data:image/png;base64,${base64Data}`;
       
-      // Add page break before each image except the first one
+      // Add page break before each image except the first one, and document-page class
       const pageBreakClass = i > 0 ? 'page-break-before' : '';
       
       htmlContent += `
-      <div style="margin: 15px 0; text-align: center;" class="${pageBreakClass}">
+      <div style="margin: 15px 0; text-align: center;" class="${pageBreakClass} document-page">
         <img src="${dataUrl}" 
              style="width: auto; height: auto; max-width: 100%; max-height: 600px; border: none; display: block; margin: 0 auto;" 
              alt="${documentType} - Page ${i + 1}" />

@@ -1023,6 +1023,35 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           <head>
             <title>Rental Agreement - ${pdfData.agreementNumber}</title>
             <style>
+              @page {
+                margin: 15mm 10mm 15mm 10mm;
+                @bottom-center { 
+                  content: "Page " counter(page) " of " counter(pages);
+                  font-size: 10px;
+                  color: #666;
+                }
+                @bottom-left { content: none; }
+                @bottom-right { content: none; }
+                @top-center { content: none; }
+                @top-left { content: none; }
+                @top-right { content: none; }
+              }
+              
+              /* Remove page numbers from document image pages */
+              .document-page {
+                page: document-pages;
+              }
+              
+              @page document-pages {
+                margin: 15mm 10mm 15mm 10mm;
+                @bottom-center { content: none; }
+                @bottom-left { content: none; }
+                @bottom-right { content: none; }
+                @top-center { content: none; }
+                @top-left { content: none; }
+                @top-right { content: none; }
+              }
+              
               body { 
                 font-family: Arial, sans-serif !important; 
                 margin: 20px; 
