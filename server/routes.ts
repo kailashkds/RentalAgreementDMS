@@ -265,9 +265,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         propertyDocuments: agreementData.propertyDocuments || {}
       };
 
-      // Force English language for Word documents and generate the HTML with mapped field values
-      const englishAgreementData = { ...safeAgreementData, language: 'english' };
-      const processedHtml = await generatePdfHtml(englishAgreementData, template.htmlTemplate, 'english');
+      // Use the original language for Word documents and generate the HTML with mapped field values
+      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate, language);
       
       // Create a simple but effective approach - convert HTML to structured document sections
       let workingHtml = processedHtml;
@@ -289,6 +288,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/&#39;/g, "'")
           .replace(/[ \t]+/g, ' ') // Clean up spaces but preserve newlines
           .replace(/[ \t]*\n[ \t]*/g, '\n') // Clean up around newlines
+          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters that can corrupt Word docs
+          .replace(/\uFFFD/g, '') // Remove replacement characters
           .trim();
         
         return { text, style };
@@ -449,12 +450,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const element of paragraphElements) {
         if (!element.text || element.text.trim() === '[Document/Image]') continue;
         
+        // Sanitize text for Word document to prevent corruption
+        const sanitizedText = element.text
+          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+          .replace(/\uFFFD/g, '') // Remove replacement characters
+          .replace(/[\u2028\u2029]/g, '\n') // Replace unusual line separators with normal newlines
+          .trim();
+
+        if (!sanitizedText) continue; // Skip empty elements
+
         // Create text run with formatting and proper font
         const textRun = new TextRun({
-          text: element.text,
+          text: sanitizedText,
           size: element.size || 24,
-          bold: element.bold || false,
-          italic: element.italic || false,
+          bold: Boolean(element.bold),
+          italic: Boolean(element.italic),
           font: "Times New Roman"
         });
         
@@ -477,6 +487,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         documentParagraphs.push(new Paragraph(paragraphOptions));
+      }
+
+      // If no paragraphs were created, add a default message
+      if (documentParagraphs.length === 0) {
+        documentParagraphs.push(new Paragraph({
+          children: [new TextRun({ 
+            text: "Document content could not be processed properly.", 
+            font: "Times New Roman",
+            size: 24
+          })],
+          alignment: AlignmentType.LEFT
+        }));
       }
 
       // Create Word document with structured content and proper styling
@@ -515,15 +537,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }],
       });
 
-      // Generate the Word document buffer
-      const docxBuffer = await Packer.toBuffer(doc);
+      console.log(`[Word Generation] Creating document with ${documentParagraphs.length} paragraphs`);
+      
+      // Generate the Word document buffer with error handling
+      let docxBuffer;
+      try {
+        docxBuffer = await Packer.toBuffer(doc);
+        console.log(`[Word Generation] Buffer created successfully, size: ${docxBuffer.length} bytes`);
+      } catch (packError) {
+        console.error('[Word Generation] Packer error:', packError);
+        throw new Error(`Failed to create Word document: ${packError instanceof Error ? packError.message : 'Unknown packing error'}`);
+      }
 
-      // Set response headers for Word document download
+      // Verify buffer is valid
+      if (!docxBuffer || docxBuffer.length === 0) {
+        throw new Error('Generated Word document buffer is empty or invalid');
+      }
+
+      // Set proper response headers for Word document download
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.setHeader('Content-Disposition', `attachment; filename="rental_agreement_${agreementData.agreementNumber || 'draft'}.docx"`);
+      res.setHeader('Content-Length', docxBuffer.length.toString());
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       
-      // Send the Word document
-      res.send(docxBuffer);
+      // Send the Word document buffer properly
+      res.end(docxBuffer);
       
     } catch (error) {
       console.error("Error generating Word document:", error);
