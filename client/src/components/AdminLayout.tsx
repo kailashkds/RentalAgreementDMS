@@ -9,6 +9,7 @@ import {
   Users,
   FolderOpen,
   FileText,
+  FileEdit,
   MapPin,
   MessageSquare,
   Settings,
@@ -34,6 +35,7 @@ const navigation = [
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Documents", href: "/documents", icon: FolderOpen },
   { name: "PDF Templates", href: "/pdf-templates", icon: FileText },
+  { name: "Word Templates", href: "/word-templates", icon: FileEdit },
   { name: "Societies", href: "/societies", icon: Building },
   { name: "WhatsApp", href: "/whatsapp", icon: MessageSquare },
 ];
