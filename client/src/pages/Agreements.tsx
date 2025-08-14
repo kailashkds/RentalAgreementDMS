@@ -315,7 +315,7 @@ export default function Agreements() {
                     ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
                     : agreement.language === 'marathi'
                     ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
-                    : '"Times New Roman", serif'}; 
+                    : 'Arial, sans-serif'}; 
                   margin: 0;
                   padding: 20px;
                   line-height: 1.6;
@@ -342,7 +342,7 @@ export default function Agreements() {
                 
                 /* Enhanced English font support and styling */
                 .english-content, .english-content * {
-                  font-family: "Times New Roman", serif !important;
+                  font-family: Arial, sans-serif !important;
                   font-size: 14px !important;
                 }
                 

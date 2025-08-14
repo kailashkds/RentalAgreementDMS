@@ -1023,7 +1023,13 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           <head>
             <title>Rental Agreement - ${pdfData.agreementNumber}</title>
             <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
+              body { 
+                font-family: Arial, sans-serif !important; 
+                margin: 20px; 
+              }
+              * {
+                font-family: Arial, sans-serif !important;
+              }
               @media print { 
                 body { margin: 0; }
                 .no-print { display: none; }

@@ -108,7 +108,7 @@ export default function PdfTemplates() {
                   ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
                   : template.language === 'marathi'
                   ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
-                  : 'system-ui, Arial, sans-serif'}; 
+                  : 'Arial, sans-serif'}; 
                 margin: 0;
                 padding: 20px;
                 font-size: 14px;
