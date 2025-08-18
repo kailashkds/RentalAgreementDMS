@@ -55,6 +55,7 @@ Preferred communication style: Simple, everyday language.
 - **Conditional Logic System**: Smart field replacement and conditional display in PDF templates (e.g., showing/hiding sections based on document uploads, property purpose conditional text display).
 - **Amount-to-Words Conversion**: Automatic conversion of numeric amounts to Indian format words in both English and Gujarati languages. Supports separate variables for English (`MONTHLY_RENT_WORDS`, `SECURITY_DEPOSIT_WORDS`, `NOTICE_PERIOD_WORDS`) and Gujarati (`MONTHLY_RENT_WORDS_GUJARATI`, `SECURITY_DEPOSIT_WORDS_GUJARATI`, `NOTICE_PERIOD_WORDS_GUJARATI`) templates. Template editor includes dedicated Gujarati field section with all Gujarati-specific dynamic fields.
 - **PDF Page Break Control**: Comprehensive CSS controls with `page-break-before: always` for documents. Each Aadhaar card and PAN card appears on separate pages for both landlord and tenant sections.
+- **PDF Page Numbering**: Automatic "Page X of Y" numbering in right footer with language-appropriate fonts for all supported languages including Gujarati.
 - **File Preview System**: Comprehensive preview functionality for all uploaded documents (PDF, image, etc.).
 - **Notarized Document Management**: Complete lifecycle management including upload, view, download, replace, and remove functionality with dedicated management interface and status tracking.
 
