@@ -1085,13 +1085,33 @@ ${existingContent}
   @top-right { content: none; }
 }
 
+/* Named page for content with page numbers */
+.content-page {
+  page: content-with-numbers;
+}
+
+@page content-with-numbers {
+  margin: 15mm 10mm 20mm 10mm;
+  @bottom-center { content: none; }
+  @bottom-left { content: none; }
+  @bottom-right { 
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 10px;
+    color: #666;
+    font-family: ${fontFamily};
+  }
+  @top-center { content: none; }
+  @top-left { content: none; }
+  @top-right { content: none; }
+}
+
 /* Document pages without page numbers */
 .document-page {
   page-break-before: always;
-  page: document-page;
+  page: document-no-numbers;
 }
 
-@page document-page {
+@page document-no-numbers {
   margin: 15mm 10mm 15mm 10mm;
   @bottom-right { content: none; }
   @bottom-center { content: none; }
@@ -1479,7 +1499,7 @@ async function createEmbeddedDocumentHtml(documentUrl: string, fieldName: string
  */
 function createEmbeddedImageHtml(dataUrl: string, documentType: string): string {
   return `
-<div class="document-page" style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid;">
+<div class="document-page" style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid; page-break-before: always;">
   <div style="margin-bottom: 10px;">
     <strong style="color: #2c3e50; font-size: 16px;">📄 ${documentType}</strong>
   </div>
