@@ -310,16 +310,25 @@ export default function Agreements() {
           throw new Error('Invalid or empty HTML content received from server');
         }
         
-        // Create optimized HTML with faster loading
-        const printWindow = window.open('', '_blank');
+        // Try to create a new window for PDF generation
+        let printWindow: Window | null = null;
+        
+        try {
+          printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        } catch (popupError) {
+          console.error('Popup creation failed:', popupError);
+          throw new Error('Could not open print window - popup may be blocked. Please allow popups for this site.');
+        }
+        
         if (printWindow) {
-          // Pre-load fonts in the background to improve performance
-          const fontLink = document.createElement('link');
-          fontLink.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap";
-          fontLink.rel = "stylesheet";
-          document.head.appendChild(fontLink);
+          try {
+            // Pre-load fonts in the background to improve performance
+            const fontLink = document.createElement('link');
+            fontLink.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap";
+            fontLink.rel = "stylesheet";
+            document.head.appendChild(fontLink);
           
-          printWindow.document.write(`
+            printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
@@ -541,13 +550,23 @@ export default function Agreements() {
           printWindow.document.close();
           printWindow.focus();
           
-          // Auto-trigger print dialog after a short delay
-          setTimeout(() => {
-            printWindow.print();
-          }, 1000);
-          
+            // Auto-trigger print dialog after a short delay
+            setTimeout(() => {
+              try {
+                printWindow!.print();
+              } catch (printError) {
+                console.error('Print error:', printError);
+                console.log('Print dialog failed to open, but window is available for manual printing');
+              }
+            }, 1000);
+            
+          } catch (windowError) {
+            console.error('Window operation error:', windowError);
+            printWindow.close();
+            throw new Error(`Failed to set up print window: ${windowError}`);
+          }
         } else {
-          throw new Error('Could not open print window - popup may be blocked');
+          throw new Error('Could not open print window - popup may be blocked. Please allow popups for this site.');
         }
         
         toast({
@@ -561,6 +580,11 @@ export default function Agreements() {
       }
     } catch (error) {
       console.error('Download error:', error);
+      console.error('Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
       
       // Provide specific error messages based on error type
       let errorMessage = 'Unknown error occurred';
@@ -569,13 +593,15 @@ export default function Agreements() {
           errorMessage = 'PDF generation timed out. Please try again or contact support if the issue persists.';
         } else if (error.message.includes('popup')) {
           errorMessage = 'Pop-up blocked. Please allow pop-ups for this site and try again.';
+        } else if (error.message.includes('Server error')) {
+          errorMessage = `Server error: ${error.message}`;
         } else {
-          errorMessage = error.message;
+          errorMessage = `PDF generation error: ${error.message}`;
         }
       }
       
       toast({
-        title: "PDF Generation Failed",
+        title: "PDF Generation Failed", 
         description: errorMessage,
         variant: "destructive",
       });
