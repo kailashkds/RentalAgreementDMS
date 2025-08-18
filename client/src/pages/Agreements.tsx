@@ -308,14 +308,22 @@ export default function Agreements() {
               <style>
                 @page {
                   margin: 15mm 10mm 25mm 10mm;
-                  @bottom-center { 
+                  @bottom-center { content: none; }
+                  @bottom-left { content: none; }
+                  @bottom-right { 
                     content: "Page " counter(page) " of " counter(pages);
                     font-size: 10px;
                     color: #666;
-                    font-family: Arial, sans-serif;
+                    font-family: ${agreement.language === 'gujarati' 
+                      ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif'
+                      : agreement.language === 'hindi'
+                      ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                      : agreement.language === 'tamil'
+                      ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                      : agreement.language === 'marathi'
+                      ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                      : 'Arial, sans-serif'};
                   }
-                  @bottom-left { content: none; }
-                  @bottom-right { content: none; }
                   @top-center { content: none; }
                   @top-left { content: none; }
                   @top-right { content: none; }

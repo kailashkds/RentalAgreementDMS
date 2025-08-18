@@ -889,14 +889,14 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
 /* PDF-specific styling - clean, professional appearance */
 @page {
   margin: 15mm 10mm 25mm 10mm;
-  @bottom-center { 
+  @bottom-center { content: none; }
+  @bottom-left { content: none; }
+  @bottom-right { 
     content: "Page " counter(page) " of " counter(pages);
     font-size: 10px;
     color: #666;
-    font-family: Arial, sans-serif;
+    font-family: ${fontFamily};
   }
-  @bottom-left { content: none; }
-  @bottom-right { content: none; }
   @top-center { content: none; }
   @top-left { content: none; }
   @top-right { content: none; }
