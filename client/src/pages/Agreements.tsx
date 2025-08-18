@@ -443,19 +443,49 @@ export default function Agreements() {
           </html>
         `;
         
-        // Create blob and open in new window
-        const blob = new Blob([htmlContent], { type: 'text/html' });
-        const blobUrl = URL.createObjectURL(blob);
+        // Try multiple approaches to open the PDF window
+        let windowOpened = false;
         
-        const newWindow = window.open(blobUrl, '_blank');
-        if (!newWindow) {
-          throw new Error('Could not open print window - popup may be blocked. Please allow popups for this site.');
+        try {
+          // Method 1: Try data URL (most compatible)
+          const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
+          let newWindow = window.open('', '_blank');
+          
+          if (newWindow) {
+            newWindow.document.open();
+            newWindow.document.write(htmlContent);
+            newWindow.document.close();
+            windowOpened = true;
+            console.log('PDF window opened successfully with document.write method');
+          } else {
+            console.log('window.open failed, likely popup blocked');
+          }
+          
+          if (!windowOpened) {
+            // Method 2: Try blob URL as fallback
+            console.log('Trying blob URL method...');
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const blobUrl = URL.createObjectURL(blob);
+            
+            const blobWindow = window.open(blobUrl, '_blank');
+            if (blobWindow) {
+              windowOpened = true;
+              console.log('PDF window opened with blob URL');
+              // Clean up blob URL after a delay
+              setTimeout(() => {
+                URL.revokeObjectURL(blobUrl);
+              }, 10000);
+            }
+          }
+          
+          if (!windowOpened) {
+            throw new Error('Could not open print window - popup may be blocked. Please allow popups for this site and try again.');
+          }
+          
+        } catch (windowError) {
+          console.error('Window creation error:', windowError);
+          throw new Error(`Failed to create PDF preview: ${windowError.message}`);
         }
-        
-        // Clean up blob URL after a delay
-        setTimeout(() => {
-          URL.revokeObjectURL(blobUrl);
-        }, 10000);
         
         toast({
           title: "Success",
