@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import type { Address } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { mapFormDataToTemplateFields, generatePdfHtml } from "./fieldMapping";
+import { mapFormDataToTemplateFields, generatePdfHtml, convertPdfToImages } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
 import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
 import { directFileUpload } from "./directFileUpload";
@@ -1335,12 +1335,7 @@ Rent Amount:Rs.${safeAgreementData.rentalTerms?.monthlyRent || '[AMOUNT]'} (Rupe
 
         // Convert PDF to images using the existing function
         const documentType = 'PDF Document';
-        // PDF conversion not implemented - show placeholder
-        const imageHtml = `
-          <div class="document-page" style="page-break-before: always; text-align: center; padding: 20px;">
-            <h3 style="font-size: 16px; margin-bottom: 15px; color: #333;">${documentType}</h3>
-            <p style="color: #666; font-style: italic;">PDF document attached but preview not available</p>
-          </div>`;
+        const imageHtml = await convertPdfToImages(fullPath, documentType);
         
         if (imageHtml) {
           // Extract base64 image data from HTML

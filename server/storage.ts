@@ -312,22 +312,20 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
 
       let nextNumber = 1;
-      if (Array.isArray(lastAgreement) && lastAgreement.length > 0) {
+      if (lastAgreement && lastAgreement.length > 0) {
         const lastNumber = parseInt(lastAgreement[0].agreementNumber.split('-')[2]);
         nextNumber = lastNumber + 1;
       }
 
       const agreementNumber = `AGR-${year}-${nextNumber.toString().padStart(3, '0')}`;
 
-      const result = await db
+      const [agreement] = await db
         .insert(agreements)
         .values({
           ...agreementData,
           agreementNumber,
         })
         .returning();
-      
-      const [agreement] = Array.isArray(result) ? result : [result];
         
       if (!agreement) {
         throw new Error('Failed to create agreement - no data returned');
@@ -376,7 +374,7 @@ export class DatabaseStorage implements IStorage {
     });
 
     // Update original agreement status
-    await this.updateAgreement(id, { status: "renewed" as any });
+    await this.updateAgreement(id, { status: "renewed" });
 
     return renewedAgreement;
   }
@@ -394,7 +392,7 @@ export class DatabaseStorage implements IStorage {
       customerId: customerId || originalAgreement.customerId,
       status: "draft",
       parentAgreementId: id,
-      renewedFromId: null as any,
+      renewedFromId: null,
       agreementDate: new Date().toISOString().split('T')[0] as any,
       documents: {}, // Reset documents for new agreement
       createdAt: undefined as any,
