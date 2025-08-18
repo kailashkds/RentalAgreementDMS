@@ -295,6 +295,7 @@ export default function Agreements() {
       if (response.ok) {
         const data = await response.json();
         console.log('PDF generation successful, received HTML');
+        console.log('HTML content received:', data.html ? 'Yes' : 'No');
         
         // Create a temporary HTML page for printing/PDF generation
         const printWindow = window.open('', '_blank');

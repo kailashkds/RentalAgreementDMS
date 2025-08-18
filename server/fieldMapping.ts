@@ -1117,9 +1117,21 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
   
   console.log(`[Page Counting] Document pages: ${documentPageCount}, Page breaks: ${pageBreakCount}, Content pages: ${contentPageCount}`);
   
-  // Inject the total content pages into the CSS - replace both server and client CSS
+  // Inject the total content pages into the CSS - replace all page number formats
   processedHtml = processedHtml.replace(
     /content: "Page " counter\(content-pages\);/g,
+    `content: "Page " counter(content-pages) " of ${contentPageCount}";`
+  );
+  
+  // Also fix the page counter display in the client-side CSS
+  processedHtml = processedHtml.replace(
+    /content: "Page " counter\(content-pages\) " of " attr\(data-total-pages\);/g,
+    `content: "Page " counter(content-pages) " of ${contentPageCount}";`
+  );
+  
+  // Fix any remaining page counter issues
+  processedHtml = processedHtml.replace(
+    /content: "Page " counter\(page\) " of " counter\(content-pages\);/g,
     `content: "Page " counter(content-pages) " of ${contentPageCount}";`
   );
   
