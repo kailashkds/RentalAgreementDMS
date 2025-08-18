@@ -888,7 +888,7 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
 <style>
 /* PDF-specific styling - clean, professional appearance */
 @page {
-  margin: 15mm 10mm 25mm 10mm;
+  margin: 15mm 10mm 20mm 10mm;
   @bottom-center { 
     content: "Page " counter(page) " of " counter(pages);
     font-size: 10px;

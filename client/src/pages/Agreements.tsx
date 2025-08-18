@@ -307,7 +307,7 @@ export default function Agreements() {
               <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
               <style>
                 @page {
-                  margin: 15mm 10mm 25mm 10mm;
+                  margin: 15mm 10mm 20mm 10mm;
                   @bottom-center { 
                     content: "Page " counter(page) " of " counter(pages);
                     font-size: 10px;
