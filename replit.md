@@ -58,6 +58,7 @@ Preferred communication style: Simple, everyday language.
 - **PDF Page Numbering**: Automatic "Page X of Y" numbering in right footer with language-appropriate fonts for all supported languages including Gujarati.
 - **File Preview System**: Comprehensive preview functionality for all uploaded documents (PDF, image, etc.).
 - **Notarized Document Management**: Complete lifecycle management including upload, view, download, replace, and remove functionality with dedicated management interface and status tracking.
+- **Comprehensive Customer Management**: Super admin-only customer module with edit functionality, plain text password management, status control (activate/deactivate), agreement count display with clickable viewer, and smart deletion prevention for customers with existing agreements. Passwords stored in plain text format for administrative access. Updated August 18, 2025.
 
 # External Dependencies
 
