@@ -84,111 +84,146 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
             </div>
           ) : (
             <div className="space-y-3">
-              {agreements.map((agreement: any) => (
-                <div 
-                  key={agreement.id} 
-                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="font-medium">{agreement.agreementNumber}</h4>
-                        <Badge 
-                          variant={
-                            agreement.status === "active" ? "default" :
-                            agreement.status === "expired" ? "destructive" :
-                            agreement.status === "draft" ? "secondary" : "outline"
-                          }
-                        >
-                          {agreement.status}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {agreement.language}
-                        </Badge>
+              {agreements.map((agreement: any) => {
+                // Safely extract values to prevent React rendering errors
+                const agreementNumber = String(agreement?.agreementNumber || "N/A");
+                const status = String(agreement?.status || "unknown");
+                const language = String(agreement?.language || "N/A");
+                const agreementId = String(agreement?.id || "");
+                
+                // Safely parse nested objects
+                let ownerName = "N/A";
+                let tenantName = "N/A";
+                let propertyAddress = "No address";
+                let monthlyRent = 0;
+                let startDate = "N/A";
+                let endDate = "N/A";
+                
+                try {
+                  if (agreement.ownerDetails) {
+                    if (typeof agreement.ownerDetails === 'string') {
+                      const parsed = JSON.parse(agreement.ownerDetails);
+                      ownerName = parsed?.name || "N/A";
+                    } else if (typeof agreement.ownerDetails === 'object') {
+                      ownerName = agreement.ownerDetails?.name || "N/A";
+                    }
+                  }
+                } catch (e) {
+                  ownerName = "N/A";
+                }
+                
+                try {
+                  if (agreement.tenantDetails) {
+                    if (typeof agreement.tenantDetails === 'string') {
+                      const parsed = JSON.parse(agreement.tenantDetails);
+                      tenantName = parsed?.name || "N/A";
+                    } else if (typeof agreement.tenantDetails === 'object') {
+                      tenantName = agreement.tenantDetails?.name || "N/A";
+                    }
+                  }
+                } catch (e) {
+                  tenantName = "N/A";
+                }
+                
+                try {
+                  if (agreement.propertyDetails) {
+                    if (typeof agreement.propertyDetails === 'string') {
+                      const parsed = JSON.parse(agreement.propertyDetails);
+                      propertyAddress = parsed?.address || "No address";
+                    } else if (typeof agreement.propertyDetails === 'object') {
+                      propertyAddress = agreement.propertyDetails?.address || "No address";
+                    }
+                  }
+                } catch (e) {
+                  propertyAddress = "No address";
+                }
+                
+                try {
+                  if (agreement.rentalTerms) {
+                    if (typeof agreement.rentalTerms === 'string') {
+                      const parsed = JSON.parse(agreement.rentalTerms);
+                      monthlyRent = Number(parsed?.monthlyRent) || 0;
+                    } else if (typeof agreement.rentalTerms === 'object') {
+                      monthlyRent = Number(agreement.rentalTerms?.monthlyRent) || 0;
+                    }
+                  }
+                } catch (e) {
+                  monthlyRent = 0;
+                }
+                
+                try {
+                  if (agreement.startDate) {
+                    startDate = new Date(agreement.startDate).toLocaleDateString();
+                  }
+                  if (agreement.endDate) {
+                    endDate = new Date(agreement.endDate).toLocaleDateString();
+                  }
+                } catch (e) {
+                  // Keep default values
+                }
+                
+                return (
+                  <div 
+                    key={agreementId} 
+                    className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="font-medium">{agreementNumber}</h4>
+                          <Badge 
+                            variant={
+                              status === "active" ? "default" :
+                              status === "expired" ? "destructive" :
+                              status === "draft" ? "secondary" : "outline"
+                            }
+                          >
+                            {status}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {language}
+                          </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            <span>{ownerName} → {tenantName}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            <span className="truncate">{propertyAddress}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span>{startDate} - {endDate}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">₹{monthlyRent}</span>
+                            <span>/month</span>
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          <span>
-                            {(() => {
-                              try {
-                                const ownerName = agreement.ownerDetails && typeof agreement.ownerDetails === 'object' 
-                                  ? agreement.ownerDetails.name || "N/A" 
-                                  : "N/A";
-                                const tenantName = agreement.tenantDetails && typeof agreement.tenantDetails === 'object' 
-                                  ? agreement.tenantDetails.name || "N/A" 
-                                  : "N/A";
-                                return `${ownerName} → ${tenantName}`;
-                              } catch (e) {
-                                return "N/A → N/A";
-                              }
-                            })()}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          <span className="truncate">
-                            {(() => {
-                              try {
-                                return agreement.propertyDetails && typeof agreement.propertyDetails === 'object' 
-                                  ? agreement.propertyDetails.address || "No address" 
-                                  : "No address";
-                              } catch (e) {
-                                return "No address";
-                              }
-                            })()}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            {(() => {
-                              try {
-                                const startDate = agreement.startDate ? new Date(agreement.startDate).toLocaleDateString() : "N/A";
-                                const endDate = agreement.endDate ? new Date(agreement.endDate).toLocaleDateString() : "N/A";
-                                return `${startDate} - ${endDate}`;
-                              } catch (e) {
-                                return "N/A - N/A";
-                              }
-                            })()}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            ₹{(() => {
-                              try {
-                                return agreement.rentalTerms && typeof agreement.rentalTerms === 'object' 
-                                  ? agreement.rentalTerms.monthlyRent || 0 
-                                  : 0;
-                              } catch (e) {
-                                return 0;
-                              }
-                            })()}
-                          </span>
-                          <span>/month</span>
-                        </div>
-                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          // Navigate to agreement details
+                          window.open(`/agreements?id=${agreementId}`, '_blank');
+                        }}
+                        data-testid={`button-view-agreement-${agreementId}`}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
                     </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        // Navigate to agreement details
-                        window.open(`/agreements?id=${agreement.id}`, '_blank');
-                      }}
-                      data-testid={`button-view-agreement-${agreement.id}`}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View
-                    </Button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
