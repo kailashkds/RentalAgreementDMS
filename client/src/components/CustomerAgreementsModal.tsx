@@ -111,27 +111,64 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4" />
                           <span>
-                            {agreement.ownerDetails?.name || "N/A"} → {agreement.tenantDetails?.name || "N/A"}
+                            {(() => {
+                              try {
+                                const ownerName = agreement.ownerDetails && typeof agreement.ownerDetails === 'object' 
+                                  ? agreement.ownerDetails.name || "N/A" 
+                                  : "N/A";
+                                const tenantName = agreement.tenantDetails && typeof agreement.tenantDetails === 'object' 
+                                  ? agreement.tenantDetails.name || "N/A" 
+                                  : "N/A";
+                                return `${ownerName} → ${tenantName}`;
+                              } catch (e) {
+                                return "N/A → N/A";
+                              }
+                            })()}
                           </span>
                         </div>
                         
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4" />
                           <span className="truncate">
-                            {agreement.propertyDetails?.address || "No address"}
+                            {(() => {
+                              try {
+                                return agreement.propertyDetails && typeof agreement.propertyDetails === 'object' 
+                                  ? agreement.propertyDetails.address || "No address" 
+                                  : "No address";
+                              } catch (e) {
+                                return "No address";
+                              }
+                            })()}
                           </span>
                         </div>
                         
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4" />
                           <span>
-                            {agreement.startDate ? new Date(agreement.startDate).toLocaleDateString() : "N/A"} - {" "}
-                            {agreement.endDate ? new Date(agreement.endDate).toLocaleDateString() : "N/A"}
+                            {(() => {
+                              try {
+                                const startDate = agreement.startDate ? new Date(agreement.startDate).toLocaleDateString() : "N/A";
+                                const endDate = agreement.endDate ? new Date(agreement.endDate).toLocaleDateString() : "N/A";
+                                return `${startDate} - ${endDate}`;
+                              } catch (e) {
+                                return "N/A - N/A";
+                              }
+                            })()}
                           </span>
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">₹{agreement.rentalTerms?.monthlyRent || 0}</span>
+                          <span className="font-medium">
+                            ₹{(() => {
+                              try {
+                                return agreement.rentalTerms && typeof agreement.rentalTerms === 'object' 
+                                  ? agreement.rentalTerms.monthlyRent || 0 
+                                  : 0;
+                              } catch (e) {
+                                return 0;
+                              }
+                            })()}
+                          </span>
                           <span>/month</span>
                         </div>
                       </div>
