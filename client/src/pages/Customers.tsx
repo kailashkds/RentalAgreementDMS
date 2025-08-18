@@ -3,7 +3,10 @@ import AdminLayout from "@/components/AdminLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import CustomerModal from "@/components/CustomerModal";
+import CustomerEditModal from "@/components/CustomerEditModal";
+import CustomerAgreementsModal from "@/components/CustomerAgreementsModal";
 import { useCustomers } from "@/hooks/useCustomers";
 import {
   Plus,
@@ -13,13 +16,20 @@ import {
   Trash2,
   Phone,
   Mail,
-  FileSignature
+  FileSignature,
+  RotateCcw,
+  Power,
+  PowerOff,
+  AlertTriangle
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Customers() {
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showAgreementsModal, setShowAgreementsModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
@@ -30,13 +40,22 @@ export default function Customers() {
     offset: (currentPage - 1) * 20,
   });
 
-  const handleDeleteCustomer = async (customerId: string) => {
-    if (!window.confirm("Are you sure you want to delete this customer?")) {
+  const handleDeleteCustomer = async (customer: any) => {
+    if (customer.agreementCount > 0) {
+      toast({
+        title: "Cannot delete customer",
+        description: "Customer has existing agreements and cannot be deleted.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete ${customer.name}? This action cannot be undone.`)) {
       return;
     }
 
     try {
-      await apiRequest("DELETE", `/api/customers/${customerId}`);
+      await apiRequest("DELETE", `/api/customers/${customer.id}`);
 
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
@@ -45,10 +64,42 @@ export default function Customers() {
         title: "Customer deleted",
         description: "Customer has been deleted successfully.",
       });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete customer.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditCustomer = (customer: any) => {
+    setSelectedCustomer(customer);
+    setShowEditModal(true);
+  };
+
+  const handleViewAgreements = (customer: any) => {
+    setSelectedCustomer(customer);
+    setShowAgreementsModal(true);
+  };
+
+  const handleToggleStatus = async (customer: any) => {
+    try {
+      const newStatus = !customer.isActive;
+      await apiRequest("PATCH", `/api/customers/${customer.id}/toggle-status`, {
+        isActive: newStatus
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      
+      toast({
+        title: `Customer ${newStatus ? "activated" : "deactivated"}`,
+        description: `${customer.name} has been ${newStatus ? "activated" : "deactivated"} successfully.`,
+      });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete customer.",
+        description: "Failed to update customer status.",
         variant: "destructive",
       });
     }
@@ -163,10 +214,15 @@ export default function Customers() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900">
+                        <Button
+                          variant="ghost"
+                          className="flex items-center text-sm text-gray-900 hover:text-blue-600 p-0 h-auto"
+                          onClick={() => handleViewAgreements(customer)}
+                          data-testid={`button-view-agreements-${customer.id}`}
+                        >
                           <FileSignature className="h-4 w-4 mr-2 text-gray-400" />
-                          0 agreements
-                        </div>
+                          {customer.agreementCount || 0} agreements
+                        </Button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
@@ -183,20 +239,34 @@ export default function Customers() {
                         {new Date(customer.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-900">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-amber-600 hover:text-amber-900">
+                        <div className="flex space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-amber-600 hover:text-amber-900"
+                            onClick={() => handleEditCustomer(customer)}
+                            data-testid={`button-edit-customer-${customer.id}`}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-red-600 hover:text-red-900"
-                            onClick={() => handleDeleteCustomer(customer.id)}
+                            className={customer.isActive ? "text-orange-600 hover:text-orange-900" : "text-green-600 hover:text-green-900"}
+                            onClick={() => handleToggleStatus(customer)}
+                            data-testid={`button-toggle-status-${customer.id}`}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            {customer.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className={`${customer.agreementCount > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-900'}`}
+                            onClick={() => handleDeleteCustomer(customer)}
+                            disabled={customer.agreementCount > 0}
+                            data-testid={`button-delete-customer-${customer.id}`}
+                          >
+                            {customer.agreementCount > 0 ? <AlertTriangle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
                           </Button>
                         </div>
                       </td>
@@ -238,6 +308,24 @@ export default function Customers() {
       <CustomerModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
+      />
+      
+      <CustomerEditModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedCustomer(null);
+        }}
+        customer={selectedCustomer}
+      />
+      
+      <CustomerAgreementsModal
+        isOpen={showAgreementsModal}
+        onClose={() => {
+          setShowAgreementsModal(false);
+          setSelectedCustomer(null);
+        }}
+        customer={selectedCustomer}
       />
     </AdminLayout>
   );

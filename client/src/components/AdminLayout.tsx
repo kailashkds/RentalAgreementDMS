@@ -47,6 +47,14 @@ const settingsNavigation = [
 export default function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
   const [location] = useLocation();
   const { user } = useAuth();
+  
+  // Filter navigation based on user role - only super admin can see customers
+  const filteredNavigation = navigation.filter(item => {
+    if (item.href === "/customers") {
+      return (user as any)?.role === "super_admin";
+    }
+    return true;
+  });
 
   const handleLogout = async () => {
     try {
@@ -74,7 +82,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         
         <nav className="mt-6 flex-1 flex flex-col">
           <div className="px-4 space-y-2">
-            {navigation.map((item) => {
+            {filteredNavigation.map((item) => {
               const isActive = location === item.href;
               return (
                 <Link key={item.name} href={item.href}

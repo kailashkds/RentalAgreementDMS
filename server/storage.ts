@@ -36,12 +36,14 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Customer operations
-  getCustomers(search?: string, limit?: number, offset?: number): Promise<{ customers: Customer[]; total: number }>;
+  getCustomers(search?: string, limit?: number, offset?: number): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }>;
   getCustomer(id: string): Promise<Customer | undefined>;
   getCustomerByMobile(mobile: string): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer & { password?: string | null }): Promise<Customer>;
   updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer>;
   deleteCustomer(id: string): Promise<void>;
+  resetCustomerPassword(id: string, newPassword: string): Promise<Customer>;
+  toggleCustomerStatus(id: string, isActive: boolean): Promise<Customer>;
   
   // Society operations
   getSocieties(search?: string, limit?: number): Promise<Society[]>;
@@ -125,7 +127,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Customer operations
-  async getCustomers(search?: string, limit = 50, offset = 0): Promise<{ customers: Customer[]; total: number }> {
+  async getCustomers(search?: string, limit = 50, offset = 0): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }> {
     const whereConditions = search
       ? or(
           ilike(customers.name, `%${search}%`),
@@ -136,9 +138,21 @@ export class DatabaseStorage implements IStorage {
 
     const [customersResult, totalResult] = await Promise.all([
       db
-        .select()
+        .select({
+          id: customers.id,
+          name: customers.name,
+          mobile: customers.mobile,
+          email: customers.email,
+          password: customers.password,
+          isActive: customers.isActive,
+          createdAt: customers.createdAt,
+          updatedAt: customers.updatedAt,
+          agreementCount: sql<number>`count(${agreements.id})::int`.as('agreement_count')
+        })
         .from(customers)
+        .leftJoin(agreements, eq(customers.id, agreements.customerId))
         .where(whereConditions)
+        .groupBy(customers.id)
         .orderBy(desc(customers.createdAt))
         .limit(limit)
         .offset(offset),
@@ -149,8 +163,8 @@ export class DatabaseStorage implements IStorage {
     ]);
 
     return {
-      customers: customersResult,
-      total: totalResult[0].count,
+      customers: customersResult as (Customer & { agreementCount: number })[],
+      total: totalResult[0].count as number,
     };
   }
 
@@ -193,7 +207,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCustomer(id: string): Promise<void> {
+    // Check if customer has any agreements
+    const [agreementCount] = await db
+      .select({ count: count() })
+      .from(agreements)
+      .where(eq(agreements.customerId, id));
+    
+    if (agreementCount.count > 0) {
+      throw new Error('Cannot delete customer with existing agreements');
+    }
+    
     await db.delete(customers).where(eq(customers.id, id));
+  }
+
+  async resetCustomerPassword(id: string, newPassword: string): Promise<Customer> {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const [customer] = await db
+      .update(customers)
+      .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(eq(customers.id, id))
+      .returning();
+    return customer;
+  }
+
+  async toggleCustomerStatus(id: string, isActive: boolean): Promise<Customer> {
+    const [customer] = await db
+      .update(customers)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(customers.id, id))
+      .returning();
+    return customer;
   }
 
   // Society operations
@@ -319,15 +362,13 @@ export class DatabaseStorage implements IStorage {
 
       const agreementNumber = `AGR-${year}-${nextNumber.toString().padStart(3, '0')}`;
 
-      const result = await db
+      const [agreement] = await db
         .insert(agreements)
         .values({
           ...agreementData,
           agreementNumber,
         })
         .returning();
-      
-      const [agreement] = result;
         
       if (!agreement) {
         throw new Error('Failed to create agreement - no data returned');
@@ -376,7 +417,7 @@ export class DatabaseStorage implements IStorage {
     });
 
     // Update original agreement status
-    await this.updateAgreement(id, { status: "renewed" as const });
+    await this.updateAgreement(id, { status: "renewed" });
 
     return renewedAgreement;
   }

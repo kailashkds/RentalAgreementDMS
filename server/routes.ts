@@ -121,6 +121,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/customers/:id/reset-password", async (req, res) => {
+    try {
+      const { newPassword } = req.body;
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      
+      const customer = await storage.resetCustomerPassword(req.params.id, newPassword);
+      res.json(customer);
+    } catch (error) {
+      console.error("Error resetting customer password:", error);
+      res.status(500).json({ message: "Failed to reset customer password" });
+    }
+  });
+
+  app.patch("/api/customers/:id/toggle-status", async (req, res) => {
+    try {
+      const { isActive } = req.body;
+      const customer = await storage.toggleCustomerStatus(req.params.id, isActive);
+      res.json(customer);
+    } catch (error) {
+      console.error("Error toggling customer status:", error);
+      res.status(500).json({ message: "Failed to toggle customer status" });
+    }
+  });
+
   app.post("/api/customers", async (req, res) => {
     try {
       const customerData = insertCustomerSchema.parse(req.body);
@@ -158,6 +184,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting customer:", error);
+      if (error instanceof Error && error.message.includes("existing agreements")) {
+        return res.status(400).json({ message: "Cannot delete customer with existing agreements" });
+      }
       res.status(500).json({ message: "Failed to delete customer" });
     }
   });
