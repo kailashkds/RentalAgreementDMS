@@ -306,10 +306,18 @@ export default function Agreements() {
               <title>Rental Agreement - ${agreement.agreementNumber || 'Agreement'}</title>
               <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
               <style>
-                @page {
+                body {
+                  counter-reset: content-pages;
+                }
+                
+                .content-page {
+                  counter-increment: content-pages;
+                }
+                
+                @page :not(.document-page) {
                   margin: 15mm 10mm 20mm 10mm;
                   @bottom-right { 
-                    content: "Page " counter(page);
+                    content: "Page " counter(content-pages);
                     font-size: 10px;
                     color: #666;
                     font-family: Arial, sans-serif;
@@ -321,26 +329,14 @@ export default function Agreements() {
                   @top-right { content: none; }
                 }
                 
-                /* Page counting system */
-                @page {
-                  counter-increment: page;
-                }
-                
-                /* Reset counter on first content page */
-                .content-page {
-                  counter-reset: content-pages;
-                }
-                
-                /* Increment counter for each content page */
-                .content-page > * {
-                  counter-increment: content-pages;
-                }
-                
-                /* Document pages should not show page numbers */
-                @page .document-page {
+                @page.document-page {
+                  margin: 15mm 10mm 15mm 10mm;
                   @bottom-right { content: none !important; }
                   @bottom-center { content: none !important; }
                   @bottom-left { content: none !important; }
+                  @top-center { content: none; }
+                  @top-left { content: none; }
+                  @top-right { content: none; }
                 }
                 
                 body { 
@@ -504,6 +500,7 @@ export default function Agreements() {
                 <button onclick="window.print()">Print / Save as PDF</button>
                 <button onclick="window.close()">Close</button>
               </div>
+
               <div class="agreement-content content-page ${agreement.language === 'gujarati' ? 'gujarati-content' : 'english-content'}">
                 ${data.html || '<p>No agreement content available</p>'}
               </div>

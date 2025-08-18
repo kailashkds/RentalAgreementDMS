@@ -887,10 +887,19 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
   const pageBreakCSS = `
 <style>
 /* PDF-specific styling - clean, professional appearance */
-@page {
+body {
+  counter-reset: content-pages;
+}
+
+.content-page {
+  counter-increment: content-pages;
+}
+
+/* Content pages show page numbers */
+@page :not(.document-page) {
   margin: 15mm 10mm 20mm 10mm;
   @bottom-right { 
-    content: "Page " counter(page);
+    content: "Page " counter(content-pages);
     font-size: 10px;
     color: #666;
     font-family: Arial, sans-serif;
@@ -902,21 +911,19 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
   @top-right { content: none; }
 }
 
-/* Hide page numbers on document pages */
-@page :is(.document-page) {
+/* Document pages don't show page numbers and don't increment counter */
+@page.document-page {
+  margin: 15mm 10mm 15mm 10mm;
   @bottom-right { content: none !important; }
   @bottom-center { content: none !important; }
   @bottom-left { content: none !important; }
+  @top-center { content: none; }
+  @top-left { content: none; }
+  @top-right { content: none; }
 }
 
-/* Document pages styling - no page numbers */
 .document-page {
   page-break-before: always;
-}
-
-/* Content page styling */
-.content-page {
-  /* Main content area */
 }
 
 html, body {
@@ -1092,6 +1099,20 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
 }
 </style>`);
   }
+  
+  // Calculate total content pages (pages that are not document pages)
+  // Count page breaks in content and document sections
+  const documentPageCount = (processedHtml.match(/class="[^"]*document-page[^"]*"/g) || []).length;
+  const totalPageBreaks = (processedHtml.match(/page-break-before:\s*always/g) || []).length;
+  const contentPageCount = Math.max(1, totalPageBreaks - documentPageCount + 1); // +1 for first page
+  
+  console.log(`[Page Counting] Document pages: ${documentPageCount}, Content pages: ${contentPageCount}`);
+  
+  // Inject the total content pages into the CSS
+  processedHtml = processedHtml.replace(
+    /content: "Page " counter\(content-pages\);/g,
+    `content: "Page " counter(content-pages) " of ${contentPageCount}";`
+  );
   
   // Wrap the main content in content-page class to include it in page counting
   // Look for the main content container and add content-page class
@@ -1575,7 +1596,7 @@ export async function convertPdfToImages(pdfPath: string, documentType: string):
       const pageBreakClass = i > 0 ? 'page-break-before' : '';
       
       htmlContent += `
-      <div style="margin: 15px 0; text-align: center;" class="${pageBreakClass} document-page">
+      <div style="margin: 15px 0; text-align: center; page: document-page;" class="${pageBreakClass} document-page">
         <img src="${dataUrl}" 
              style="width: auto; height: auto; max-width: 100%; max-height: 600px; border: none; display: block; margin: 0 auto;" 
              alt="${documentType} - Page ${i + 1}" />
