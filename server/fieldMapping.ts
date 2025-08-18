@@ -904,22 +904,12 @@ body {
     color: #666;
     font-family: Arial, sans-serif;
   }
-  @bottom-center { content: none; }
-  @bottom-left { content: none; }
-  @top-center { content: none; }
-  @top-left { content: none; }
-  @top-right { content: none; }
 }
 
 /* Document pages don't show page numbers and don't increment counter */
 @page.document-page {
   margin: 15mm 10mm 15mm 10mm;
   @bottom-right { content: none !important; }
-  @bottom-center { content: none !important; }
-  @bottom-left { content: none !important; }
-  @top-center { content: none; }
-  @top-left { content: none; }
-  @top-right { content: none; }
 }
 
 .document-page {
