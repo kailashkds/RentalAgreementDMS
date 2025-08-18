@@ -1123,6 +1123,8 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
     `content: "Page " counter(content-pages) " of ${contentPageCount}";`
   );
   
+  console.log(`[Page Counting] CSS replacement applied for ${contentPageCount} content pages`);
+  
   // Wrap the main content in content-page class to include it in page counting
   // Look for the main content container and add content-page class
   if (processedHtml.includes('<div style="font-family:') || processedHtml.includes('<body')) {

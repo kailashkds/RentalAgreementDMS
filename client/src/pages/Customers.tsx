@@ -3,6 +3,8 @@ import AdminLayout from "@/components/AdminLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import CustomerModal from "@/components/CustomerModal";
 import { useCustomers } from "@/hooks/useCustomers";
 import {
@@ -20,6 +22,9 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Customers() {
   const [showModal, setShowModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
@@ -29,6 +34,16 @@ export default function Customers() {
     limit: 20,
     offset: (currentPage - 1) * 20,
   });
+
+  const handleViewCustomer = (customer: any) => {
+    setSelectedCustomer(customer);
+    setShowViewModal(true);
+  };
+
+  const handleEditCustomer = (customer: any) => {
+    setSelectedCustomer(customer);
+    setShowEditModal(true);
+  };
 
   const handleDeleteCustomer = async (customerId: string) => {
     if (!window.confirm("Are you sure you want to delete this customer?")) {
@@ -184,10 +199,22 @@ export default function Customers() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-900">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-blue-600 hover:text-blue-900"
+                            onClick={() => handleViewCustomer(customer)}
+                            data-testid={`button-view-customer-${customer.id}`}
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-amber-600 hover:text-amber-900">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-amber-600 hover:text-amber-900"
+                            onClick={() => handleEditCustomer(customer)}
+                            data-testid={`button-edit-customer-${customer.id}`}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button 
@@ -195,6 +222,7 @@ export default function Customers() {
                             size="sm" 
                             className="text-red-600 hover:text-red-900"
                             onClick={() => handleDeleteCustomer(customer.id)}
+                            data-testid={`button-delete-customer-${customer.id}`}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -239,6 +267,152 @@ export default function Customers() {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
       />
+
+      {/* View Customer Modal */}
+      <Dialog open={showViewModal} onOpenChange={setShowViewModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Customer Details</DialogTitle>
+          </DialogHeader>
+          {selectedCustomer && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Full Name</Label>
+                <p className="text-sm text-gray-900">{selectedCustomer.name}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Mobile Number</Label>
+                <p className="text-sm text-gray-900">{selectedCustomer.mobile}</p>
+              </div>
+              {selectedCustomer.email && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Email</Label>
+                  <p className="text-sm text-gray-900">{selectedCustomer.email}</p>
+                </div>
+              )}
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Status</Label>
+                <p className="text-sm text-gray-900">
+                  {selectedCustomer.isActive ? "Active" : "Inactive"}
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-500">Created Date</Label>
+                <p className="text-sm text-gray-900">
+                  {new Date(selectedCustomer.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Customer Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+          </DialogHeader>
+          {selectedCustomer && (
+            <EditCustomerForm 
+              customer={selectedCustomer}
+              onSave={() => {
+                setShowEditModal(false);
+                queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
+  );
+}
+
+// Edit Customer Form Component
+function EditCustomerForm({ customer, onSave }: { customer: any; onSave: () => void }) {
+  const [name, setName] = useState(customer.name);
+  const [mobile, setMobile] = useState(customer.mobile);
+  const [email, setEmail] = useState(customer.email || "");
+  const [isActive, setIsActive] = useState(customer.isActive);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      await apiRequest("PUT", `/api/customers/${customer.id}`, {
+        name,
+        mobile,
+        email: email || null,
+        isActive
+      });
+
+      toast({
+        title: "Customer updated",
+        description: "Customer information has been updated successfully.",
+      });
+      
+      onSave();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update customer.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="edit-name">Full Name</Label>
+        <Input
+          id="edit-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="edit-mobile">Mobile Number</Label>
+        <Input
+          id="edit-mobile"
+          value={mobile}
+          onChange={(e) => setMobile(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="edit-email">Email (Optional)</Label>
+        <Input
+          id="edit-email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="edit-active"
+          checked={isActive}
+          onChange={(e) => setIsActive(e.target.checked)}
+          className="h-4 w-4"
+        />
+        <Label htmlFor="edit-active">Active Customer</Label>
+      </div>
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="outline" onClick={onSave}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
+    </form>
   );
 }
