@@ -1350,74 +1350,376 @@ async function processLocalFile(fieldName: string, filePath: string, processedFi
     return false;
   }
 }
+          
+          console.log(`[PDF Embedding] Processing local file: ${fileName} at path: ${filePath}`);
+          
+          // Check if file exists
+          if (!fs.existsSync(filePath)) {
+            console.log(`[PDF Embedding] File not found: ${filePath}`);
+            continue;
+          }
+          
+          // Read file and detect actual format
+          try {
+            const fileBuffer = fs.readFileSync(filePath);
+            
+            // Check actual file format by examining file header
+            const fileHeader = fileBuffer.slice(0, 8);
+            const headerString = fileHeader.toString('ascii');
+            const isPdf = headerString.startsWith('%PDF');
+            const isJpeg = fileBuffer[0] === 0xFF && fileBuffer[1] === 0xD8;
+            const isPng = fileBuffer[0] === 0x89 && fileBuffer[1] === 0x50;
+            
+            console.log(`[PDF Embedding] File analysis for ${fileName}:`);
+            console.log(`[PDF Embedding] Header: ${headerString}`);
+            console.log(`[PDF Embedding] Is PDF: ${isPdf}, Is JPEG: ${isJpeg}, Is PNG: ${isPng}`);
+            
+            if (isPdf) {
+              // For PDF files, convert to images and embed each page as an image
+              const documentType = getDocumentTypeFromFieldName(fieldName);
+              const imageHtml = await convertPdfToImages(filePath, documentType);
+              
+              if (imageHtml) {
+                processedFields[fieldName] = imageHtml;
+                console.log(`[PDF Embedding] ✅ Successfully processed PDF document ${fieldName}: ${fileName}`);
+              } else {
+                console.error(`[PDF Embedding] Failed to convert PDF to images: ${fileName}`);
+                const fallbackHtml = `<p style="color: #666; font-style: italic;">${documentType} - Could not process PDF</p>`;
+                processedFields[fieldName] = fallbackHtml;
+              }
+              
+            } else if (isJpeg || isPng) {
+              // Handle actual image files
+              const mimeType = isJpeg ? 'image/jpeg' : 'image/png';
+              const base64Data = fileBuffer.toString('base64');
+              const dataUrl = `data:${mimeType};base64,${base64Data}`;
+              
+              const documentType = getDocumentTypeFromFieldName(fieldName);
+              const embeddedImage = `
+<div class="page-break-before document-page" style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
+  <img src="${dataUrl}" 
+       style="width: auto; height: auto; max-width: 100%; max-height: 400px; border: 1px solid #ccc; display: block; margin: 0 auto;" 
+       alt="${documentType}" />
+</div>`;
+              
+              processedFields[fieldName] = embeddedImage;
+              console.log(`[PDF Embedding] ✅ Successfully processed image ${fieldName}: ${fileName}`);
+              
+            } else {
+              // Unknown format
+              console.log(`[PDF Embedding] Unknown file format for ${fileName}`);
+              const documentType = getDocumentTypeFromFieldName(fieldName);
+              const unknownDocument = `
+<div style="margin: 20px 0; padding: 15px; border: 2px solid #ffc107; border-radius: 8px; background: #fffbf0; page-break-inside: avoid; text-align: center;">
+  <h3 style="color: #856404; margin-bottom: 10px;">📄 ${documentType}</h3>
+  <p style="color: #856404; font-weight: bold;">Document Attached (Unknown Format)</p>
+  <p style="color: #666; font-size: 12px;">File: ${fileName} (${Math.round(fileBuffer.length / 1024)}KB)</p>
+</div>`;
+              processedFields[fieldName] = unknownDocument;
+            }
+          } catch (readError) {
+            console.error(`[PDF Embedding] Error reading file ${fileName}:`, readError);
+            processedFields[fieldName] = '';
+          }
+        } else {
+          // Fallback to old cloud storage approach
+          const objectStorageService = new ObjectStorageService();
+          const localFileName = await downloadFileFromObjectStorage(documentUrl, fieldName, objectStorageService);
+          
+          if (localFileName) {
+            const base64DataUrl = await localFileStorage.getFileAsBase64(localFileName);
+            
+            if (base64DataUrl && localFileStorage.isEmbeddableFileType(localFileName)) {
+              const documentType = getDocumentTypeFromFieldName(fieldName);
+              const embeddedImage = `
+                <div class="document-container" style="margin: 20px 0; padding: 15px; border: 2px solid #333; border-radius: 8px; background-color: #f8f9fa; page-break-inside: avoid; text-align: center;">
+                  <div style="margin-bottom: 12px;">
+                    <h4 style="color: #2c3e50; font-size: 16px; font-weight: bold; margin: 0;">📄 ${documentType}</h4>
+                  </div>
+                  <div class="image-wrapper" style="display: inline-block; margin: 15px 0; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                    <img src="${base64DataUrl}" 
+                         style="display: block; width: auto; height: auto; max-width: 400px; max-height: 250px; min-width: 200px; min-height: 100px; border: none; border-radius: 3px;" 
+                         alt="${documentType}" 
+                         width="300" 
+                         height="200" />
+                  </div>
+                  <div style="margin-top: 8px;">
+                    <p style="color: #666; font-style: italic; font-size: 12px; margin: 0;">✅ Document image embedded from cloud storage</p>
+                  </div>
+                </div>
+              `;
+              processedFields[fieldName] = embeddedImage;
+              console.log(`[PDF Embedding] ✅ Successfully embedded ${fieldName} from cloud storage`);
+            } else {
+              processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document uploaded but could not be displayed.</p>`;
+            }
+          } else {
+            processedFields[fieldName] = `<p style="color: #666; font-style: italic;">Document uploaded but could not be processed.</p>`;
+          }
+        }
+      } catch (error) {
+        console.error(`[PDF Embedding] Error processing ${fieldName}:`, error);
+        processedFields[fieldName] = `<p style="color: #999; font-style: italic;">Document attached but preview unavailable.</p>`;
+      }
+    } else {
+      // Ensure empty fields are properly handled for conditionals
+      processedFields[fieldName] = '';
+      console.log(`[PDF Embedding] ${fieldName} is empty, setting to empty string for conditionals`);
+    }
+  }
+  
+  return processedFields;
+}
+
+/**
+ * Download file from object storage with proper authentication and save locally
+ */
+async function downloadFileFromObjectStorage(documentUrl: string, fieldName: string, objectStorageService: ObjectStorageService): Promise<string | null> {
+  try {
+    console.log(`[PDF Embedding] Downloading from object storage: ${documentUrl}`);
+    
+    // Parse the GCS URL to get bucket and object name (handle both http and https, case insensitive)
+    const normalizedUrl = documentUrl.toLowerCase().replace(/^http:/, 'https:');
+    const urlMatch = normalizedUrl.match(/https:\/\/storage\.googleapis\.com\/([^\/]+)\/(.+)/);
+    if (!urlMatch) {
+      console.error(`[PDF Embedding] Invalid GCS URL format: ${documentUrl}`);
+      return null;
+    }
+
+    const [, bucketName, objectName] = urlMatch;
+    console.log(`[PDF Embedding] Bucket: ${bucketName}, Object: ${objectName}`);
+
+    // Get the file from GCS using authenticated client
+    const { objectStorageClient } = await import('./objectStorage');
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    // Check if file exists
+    const [exists] = await file.exists();
+    if (!exists) {
+      console.error(`[PDF Embedding] File does not exist in GCS: ${documentUrl}`);
+      return null;
+    }
+
+    // Download file content
+    const [buffer] = await file.download();
+    
+    // Save to local storage
+    const { randomUUID } = await import('crypto');
+    const fileId = randomUUID();
+    const extension = getFileExtensionFromUrl(documentUrl);
+    const fileName = `${fileId}${extension}`;
+    const path = await import('path');
+    const filePath = path.default.join(process.cwd(), 'uploads', fileName);
+
+    // Ensure uploads directory exists
+    const fsPromises = await import('fs/promises');
+    const uploadsDir = path.default.join(process.cwd(), 'uploads');
+    try {
+      await fsPromises.access(uploadsDir);
+    } catch {
+      await fsPromises.mkdir(uploadsDir, { recursive: true });
+    }
+
+    // Write file locally
+    await fsPromises.writeFile(filePath, buffer);
+    console.log(`[PDF Embedding] File saved locally as: ${fileName}`);
+    
+    return fileName;
+    
+  } catch (error) {
+    console.error(`[PDF Embedding] Error downloading from object storage:`, error);
+    return null;
+  }
+}
 
 /**
  * Get file extension from URL
  */
 function getFileExtensionFromUrl(url: string): string {
-  const urlPath = url.split('?')[0]; // Remove query parameters
-  const lastDot = urlPath.lastIndexOf('.');
-  if (lastDot === -1) return ''; // No extension found
-  return urlPath.substring(lastDot);
+  try {
+    const urlPath = new URL(url).pathname;
+    // Get the actual filename from the path
+    const fileName = urlPath.split('/').pop() || '';
+    const lastDot = fileName.lastIndexOf('.');
+    if (lastDot !== -1 && lastDot < fileName.length - 1) {
+      return fileName.substring(lastDot);
+    }
+  } catch (error) {
+    console.log(`[PDF Embedding] Could not parse URL for extension: ${url}`);
+  }
+  return '.jpg'; // Default extension
 }
 
 /**
- * Download file from object storage and save locally
+ * Create embedded HTML content for documents (images/PDFs)
  */
-async function downloadFileFromObjectStorage(documentUrl: string, fieldName: string, objectStorageService: any): Promise<string | null> {
+async function createEmbeddedDocumentHtml(documentUrl: string, fieldName: string, objectStorage: ObjectStorageService): Promise<string | null> {
   try {
-    console.log(`[PDF Embedding] Downloading from object storage: ${documentUrl}`);
+    // Normalize the URL to object path
+    const objectPath = objectStorage.normalizeObjectEntityPath(documentUrl);
+    console.log(`[PDF Embedding] Normalized path: ${objectPath}`);
     
-    // Use the object storage service to download the file
-    const fileName = `${fieldName}_${Date.now()}${getFileExtensionFromUrl(documentUrl)}`;
-    const localPath = path.join(process.cwd(), 'uploads', fileName);
+    if (!objectPath.startsWith('/objects/')) {
+      console.log(`[PDF Embedding] Invalid object path: ${objectPath}`);
+      return null;
+    }
     
-    // Download the file
-    const success = await objectStorageService.downloadFile(documentUrl, localPath);
+    // Get file as base64 data URL
+    const dataUrl = await objectStorage.getFileAsBase64DataURL(objectPath);
+    if (!dataUrl) {
+      console.log(`[PDF Embedding] Could not get base64 data for: ${objectPath}`);
+      return null;
+    }
     
-    if (success) {
-      console.log(`[PDF Embedding] Successfully downloaded to: ${fileName}`);
-      return fileName;
+    // Determine document type for appropriate HTML
+    const documentType = getDocumentTypeFromFieldName(fieldName);
+    const fileType = dataUrl.split(':')[1]?.split(';')[0] || 'unknown';
+    
+    console.log(`[PDF Embedding] Document type: ${documentType}, File type: ${fileType}`);
+    
+    // Create appropriate embedded HTML based on file type
+    if (fileType.startsWith('image/')) {
+      return createEmbeddedImageHtml(dataUrl, documentType);
+    } else if (fileType === 'application/pdf') {
+      return createEmbeddedPdfHtml(dataUrl, documentType);
     } else {
-      console.error(`[PDF Embedding] Failed to download file: ${documentUrl}`);
+      console.log(`[PDF Embedding] Unsupported file type: ${fileType}`);
       return null;
     }
   } catch (error) {
-    console.error(`[PDF Embedding] Error downloading file:`, error);
+    console.error(`[PDF Embedding] Error creating embedded content:`, error);
     return null;
   }
 }
 
 /**
- * Convert PDF to images for embedding in documents
+ * Create embedded image HTML for display in PDF
  */
-async function convertPdfToImages(filePath: string, documentType: string): Promise<string | null> {
-  try {
-    // For now, return a placeholder since PDF conversion is complex
-    // This can be enhanced with libraries like pdf2pic or pdf-poppler
-    console.log(`[PDF Embedding] PDF conversion not implemented for ${filePath}`);
-    return `
-      <div class="document-page" style="page-break-before: always; text-align: center; padding: 20px;">
-        <h3 style="font-size: 16px; margin-bottom: 15px; color: #333;">${documentType}</h3>
-        <p style="color: #666; font-style: italic;">PDF document attached but preview not available</p>
-      </div>`;
-  } catch (error) {
-    console.error(`[PDF Embedding] Error converting PDF:`, error);
-    return null;
-  }
+function createEmbeddedImageHtml(dataUrl: string, documentType: string): string {
+  return `
+<div style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid;">
+  <div style="margin-bottom: 10px;">
+    <strong style="color: #2c3e50; font-size: 16px;">📄 ${documentType}</strong>
+  </div>
+  <div style="text-align: center; margin: 10px 0;">
+    <img src="${dataUrl}" 
+         style="max-width: 100%; max-height: 400px; border: none; border-radius: 0; box-shadow: none;" 
+         alt="${documentType}" />
+  </div>
+  <div style="text-align: center; margin-top: 8px;">
+    <small style="color: #666; font-style: italic;">Document image embedded in agreement</small>
+  </div>
+</div>`;
 }
 
 /**
- * Get document type from field name for display purposes
+ * Create embedded PDF HTML for display in PDF
+ */
+function createEmbeddedPdfHtml(dataUrl: string, documentType: string): string {
+  return `
+<div style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid;">
+  <div style="margin-bottom: 10px;">
+    <strong style="color: #2c3e50; font-size: 16px;">📄 ${documentType}</strong>
+  </div>
+  <div style="text-align: center; margin: 10px 0;">
+    <iframe src="${dataUrl}" 
+            style="width: 100%; height: 400px; border: none; border-radius: 0;" 
+            title="${documentType}">
+    </iframe>
+  </div>
+  <div style="text-align: center; margin-top: 8px;">
+    <small style="color: #666; font-style: italic;">PDF document embedded in agreement</small>
+  </div>
+</div>`;
+}
+
+/**
+ * Get human-readable document type from field name
  */
 function getDocumentTypeFromFieldName(fieldName: string): string {
-  const documentTypeMap: { [key: string]: string } = {
-    'OWNER_AADHAR_URL': 'Owner Aadhaar Card',
-    'OWNER_PAN_URL': 'Owner PAN Card',
-    'TENANT_AADHAR_URL': 'Tenant Aadhaar Card',
+  const typeMap: Record<string, string> = {
+    'OWNER_AADHAR_URL': 'Landlord Aadhaar Card',
+    'OWNER_PAN_URL': 'Landlord PAN Card',
+    'TENANT_AADHAR_URL': 'Tenant Aadhaar Card', 
     'TENANT_PAN_URL': 'Tenant PAN Card',
     'PROPERTY_DOCUMENTS_URL': 'Property Documents'
   };
   
-  return documentTypeMap[fieldName] || 'Document';
+  return typeMap[fieldName] || 'Document';
+}
+
+/**
+ * Convert PDF to images and return HTML for embedding
+ */
+export async function convertPdfToImages(pdfPath: string, documentType: string): Promise<string | null> {
+  try {
+    console.log(`[PDF Conversion] Converting PDF to images: ${pdfPath}`);
+    
+    // Create a temporary directory for images
+    const tempDir = path.join(process.cwd(), 'uploads', 'temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    
+    // Generate a unique filename for the images
+    const timestamp = Date.now();
+    const baseFileName = `pdf_${timestamp}`;
+    const outputPath = path.join(tempDir, `${baseFileName}-%d.png`);
+    
+    // Convert PDF to PNG images using ImageMagick
+    const command = `convert -density 150 "${pdfPath}" "${path.join(tempDir, baseFileName)}-%d.png"`;
+    console.log(`[PDF Conversion] Executing command: ${command}`);
+    
+    execSync(command, { timeout: 30000 });
+    
+    // Find all generated image files
+    const files = fs.readdirSync(tempDir);
+    const imageFiles = files
+      .filter(file => file.startsWith(baseFileName) && file.endsWith('.png'))
+      .sort(); // Sort to maintain page order
+    
+    console.log(`[PDF Conversion] Generated ${imageFiles.length} image(s): ${imageFiles.join(', ')}`);
+    
+    if (imageFiles.length === 0) {
+      console.error(`[PDF Conversion] No images generated from PDF: ${pdfPath}`);
+      return null;
+    }
+    
+    // Generate HTML for each image
+    let htmlContent = `<div style="margin: 20px 0; page-break-inside: avoid;">
+      <p style="color: #333; font-weight: bold; margin: 10px 0; text-align: center;">${documentType}</p>`;
+    
+    for (let i = 0; i < imageFiles.length; i++) {
+      const imageFile = imageFiles[i];
+      const imagePath = path.join(tempDir, imageFile);
+      
+      // Read the image and convert to base64
+      const imageBuffer = fs.readFileSync(imagePath);
+      const base64Data = imageBuffer.toString('base64');
+      const dataUrl = `data:image/png;base64,${base64Data}`;
+      
+      // Add page break before each image except the first one, and document-page class
+      const pageBreakClass = i > 0 ? 'page-break-before' : '';
+      
+      htmlContent += `
+      <div style="margin: 15px 0; text-align: center; ${i === 0 ? 'page-break-before: always;' : ''}" class="${pageBreakClass} document-page">
+        <img src="${dataUrl}" 
+             style="width: auto; height: auto; max-width: 100%; max-height: 600px; border: none; display: block; margin: 0 auto;" 
+             alt="${documentType} - Page ${i + 1}" />
+      </div>`;
+      
+      // Clean up the temporary image file
+      fs.unlinkSync(imagePath);
+    }
+    
+    htmlContent += `</div>`;
+    
+    console.log(`[PDF Conversion] Successfully converted PDF to ${imageFiles.length} images`);
+    return htmlContent;
+    
+  } catch (error) {
+    console.error(`[PDF Conversion] Error converting PDF to images:`, error);
+    return null;
+  }
 }

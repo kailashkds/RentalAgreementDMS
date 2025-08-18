@@ -257,49 +257,68 @@ export default function Agreements() {
 
 
   const handleDownloadAgreement = async (agreement: any) => {
+    // Show loading state immediately
+    toast({
+      title: "Generating PDF",
+      description: "Please wait while we prepare your agreement...",
+    });
+
     try {
       console.log('Starting PDF generation for agreement:', agreement.id);
-      console.log('Agreement data:', {
-        hasOwnerDetails: !!agreement.ownerDetails,
-        hasTenantDetails: !!agreement.tenantDetails,
-        hasPropertyDetails: !!agreement.propertyDetails,
-        hasRentalTerms: !!agreement.rentalTerms,
-        agreementNumber: agreement.agreementNumber
-      });
+      
+      // Create optimized request body with only essential data
+      const requestBody = {
+        id: agreement.id,
+        ownerDetails: agreement.ownerDetails || {},
+        tenantDetails: agreement.tenantDetails || {},
+        propertyDetails: agreement.propertyDetails || {},
+        rentalTerms: agreement.rentalTerms || {},
+        agreementDate: agreement.agreementDate,
+        createdAt: agreement.createdAt,
+        language: agreement.language || 'english',
+        additionalClauses: agreement.additionalClauses || [],
+        agreementNumber: agreement.agreementNumber,
+        // Only include document URLs, not full data
+        ownerDocuments: agreement.ownerDocuments || {},
+        tenantDocuments: agreement.tenantDocuments || {},
+        propertyDocuments: agreement.propertyDocuments || {}
+      };
+
+      // Set a timeout for the request to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
       const response = await fetch('/api/agreements/generate-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ownerDetails: agreement.ownerDetails || {},
-          tenantDetails: agreement.tenantDetails || {},
-          propertyDetails: agreement.propertyDetails || {},
-          rentalTerms: agreement.rentalTerms || {},
-          agreementDate: agreement.agreementDate,
-          createdAt: agreement.createdAt,
-          language: agreement.language || 'english',
-          additionalClauses: agreement.additionalClauses || [],
-          agreementNumber: agreement.agreementNumber,
-          // Include document data for embedding
-          documents: agreement.documents || {},
-          ownerDocuments: agreement.ownerDocuments || {},
-          tenantDocuments: agreement.tenantDocuments || {},
-          propertyDocuments: agreement.propertyDocuments || {}
-        }),
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       console.log('PDF generation response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
         console.log('PDF generation successful, received HTML');
-        console.log('HTML content received:', data.html ? 'Yes' : 'No');
         
-        // Create a temporary HTML page for printing/PDF generation
+        // Validate that we received valid HTML content
+        if (!data.html || data.html.trim().length < 100) {
+          throw new Error('Invalid or empty HTML content received from server');
+        }
+        
+        // Create optimized HTML with faster loading
         const printWindow = window.open('', '_blank');
         if (printWindow) {
+          // Pre-load fonts in the background to improve performance
+          const fontLink = document.createElement('link');
+          fontLink.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap";
+          fontLink.rel = "stylesheet";
+          document.head.appendChild(fontLink);
+          
           printWindow.document.write(`
             <!DOCTYPE html>
             <html>
@@ -517,14 +536,23 @@ export default function Agreements() {
             </body>
             </html>
           `);
+          
+          // Close the document and focus the window
           printWindow.document.close();
+          printWindow.focus();
+          
+          // Auto-trigger print dialog after a short delay
+          setTimeout(() => {
+            printWindow.print();
+          }, 1000);
+          
         } else {
-          throw new Error('Could not open print window - popup blocked?');
+          throw new Error('Could not open print window - popup may be blocked');
         }
         
         toast({
-          title: "Agreement ready",
-          description: "Agreement opened in new window for download.",
+          title: "Success",
+          description: "PDF opened in new window. Print dialog will appear automatically.",
         });
       } else {
         const errorText = await response.text();
@@ -533,9 +561,22 @@ export default function Agreements() {
       }
     } catch (error) {
       console.error('Download error:', error);
+      
+      // Provide specific error messages based on error type
+      let errorMessage = 'Unknown error occurred';
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'PDF generation timed out. Please try again or contact support if the issue persists.';
+        } else if (error.message.includes('popup')) {
+          errorMessage = 'Pop-up blocked. Please allow pop-ups for this site and try again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: `Failed to generate agreement PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        title: "PDF Generation Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     }
