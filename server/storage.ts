@@ -319,13 +319,15 @@ export class DatabaseStorage implements IStorage {
 
       const agreementNumber = `AGR-${year}-${nextNumber.toString().padStart(3, '0')}`;
 
-      const [agreement] = await db
+      const result = await db
         .insert(agreements)
         .values({
           ...agreementData,
           agreementNumber,
         })
         .returning();
+      
+      const [agreement] = result;
         
       if (!agreement) {
         throw new Error('Failed to create agreement - no data returned');
@@ -374,7 +376,7 @@ export class DatabaseStorage implements IStorage {
     });
 
     // Update original agreement status
-    await this.updateAgreement(id, { status: "renewed" });
+    await this.updateAgreement(id, { status: "renewed" as const });
 
     return renewedAgreement;
   }
