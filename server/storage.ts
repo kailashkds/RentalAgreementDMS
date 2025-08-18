@@ -312,7 +312,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
 
       let nextNumber = 1;
-      if (lastAgreement && lastAgreement.length > 0) {
+      if (Array.isArray(lastAgreement) && lastAgreement.length > 0) {
         const lastNumber = parseInt(lastAgreement[0].agreementNumber.split('-')[2]);
         nextNumber = lastNumber + 1;
       }
@@ -392,7 +392,7 @@ export class DatabaseStorage implements IStorage {
       customerId: customerId || originalAgreement.customerId,
       status: "draft",
       parentAgreementId: id,
-      renewedFromId: null,
+      renewedFromId: null as any,
       agreementDate: new Date().toISOString().split('T')[0] as any,
       documents: {}, // Reset documents for new agreement
       createdAt: undefined as any,
