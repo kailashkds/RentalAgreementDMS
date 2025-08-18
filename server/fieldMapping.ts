@@ -883,6 +883,13 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
     }
   }
   
+  // Clean up any existing conflicting CSS rules before adding our own
+  processedHtml = processedHtml.replace(/@bottom-left\s*{\s*content:\s*none[^}]*}/g, '');
+  processedHtml = processedHtml.replace(/@bottom-right\s*{\s*content:\s*none[^}]*}/g, '');
+  processedHtml = processedHtml.replace(/@top-center\s*{\s*content:\s*none[^}]*}/g, '');
+  processedHtml = processedHtml.replace(/@top-left\s*{\s*content:\s*none[^}]*}/g, '');
+  processedHtml = processedHtml.replace(/@top-right\s*{\s*content:\s*none[^}]*}/g, '');
+
   // Add page break control CSS if not already present
   const pageBreakCSS = `
 <style>
