@@ -314,7 +314,12 @@ export default function Agreements() {
                   counter-increment: content-pages;
                 }
                 
-                @page :not(.document-page) {
+                .document-page {
+                  page-break-before: always;
+                  counter-increment: none !important;
+                }
+                
+                @page {
                   margin: 15mm 10mm 20mm 10mm;
                   @bottom-right { 
                     content: "Page " counter(content-pages);
@@ -327,6 +332,11 @@ export default function Agreements() {
                   @top-center { content: none; }
                   @top-left { content: none; }
                   @top-right { content: none; }
+                }
+                
+                .document-page {
+                  page-break-before: always;
+                  counter-increment: none !important;
                 }
                 
                 @page.document-page {
@@ -500,8 +510,7 @@ export default function Agreements() {
                 <button onclick="window.print()">Print / Save as PDF</button>
                 <button onclick="window.close()">Close</button>
               </div>
-
-              <div class="agreement-content content-page ${agreement.language === 'gujarati' ? 'gujarati-content' : 'english-content'}">
+              <div class="content-page ${agreement.language === 'gujarati' ? 'gujarati-content' : 'english-content'}">
                 ${data.html || '<p>No agreement content available</p>'}
               </div>
             </body>

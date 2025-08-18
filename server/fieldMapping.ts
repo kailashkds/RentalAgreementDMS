@@ -895,8 +895,8 @@ body {
   counter-increment: content-pages;
 }
 
-/* Content pages show page numbers */
-@page :not(.document-page) {
+/* All pages show page numbers by default */
+@page {
   margin: 15mm 10mm 20mm 10mm;
   @bottom-right { 
     content: "Page " counter(content-pages);
@@ -924,6 +924,7 @@ body {
 
 .document-page {
   page-break-before: always;
+  counter-increment: none !important;
 }
 
 html, body {
@@ -1100,15 +1101,23 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
 </style>`);
   }
   
-  // Calculate total content pages (pages that are not document pages)
-  // Count page breaks in content and document sections
+  // Calculate total content pages more accurately
+  // Count main content sections and page breaks
   const documentPageCount = (processedHtml.match(/class="[^"]*document-page[^"]*"/g) || []).length;
-  const totalPageBreaks = (processedHtml.match(/page-break-before:\s*always/g) || []).length;
-  const contentPageCount = Math.max(1, totalPageBreaks - documentPageCount + 1); // +1 for first page
+  const pageBreakCount = (processedHtml.match(/page-break-before:\s*always/g) || []).length;
   
-  console.log(`[Page Counting] Document pages: ${documentPageCount}, Content pages: ${contentPageCount}`);
+  // Calculate content pages: 1 base page + non-document page breaks
+  let contentPageCount = 1; // Base content page
   
-  // Inject the total content pages into the CSS
+  // Add additional pages from page breaks in content (not document pages)
+  const contentPageBreaks = pageBreakCount - documentPageCount;
+  if (contentPageBreaks > 0) {
+    contentPageCount += contentPageBreaks;
+  }
+  
+  console.log(`[Page Counting] Document pages: ${documentPageCount}, Page breaks: ${pageBreakCount}, Content pages: ${contentPageCount}`);
+  
+  // Inject the total content pages into the CSS - replace both server and client CSS
   processedHtml = processedHtml.replace(
     /content: "Page " counter\(content-pages\);/g,
     `content: "Page " counter(content-pages) " of ${contentPageCount}";`
@@ -1596,7 +1605,7 @@ export async function convertPdfToImages(pdfPath: string, documentType: string):
       const pageBreakClass = i > 0 ? 'page-break-before' : '';
       
       htmlContent += `
-      <div style="margin: 15px 0; text-align: center; page: document-page;" class="${pageBreakClass} document-page">
+      <div style="margin: 15px 0; text-align: center; ${i === 0 ? 'page-break-before: always;' : ''}" class="${pageBreakClass} document-page">
         <img src="${dataUrl}" 
              style="width: auto; height: auto; max-width: 100%; max-height: 600px; border: none; display: block; margin: 0 auto;" 
              alt="${documentType} - Page ${i + 1}" />
