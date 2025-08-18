@@ -35,6 +35,7 @@ export default function Agreements() {
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadingNotarized, setUploadingNotarized] = useState(false);
   const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const { toast } = useToast();
 
   const { data: agreementsData, isLoading } = useAgreements({
