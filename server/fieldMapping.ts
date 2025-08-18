@@ -1069,7 +1069,7 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
       const newStyle = `<style>
 ${existingContent}
 
-/* PDF-specific styling with page numbering */
+/* PDF-specific styling with conditional page numbering */
 @page {
   margin: 15mm 10mm 20mm 10mm;
   @bottom-center { content: none; }
@@ -1080,6 +1080,22 @@ ${existingContent}
     color: #666;
     font-family: ${fontFamily};
   }
+  @top-center { content: none; }
+  @top-left { content: none; }
+  @top-right { content: none; }
+}
+
+/* Document pages without page numbers */
+.document-page {
+  page-break-before: always;
+  page: document-page;
+}
+
+@page document-page {
+  margin: 15mm 10mm 15mm 10mm;
+  @bottom-right { content: none; }
+  @bottom-center { content: none; }
+  @bottom-left { content: none; }
   @top-center { content: none; }
   @top-left { content: none; }
   @top-right { content: none; }
@@ -1463,7 +1479,7 @@ async function createEmbeddedDocumentHtml(documentUrl: string, fieldName: string
  */
 function createEmbeddedImageHtml(dataUrl: string, documentType: string): string {
   return `
-<div style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid;">
+<div class="document-page" style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid;">
   <div style="margin-bottom: 10px;">
     <strong style="color: #2c3e50; font-size: 16px;">📄 ${documentType}</strong>
   </div>
@@ -1568,7 +1584,7 @@ export async function convertPdfToImages(pdfPath: string, documentType: string):
       const pageBreakClass = i > 0 ? 'page-break-before' : '';
       
       htmlContent += `
-      <div style="margin: 15px 0; text-align: center;" class="${pageBreakClass} document-page">
+      <div style="margin: 15px 0; text-align: center;" class="document-page ${pageBreakClass}">
         <img src="${dataUrl}" 
              style="width: auto; height: auto; max-width: 100%; max-height: 600px; border: none; display: block; margin: 0 auto;" 
              alt="${documentType} - Page ${i + 1}" />
