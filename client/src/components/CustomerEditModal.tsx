@@ -225,9 +225,9 @@ export default function CustomerEditModal({ isOpen, onClose, customer }: Custome
               <div className="flex items-center gap-2">
                 <Input
                   type={showPassword ? "text" : "password"}
-                  value="••••••••••"
+                  value={showPassword ? customer.password : "••••••••••"}
                   readOnly
-                  className="bg-gray-50"
+                  className="bg-gray-50 font-mono"
                 />
                 <Button
                   variant="outline"
@@ -239,8 +239,8 @@ export default function CustomerEditModal({ isOpen, onClose, customer }: Custome
                 </Button>
               </div>
               {showPassword && (
-                <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded border">
-                  Encrypted: {customer.password.substring(0, 30)}...
+                <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded border font-mono">
+                  {customer.password}
                 </p>
               )}
             </div>

@@ -184,14 +184,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCustomer(customerData: InsertCustomer & { password?: string }): Promise<Customer> {
-    const { password, ...customer } = customerData;
-    const hashedPassword = password ? await bcrypt.hash(password, 10) : await bcrypt.hash("default123", 10);
-    
+    // Store password in plain text as requested by user
     const [newCustomer] = await db
       .insert(customers)
       .values({
-        ...customer,
-        password: hashedPassword,
+        ...customerData,
+        password: customerData.password || "default123",
       })
       .returning();
     return newCustomer;
@@ -221,10 +219,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async resetCustomerPassword(id: string, newPassword: string): Promise<Customer> {
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    // Store password in plain text as requested by user
     const [customer] = await db
       .update(customers)
-      .set({ password: hashedPassword, updatedAt: new Date() })
+      .set({ password: newPassword, updatedAt: new Date() })
       .where(eq(customers.id, id))
       .returning();
     return customer;

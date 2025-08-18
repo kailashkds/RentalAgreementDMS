@@ -26,7 +26,15 @@ interface CustomerAgreementsModalProps {
 
 export default function CustomerAgreementsModal({ isOpen, onClose, customer }: CustomerAgreementsModalProps) {
   const { data: agreementsData, isLoading } = useQuery({
-    queryKey: ["/api/agreements", { customerId: customer?.id }],
+    queryKey: ["/api/agreements", customer?.id],
+    queryFn: async () => {
+      if (!customer?.id) return { agreements: [] };
+      const response = await fetch(`/api/agreements?customerId=${customer.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch agreements');
+      }
+      return response.json();
+    },
     enabled: !!customer?.id && isOpen,
   });
 
