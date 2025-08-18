@@ -308,17 +308,31 @@ export default function Agreements() {
               <style>
                 @page {
                   margin: 15mm 10mm 20mm 10mm;
-                  @bottom-center { 
-                    content: "Page " counter(page) " of " counter(pages);
+                  @bottom-right { 
+                    content: "Page " counter(page) " of " counter(content-pages);
                     font-size: 10px;
                     color: #666;
                     font-family: Arial, sans-serif;
                   }
+                  @bottom-center { content: none; }
                   @bottom-left { content: none; }
-                  @bottom-right { content: none; }
                   @top-center { content: none; }
                   @top-left { content: none; }
                   @top-right { content: none; }
+                }
+                
+                /* Exclude document pages from page counting */
+                .document-page {
+                  counter-increment: none;
+                }
+                
+                /* Only count content pages */
+                .content-page {
+                  counter-increment: content-pages;
+                }
+                
+                @page:first {
+                  counter-reset: content-pages;
                 }
                 
                 body { 
@@ -342,12 +356,13 @@ export default function Agreements() {
                   font-feature-settings: "kern" 1, "liga" 1;
                 }
                 
-                .agreement-content {
+                .agreement-content, .content-page {
                   max-width: 800px;
                   margin: 0 auto;
                   padding: 20px;
                   background: white;
                   min-height: 1056px;
+                  counter-increment: content-pages;
                 }
                 
                 /* Enhanced font support for all languages */
@@ -481,7 +496,7 @@ export default function Agreements() {
                 <button onclick="window.print()">Print / Save as PDF</button>
                 <button onclick="window.close()">Close</button>
               </div>
-              <div class="agreement-content ${agreement.language === 'gujarati' ? 'gujarati-content' : 'english-content'}">
+              <div class="agreement-content content-page ${agreement.language === 'gujarati' ? 'gujarati-content' : 'english-content'}">
                 ${data.html || '<p>No agreement content available</p>'}
               </div>
             </body>

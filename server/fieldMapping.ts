@@ -889,17 +889,31 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
 /* PDF-specific styling - clean, professional appearance */
 @page {
   margin: 15mm 10mm 20mm 10mm;
-  @bottom-center { 
-    content: "Page " counter(page) " of " counter(pages);
+  @bottom-right { 
+    content: "Page " counter(page) " of " counter(content-pages);
     font-size: 10px;
     color: #666;
     font-family: Arial, sans-serif;
   }
+  @bottom-center { content: none; }
   @bottom-left { content: none; }
-  @bottom-right { content: none; }
   @top-center { content: none; }
   @top-left { content: none; }
   @top-right { content: none; }
+}
+
+/* Exclude document pages from page counting */
+.document-page {
+  counter-increment: none;
+}
+
+/* Only count content pages */
+.content-page {
+  counter-increment: content-pages;
+}
+
+@page:first {
+  counter-reset: content-pages;
 }
 
 html, body {
@@ -1076,6 +1090,24 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
 </style>`);
   }
   
+  // Wrap the main content in content-page class to include it in page counting
+  // Look for the main content container and add content-page class
+  if (processedHtml.includes('<div style="font-family:') || processedHtml.includes('<body')) {
+    // Find the main content div or body and add content-page class
+    processedHtml = processedHtml.replace(
+      /(<div[^>]*style="[^"]*font-family:[^"]*"[^>]*>)/,
+      '$1<div class="content-page">'
+    );
+    
+    // If we added a content-page div, we need to close it at the end
+    if (processedHtml.includes('<div class="content-page">')) {
+      processedHtml = processedHtml.replace(/(.*)<\/div>(\s*<\/body>|\s*$)/, '$1</div></div>$2');
+    }
+  } else {
+    // Fallback: wrap the entire content in content-page
+    processedHtml = `<div class="content-page">${processedHtml}</div>`;
+  }
+  
   return processedHtml;
 }
 
@@ -1154,7 +1186,7 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
                 const dataUrl = `data:${mimeType};base64,${base64Data}`;
                 
                 const embeddedImage = `
-<div style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
+<div class="page-break-before document-page" style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
   <img src="${dataUrl}" 
        style="width: auto; height: auto; max-width: 100%; max-height: 400px; border: 1px solid #ccc; display: block; margin: 0 auto;" 
        alt="${documentType}" />
@@ -1233,7 +1265,7 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
               
               const documentType = getDocumentTypeFromFieldName(fieldName);
               const embeddedImage = `
-<div style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
+<div class="page-break-before document-page" style="margin: 20px 0; page-break-inside: avoid; text-align: center;">
   <img src="${dataUrl}" 
        style="width: auto; height: auto; max-width: 100%; max-height: 400px; border: 1px solid #ccc; display: block; margin: 0 auto;" 
        alt="${documentType}" />
