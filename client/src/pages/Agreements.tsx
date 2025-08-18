@@ -443,48 +443,78 @@ export default function Agreements() {
           </html>
         `;
         
-        // Try multiple approaches to open the PDF window
-        let windowOpened = false;
-        
+        // Create a download link approach since popups are blocked
         try {
-          // Method 1: Try data URL (most compatible)
-          const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
-          let newWindow = window.open('', '_blank');
+          console.log('Creating download link for PDF...');
           
-          if (newWindow) {
-            newWindow.document.open();
-            newWindow.document.write(htmlContent);
-            newWindow.document.close();
-            windowOpened = true;
-            console.log('PDF window opened successfully with document.write method');
-          } else {
-            console.log('window.open failed, likely popup blocked');
-          }
+          // Create a temporary link element for download
+          const blob = new Blob([htmlContent], { type: 'text/html' });
+          const blobUrl = URL.createObjectURL(blob);
           
-          if (!windowOpened) {
-            // Method 2: Try blob URL as fallback
-            console.log('Trying blob URL method...');
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const blobUrl = URL.createObjectURL(blob);
+          const downloadLink = document.createElement('a');
+          downloadLink.href = blobUrl;
+          downloadLink.download = `Agreement_${agreement.agreementNumber || agreement.id}.html`;
+          downloadLink.style.display = 'none';
+          
+          // Add to document, click, and remove
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+          
+          // Clean up blob URL
+          setTimeout(() => {
+            URL.revokeObjectURL(blobUrl);
+          }, 1000);
+          
+          // Show instructions to user
+          toast({
+            title: "PDF Downloaded",
+            description: "HTML file downloaded. Open it in your browser and use Ctrl+P to print/save as PDF.",
+          });
+          
+        } catch (downloadError) {
+          console.error('Download creation error:', downloadError);
+          
+          // Final fallback: Open in same window
+          try {
+            console.log('Trying same-window approach...');
+            const currentUrl = window.location.href;
             
-            const blobWindow = window.open(blobUrl, '_blank');
-            if (blobWindow) {
-              windowOpened = true;
-              console.log('PDF window opened with blob URL');
-              // Clean up blob URL after a delay
-              setTimeout(() => {
-                URL.revokeObjectURL(blobUrl);
-              }, 10000);
-            }
+            // Replace current page content temporarily
+            const originalContent = document.documentElement.innerHTML;
+            document.open();
+            document.write(htmlContent);
+            document.close();
+            
+            // Add a button to go back
+            const backButton = document.createElement('button');
+            backButton.innerHTML = 'Back to Agreements';
+            backButton.style.position = 'fixed';
+            backButton.style.top = '10px';
+            backButton.style.right = '10px';
+            backButton.style.zIndex = '9999';
+            backButton.style.padding = '10px 20px';
+            backButton.style.backgroundColor = '#007bff';
+            backButton.style.color = 'white';
+            backButton.style.border = 'none';
+            backButton.style.borderRadius = '5px';
+            backButton.style.cursor = 'pointer';
+            
+            backButton.onclick = () => {
+              window.location.reload();
+            };
+            
+            document.body.appendChild(backButton);
+            
+            // Auto-trigger print
+            setTimeout(() => {
+              window.print();
+            }, 1000);
+            
+          } catch (sameWindowError) {
+            console.error('Same window approach failed:', sameWindowError);
+            throw new Error('All PDF generation methods failed. Please enable popups or try a different browser.');
           }
-          
-          if (!windowOpened) {
-            throw new Error('Could not open print window - popup may be blocked. Please allow popups for this site and try again.');
-          }
-          
-        } catch (windowError) {
-          console.error('Window creation error:', windowError);
-          throw new Error(`Failed to create PDF preview: ${windowError.message}`);
         }
         
         toast({
