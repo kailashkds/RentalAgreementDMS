@@ -888,7 +888,7 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
 <style>
 /* PDF-specific styling - clean, professional appearance */
 @page {
-  margin: 15mm 10mm 25mm 10mm;
+  margin: 15mm 10mm 20mm 10mm;
   @bottom-center { content: none; }
   @bottom-left { content: none; }
   @bottom-right { 
@@ -1053,13 +1053,38 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
 }
 </style>`;
 
-  // Insert CSS into the HTML if it doesn't already contain page break styles
-  if (!processedHtml.includes('page-break-inside') && !processedHtml.includes('<style')) {
+  // Always inject the complete CSS with page numbering for all templates
+  if (!processedHtml.includes('<style')) {
     // Add CSS at the beginning of the HTML
     processedHtml = pageBreakCSS + processedHtml;
-  } else if (!processedHtml.includes('page-break-inside')) {
-    // If there's already a style tag, add our CSS rules inside the existing one
-    processedHtml = processedHtml.replace('</style>', `
+  } else {
+    // If there's already a style tag, replace it with our complete CSS
+    const styleMatch = processedHtml.match(/<style[^>]*>[\s\S]*?<\/style>/i);
+    if (styleMatch) {
+      // Keep the existing style content and add our page numbering CSS
+      const existingStyle = styleMatch[0];
+      const existingContent = existingStyle.replace(/<\/?style[^>]*>/gi, '');
+      
+      // Create new style with both existing content and our page numbering CSS
+      const newStyle = `<style>
+${existingContent}
+
+/* PDF-specific styling with page numbering */
+@page {
+  margin: 15mm 10mm 20mm 10mm;
+  @bottom-center { content: none; }
+  @bottom-left { content: none; }
+  @bottom-right { 
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 10px;
+    color: #666;
+    font-family: ${fontFamily};
+  }
+  @top-center { content: none; }
+  @top-left { content: none; }
+  @top-right { content: none; }
+}
+
 /* Page break control for PDF generation */
 .no-page-break, .keep-together, .agreement-section, .clause-section, .signature-section, .terms-section {
   page-break-inside: avoid;
@@ -1073,7 +1098,10 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
     break-inside: avoid !important;
   }
 }
-</style>`);
+</style>`;
+      
+      processedHtml = processedHtml.replace(styleMatch[0], newStyle);
+    }
   }
   
   return processedHtml;
