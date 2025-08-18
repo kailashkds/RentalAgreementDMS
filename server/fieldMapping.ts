@@ -890,7 +890,7 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
 @page {
   margin: 15mm 10mm 20mm 10mm;
   @bottom-right { 
-    content: "Page " counter(page) " of " counter(content-pages);
+    content: "Page " counter(page);
     font-size: 10px;
     color: #666;
     font-family: Arial, sans-serif;
@@ -902,18 +902,21 @@ export async function generatePdfHtml(formData: any, htmlTemplate: string, langu
   @top-right { content: none; }
 }
 
-/* Exclude document pages from page counting */
+/* Hide page numbers on document pages */
+@page :is(.document-page) {
+  @bottom-right { content: none !important; }
+  @bottom-center { content: none !important; }
+  @bottom-left { content: none !important; }
+}
+
+/* Document pages styling - no page numbers */
 .document-page {
-  counter-increment: none;
+  page-break-before: always;
 }
 
-/* Only count content pages */
+/* Content page styling */
 .content-page {
-  counter-increment: content-pages;
-}
-
-@page:first {
-  counter-reset: content-pages;
+  /* Main content area */
 }
 
 html, body {

@@ -309,7 +309,7 @@ export default function Agreements() {
                 @page {
                   margin: 15mm 10mm 20mm 10mm;
                   @bottom-right { 
-                    content: "Page " counter(page) " of " counter(content-pages);
+                    content: "Page " counter(page);
                     font-size: 10px;
                     color: #666;
                     font-family: Arial, sans-serif;
@@ -321,18 +321,26 @@ export default function Agreements() {
                   @top-right { content: none; }
                 }
                 
-                /* Exclude document pages from page counting */
-                .document-page {
-                  counter-increment: none;
+                /* Page counting system */
+                @page {
+                  counter-increment: page;
                 }
                 
-                /* Only count content pages */
+                /* Reset counter on first content page */
                 .content-page {
+                  counter-reset: content-pages;
+                }
+                
+                /* Increment counter for each content page */
+                .content-page > * {
                   counter-increment: content-pages;
                 }
                 
-                @page:first {
-                  counter-reset: content-pages;
+                /* Document pages should not show page numbers */
+                @page .document-page {
+                  @bottom-right { content: none !important; }
+                  @bottom-center { content: none !important; }
+                  @bottom-left { content: none !important; }
                 }
                 
                 body { 
