@@ -975,11 +975,14 @@ p {
   letter-spacing: normal !important;
 }
 
-/* Title styling */
+/* Title styling - preserve center alignment */
 h1, h2, h3 {
   font-weight: bold !important;
   text-align: center !important;
   margin: 20px 0 15px 0 !important;
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
+  text-justify: none !important;
 }
 
 h1 {
@@ -1090,13 +1093,25 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
     font-family: ${fontFamily} !important;
   }
   
-  p, div, span, h1, h2, h3, h4, h5, h6, strong, b, li, td, th {
+  p, div, span, strong, b, li, td, th {
     line-height: 1.4 !important;
     margin: 0.3em 0 !important;
     font-family: ${fontFamily} !important;
     text-align: left !important;
     word-spacing: normal !important;
     letter-spacing: normal !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.4 !important;
+    margin: 0.3em 0 !important;
+    font-family: ${fontFamily} !important;
+    word-spacing: normal !important;
+    letter-spacing: normal !important;
+  }
+  
+  .center-title, [style*="text-align: center"], [style*="text-align:center"] {
+    text-align: center !important;
   }
   
   br {
@@ -1112,19 +1127,31 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
     const cssWithOverrides = pageBreakCSS.replace(
       '<style>',
       `<style>
-/* CRITICAL: Override any existing text justification that causes spacing issues */
+/* CRITICAL: Override text justification that causes spacing issues */
 * {
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
+  text-justify: none !important;
+}
+
+/* Override justification for body text only, preserve center alignment for headings */
+p, div, span, li, td, th, strong, b {
   text-align: left !important;
   word-spacing: normal !important;
   letter-spacing: normal !important;
   text-justify: none !important;
 }
 
-p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, strong, b {
-  text-align: left !important;
+/* Preserve center alignment for headings and titles */
+h1, h2, h3, h4, h5, h6 {
   word-spacing: normal !important;
   letter-spacing: normal !important;
   text-justify: none !important;
+}
+
+/* Ensure center-aligned elements stay centered */
+.center-title, [style*="text-align: center"], [style*="text-align:center"] {
+  text-align: center !important;
 }
 
 `
@@ -1142,19 +1169,31 @@ p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, strong, b {
       const newStyle = `<style>
 /* Complete override of existing styles to fix text spacing issues */
 
-/* CRITICAL: Override any existing text justification that causes spacing issues */
+/* CRITICAL: Override text justification that causes spacing issues */
 * {
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
+  text-justify: none !important;
+}
+
+/* Override justification for body text only, preserve center alignment for headings */
+p, div, span, li, td, th, strong, b {
   text-align: left !important;
   word-spacing: normal !important;
   letter-spacing: normal !important;
   text-justify: none !important;
 }
 
-p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, strong, b {
-  text-align: left !important;
+/* Preserve center alignment for headings and titles */
+h1, h2, h3, h4, h5, h6 {
   word-spacing: normal !important;
   letter-spacing: normal !important;
   text-justify: none !important;
+}
+
+/* Ensure center-aligned elements stay centered */
+.center-title, [style*="text-align: center"], [style*="text-align:center"] {
+  text-align: center !important;
 }
 
 /* PDF-specific styling with conditional page numbering */
