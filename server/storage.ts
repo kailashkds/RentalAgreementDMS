@@ -55,6 +55,7 @@ export interface IStorage {
   updateProperty(id: string, property: Partial<InsertProperty>): Promise<Property>;
   deleteProperty(id: string): Promise<void>;
   findOrCreatePropertyForAgreement(customerId: string, propertyDetails: any): Promise<Property>;
+  getAllPropertiesWithCustomers(): Promise<any[]>;
   
   // Society operations
   getSocieties(search?: string, limit?: number): Promise<Society[]>;
@@ -332,6 +333,52 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProperty(id: string): Promise<void> {
     await db.delete(properties).where(eq(properties.id, id));
+  }
+
+  async getAllPropertiesWithCustomers(): Promise<any[]> {
+    const result = await db
+      .select({
+        id: properties.id,
+        customerId: properties.customerId,
+        flatNumber: properties.flatNumber,
+        building: properties.building,
+        society: properties.society,
+        area: properties.area,
+        city: properties.city,
+        state: properties.state,
+        pincode: properties.pincode,
+        district: properties.district,
+        landmark: properties.landmark,
+        propertyType: properties.propertyType,
+        purpose: properties.purpose,
+        isActive: properties.isActive,
+        createdAt: properties.createdAt,
+        updatedAt: properties.updatedAt,
+        customer: {
+          id: customers.id,
+          name: customers.name,
+          mobile: customers.mobile,
+          email: customers.email,
+        }
+      })
+      .from(properties)
+      .leftJoin(customers, eq(properties.customerId, customers.id))
+      .orderBy(desc(properties.createdAt));
+
+    // Get agreement counts for each property
+    const propertiesWithCounts = await Promise.all(result.map(async (property) => {
+      const [agreementCount] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(agreements)
+        .where(eq(agreements.propertyId, property.id));
+      
+      return {
+        ...property,
+        agreementCount: agreementCount.count || 0
+      };
+    }));
+
+    return propertiesWithCounts;
   }
 
   async getProperties(customerId: string): Promise<Property[]> {

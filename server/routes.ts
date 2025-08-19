@@ -214,6 +214,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Property API routes
+  app.get("/api/properties/all", async (req, res) => {
+    try {
+      const properties = await storage.getAllPropertiesWithCustomers();
+      res.json(properties);
+    } catch (error) {
+      console.error("Error fetching all properties:", error);
+      res.status(500).json({ message: "Failed to fetch all properties" });
+    }
+  });
+
   app.get("/api/properties", async (req, res) => {
     try {
       const { customerId } = req.query;

@@ -32,6 +32,7 @@ const navigation = [
   { name: "Agreements", href: "/agreements", icon: FileSignature },
   { name: "Notarized Documents", href: "/notarized-documents", icon: FileCheck },
   { name: "Customers", href: "/customers", icon: Users },
+  { name: "Properties", href: "/properties", icon: MapPin },
   { name: "Documents", href: "/documents", icon: FolderOpen },
   { name: "PDF Templates", href: "/pdf-templates", icon: FileText },
   { name: "Societies", href: "/societies", icon: Building },
