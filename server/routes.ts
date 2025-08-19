@@ -743,26 +743,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Embed actual image instead of file path
           try {
             const imagePath = path.join(process.cwd(), safeAgreementData.ownerDetails.aadharUrl);
+            console.log(`[Word Generation] Looking for Landlord Aadhaar image at: ${imagePath}`);
+            
             if (fs.existsSync(imagePath)) {
               const imageBuffer = fs.readFileSync(imagePath);
+              console.log(`[Word Generation] Loaded Landlord Aadhaar image, size: ${imageBuffer.length} bytes`);
               
+              // Add image with proper formatting
               documentParagraphs.push(new Paragraph({
                 children: [
                   new ImageRun({
-                    type: "jpg",
                     data: imageBuffer,
                     transformation: {
-                      width: 400,
-                      height: 250,
-                    },
+                      width: 300,
+                      height: 200,
+                    }
                   })
                 ],
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
               }));
+              console.log(`[Word Generation] Successfully embedded Landlord Aadhaar image`);
             } else {
+              console.log(`[Word Generation] Landlord Aadhaar image not found at path: ${imagePath}`);
               // Fallback to file path if image not found
-              const aadharPath = createParagraph(safeAgreementData.ownerDetails.aadharUrl, {
+              const aadharPath = createParagraph(`Image not found: ${safeAgreementData.ownerDetails.aadharUrl}`, {
                 size: 24,
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
@@ -770,9 +775,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (aadharPath) documentParagraphs.push(aadharPath);
             }
           } catch (imageError) {
-            console.error('Error embedding Aadhaar image:', imageError);
+            console.error('[Word Generation] Error embedding Landlord Aadhaar image:', imageError);
             // Fallback to file path on error
-            const aadharPath = createParagraph(safeAgreementData.ownerDetails.aadharUrl, {
+            const aadharPath = createParagraph(`Error loading image: ${safeAgreementData.ownerDetails.aadharUrl}`, {
               size: 24,
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
@@ -799,26 +804,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Embed actual PAN image instead of file path
           try {
             const imagePath = path.join(process.cwd(), safeAgreementData.ownerDetails.panUrl);
+            console.log(`[Word Generation] Looking for Landlord PAN image at: ${imagePath}`);
+            
             if (fs.existsSync(imagePath)) {
               const imageBuffer = fs.readFileSync(imagePath);
+              console.log(`[Word Generation] Loaded Landlord PAN image, size: ${imageBuffer.length} bytes`);
               
               documentParagraphs.push(new Paragraph({
                 children: [
                   new ImageRun({
-                    type: "jpg",
                     data: imageBuffer,
                     transformation: {
-                      width: 400,
-                      height: 250,
-                    },
+                      width: 300,
+                      height: 200,
+                    }
                   })
                 ],
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
               }));
+              console.log(`[Word Generation] Successfully embedded Landlord PAN image`);
             } else {
-              // Fallback to file path if image not found
-              const panPath = createParagraph(safeAgreementData.ownerDetails.panUrl, {
+              console.log(`[Word Generation] Landlord PAN image not found at path: ${imagePath}`);
+              const panPath = createParagraph(`Image not found: ${safeAgreementData.ownerDetails.panUrl}`, {
                 size: 24,
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
@@ -826,9 +834,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (panPath) documentParagraphs.push(panPath);
             }
           } catch (imageError) {
-            console.error('Error embedding PAN image:', imageError);
-            // Fallback to file path on error
-            const panPath = createParagraph(safeAgreementData.ownerDetails.panUrl, {
+            console.error('[Word Generation] Error embedding Landlord PAN image:', imageError);
+            const panPath = createParagraph(`Error loading image: ${safeAgreementData.ownerDetails.panUrl}`, {
               size: 24,
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
@@ -867,26 +874,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Embed actual tenant Aadhaar image instead of file path
           try {
             const imagePath = path.join(process.cwd(), safeAgreementData.tenantDetails.aadharUrl);
+            console.log(`[Word Generation] Looking for Tenant Aadhaar image at: ${imagePath}`);
+            
             if (fs.existsSync(imagePath)) {
               const imageBuffer = fs.readFileSync(imagePath);
+              console.log(`[Word Generation] Loaded Tenant Aadhaar image, size: ${imageBuffer.length} bytes`);
               
               documentParagraphs.push(new Paragraph({
                 children: [
                   new ImageRun({
-                    type: "jpg",
                     data: imageBuffer,
                     transformation: {
-                      width: 400,
-                      height: 250,
-                    },
+                      width: 300,
+                      height: 200,
+                    }
                   })
                 ],
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
               }));
+              console.log(`[Word Generation] Successfully embedded Tenant Aadhaar image`);
             } else {
-              // Fallback to file path if image not found
-              const aadharPath = createParagraph(safeAgreementData.tenantDetails.aadharUrl, {
+              console.log(`[Word Generation] Tenant Aadhaar image not found at path: ${imagePath}`);
+              const aadharPath = createParagraph(`Image not found: ${safeAgreementData.tenantDetails.aadharUrl}`, {
                 size: 24,
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
@@ -894,9 +904,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (aadharPath) documentParagraphs.push(aadharPath);
             }
           } catch (imageError) {
-            console.error('Error embedding tenant Aadhaar image:', imageError);
-            // Fallback to file path on error
-            const aadharPath = createParagraph(safeAgreementData.tenantDetails.aadharUrl, {
+            console.error('[Word Generation] Error embedding Tenant Aadhaar image:', imageError);
+            const aadharPath = createParagraph(`Error loading image: ${safeAgreementData.tenantDetails.aadharUrl}`, {
               size: 24,
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
@@ -923,26 +932,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Embed actual tenant PAN image instead of file path
           try {
             const imagePath = path.join(process.cwd(), safeAgreementData.tenantDetails.panUrl);
+            console.log(`[Word Generation] Looking for Tenant PAN image at: ${imagePath}`);
+            
             if (fs.existsSync(imagePath)) {
               const imageBuffer = fs.readFileSync(imagePath);
+              console.log(`[Word Generation] Loaded Tenant PAN image, size: ${imageBuffer.length} bytes`);
               
               documentParagraphs.push(new Paragraph({
                 children: [
                   new ImageRun({
-                    type: "jpg",
                     data: imageBuffer,
                     transformation: {
-                      width: 400,
-                      height: 250,
-                    },
+                      width: 300,
+                      height: 200,
+                    }
                   })
                 ],
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
               }));
+              console.log(`[Word Generation] Successfully embedded Tenant PAN image`);
             } else {
-              // Fallback to file path if image not found
-              const panPath = createParagraph(safeAgreementData.tenantDetails.panUrl, {
+              console.log(`[Word Generation] Tenant PAN image not found at path: ${imagePath}`);
+              const panPath = createParagraph(`Image not found: ${safeAgreementData.tenantDetails.panUrl}`, {
                 size: 24,
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
@@ -950,9 +962,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (panPath) documentParagraphs.push(panPath);
             }
           } catch (imageError) {
-            console.error('Error embedding tenant PAN image:', imageError);
-            // Fallback to file path on error
-            const panPath = createParagraph(safeAgreementData.tenantDetails.panUrl, {
+            console.error('[Word Generation] Error embedding Tenant PAN image:', imageError);
+            const panPath = createParagraph(`Error loading image: ${safeAgreementData.tenantDetails.panUrl}`, {
               size: 24,
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
@@ -982,26 +993,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Embed actual property document image instead of file path
         try {
           const imagePath = path.join(process.cwd(), safeAgreementData.propertyDocuments.url);
+          console.log(`[Word Generation] Looking for Property document image at: ${imagePath}`);
+          
           if (fs.existsSync(imagePath)) {
             const imageBuffer = fs.readFileSync(imagePath);
+            
+            console.log(`[Word Generation] Loaded Property document image, size: ${imageBuffer.length} bytes`);
             
             documentParagraphs.push(new Paragraph({
               children: [
                 new ImageRun({
-                    type: "jpg",
                   data: imageBuffer,
                   transformation: {
-                    width: 400,
-                    height: 250,
-                  },
+                    width: 300,
+                    height: 200,
+                  }
                 })
               ],
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
             }));
+            console.log(`[Word Generation] Successfully embedded Property document image`);
           } else {
-            // Fallback to file path if image not found
-            const propertyPath = createParagraph(safeAgreementData.propertyDocuments.url, {
+            console.log(`[Word Generation] Property document image not found at path: ${imagePath}`);
+            const propertyPath = createParagraph(`Image not found: ${safeAgreementData.propertyDocuments.url}`, {
               size: 24,
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
@@ -1009,9 +1024,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (propertyPath) documentParagraphs.push(propertyPath);
           }
         } catch (imageError) {
-          console.error('Error embedding property document image:', imageError);
-          // Fallback to file path on error
-          const propertyPath = createParagraph(safeAgreementData.propertyDocuments.url, {
+          console.error('[Word Generation] Error embedding Property document image:', imageError);
+          const propertyPath = createParagraph(`Error loading image: ${safeAgreementData.propertyDocuments.url}`, {
             size: 24,
             alignment: AlignmentType.CENTER,
             spacing: { after: 480 }
