@@ -6,7 +6,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { mapFormDataToTemplateFields, generatePdfHtml, convertPdfToImages } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
-import { insertCustomerSchema, insertSocietySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
+import { insertCustomerSchema, insertSocietySchema, insertPropertySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
 import { directFileUpload } from "./directFileUpload";
 import { upload, getFileInfo, deleteFile, readFileAsBase64 } from "./localFileUpload";
 import { z } from "zod";
@@ -210,6 +210,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Cannot delete customer with existing agreements" });
       }
       res.status(500).json({ message: "Failed to delete customer" });
+    }
+  });
+
+  // Property API routes
+  app.get("/api/properties", async (req, res) => {
+    try {
+      const { customerId } = req.query;
+      if (!customerId) {
+        return res.status(400).json({ message: "Customer ID is required" });
+      }
+      
+      const properties = await storage.getProperties(customerId as string);
+      res.json(properties);
+    } catch (error) {
+      console.error("Error fetching properties:", error);
+      res.status(500).json({ message: "Failed to fetch properties" });
+    }
+  });
+
+  app.get("/api/properties/:id", async (req, res) => {
+    try {
+      const property = await storage.getProperty(req.params.id);
+      if (!property) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+      res.json(property);
+    } catch (error) {
+      console.error("Error fetching property:", error);
+      res.status(500).json({ message: "Failed to fetch property" });
+    }
+  });
+
+  app.post("/api/properties", async (req, res) => {
+    try {
+      const propertyData = insertPropertySchema.parse(req.body);
+      const property = await storage.createProperty(propertyData);
+      res.status(201).json(property);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid property data", errors: error.errors });
+      }
+      console.error("Error creating property:", error);
+      res.status(500).json({ message: "Failed to create property" });
+    }
+  });
+
+  app.get("/api/properties/:propertyId/agreements", async (req, res) => {
+    try {
+      const { propertyId } = req.params;
+      const result = await storage.getAgreements({ propertyId });
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching property agreements:", error);
+      res.status(500).json({ message: "Failed to fetch property agreements" });
     }
   });
 
@@ -980,6 +1034,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating society:", error);
       res.status(500).json({ message: "Failed to create society" });
+    }
+  });
+
+  // Property routes
+  app.get("/api/properties", async (req, res) => {
+    try {
+      const { customerId } = req.query;
+      const properties = await storage.getProperties(customerId as string);
+      res.json(properties);
+    } catch (error) {
+      console.error("Error fetching properties:", error);
+      res.status(500).json({ message: "Failed to fetch properties" });
+    }
+  });
+
+  app.get("/api/properties/:id", async (req, res) => {
+    try {
+      const property = await storage.getProperty(req.params.id);
+      if (!property) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+      res.json(property);
+    } catch (error) {
+      console.error("Error fetching property:", error);
+      res.status(500).json({ message: "Failed to fetch property" });
+    }
+  });
+
+  app.post("/api/properties", async (req, res) => {
+    try {
+      const propertyData = insertPropertySchema.parse(req.body);
+      const property = await storage.createProperty(propertyData);
+      res.status(201).json(property);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid property data", errors: error.errors });
+      }
+      console.error("Error creating property:", error);
+      res.status(500).json({ message: "Failed to create property" });
+    }
+  });
+
+  app.put("/api/properties/:id", async (req, res) => {
+    try {
+      const propertyData = insertPropertySchema.partial().parse(req.body);
+      const property = await storage.updateProperty(req.params.id, propertyData);
+      res.json(property);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid property data", errors: error.errors });
+      }
+      console.error("Error updating property:", error);
+      res.status(500).json({ message: "Failed to update property" });
+    }
+  });
+
+  app.delete("/api/properties/:id", async (req, res) => {
+    try {
+      await storage.deleteProperty(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting property:", error);
+      res.status(500).json({ message: "Failed to delete property" });
+    }
+  });
+
+  // Get agreements for a specific property
+  app.get("/api/properties/:propertyId/agreements", async (req, res) => {
+    try {
+      const { propertyId } = req.params;
+      const { status, search, limit, offset } = req.query;
+      const result = await storage.getAgreements({
+        propertyId: propertyId as string,
+        status: status as string,
+        search: search as string,
+        limit: limit ? parseInt(limit as string) : undefined,
+        offset: offset ? parseInt(offset as string) : undefined,
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching property agreements:", error);
+      res.status(500).json({ message: "Failed to fetch property agreements" });
     }
   });
 

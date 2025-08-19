@@ -1,6 +1,7 @@
 import {
   users,
   customers,
+  properties,
   societies,
   addresses,
   agreements,
@@ -12,6 +13,8 @@ import {
   type UpsertUser,
   type Customer,
   type InsertCustomer,
+  type Property,
+  type InsertProperty,
   type Society,
   type InsertSociety,
   type Address,
@@ -45,6 +48,14 @@ export interface IStorage {
   resetCustomerPassword(id: string, newPassword: string): Promise<Customer>;
   toggleCustomerStatus(id: string, isActive: boolean): Promise<Customer>;
   
+  // Property operations
+  getProperties(customerId?: string): Promise<Property[]>;
+  getProperty(id: string): Promise<Property | undefined>;
+  createProperty(property: InsertProperty): Promise<Property>;
+  updateProperty(id: string, property: Partial<InsertProperty>): Promise<Property>;
+  deleteProperty(id: string): Promise<void>;
+  findOrCreatePropertyForAgreement(customerId: string, propertyDetails: any): Promise<Property>;
+  
   // Society operations
   getSocieties(search?: string, limit?: number): Promise<Society[]>;
   getSociety(id: string): Promise<Society | undefined>;
@@ -77,6 +88,7 @@ export interface IStorage {
   // Agreement operations
   getAgreements(filters?: {
     customerId?: string;
+    propertyId?: string;
     status?: string;
     search?: string;
     limit?: number;
@@ -288,18 +300,120 @@ export class DatabaseStorage implements IStorage {
     await db.delete(societies).where(eq(societies.id, id));
   }
 
+  // Property operations
+  async getProperties(customerId?: string): Promise<Property[]> {
+    const whereConditions = customerId ? eq(properties.customerId, customerId) : undefined;
+    
+    return db
+      .select()
+      .from(properties)
+      .where(whereConditions)
+      .orderBy(properties.society, properties.flatNumber);
+  }
+
+  async getProperty(id: string): Promise<Property | undefined> {
+    const [property] = await db.select().from(properties).where(eq(properties.id, id));
+    return property;
+  }
+
+  async createProperty(propertyData: InsertProperty): Promise<Property> {
+    const [property] = await db.insert(properties).values(propertyData).returning();
+    return property;
+  }
+
+  async updateProperty(id: string, propertyData: Partial<InsertProperty>): Promise<Property> {
+    const [property] = await db
+      .update(properties)
+      .set(propertyData)
+      .where(eq(properties.id, id))
+      .returning();
+    return property;
+  }
+
+  async deleteProperty(id: string): Promise<void> {
+    await db.delete(properties).where(eq(properties.id, id));
+  }
+
+  async getProperties(customerId: string): Promise<Property[]> {
+    const result = await db
+      .select()
+      .from(properties)
+      .where(eq(properties.customerId, customerId))
+      .orderBy(desc(properties.createdAt));
+    return result;
+  }
+
+  async getProperty(id: string): Promise<Property | undefined> {
+    const [property] = await db.select().from(properties).where(eq(properties.id, id));
+    return property;
+  }
+
+  async findOrCreatePropertyForAgreement(customerId: string, propertyDetails: any): Promise<Property> {
+    // Extract property details from agreement
+    const flatNumber = propertyDetails.flatNumber || '';
+    const building = propertyDetails.building || '';
+    const society = propertyDetails.society || '';
+    const area = propertyDetails.area || '';
+    const city = propertyDetails.city || '';
+    const state = propertyDetails.state || '';
+    const pincode = propertyDetails.pincode || '';
+    const district = propertyDetails.district || '';
+    const landmark = propertyDetails.landmark || '';
+    const propertyType = propertyDetails.propertyType || 'residential';
+    const purpose = propertyDetails.purpose || '';
+
+    // Try to find existing property with same address
+    const [existingProperty] = await db
+      .select()
+      .from(properties)
+      .where(and(
+        eq(properties.customerId, customerId),
+        eq(properties.flatNumber, flatNumber),
+        eq(properties.society, society),
+        eq(properties.area, area),
+        eq(properties.city, city)
+      ));
+
+    if (existingProperty) {
+      return existingProperty;
+    }
+
+    // Create new property
+    const [newProperty] = await db
+      .insert(properties)
+      .values({
+        customerId,
+        flatNumber,
+        building,
+        society,
+        area,
+        city,
+        state,
+        pincode,
+        district,
+        landmark,
+        propertyType,
+        purpose,
+      })
+      .returning();
+
+    return newProperty;
+  }
+
   // Agreement operations
   async getAgreements(filters?: {
     customerId?: string;
+    propertyId?: string;
     status?: string;
     search?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ agreements: Agreement[]; total: number }> {
-    const { customerId, status, search, limit = 50, offset = 0 } = filters || {};
+    const { customerId, propertyId, status, search, limit = 50, offset = 0 } = filters || {};
     
     const whereConditions = and(
       customerId ? eq(agreements.customerId, customerId) : undefined,
+      propertyId ? eq(agreements.propertyId, propertyId) : undefined,
       status ? eq(agreements.status, status) : undefined,
       search ? ilike(agreements.agreementNumber, `%${search}%`) : undefined
     );
@@ -370,11 +484,24 @@ export class DatabaseStorage implements IStorage {
 
       const agreementNumber = `AGR-${year}-${nextNumber.toString().padStart(3, '0')}`;
 
+      // Handle property relationship
+      let propertyId = agreementData.propertyId;
+      
+      // If property details are provided but no propertyId, create/find property
+      if (!propertyId && agreementData.propertyDetails && agreementData.customerId) {
+        const property = await this.findOrCreatePropertyForAgreement(
+          agreementData.customerId,
+          agreementData.propertyDetails
+        );
+        propertyId = property.id;
+      }
+
       const [agreement] = await db
         .insert(agreements)
         .values({
           ...agreementData,
           agreementNumber,
+          propertyId,
         })
         .returning();
         

@@ -19,12 +19,14 @@ import {
   Phone,
   Mail,
   FileSignature,
+  Building,
   RotateCcw,
   Power,
   PowerOff,
   AlertTriangle,
   Key
 } from "lucide-react";
+import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -175,7 +177,7 @@ export default function Customers() {
                       Contact
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Agreements
+                      Properties
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -223,15 +225,16 @@ export default function Customers() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Button
-                          variant="ghost"
-                          className="flex items-center text-sm text-gray-900 hover:text-blue-600 p-0 h-auto"
-                          onClick={() => handleViewAgreements(customer)}
-                          data-testid={`button-view-agreements-${customer.id}`}
-                        >
-                          <FileSignature className="h-4 w-4 mr-2 text-gray-400" />
-                          {customer.agreementCount || 0} agreements
-                        </Button>
+                        <Link href={`/customers/${customer.id}/properties`}>
+                          <Button
+                            variant="ghost"
+                            className="flex items-center text-sm text-gray-900 hover:text-blue-600 p-0 h-auto"
+                            data-testid={`button-view-properties-${customer.id}`}
+                          >
+                            <Building className="h-4 w-4 mr-2 text-gray-400" />
+                            View Properties
+                          </Button>
+                        </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span

@@ -48,6 +48,35 @@ export const customers = pgTable("customers", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Properties table for customer property management
+export const properties = pgTable("properties", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  
+  // Property address details
+  flatNumber: text("flat_number").notNull(),
+  building: text("building"),
+  society: text("society").notNull(),
+  area: text("area").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  pincode: varchar("pincode", { length: 10 }).notNull(),
+  district: text("district"),
+  landmark: text("landmark"),
+  
+  // Property characteristics
+  propertyType: varchar("property_type", { length: 20 }).notNull(), // residential, commercial
+  purpose: varchar("purpose", { length: 50 }), // family, business, etc.
+  
+  // Property status
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  customerIdx: index("property_customer_idx").on(table.customerId),
+  addressIdx: index("property_address_idx").on(table.society, table.area, table.city),
+}));
+
 // Admin users table for login system
 export const adminUsers = pgTable("admin_users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -98,6 +127,7 @@ export const agreements: any = pgTable("agreements", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   agreementNumber: varchar("agreement_number").unique().notNull(),
   customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  propertyId: varchar("property_id").references(() => properties.id),
   language: varchar("language", { length: 20 }).notNull().default("english"),
   
   // Owner/Landlord details stored as JSONB
@@ -168,6 +198,15 @@ export const pdfTemplates = pgTable("pdf_templates", {
 
 // Relations
 export const customersRelations = relations(customers, ({ many }) => ({
+  properties: many(properties),
+  agreements: many(agreements),
+}));
+
+export const propertiesRelations = relations(properties, ({ one, many }) => ({
+  customer: one(customers, {
+    fields: [properties.customerId],
+    references: [customers.id],
+  }),
   agreements: many(agreements),
 }));
 
@@ -175,6 +214,10 @@ export const agreementsRelations = relations(agreements, ({ one, many }) => ({
   customer: one(customers, {
     fields: [agreements.customerId],
     references: [customers.id],
+  }),
+  property: one(properties, {
+    fields: [agreements.propertyId],
+    references: [properties.id],
   }),
   parentAgreement: one(agreements, {
     fields: [agreements.parentAgreementId],
@@ -205,6 +248,12 @@ export const insertSocietySchema = createInsertSchema(societies).omit({
 });
 
 export const insertAddressSchema = createInsertSchema(addresses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPropertySchema = createInsertSchema(properties).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -255,6 +304,8 @@ export type InsertSociety = z.infer<typeof insertSocietySchema>;
 export type Society = typeof societies.$inferSelect;
 export type InsertAddress = z.infer<typeof insertAddressSchema>;
 export type Address = typeof addresses.$inferSelect;
+export type InsertProperty = z.infer<typeof insertPropertySchema>;
+export type Property = typeof properties.$inferSelect;
 export type InsertAgreement = z.infer<typeof insertAgreementSchema>;
 export type Agreement = typeof agreements.$inferSelect;
 export type InsertAgreementTemplate = z.infer<typeof insertAgreementTemplateSchema>;
