@@ -52,6 +52,13 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
       }
 
       console.log('Starting PDF generation for agreement:', agreement.id);
+      console.log('Agreement data:', {
+        hasOwnerDetails: !!agreement.ownerDetails,
+        hasTenantDetails: !!agreement.tenantDetails,
+        hasPropertyDetails: !!agreement.propertyDetails,
+        hasRentalTerms: !!agreement.rentalTerms,
+        agreementNumber: agreement.agreementNumber
+      });
 
       const response = await fetch('/api/agreements/generate-pdf', {
         method: 'POST',
@@ -68,6 +75,7 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
           language: agreement.language || 'english',
           additionalClauses: agreement.additionalClauses || [],
           agreementNumber: agreement.agreementNumber,
+          // Include document data for embedding
           documents: agreement.documents || {},
           ownerDocuments: agreement.ownerDocuments || {},
           tenantDocuments: agreement.tenantDocuments || {},
@@ -75,10 +83,13 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
         }),
       });
 
+      console.log('PDF generation response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('PDF generation successful, received HTML');
         
-        // Create a temporary HTML page for PDF generation with proper styling
+        // Create a temporary HTML page for printing/PDF generation
         const printWindow = window.open('', '_blank');
         if (printWindow) {
           printWindow.document.write(`
@@ -88,16 +99,6 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
               <title>Rental Agreement - ${agreement.agreementNumber || 'Agreement'}</title>
               <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
               <style>
-                .page-break-before {
-                  page-break-before: always;
-                }
-                .no-page-break {
-                  page-break-inside: avoid;
-                }
-                p{
-                  font-size:20px !important;
-                }
-                /* PDF-specific styling with conditional page numbering */
                 @page {
                   margin: 15mm 10mm 20mm 10mm;
                   @bottom-center { content: none; }
@@ -120,107 +121,192 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                   @top-left { content: none; }
                   @top-right { content: none; }
                 }
-
+                
                 body { 
                   font-family: ${agreement.language === 'gujarati' 
-                    ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif'
+                    ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
                     : agreement.language === 'hindi'
                     ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
                     : agreement.language === 'tamil'
                     ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
                     : agreement.language === 'marathi'
                     ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
-                    : 'Arial, sans-serif'};
+                    : 'Arial, sans-serif'}; 
                   margin: 0;
                   padding: 20px;
-                  font-size: 16px;
                   line-height: 1.6;
-                  color: #333;
+                  background: white;
+                  font-size: 14px;
+                  text-rendering: optimizeLegibility;
+                  -webkit-font-smoothing: antialiased;
+                  -moz-osx-font-smoothing: grayscale;
+                  font-feature-settings: "kern" 1, "liga" 1;
+                }
+                
+                .agreement-content {
+                  max-width: 800px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  background: white;
+                  min-height: 1056px;
+                }
+                
+                /* Enhanced font support for all languages */
+                .gujarati-content, .gujarati-content * {
+                  font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif !important;
+                }
+                
+                /* Enhanced English font support and styling */
+                .english-content, .english-content * {
+                  font-family: Arial, sans-serif !important;
+                  font-size: 14px !important;
+                }
+                
+                /* Consistent spacing for all languages */
+                .party-details p {
+                  margin: 3px 0 !important;
+                  line-height: 1.5 !important;
+                }
+                
+                /* Title styling */
+                h1, h2, h3 {
+                  font-weight: bold !important;
+                  margin: 20px 0 15px 0 !important;
+                  text-align: center !important;
+                }
+                
+                h1 {
+                  font-size: 18px !important;
+                  margin-bottom: 25px !important;
+                }
+                
+                /* Paragraph styling with consistent spacing */
+                p {
+                  margin: 10px 0 !important;
+                  line-height: 1.6 !important;
+                  text-align: justify !important;
+                  text-indent: 0 !important;
+                  padding: 0 !important;
+                }
+                
+                /* List styling */
+                ol, ul {
+                  margin: 10px 0 !important;
+                  padding-left: 30px !important;
+                }
+                
+                li {
+                  margin: 5px 0 !important;
+                  line-height: 1.6 !important;
+                }
+                
+                /* Strong text styling */
+                strong, b {
+                  font-weight: bold !important;
+                }
+                
+                /* Passport photo styling - only for screen preview */
+                @media screen {
+                  div[style*="130px"][style*="160px"]:empty,
+                  div[style*="130px"][style*="160px"]:contains("પાસપોર્ટ સાઈઝ ફોટો"),
+                  div[style*="130px"][style*="160px"]:contains("Passport Size Photo") {
+                    border: 1px dashed #ccc !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    background: #f9f9f9 !important;
+                    font-size: 12px !important;
+                    text-align: center !important;
+                    color: #666 !important;
+                  }
+                }
+                
+                /* Remove borders for PDF/print */
+                @media print {
+                  div[style*="130px"][style*="160px"] {
+                    border: none !important;
+                    background: transparent !important;
+                  }
+                }
+                
+                /* Page break control classes for PDF generation */
+                .no-page-break,
+                .keep-together,
+                .agreement-section,
+                .clause-section,
+                .signature-section,
+                .terms-section {
+                  page-break-inside: avoid;
+                  break-inside: avoid;
                 }
                 
                 .page-break-before {
                   page-break-before: always;
+                  break-before: page;
                 }
                 
-                .no-page-break {
-                  page-break-inside: avoid;
+                .page-break-after {
+                  page-break-after: always;
+                  break-after: page;
                 }
                 
                 @media print {
-                  body { margin: 0; padding: 0; }
-                  .no-print { display: none !important; }
-                }
-                
-                /* Language-specific styles */
-                .gujarati { 
-                  font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif;
-                  font-size: 18px;
-                }
-                
-                .hindi, .marathi { 
-                  font-family: "Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif;
-                  font-size: 18px;
-                }
-                
-                .tamil { 
-                  font-family: "Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif;
-                  font-size: 18px;
-                }
-                
-                .document-image {
-                  max-width: 100%;
-                  height: auto;
-                  margin: 20px auto;
-                  display: block;
-                  border: 1px solid #ddd;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                  border-radius: 4px;
-                }
-                
-                .document-image-container {
-                  text-align: center;
-                  margin: 30px 0;
-                }
-                
-                .document-title {
-                  font-weight: bold;
-                  margin-bottom: 15px;
-                  text-align: center;
-                  font-size: 16px;
-                  color: #333;
+                  body { margin: 0; }
+                  .no-print { display: none; }
+                  
+                  /* Enforce page break controls for print/PDF */
+                  .no-page-break,
+                  .keep-together,
+                  .agreement-section,
+                  .clause-section,
+                  .signature-section,
+                  .terms-section {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                  }
+                  
+                  .page-break-before {
+                    page-break-before: always !important;
+                    break-before: page !important;
+                  }
+                  
+                  .page-break-after {
+                    page-break-after: always !important;
+                    break-after: page !important;
+                  }
                 }
               </style>
             </head>
-            <body class="${agreement.language || 'english'}">
-              <div class="no-print" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: block;">
-                <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 8px; font-size: 14px;">Print / Save as PDF</button>
-                <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">Close</button>
+            <body>
+              <div class="no-print" style="margin-bottom: 20px;">
+                <button onclick="window.print()">Print / Save as PDF</button>
+                <button onclick="window.close()">Close</button>
               </div>
-              <div class="document-content">
-                ${data.html}
+              <div class="agreement-content ${agreement.language === 'gujarati' ? 'gujarati-content' : 'english-content'}">
+                ${data.html || '<p>No agreement content available</p>'}
               </div>
             </body>
             </html>
           `);
           printWindow.document.close();
-          
-          toast({
-            title: "PDF Opened",
-            description: "Click 'Save as PDF' in the new tab to download",
-          });
         } else {
-          throw new Error('Could not open PDF window');
+          throw new Error('Could not open print window - popup blocked?');
         }
+        
+        toast({
+          title: "Agreement ready",
+          description: "Agreement opened in new window for download.",
+        });
       } else {
-        const errorData = await response.json();
-        console.error('PDF generation error:', errorData);
-        throw new Error(errorData.message || 'Failed to generate PDF');
+        const errorText = await response.text();
+        console.error('PDF generation failed:', response.status, errorText);
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error('PDF download error:', error);
+      console.error('Download error:', error);
       toast({
         title: "Error",
-        description: "Failed to download PDF.",
+        description: `Failed to generate agreement PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
