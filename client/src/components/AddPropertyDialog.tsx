@@ -45,9 +45,10 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
   });
 
   // Get unique buildings/societies for autocomplete
-  const buildingOptions = societies.map(s => s.societyName).filter(name => 
-    buildingFilter ? name.toLowerCase().includes(buildingFilter.toLowerCase()) : true
-  );
+  const buildingOptions = societies
+    .map(s => s.societyName)
+    .filter(name => name && buildingFilter ? name.toLowerCase().includes(buildingFilter.toLowerCase()) : name)
+    .slice(0, 10); // Limit to 10 suggestions
 
   const form = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),
@@ -92,12 +93,15 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
     const society = societies.find(s => s.societyName === selectedBuilding);
     if (society) {
       form.setValue('society', society.societyName);
-      form.setValue('area', society.area);
-      form.setValue('city', society.city);
-      form.setValue('state', society.state);
-      form.setValue('pincode', society.pincode);
+      form.setValue('area', society.area || '');
+      form.setValue('city', society.city || '');
+      form.setValue('state', society.state || '');
+      form.setValue('pincode', society.pincode || '');
       form.setValue('district', society.district || '');
       form.setValue('landmark', society.landmark || '');
+    } else {
+      // If no matching society found, just set the building name
+      form.setValue('society', selectedBuilding);
     }
     setBuildingFilter("");
   };
@@ -198,14 +202,20 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
                             field.onChange(e);
                             setBuildingFilter(e.target.value);
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                              setBuildingFilter("");
+                            }
+                          }}
+                          placeholder="Start typing to search societies..."
                           data-testid="input-society" 
                         />
                         {buildingFilter && buildingOptions.length > 0 && (
-                          <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
-                            {buildingOptions.slice(0, 10).map((option, index) => (
+                          <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
+                            {buildingOptions.map((option, index) => (
                               <div
                                 key={index}
-                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
                                 onClick={() => handleBuildingSelect(option)}
                               >
                                 {option}
