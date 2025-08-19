@@ -59,6 +59,7 @@ Preferred communication style: Simple, everyday language.
 - **File Preview System**: Comprehensive preview functionality for all uploaded documents (PDF, image, etc.).
 - **Notarized Document Management**: Complete lifecycle management including upload, view, download, replace, and remove functionality with dedicated management interface and status tracking.
 - **Comprehensive Customer Management**: Super admin-only customer module with edit functionality, plain text password management, status control (activate/deactivate), agreement count display with clickable viewer, and smart deletion prevention for customers with existing agreements. Passwords stored in plain text format for administrative access. Enhanced August 19, 2025 with complete agreement management features including detailed agreement view modal, PDF download, Word document download, and notarized document download functionality matching the main agreements page.
+- **Professional Address Formatting**: Fixed address display in PDF documents to use proper line breaks instead of comma concatenation. Owner, tenant, and property addresses now display in clean, readable format with each address component on a separate line. Enhanced August 19, 2025 with improved template field mapping for OWNER_FULL_ADDRESS, TENANT_FULL_ADDRESS, and PROPERTY_FULL_ADDRESS fields.
 
 # External Dependencies
 

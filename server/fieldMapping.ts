@@ -775,7 +775,46 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
       propertyParts.push(convertToGujaratiNumerals(templateFields['PROPERTY_PINCODE'] || formData.propertyDetails?.pincode));
     }
     
-    templateFields['PROPERTY_FULL_ADDRESS'] = propertyParts.filter(Boolean).join(', ');
+    templateFields['PROPERTY_FULL_ADDRESS'] = propertyParts.filter(Boolean).join('<br/>');
+  }
+
+  // Create full addresses for Owner and Tenant (for all languages)
+  const createFullAddress = (prefix: string, details: any) => {
+    const addressParts = [];
+    if (details?.houseNumber || details?.address?.flatNo || templateFields[`${prefix}_HOUSE_NUMBER`]) {
+      addressParts.push(templateFields[`${prefix}_HOUSE_NUMBER`] || details?.houseNumber || details?.address?.flatNo);
+    }
+    if (details?.society || details?.address?.society || templateFields[`${prefix}_SOCIETY`]) {
+      addressParts.push(templateFields[`${prefix}_SOCIETY`] || details?.society || details?.address?.society);
+    }
+    if (details?.area || details?.address?.area || templateFields[`${prefix}_AREA`]) {
+      addressParts.push(templateFields[`${prefix}_AREA`] || details?.area || details?.address?.area);
+    }
+    if (details?.city || details?.address?.city || templateFields[`${prefix}_CITY`]) {
+      addressParts.push(templateFields[`${prefix}_CITY`] || details?.city || details?.address?.city);
+    }
+    if (details?.state || details?.address?.state || templateFields[`${prefix}_STATE`]) {
+      addressParts.push(templateFields[`${prefix}_STATE`] || details?.state || details?.address?.state);
+    }
+    if (details?.pincode || details?.address?.pincode || templateFields[`${prefix}_PINCODE`]) {
+      const pincode = templateFields[`${prefix}_PINCODE`] || details?.pincode || details?.address?.pincode;
+      if (templateLanguage === 'gujarati') {
+        addressParts.push(convertToGujaratiNumerals(pincode));
+      } else {
+        addressParts.push(pincode);
+      }
+    }
+    
+    return addressParts.filter(Boolean).join('<br/>');
+  };
+
+  // Generate full addresses
+  if (formData.ownerDetails) {
+    templateFields['OWNER_FULL_ADDRESS'] = createFullAddress('OWNER', formData.ownerDetails);
+  }
+  
+  if (formData.tenantDetails) {
+    templateFields['TENANT_FULL_ADDRESS'] = createFullAddress('TENANT', formData.tenantDetails);
   }
 
   return templateFields;
