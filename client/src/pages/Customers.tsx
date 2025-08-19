@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import CustomerModal from "@/components/CustomerModal";
 import CustomerEditModal from "@/components/CustomerEditModal";
 import CustomerAgreementsModal from "@/components/CustomerAgreementsModal";
+import PasswordManagementModal from "@/components/PasswordManagementModal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCustomers } from "@/hooks/useCustomers";
 import {
   Plus,
@@ -20,7 +22,8 @@ import {
   RotateCcw,
   Power,
   PowerOff,
-  AlertTriangle
+  AlertTriangle,
+  Key
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +32,7 @@ export default function Customers() {
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAgreementsModal, setShowAgreementsModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -81,6 +85,11 @@ export default function Customers() {
   const handleViewAgreements = (customer: any) => {
     setSelectedCustomer(customer);
     setShowAgreementsModal(true);
+  };
+
+  const handlePasswordManagement = (customer: any) => {
+    setSelectedCustomer(customer);
+    setShowPasswordModal(true);
   };
 
   const handleToggleStatus = async (customer: any) => {
@@ -239,36 +248,78 @@ export default function Customers() {
                         {new Date(customer.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-amber-600 hover:text-amber-900"
-                            onClick={() => handleEditCustomer(customer)}
-                            data-testid={`button-edit-customer-${customer.id}`}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className={customer.isActive ? "text-orange-600 hover:text-orange-900" : "text-green-600 hover:text-green-900"}
-                            onClick={() => handleToggleStatus(customer)}
-                            data-testid={`button-toggle-status-${customer.id}`}
-                          >
-                            {customer.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className={`${customer.agreementCount > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-900'}`}
-                            onClick={() => handleDeleteCustomer(customer)}
-                            disabled={customer.agreementCount > 0}
-                            data-testid={`button-delete-customer-${customer.id}`}
-                          >
-                            {customer.agreementCount > 0 ? <AlertTriangle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
-                          </Button>
-                        </div>
+                        <TooltipProvider>
+                          <div className="flex space-x-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-amber-600 hover:text-amber-900"
+                                  onClick={() => handleEditCustomer(customer)}
+                                  data-testid={`button-edit-customer-${customer.id}`}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Edit Customer</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-blue-600 hover:text-blue-900"
+                                  onClick={() => handlePasswordManagement(customer)}
+                                  data-testid={`button-password-${customer.id}`}
+                                >
+                                  <Key className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Password Management</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className={customer.isActive ? "text-orange-600 hover:text-orange-900" : "text-green-600 hover:text-green-900"}
+                                  onClick={() => handleToggleStatus(customer)}
+                                  data-testid={`button-toggle-status-${customer.id}`}
+                                >
+                                  {customer.isActive ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{customer.isActive ? "Deactivate Customer" : "Activate Customer"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className={`${customer.agreementCount > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-900'}`}
+                                  onClick={() => handleDeleteCustomer(customer)}
+                                  disabled={customer.agreementCount > 0}
+                                  data-testid={`button-delete-customer-${customer.id}`}
+                                >
+                                  {customer.agreementCount > 0 ? <AlertTriangle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{customer.agreementCount > 0 ? "Cannot delete: Has agreements" : "Delete Customer"}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TooltipProvider>
                       </td>
                     </tr>
                   ))}
@@ -326,6 +377,20 @@ export default function Customers() {
           setSelectedCustomer(null);
         }}
         customer={selectedCustomer}
+      />
+
+      <PasswordManagementModal
+        isOpen={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setSelectedCustomer(null);
+        }}
+        customer={selectedCustomer}
+        onPasswordReset={() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+          setShowPasswordModal(false);
+          setSelectedCustomer(null);
+        }}
       />
     </AdminLayout>
   );
