@@ -78,7 +78,7 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
       if (response.ok) {
         const data = await response.json();
         
-        // Create a temporary HTML page for PDF generation
+        // Create a temporary HTML page for PDF generation with proper styling
         const printWindow = window.open('', '_blank');
         if (printWindow) {
           printWindow.document.write(`
@@ -88,6 +88,16 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
               <title>Rental Agreement - ${agreement.agreementNumber || 'Agreement'}</title>
               <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
               <style>
+                .page-break-before {
+                  page-break-before: always;
+                }
+                .no-page-break {
+                  page-break-inside: avoid;
+                }
+                p{
+                  font-size:20px !important;
+                }
+                /* PDF-specific styling with conditional page numbering */
                 @page {
                   margin: 15mm 10mm 20mm 10mm;
                   @bottom-center { content: none; }
@@ -110,40 +120,82 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                   @top-left { content: none; }
                   @top-right { content: none; }
                 }
-                
+
                 body { 
                   font-family: ${agreement.language === 'gujarati' 
-                    ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
+                    ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif'
                     : agreement.language === 'hindi'
                     ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
                     : agreement.language === 'tamil'
                     ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
                     : agreement.language === 'marathi'
                     ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
-                    : 'Arial, sans-serif'}; 
+                    : 'Arial, sans-serif'};
                   margin: 0;
                   padding: 20px;
+                  font-size: 16px;
                   line-height: 1.6;
-                  background: white;
-                  font-size: 14px;
-                  text-rendering: optimizeLegibility;
-                  -webkit-font-smoothing: antialiased;
-                  -moz-osx-font-smoothing: grayscale;
-                  font-feature-settings: "kern" 1, "liga" 1;
+                  color: #333;
+                }
+                
+                .page-break-before {
+                  page-break-before: always;
+                }
+                
+                .no-page-break {
+                  page-break-inside: avoid;
                 }
                 
                 @media print {
-                  body { margin: 0; }
-                  .no-print { display: none !important; }
+                  body { margin: 0; padding: 0; }
+                }
+                
+                /* Language-specific styles */
+                .gujarati { 
+                  font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif;
+                  font-size: 18px;
+                }
+                
+                .hindi, .marathi { 
+                  font-family: "Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif;
+                  font-size: 18px;
+                }
+                
+                .tamil { 
+                  font-family: "Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif;
+                  font-size: 18px;
+                }
+                
+                .document-image {
+                  max-width: 100%;
+                  height: auto;
+                  margin: 20px auto;
+                  display: block;
+                  border: 1px solid #ddd;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                  border-radius: 4px;
+                }
+                
+                .document-image-container {
+                  text-align: center;
+                  margin: 30px 0;
+                }
+                
+                .document-title {
+                  font-weight: bold;
+                  margin-bottom: 15px;
+                  text-align: center;
+                  font-size: 16px;
+                  color: #333;
                 }
               </style>
             </head>
-            <body>
+            <body class="${agreement.language || 'english'}">
               <div class="no-print" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 8px; font-size: 14px;">Save as PDF</button>
+                <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 8px; font-size: 14px;">Print / Save as PDF</button>
                 <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">Close</button>
               </div>
-              <div class="agreement-content">
+              <div class="document-content">
                 ${data.html}
               </div>
             </body>
