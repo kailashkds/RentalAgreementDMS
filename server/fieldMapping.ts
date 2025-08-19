@@ -1108,8 +1108,28 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
 
   // Always inject the complete CSS with page numbering for all templates
   if (!processedHtml.includes('<style')) {
-    // Add CSS at the beginning of the HTML
-    processedHtml = pageBreakCSS + processedHtml;
+    // Add CSS at the beginning of the HTML with aggressive text spacing overrides
+    const cssWithOverrides = pageBreakCSS.replace(
+      '<style>',
+      `<style>
+/* CRITICAL: Override any existing text justification that causes spacing issues */
+* {
+  text-align: left !important;
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
+  text-justify: none !important;
+}
+
+p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, strong, b {
+  text-align: left !important;
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
+  text-justify: none !important;
+}
+
+`
+    );
+    processedHtml = cssWithOverrides + processedHtml;
   } else {
     // If there's already a style tag, replace it with our complete CSS
     const styleMatch = processedHtml.match(/<style[^>]*>[\s\S]*?<\/style>/i);
@@ -1118,9 +1138,24 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
       const existingStyle = styleMatch[0];
       const existingContent = existingStyle.replace(/<\/?style[^>]*>/gi, '');
       
-      // Create new style with both existing content and our page numbering CSS
+      // Create new style with clean CSS that overrides any existing justification
       const newStyle = `<style>
-${existingContent}
+/* Complete override of existing styles to fix text spacing issues */
+
+/* CRITICAL: Override any existing text justification that causes spacing issues */
+* {
+  text-align: left !important;
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
+  text-justify: none !important;
+}
+
+p, div, span, h1, h2, h3, h4, h5, h6, li, td, th, strong, b {
+  text-align: left !important;
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
+  text-justify: none !important;
+}
 
 /* PDF-specific styling with conditional page numbering */
 @page {
