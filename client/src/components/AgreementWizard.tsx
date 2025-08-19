@@ -2352,11 +2352,21 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
               <DialogTitle className="text-xl font-bold">
                 {editingAgreement ? `Edit Agreement ${editingAgreement.agreementNumber || ''}` : t("createNewAgreement")}
               </DialogTitle>
-              {editingAgreement && (
-                <div className="bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  Editing Mode
-                </div>
-              )}
+              <div className="flex items-center space-x-3">
+                {editingAgreement && (
+                  <div className="bg-amber-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    Editing Mode
+                  </div>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="text-white hover:bg-white/20 border border-white/30"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             
             {/* Progress Bar */}
@@ -2395,6 +2405,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 {t("previous")}
               </Button>
               <div className="flex space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  className="text-gray-600 hover:bg-gray-100"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Close
+                </Button>
                 <Button
                   type="button"
                   variant="outline"

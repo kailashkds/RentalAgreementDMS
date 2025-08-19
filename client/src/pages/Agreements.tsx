@@ -1052,18 +1052,18 @@ export default function Agreements() {
                 </div>
               </div>
 
-              {/* Additional Clauses */}
-              {viewingAgreement.additionalClauses && viewingAgreement.additionalClauses.length > 0 && (
-                <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                  <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center">
-                      <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-xs font-bold text-white">5</span>
-                      </div>
-                      Additional Clauses
-                    </h3>
-                  </div>
-                  <div className="bg-slate-50 p-6">
+              {/* Additional Clauses - Step 5 */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center">
+                    <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-xs font-bold text-white">5</span>
+                    </div>
+                    Additional Clauses
+                  </h3>
+                </div>
+                <div className="bg-slate-50 p-6">
+                  {viewingAgreement.additionalClauses && viewingAgreement.additionalClauses.length > 0 ? (
                     <div className="space-y-3">
                       {viewingAgreement.additionalClauses.map((clause: any, index: number) => (
                         <div key={index} className="bg-white p-4 rounded-lg border border-slate-200">
@@ -1071,70 +1071,51 @@ export default function Agreements() {
                         </div>
                       ))}
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Documents */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center">
-                    <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-xs font-bold text-white">6</span>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-gray-500">No additional clauses added</p>
                     </div>
-                    Documents
-                  </h3>
-                </div>
-                <div className="bg-slate-50 p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">Owner Documents</h4>
-                      <div className="space-y-2">
-                        <div>
-                          <label className="text-xs font-medium text-slate-600">Aadhar Card</label>
-                          <p className="text-sm text-gray-900">{viewingAgreement.ownerDocuments?.aadhar ? 'Uploaded' : 'Not uploaded'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600">PAN Card</label>
-                          <p className="text-sm text-gray-900">{viewingAgreement.ownerDocuments?.pan ? 'Uploaded' : 'Not uploaded'}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">Tenant Documents</h4>
-                      <div className="space-y-2">
-                        <div>
-                          <label className="text-xs font-medium text-slate-600">Aadhar Card</label>
-                          <p className="text-sm text-gray-900">{viewingAgreement.tenantDocuments?.aadhar ? 'Uploaded' : 'Not uploaded'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600">PAN Card</label>
-                          <p className="text-sm text-gray-900">{viewingAgreement.tenantDocuments?.pan ? 'Uploaded' : 'Not uploaded'}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="md:col-span-2">
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">Property Documents</h4>
-                      <div>
-                        <label className="text-xs font-medium text-slate-600">Property Documents</label>
-                        <p className="text-sm text-gray-900">{viewingAgreement.propertyDocuments?.urls ? 'Uploaded' : 'Not uploaded'}</p>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
-              {/* Agreement Information */}
+              {/* Agreement Information & Actions */}
               <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                 <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
-                    <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-xs font-bold text-white">7</span>
-                    </div>
-                    Agreement Information
+                    <Download className="h-5 w-5 mr-3 text-white" />
+                    Agreement Actions
                   </h3>
                 </div>
                 <div className="bg-slate-50 p-6">
+                  <div className="flex flex-wrap gap-3 mb-6">
+                    <Button
+                      onClick={() => downloadAgreementPdf(viewingAgreement)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 shadow-sm"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </Button>
+
+                    <Button
+                      onClick={() => downloadWordDocument(viewingAgreement)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-sm"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Download Word
+                    </Button>
+                    
+                    {(viewingAgreement.notarizedDocument?.url || viewingAgreement.notarizedDocumentUrl) && (
+                      <Button
+                        onClick={() => downloadNotarizedDocument(viewingAgreement)}
+                        className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 shadow-sm"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Download Notarized Document
+                      </Button>
+                    )}
+                  </div>
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
                       <label className="text-sm font-medium text-slate-700">Agreement Number</label>

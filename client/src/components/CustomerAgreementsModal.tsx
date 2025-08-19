@@ -376,141 +376,224 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
           </DialogHeader>
           
           <div className="space-y-6 pt-6">
-            {/* Agreement Information */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Agreement Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Agreement Number</label>
-                  <p className="mt-1 text-sm text-gray-900 font-medium">{selectedAgreement.agreementNumber || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Language</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedAgreement.language || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Status</label>
-                  <Badge variant="outline" className="mt-1">
-                    {selectedAgreement.status || 'Active'}
-                  </Badge>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Agreement Date</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedAgreement.agreementDate || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Start Date</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedAgreement.startDate || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">End Date</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedAgreement.endDate || 'Not provided'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Rental Terms */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Rental Terms</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Monthly Rent</label>
-                  <p className="mt-1 text-lg text-green-600 font-bold">₹{selectedAgreement.rentalTerms?.monthlyRent || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Security Deposit</label>
-                  <p className="mt-1 text-lg text-blue-600 font-bold">₹{selectedAgreement.rentalTerms?.securityDeposit || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Duration</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedAgreement.rentalTerms?.duration || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Lock-in Period</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedAgreement.rentalTerms?.lockInPeriod || 'Not provided'} months</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Notice Period</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedAgreement.rentalTerms?.noticePeriod || 'Not provided'} months</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Rent Due Date</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedAgreement.rentalTerms?.rentDueDate || 'Not provided'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Property Information */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Property Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Property Address</label>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {selectedAgreement.propertyDetails?.address ? 
-                      `${selectedAgreement.propertyDetails.address.flatNo || ''}, ${selectedAgreement.propertyDetails.address.society || ''}, ${selectedAgreement.propertyDetails.address.area || ''}, ${selectedAgreement.propertyDetails.address.city || ''}, ${selectedAgreement.propertyDetails.address.state || ''} - ${selectedAgreement.propertyDetails.address.pincode || ''}` 
-                      : 'Not provided'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Property Type & Purpose</label>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {selectedAgreement.propertyDetails?.type || 'Not provided'} - {selectedAgreement.propertyDetails?.purpose || 'Not provided'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Parties Information */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Parties Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="text-md font-medium text-gray-800 mb-2">Owner/Landlord</h4>
-                  <div className="space-y-2">
-                    <p className="text-sm"><span className="font-medium">Name:</span> {selectedAgreement.ownerDetails?.name || 'Not provided'}</p>
-                    <p className="text-sm"><span className="font-medium">Mobile:</span> {selectedAgreement.ownerDetails?.mobile || 'Not provided'}</p>
-                    <p className="text-sm"><span className="font-medium">Email:</span> {selectedAgreement.ownerDetails?.email || 'Not provided'}</p>
+            {/* Step 1: Customer & Language Selection */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-xs font-bold text-white">1</span>
                   </div>
-                </div>
-                <div>
-                  <h4 className="text-md font-medium text-gray-800 mb-2">Tenant</h4>
-                  <div className="space-y-2">
-                    <p className="text-sm"><span className="font-medium">Name:</span> {selectedAgreement.tenantDetails?.name || 'Not provided'}</p>
-                    <p className="text-sm"><span className="font-medium">Mobile:</span> {selectedAgreement.tenantDetails?.mobile || 'Not provided'}</p>
-                    <p className="text-sm"><span className="font-medium">Email:</span> {selectedAgreement.tenantDetails?.email || 'Not provided'}</p>
+                  Customer & Language Selection
+                </h3>
+              </div>
+              <div className="bg-slate-50 p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Customer</label>
+                    <p className="mt-1 text-sm text-gray-900 font-medium">{customer?.name || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Mobile</label>
+                    <p className="mt-1 text-sm text-gray-900">{customer?.mobile || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Language</label>
+                    <p className="mt-1 text-sm text-gray-900 capitalize">{selectedAgreement.language || 'English'}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Download Actions */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Download Options</h3>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={() => downloadAgreementPdf(selectedAgreement)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  PDF
-                </Button>
-                <Button
-                  onClick={() => downloadWordDocument(selectedAgreement)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Word
-                </Button>
-                {(selectedAgreement.notarizedDocument?.url || selectedAgreement.notarizedDocumentUrl) && (
-                  <Button
-                    onClick={() => downloadNotarizedDocument(selectedAgreement)}
-                    className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Document
-                  </Button>
-                )}
+            {/* Step 2: Owner Details */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-xs font-bold text-white">2</span>
+                  </div>
+                  Owner Details
+                </h3>
+              </div>
+              <div className="bg-slate-50 p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Full Name</label>
+                    <p className="mt-1 text-sm text-gray-900 font-medium">{selectedAgreement.ownerDetails?.name || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Mobile Number</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.ownerDetails?.mobile || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Email Address</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.ownerDetails?.email || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Age</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.ownerDetails?.age || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Occupation</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.ownerDetails?.occupation || 'Not provided'}</p>
+                  </div>
+                  <div className="col-span-full">
+                    <label className="text-sm font-medium text-slate-700">Address</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedAgreement.ownerDetails?.address ? 
+                        `${selectedAgreement.ownerDetails.address.flatNo || ''}, ${selectedAgreement.ownerDetails.address.society || ''}, ${selectedAgreement.ownerDetails.address.area || ''}, ${selectedAgreement.ownerDetails.address.city || ''}, ${selectedAgreement.ownerDetails.address.state || ''} - ${selectedAgreement.ownerDetails.address.pincode || ''}` 
+                        : 'Not provided'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3: Tenant Details */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-xs font-bold text-white">3</span>
+                  </div>
+                  Tenant Details
+                </h3>
+              </div>
+              <div className="bg-slate-50 p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Full Name</label>
+                    <p className="mt-1 text-sm text-gray-900 font-medium">{selectedAgreement.tenantDetails?.name || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Mobile Number</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.tenantDetails?.mobile || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Email Address</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.tenantDetails?.email || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Age</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.tenantDetails?.age || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Occupation</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.tenantDetails?.occupation || 'Not provided'}</p>
+                  </div>
+                  <div className="col-span-full">
+                    <label className="text-sm font-medium text-slate-700">Address</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedAgreement.tenantDetails?.address ? 
+                        `${selectedAgreement.tenantDetails.address.flatNo || ''}, ${selectedAgreement.tenantDetails.address.society || ''}, ${selectedAgreement.tenantDetails.address.area || ''}, ${selectedAgreement.tenantDetails.address.city || ''}, ${selectedAgreement.tenantDetails.address.state || ''} - ${selectedAgreement.tenantDetails.address.pincode || ''}` 
+                        : 'Not provided'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 4: Property & Rental Details */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-xs font-bold text-white">4</span>
+                  </div>
+                  Property & Rental Details
+                </h3>
+              </div>
+              <div className="bg-slate-50 p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Monthly Rent</label>
+                    <p className="mt-1 text-lg text-green-600 font-bold">₹{selectedAgreement.rentalTerms?.monthlyRent || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Security Deposit</label>
+                    <p className="mt-1 text-lg text-blue-600 font-bold">₹{selectedAgreement.rentalTerms?.securityDeposit || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Duration</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.rentalTerms?.duration || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Notice Period</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.rentalTerms?.noticePeriod || 'Not provided'} months</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Property Type</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.propertyDetails?.type || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700">Purpose</label>
+                    <p className="mt-1 text-sm text-gray-900">{selectedAgreement.propertyDetails?.purpose || 'Not provided'}</p>
+                  </div>
+                  <div className="col-span-full">
+                    <label className="text-sm font-medium text-slate-700">Property Address</label>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedAgreement.propertyDetails?.address ? 
+                        `${selectedAgreement.propertyDetails.address.flatNo || ''}, ${selectedAgreement.propertyDetails.address.society || ''}, ${selectedAgreement.propertyDetails.address.area || ''}, ${selectedAgreement.propertyDetails.address.city || ''}, ${selectedAgreement.propertyDetails.address.state || ''} - ${selectedAgreement.propertyDetails.address.pincode || ''}` 
+                        : 'Not provided'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 5: Additional Clauses & Documents */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+              <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-xs font-bold text-white">5</span>
+                  </div>
+                  Additional Clauses & Actions
+                </h3>
+              </div>
+              <div className="bg-slate-50 p-6">
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">Additional Clauses</h4>
+                  {selectedAgreement.additionalClauses && selectedAgreement.additionalClauses.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedAgreement.additionalClauses.map((clause: any, index: number) => (
+                        <div key={index} className="bg-white p-3 rounded-lg border border-slate-200">
+                          <p className="text-sm text-gray-900">{clause.text || clause}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No additional clauses added</p>
+                  )}
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">Download Options</h4>
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={() => downloadAgreementPdf(selectedAgreement)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      PDF
+                    </Button>
+                    <Button
+                      onClick={() => downloadWordDocument(selectedAgreement)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Word
+                    </Button>
+                    {(selectedAgreement.notarizedDocument?.url || selectedAgreement.notarizedDocumentUrl) && (
+                      <Button
+                        onClick={() => downloadNotarizedDocument(selectedAgreement)}
+                        className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Document
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
