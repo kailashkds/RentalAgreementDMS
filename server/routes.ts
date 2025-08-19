@@ -426,47 +426,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const htmlToWordParagraphs = (html: string) => {
         const paragraphs = [];
         
-        // Handle images first - extract them and create placeholders
-        const imageMatches = html.match(/<img[^>]+>/gi) || [];
-        let imageCount = 0;
-        
-        // Process images and add them to paragraphs
-        for (const imgTag of imageMatches) {
-          const srcMatch = imgTag.match(/src="([^"]+)"/);
-          if (srcMatch && srcMatch[1]) {
-            const imageSrc = srcMatch[1];
-            
-            // Add a paragraph explaining the document image
-            let documentType = 'Document';
-            if (imageSrc.includes('aadhar') || imgTag.includes('Aadhar') || imgTag.includes('Aadhaar')) {
-              documentType = 'Aadhaar Card';
-            } else if (imageSrc.includes('pan') || imgTag.includes('PAN')) {
-              documentType = 'PAN Card';
-            } else if (imageSrc.includes('property') || imgTag.includes('Property')) {
-              documentType = 'Property Document';
-            }
-            
-            const docPara = createParagraph(`[${documentType} Image - Please attach original document]`, {
-              size: 24,
-              bold: true,
-              alignment: AlignmentType.CENTER,
-              spacing: { before: 240, after: 240 }
-            });
-            if (docPara) paragraphs.push(docPara);
-            
-            // Add a border placeholder
-            const borderPara = createParagraph('_'.repeat(80), {
-              size: 20,
-              alignment: AlignmentType.CENTER,
-              spacing: { after: 240 }
-            });
-            if (borderPara) paragraphs.push(borderPara);
-          }
-        }
+        // Don't process images here - we'll handle them in separate document sections
+        // Just process the main text content
         
         // Remove images from HTML for text processing
         let processedContent = html
-          .replace(/<img[^>]*>/gi, '\n\n[DOCUMENT_IMAGE]\n\n')  // Replace images with placeholders
+          .replace(/<img[^>]*>/gi, '')  // Remove images completely for main text
           .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
           .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
           .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
@@ -480,7 +445,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
-          .replace(/\[DOCUMENT_IMAGE\]/g, '') // Remove document image placeholders from text
+
           .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
           .trim();
 
@@ -745,6 +710,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ]
       });
       documentParagraphs.push(witnessTable);
+
+      // Add document sections if documents exist (matching PDF layout exactly)
+      let hasDocuments = false;
+
+      // Landlord documents section
+      if (safeAgreementData.ownerDetails?.aadharUrl || safeAgreementData.ownerDetails?.panUrl) {
+        hasDocuments = true;
+        // Page break for landlord documents
+        documentParagraphs.push(new Paragraph({ 
+          children: [new TextRun({ text: '' })],
+          pageBreakBefore: true
+        }));
+        
+        const landlordDocsTitle = createParagraph("LANDLORD DOCUMENTS", {
+          size: 32,
+          bold: true,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 480 }
+        });
+        if (landlordDocsTitle) documentParagraphs.push(landlordDocsTitle);
+
+        if (safeAgreementData.ownerDetails?.aadharUrl) {
+          const aadharTitle = createParagraph("Aadhaar Card:", {
+            size: 28,
+            bold: false,
+            alignment: AlignmentType.LEFT,
+            spacing: { before: 240, after: 240 }
+          });
+          if (aadharTitle) documentParagraphs.push(aadharTitle);
+          
+          const aadharPath = createParagraph(safeAgreementData.ownerDetails.aadharUrl, {
+            size: 24,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 480 }
+          });
+          if (aadharPath) documentParagraphs.push(aadharPath);
+        }
+
+        if (safeAgreementData.ownerDetails?.panUrl) {
+          // Page break for PAN
+          documentParagraphs.push(new Paragraph({ 
+            children: [new TextRun({ text: '' })],
+            pageBreakBefore: true
+          }));
+          
+          const panTitle = createParagraph("PAN Card:", {
+            size: 28,
+            bold: false,
+            alignment: AlignmentType.LEFT,
+            spacing: { before: 240, after: 240 }
+          });
+          if (panTitle) documentParagraphs.push(panTitle);
+          
+          const panPath = createParagraph(safeAgreementData.ownerDetails.panUrl, {
+            size: 24,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 480 }
+          });
+          if (panPath) documentParagraphs.push(panPath);
+        }
+      }
+
+      // Tenant documents section
+      if (safeAgreementData.tenantDetails?.aadharUrl || safeAgreementData.tenantDetails?.panUrl) {
+        hasDocuments = true;
+        // Page break for tenant documents
+        documentParagraphs.push(new Paragraph({ 
+          children: [new TextRun({ text: '' })],
+          pageBreakBefore: true
+        }));
+        
+        const tenantDocsTitle = createParagraph("TENANT DOCUMENTS", {
+          size: 32,
+          bold: true,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 480 }
+        });
+        if (tenantDocsTitle) documentParagraphs.push(tenantDocsTitle);
+
+        if (safeAgreementData.tenantDetails?.aadharUrl) {
+          const aadharTitle = createParagraph("Aadhaar Card:", {
+            size: 28,
+            bold: false,
+            alignment: AlignmentType.LEFT,
+            spacing: { before: 240, after: 240 }
+          });
+          if (aadharTitle) documentParagraphs.push(aadharTitle);
+          
+          const aadharPath = createParagraph(safeAgreementData.tenantDetails.aadharUrl, {
+            size: 24,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 480 }
+          });
+          if (aadharPath) documentParagraphs.push(aadharPath);
+        }
+
+        if (safeAgreementData.tenantDetails?.panUrl) {
+          // Page break for PAN
+          documentParagraphs.push(new Paragraph({ 
+            children: [new TextRun({ text: '' })],
+            pageBreakBefore: true
+          }));
+          
+          const panTitle = createParagraph("PAN Card:", {
+            size: 28,
+            bold: false,
+            alignment: AlignmentType.LEFT,
+            spacing: { before: 240, after: 240 }
+          });
+          if (panTitle) documentParagraphs.push(panTitle);
+          
+          const panPath = createParagraph(safeAgreementData.tenantDetails.panUrl, {
+            size: 24,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 480 }
+          });
+          if (panPath) documentParagraphs.push(panPath);
+        }
+      }
+
+      // Property documents section
+      if (safeAgreementData.propertyDocuments?.url) {
+        hasDocuments = true;
+        // Page break for property documents
+        documentParagraphs.push(new Paragraph({ 
+          children: [new TextRun({ text: '' })],
+          pageBreakBefore: true
+        }));
+        
+        const propertyDocsTitle = createParagraph("PROPERTY DOCUMENTS", {
+          size: 32,
+          bold: true,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 480 }
+        });
+        if (propertyDocsTitle) documentParagraphs.push(propertyDocsTitle);
+        
+        const propertyPath = createParagraph(safeAgreementData.propertyDocuments.url, {
+          size: 24,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 480 }
+        });
+        if (propertyPath) documentParagraphs.push(propertyPath);
+      }
 
       console.log(`[Word Generation] Created ${documentParagraphs.length} structured elements for Word document`);
 
