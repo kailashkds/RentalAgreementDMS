@@ -390,103 +390,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       };
 
-      // 1. Title
-      const titlePara = createParagraph("RENT AGREEMENT", {
-        size: 44, // 22pt for title
-        bold: true,
-        alignment: AlignmentType.CENTER,
-        spacing: { before: 0, after: 240 }
-      });
-      if (titlePara) documentParagraphs.push(titlePara);
+      // Helper function to convert HTML to Word paragraphs, handling <br> tags properly
+      const htmlToWordParagraphs = (html: string) => {
+        const paragraphs = [];
+        
+        // First, convert <br> tags to paragraph breaks
+        let processedContent = html
+          .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
+          .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
+          .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
+          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n') // Handle headings
+          .replace(/<strong>(.*?)<\/strong>/gi, '$1') // Remove strong tags but keep text
+          .replace(/<b>(.*?)<\/b>/gi, '$1')  // Remove bold tags but keep text
+          .replace(/<[^>]*>/g, '')          // Remove all other HTML tags
+          .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
+          .replace(/&amp;/gi, '&')          // Convert &amp; to &
+          .replace(/&lt;/gi, '<')           // Convert &lt; to <
+          .replace(/&gt;/gi, '>')           // Convert &gt; to >
+          .replace(/&quot;/gi, '"')         // Convert &quot; to "
+          .replace(/&#39;/gi, "'")          // Convert &#39; to '
+          .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
+          .trim();
 
-      // 2. Opening statement
-      const openingText = `This Agreement of Rent is made on ${safeAgreementData.agreementDate || '[DATE]'} by and between`;
-      const openingPara = createParagraph(openingText, {
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { after: 120 }
-      });
-      if (openingPara) documentParagraphs.push(openingPara);
+        // Split by double newlines to create paragraphs
+        const textBlocks = processedContent.split('\n\n').filter(block => block.trim());
+        
+        textBlocks.forEach(block => {
+          const trimmedBlock = block.trim();
+          if (trimmedBlock) {
+            // Check if this looks like a title (all caps, short, centered content)
+            const isTitle = trimmedBlock.length < 100 && trimmedBlock === trimmedBlock.toUpperCase() && 
+                           (trimmedBlock.includes('RENT AGREEMENT') || trimmedBlock.includes('RENTAL AGREEMENT'));
+            
+            // Check if this looks like a heading (starts with number, short)
+            const isHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
+            
+            const para = createParagraph(trimmedBlock, {
+              size: isTitle ? 44 : (isHeading ? 32 : 28),
+              bold: isTitle || isHeading,
+              alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+              spacing: { 
+                before: isTitle ? 240 : (isHeading ? 160 : 0),
+                after: isTitle ? 320 : (isHeading ? 160 : 120)
+              }
+            });
+            
+            if (para) {
+              paragraphs.push(para);
+            }
+          }
+        });
+        
+        return paragraphs;
+      };
 
-      // 3. Owner details
-      const ownerDetails = `${(safeAgreementData.ownerDetails?.name || '[OWNER_NAME]').toUpperCase()}
-Age:${safeAgreementData.ownerDetails?.age || '[AGE]'}, Occupation:${safeAgreementData.ownerDetails?.occupation || '[OCCUPATION]'}
-Address:${[
-        safeAgreementData.ownerDetails?.houseNumber,
-        safeAgreementData.ownerDetails?.society,
-        safeAgreementData.ownerDetails?.area,
-        safeAgreementData.ownerDetails?.city,
-        safeAgreementData.ownerDetails?.state,
-        safeAgreementData.ownerDetails?.pincode
-      ].filter(Boolean).join(',').toUpperCase() || '[ADDRESS]'}`;
-      
-      const ownerPara = createParagraph(ownerDetails, {
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { after: 80 }
-      });
-      if (ownerPara) documentParagraphs.push(ownerPara);
+      // Convert the processed HTML to Word paragraphs
+      const convertedParagraphs = htmlToWordParagraphs(cleanedHtml);
+      documentParagraphs.push(...convertedParagraphs);
 
-      const landlordLabel = createParagraph("Hereinafter called the LANDLORD of the FIRST PART", {
-        bold: true,
-        italic: true,
-        alignment: AlignmentType.RIGHT,
-        spacing: { after: 160 }
-      });
-      if (landlordLabel) documentParagraphs.push(landlordLabel);
 
-      // 4. Tenant details
-      const tenantDetails = `${(safeAgreementData.tenantDetails?.name || '[TENANT_NAME]').toUpperCase()}
-Age:${safeAgreementData.tenantDetails?.age || '[AGE]'}, Occupation:${(safeAgreementData.tenantDetails?.occupation || '[OCCUPATION]').toUpperCase()}
-Address:${[
-        safeAgreementData.tenantDetails?.houseNumber,
-        safeAgreementData.tenantDetails?.society,
-        safeAgreementData.tenantDetails?.area,
-        safeAgreementData.tenantDetails?.city,
-        safeAgreementData.tenantDetails?.state,
-        safeAgreementData.tenantDetails?.pincode
-      ].filter(Boolean).join(',') || '[ADDRESS]'}`;
-      
-      const tenantPara = createParagraph(tenantDetails, {
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { after: 80 }
-      });
-      if (tenantPara) documentParagraphs.push(tenantPara);
 
-      const tenantLabel = createParagraph("Hereinafter called the TENANT of the SECOND PART", {
-        bold: true,
-        italic: true,
-        alignment: AlignmentType.RIGHT,
-        spacing: { after: 160 }
-      });
-      if (tenantLabel) documentParagraphs.push(tenantLabel);
 
-      // 5. Property details
-      const propertyDetails = `Property Address:${[
-        safeAgreementData.propertyDetails?.houseNumber,
-        safeAgreementData.propertyDetails?.society,
-        safeAgreementData.propertyDetails?.area,
-        safeAgreementData.propertyDetails?.city,
-        safeAgreementData.propertyDetails?.state,
-        safeAgreementData.propertyDetails?.pincode
-      ].filter(Boolean).join(',').toUpperCase() || '[PROPERTY_ADDRESS]'}
-Property Purpose:${safeAgreementData.propertyDetails?.purpose || '[PURPOSE]'}
-Rent Amount:Rs.${safeAgreementData.rentalTerms?.monthlyRent || '[AMOUNT]'} (Rupees ${safeAgreementData.rentalTerms?.monthlyRentWords || '[AMOUNT_WORDS]'}) Per Month`;
-      
-      const propertyPara = createParagraph(propertyDetails, {
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { after: 160 }
-      });
-      if (propertyPara) documentParagraphs.push(propertyPara);
 
-      // 6. Agreement header
-      const agreementHeader = createParagraph("NOW THIS AGREEMENT WITNESSETH AND IT IS HEREBY AGREED BY AND BETWEEN THE PARTIES AS UNDER:", {
-        size: 32, // 16pt
-        bold: true,
-        alignment: AlignmentType.LEFT,
-        spacing: { before: 160, after: 160 }
-      });
-      if (agreementHeader) documentParagraphs.push(agreementHeader);
 
-      // 7. Agreement clauses (numbered list)
+
+      console.log(`[Word Generation] Created ${documentParagraphs.length} structured elements for Word document`);
+
+      // Create additional clauses (hardcoded for now - will be replaced with template processing)
       const clauses = [
         `That the tenancy shall be initially for the period of with effect from ${safeAgreementData.rentalTerms?.startDate || '[START_DATE]'} to ${safeAgreementData.rentalTerms?.endDate || '[END_DATE]'} and will be renewed every 11 months with mutual consent of both the landlord and tenant.`,
         
