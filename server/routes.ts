@@ -121,11 +121,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const validatePasswordStrength = (password: string): string | null => {
+    if (!password || password.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "Password must contain at least one number";
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return "Password must contain at least one special character";
+    }
+    return null;
+  };
+
   app.patch("/api/customers/:id/reset-password", async (req, res) => {
     try {
       const { newPassword } = req.body;
-      if (!newPassword || newPassword.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      
+      const validationError = validatePasswordStrength(newPassword);
+      if (validationError) {
+        return res.status(400).json({ message: validationError });
       }
       
       const customer = await storage.resetCustomerPassword(req.params.id, newPassword);

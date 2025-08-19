@@ -37,11 +37,40 @@ export default function PasswordManagementModal({
 
   if (!customer) return null;
 
+  const validatePassword = (password: string): string | null => {
+    if (!password || password.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    if (!/[A-Z]/.test(password)) {
+      return "Password must contain at least one uppercase letter";
+    }
+    if (!/[a-z]/.test(password)) {
+      return "Password must contain at least one lowercase letter";
+    }
+    if (!/[0-9]/.test(password)) {
+      return "Password must contain at least one number";
+    }
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return "Password must contain at least one special character";
+    }
+    return null;
+  };
+
   const handleResetPassword = async () => {
     if (!newPassword.trim()) {
       toast({
         title: "Error",
         description: "Please enter a new password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const validationError = validatePassword(newPassword.trim());
+    if (validationError) {
+      toast({
+        title: "Weak Password",
+        description: validationError,
         variant: "destructive",
       });
       return;
@@ -144,6 +173,16 @@ export default function PasswordManagementModal({
               placeholder="Enter new password"
               data-testid="input-new-password"
             />
+            <div className="text-xs text-gray-600 space-y-1">
+              <p className="font-medium">Password Requirements:</p>
+              <ul className="list-disc list-inside space-y-0.5 ml-2">
+                <li>At least 8 characters</li>
+                <li>One uppercase letter (A-Z)</li>
+                <li>One lowercase letter (a-z)</li>
+                <li>One number (0-9)</li>
+                <li>One special character (!@#$%^&*)</li>
+              </ul>
+            </div>
           </div>
 
           {/* Actions */}
