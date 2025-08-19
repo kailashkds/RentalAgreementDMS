@@ -465,15 +465,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         );
 
-        // Process text content with proper <br> handling
-        const textContent = cleanHtml
-          .replace(/<br\s*\/?>/gi, '\n')      // Convert <br> to newlines
-          .replace(/<\/p>/gi, '\n\n')         // Convert </p> to paragraph breaks
-          .replace(/<p[^>]*>/gi, '')          // Remove <p> tags
-          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n')
+        // Advanced HTML processing with proper line break handling
+        let textContent = cleanHtml;
+        
+        // First handle specific HTML elements that need special processing
+        textContent = textContent
+          .replace(/<br\s*\/?>/gi, '||LINEBREAK||')  // Mark line breaks
+          .replace(/<\/p>/gi, '||PARAGRAPH||')       // Mark paragraph breaks
+          .replace(/<p[^>]*>/gi, '')                 // Remove opening p tags
+          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '||PARAGRAPH||$1||PARAGRAPH||')
           .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '$1')
           .replace(/<b[^>]*>(.*?)<\/b>/gi, '$1')
-          .replace(/<[^>]*>/g, '')
+          .replace(/<[^>]*>/g, '')                   // Remove remaining HTML tags
           .replace(/&nbsp;/gi, ' ')
           .replace(/&amp;/gi, '&')
           .replace(/&lt;/gi, '<')
@@ -482,11 +485,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/&#39;/gi, "'")
           .replace(/<PHOTO_PLACEHOLDER>/g, '')
           .replace(/<DOC_PLACEHOLDER>/g, '')
-          .replace(/\s+/g, ' ')
           .trim();
 
-        // Create Word paragraphs with proper styling
-        const paragraphTexts = textContent.split('\n\n').filter(text => text.trim());
+        // Now convert markers to actual breaks and create proper paragraph structure
+        textContent = textContent
+          .replace(/\|\|LINEBREAK\|\|/g, '\n')        // Convert line break markers
+          .replace(/\|\|PARAGRAPH\|\|/g, '\n\n')      // Convert paragraph markers
+          .replace(/\s+/g, ' ')                       // Normalize spaces
+          .replace(/\n\s*\n/g, '\n\n')               // Normalize line breaks
+          .trim();
+
+        // Split into individual lines and paragraphs
+        const lines = textContent.split('\n');
+        const paragraphTexts: string[] = [];
+        let currentParagraph = '';
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) {
+            // Empty line indicates paragraph break
+            if (currentParagraph.trim()) {
+              paragraphTexts.push(currentParagraph.trim());
+              currentParagraph = '';
+            }
+          } else {
+            // Add line to current paragraph
+            if (currentParagraph) {
+              currentParagraph += ' ' + trimmedLine;
+            } else {
+              currentParagraph = trimmedLine;
+            }
+          }
+        }
+        
+        // Add the last paragraph if it exists
+        if (currentParagraph.trim()) {
+          paragraphTexts.push(currentParagraph.trim());
+        }
         
         paragraphTexts.forEach(text => {
           const trimmedText = text.trim();
