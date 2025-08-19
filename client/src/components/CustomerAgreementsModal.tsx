@@ -58,49 +58,88 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
       
       const data = await response.json();
       
-      // Use the same client-side PDF generation as the main app
-      const { jsPDF } = await import('jspdf');
-      const html2canvas = (await import('html2canvas')).default;
-      
-      // Create a temporary container for the HTML
-      const tempContainer = document.createElement('div');
-      tempContainer.innerHTML = data.html;
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      tempContainer.style.top = '-9999px';
-      tempContainer.style.width = '794px'; // A4 width in pixels
-      document.body.appendChild(tempContainer);
-      
-      // Generate PDF from HTML
-      const canvas = await html2canvas(tempContainer, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        width: 794,
-        height: 1123
-      });
-      
-      // Clean up
-      document.body.removeChild(tempContainer);
-      
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`${agreement.agreementNumber || 'agreement'}.pdf`);
-      
-      toast({
-        title: "Download Complete",
-        description: `${agreement.agreementNumber} PDF downloaded successfully`,
-      });
+      // Create a new window/tab with the PDF content for preview and print
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Rental Agreement - ${agreement.agreementNumber || 'Agreement'}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              @page {
+                margin: 15mm 10mm 20mm 10mm;
+                @bottom-center { content: none; }
+                @bottom-left { content: none; }
+                @bottom-right { 
+                  content: "Page " counter(page) " of " counter(pages);
+                  font-size: 10px;
+                  color: #666;
+                  font-family: ${agreement.language === 'gujarati' 
+                    ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif'
+                    : agreement.language === 'hindi'
+                    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                    : agreement.language === 'tamil'
+                    ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                    : agreement.language === 'marathi'
+                    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                    : 'Arial, sans-serif'};
+                }
+                @top-center { content: none; }
+                @top-left { content: none; }
+                @top-right { content: none; }
+              }
+              
+              body { 
+                font-family: ${agreement.language === 'gujarati' 
+                  ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
+                  : agreement.language === 'hindi'
+                  ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                  : agreement.language === 'tamil'
+                  ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                  : agreement.language === 'marathi'
+                  ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                  : 'Arial, sans-serif'}; 
+                margin: 0;
+                padding: 20px;
+                line-height: 1.6;
+                background: white;
+                font-size: 14px;
+              }
+              
+              @media print {
+                body { margin: 0; }
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="no-print" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+              <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 8px;">Save as PDF</button>
+              <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Close</button>
+            </div>
+            <div class="agreement-content">
+              ${data.html}
+            </div>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+        
+        toast({
+          title: "PDF Preview Opened",
+          description: "Click 'Save as PDF' in the new tab to download",
+        });
+      } else {
+        // Fallback to direct download
+        throw new Error('Could not open preview window');
+      }
     } catch (error) {
-      console.error('Error downloading PDF:', error);
+      console.error('Error opening PDF preview:', error);
       toast({
-        title: "Download Failed",
-        description: "Failed to download PDF. Please try again.",
+        title: "Preview Failed",
+        description: "Failed to open PDF preview. Please try again.",
         variant: "destructive",
       });
     }
@@ -320,10 +359,14 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                   Property Details
                 </h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><span className="font-medium">Address:</span> {selectedAgreement.propertyDetails.address || 'N/A'}</div>
+                  <div><span className="font-medium">Flat/House No:</span> {selectedAgreement.propertyDetails.flatNo || 'N/A'}</div>
+                  <div><span className="font-medium">Building/Society:</span> {selectedAgreement.propertyDetails.society || 'N/A'}</div>
+                  <div><span className="font-medium">Area/Locality:</span> {selectedAgreement.propertyDetails.area || 'N/A'}</div>
                   <div><span className="font-medium">City:</span> {selectedAgreement.propertyDetails.city || 'N/A'}</div>
                   <div><span className="font-medium">State:</span> {selectedAgreement.propertyDetails.state || 'N/A'}</div>
                   <div><span className="font-medium">Pin Code:</span> {selectedAgreement.propertyDetails.pinCode || 'N/A'}</div>
+                  <div><span className="font-medium">Property Type:</span> {selectedAgreement.propertyDetails.propertyType || 'N/A'}</div>
+                  <div><span className="font-medium">Purpose:</span> {selectedAgreement.propertyDetails.purpose || 'N/A'}</div>
                 </div>
               </div>
             )}
@@ -340,8 +383,11 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                   <div><span className="font-medium">Security Deposit:</span> ₹{selectedAgreement.rentalTerms.securityDeposit || 'N/A'}</div>
                   <div><span className="font-medium">Lock-in Period:</span> {selectedAgreement.rentalTerms.lockInPeriod || 'N/A'} months</div>
                   <div><span className="font-medium">Notice Period:</span> {selectedAgreement.rentalTerms.noticePeriod || 'N/A'} months</div>
-                  <div><span className="font-medium">Rent Due:</span> {selectedAgreement.rentalTerms.rentDueDate || 'N/A'}</div>
+                  <div><span className="font-medium">Rent Due Date:</span> {selectedAgreement.rentalTerms.rentDueDate || 'N/A'}</div>
                   <div><span className="font-medium">Late Fee:</span> ₹{selectedAgreement.rentalTerms.lateFeeAmount || 'N/A'}</div>
+                  <div><span className="font-medium">Maintenance:</span> {selectedAgreement.rentalTerms.maintenanceIncluded ? 'Included' : 'Not Included'}</div>
+                  <div><span className="font-medium">Electricity/Utility:</span> {selectedAgreement.rentalTerms.utilitiesIncluded ? 'Included' : 'Separate'}</div>
+                  <div><span className="font-medium">Parking:</span> {selectedAgreement.rentalTerms.parkingIncluded ? 'Included' : 'Not Included'}</div>
                 </div>
               </div>
             )}
@@ -351,12 +397,26 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Owner Details
+                  Owner/Landlord Details
                 </h3>
                 <div className="space-y-2 text-sm">
                   <div><span className="font-medium">Name:</span> {selectedAgreement.ownerDetails?.name || 'N/A'}</div>
+                  <div><span className="font-medium">Father's Name:</span> {selectedAgreement.ownerDetails?.fatherName || 'N/A'}</div>
                   <div><span className="font-medium">Mobile:</span> {selectedAgreement.ownerDetails?.mobile || 'N/A'}</div>
                   <div><span className="font-medium">Email:</span> {selectedAgreement.ownerDetails?.email || 'N/A'}</div>
+                  <div><span className="font-medium">Aadhaar:</span> {selectedAgreement.ownerDetails?.aadhaar || 'N/A'}</div>
+                  <div><span className="font-medium">PAN:</span> {selectedAgreement.ownerDetails?.pan || 'N/A'}</div>
+                  {selectedAgreement.ownerDetails?.address && (
+                    <div><span className="font-medium">Address:</span> 
+                      <br />
+                      {selectedAgreement.ownerDetails.address.flatNo && `${selectedAgreement.ownerDetails.address.flatNo}, `}
+                      {selectedAgreement.ownerDetails.address.society && `${selectedAgreement.ownerDetails.address.society}, `}
+                      {selectedAgreement.ownerDetails.address.area && `${selectedAgreement.ownerDetails.address.area}, `}
+                      {selectedAgreement.ownerDetails.address.city && `${selectedAgreement.ownerDetails.address.city}, `}
+                      {selectedAgreement.ownerDetails.address.state && `${selectedAgreement.ownerDetails.address.state} `}
+                      {selectedAgreement.ownerDetails.address.pinCode}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -367,9 +427,56 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                 </h3>
                 <div className="space-y-2 text-sm">
                   <div><span className="font-medium">Name:</span> {selectedAgreement.tenantDetails?.name || 'N/A'}</div>
+                  <div><span className="font-medium">Father's Name:</span> {selectedAgreement.tenantDetails?.fatherName || 'N/A'}</div>
                   <div><span className="font-medium">Mobile:</span> {selectedAgreement.tenantDetails?.mobile || 'N/A'}</div>
                   <div><span className="font-medium">Email:</span> {selectedAgreement.tenantDetails?.email || 'N/A'}</div>
+                  <div><span className="font-medium">Aadhaar:</span> {selectedAgreement.tenantDetails?.aadhaar || 'N/A'}</div>
+                  <div><span className="font-medium">PAN:</span> {selectedAgreement.tenantDetails?.pan || 'N/A'}</div>
+                  {selectedAgreement.tenantDetails?.address && (
+                    <div><span className="font-medium">Address:</span> 
+                      <br />
+                      {selectedAgreement.tenantDetails.address.flatNo && `${selectedAgreement.tenantDetails.address.flatNo}, `}
+                      {selectedAgreement.tenantDetails.address.society && `${selectedAgreement.tenantDetails.address.society}, `}
+                      {selectedAgreement.tenantDetails.address.area && `${selectedAgreement.tenantDetails.address.area}, `}
+                      {selectedAgreement.tenantDetails.address.city && `${selectedAgreement.tenantDetails.address.city}, `}
+                      {selectedAgreement.tenantDetails.address.state && `${selectedAgreement.tenantDetails.address.state} `}
+                      {selectedAgreement.tenantDetails.address.pinCode}
+                    </div>
+                  )}
                 </div>
+              </div>
+            </div>
+
+            {/* Additional Clauses */}
+            {selectedAgreement.additionalClauses && selectedAgreement.additionalClauses.length > 0 && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Additional Clauses
+                </h3>
+                <div className="space-y-2">
+                  {selectedAgreement.additionalClauses.map((clause: string, index: number) => (
+                    <div key={index} className="text-sm">
+                      <span className="font-medium">{index + 1}.</span> {clause}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Document Information */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <Folder className="h-4 w-4" />
+                Document Information
+              </h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><span className="font-medium">Owner Aadhaar:</span> {selectedAgreement.ownerDocuments?.aadhaar ? '✓ Uploaded' : '✗ Not uploaded'}</div>
+                <div><span className="font-medium">Owner PAN:</span> {selectedAgreement.ownerDocuments?.pan ? '✓ Uploaded' : '✗ Not uploaded'}</div>
+                <div><span className="font-medium">Tenant Aadhaar:</span> {selectedAgreement.tenantDocuments?.aadhaar ? '✓ Uploaded' : '✗ Not uploaded'}</div>
+                <div><span className="font-medium">Tenant PAN:</span> {selectedAgreement.tenantDocuments?.pan ? '✓ Uploaded' : '✗ Not uploaded'}</div>
+                <div><span className="font-medium">Property Documents:</span> {selectedAgreement.propertyDocuments?.documents?.length > 0 ? `✓ ${selectedAgreement.propertyDocuments.documents.length} files` : '✗ Not uploaded'}</div>
+                <div><span className="font-medium">Notarized Document:</span> {(selectedAgreement.notarizedDocument?.url || selectedAgreement.notarizedDocumentUrl) ? '✓ Available' : '✗ Not available'}</div>
               </div>
             </div>
           </div>
