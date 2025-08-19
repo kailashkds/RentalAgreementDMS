@@ -108,39 +108,96 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
 
   const downloadNotarizedDocument = async (agreement: any) => {
     try {
-      if (!agreement.notarizedDocumentUrl) {
+      if (agreement.notarizedDocument?.url) {
+        const link = document.createElement('a');
+        link.href = agreement.notarizedDocument.url;
+        link.download = agreement.notarizedDocument.originalName || 'notarized-document.pdf';
+        link.click();
+        
+        toast({
+          title: "Document Downloaded",
+          description: `${agreement.notarizedDocument.originalName} downloaded successfully`,
+        });
+      } else if (agreement.notarizedDocumentUrl) {
+        const link = document.createElement('a');
+        link.href = agreement.notarizedDocumentUrl;
+        link.download = `notarized-${agreement.agreementNumber}.pdf`;
+        link.click();
+        
+        toast({
+          title: "Document Downloaded",
+          description: "Notarized document downloaded successfully",
+        });
+      } else {
         toast({
           title: "No Document",
           description: "No notarized document available for this agreement",
           variant: "destructive",
         });
-        return;
       }
-
-      const response = await fetch(agreement.notarizedDocumentUrl);
-      if (!response.ok) {
-        throw new Error('Failed to download document');
-      }
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${agreement.agreementNumber || 'agreement'}_notarized.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast({
-        title: "Download Complete",
-        description: `Notarized document downloaded successfully`,
-      });
     } catch (error) {
-      console.error('Error downloading notarized document:', error);
+      console.error('Error downloading document:', error);
       toast({
         title: "Download Failed",
-        description: "Failed to download notarized document. Please try again.",
+        description: "Failed to download document. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadWordDocument = async (agreement: any) => {
+    try {
+      console.log('Starting Word generation for agreement:', agreement.id);
+
+      const response = await fetch('/api/agreements/generate-word', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ownerDetails: agreement.ownerDetails || {},
+          tenantDetails: agreement.tenantDetails || {},
+          propertyDetails: agreement.propertyDetails || {},
+          rentalTerms: agreement.rentalTerms || {},
+          agreementDate: agreement.agreementDate,
+          createdAt: agreement.createdAt,
+          language: agreement.language || 'english',
+          additionalClauses: agreement.additionalClauses || [],
+          agreementNumber: agreement.agreementNumber,
+          documents: agreement.documents || {},
+          ownerDocuments: agreement.ownerDocuments || {},
+          tenantDocuments: agreement.tenantDocuments || {},
+          propertyDocuments: agreement.propertyDocuments || {}
+        }),
+      });
+
+      console.log('Word generation response status:', response.status);
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rental_agreement_${agreement.agreementNumber || 'document'}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Word Document Downloaded",
+          description: `Agreement ${agreement.agreementNumber} downloaded as Word document.`,
+        });
+      } else {
+        const errorData = await response.json();
+        console.error('Word generation error:', errorData);
+        throw new Error(errorData.message || 'Failed to generate Word document');
+      }
+    } catch (error) {
+      console.error('Word download error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download Word document.",
         variant: "destructive",
       });
     }
@@ -222,8 +279,18 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                       <Download className="h-4 w-4 mr-2" />
                       Download PDF
                     </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadWordDocument(selectedAgreement)}
+                      className="w-full justify-start"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Download Word
+                    </Button>
                     
-                    {selectedAgreement.notarizedDocumentUrl && (
+                    {(selectedAgreement.notarizedDocument?.url || selectedAgreement.notarizedDocumentUrl) && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -235,7 +302,7 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                       </Button>
                     )}
                     
-                    {!selectedAgreement.notarizedDocumentUrl && (
+                    {!selectedAgreement.notarizedDocument?.url && !selectedAgreement.notarizedDocumentUrl && (
                       <div className="text-xs text-gray-500 p-2 bg-yellow-50 rounded border">
                         No notarized document available
                       </div>
@@ -389,6 +456,7 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                           size="sm"
                           onClick={() => viewAgreement(agreement)}
                           title="View Agreement"
+                          className="text-blue-600 hover:text-blue-900"
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -399,17 +467,30 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                           size="sm"
                           onClick={() => downloadAgreementPdf(agreement)}
                           title="Download PDF"
+                          className="text-green-600 hover:text-green-900"
                         >
                           <Download className="h-4 w-4 mr-1" />
                           PDF
                         </Button>
+
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => downloadWordDocument(agreement)}
+                          title="Download Word Document"
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          Word
+                        </Button>
                         
-                        {agreement.notarizedDocumentUrl && (
+                        {(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => downloadNotarizedDocument(agreement)}
                             title="Download Notarized Document"
+                            className="text-amber-600 hover:text-amber-900"
                           >
                             <FileText className="h-4 w-4 mr-1" />
                             Document
