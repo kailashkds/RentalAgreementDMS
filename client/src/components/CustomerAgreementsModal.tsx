@@ -1,8 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAgreements } from "@/hooks/useAgreements";
 import { useState } from "react";
 import { 
   FileSignature, 
@@ -36,17 +36,8 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
   const [selectedAgreement, setSelectedAgreement] = useState<any>(null);
   const [showAgreementDetails, setShowAgreementDetails] = useState(false);
   
-  const { data: agreementsData, isLoading } = useQuery({
-    queryKey: ["/api/agreements", customer?.id],
-    queryFn: async () => {
-      if (!customer?.id) return { agreements: [] };
-      const response = await fetch(`/api/agreements?customerId=${customer.id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch agreements');
-      }
-      return response.json();
-    },
-    enabled: !!customer?.id && isOpen,
+  const { data: agreementsData, isLoading } = useAgreements({
+    customerId: customer?.id || "",
   });
 
   const downloadAgreementPdf = async (agreement: any) => {
