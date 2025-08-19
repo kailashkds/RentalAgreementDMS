@@ -148,6 +148,7 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                 
                 @media print {
                   body { margin: 0; padding: 0; }
+                  .no-print { display: none !important; }
                 }
                 
                 /* Language-specific styles */
@@ -191,7 +192,7 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
               </style>
             </head>
             <body class="${agreement.language || 'english'}">
-              <div class="no-print" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <div class="no-print" style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: white; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: block;">
                 <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 8px; font-size: 14px;">Print / Save as PDF</button>
                 <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">Close</button>
               </div>
