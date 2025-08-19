@@ -375,6 +375,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (!sanitizedText) return null;
 
+        // Handle multi-line text (addresses, etc.)
+        if (sanitizedText.includes('\n')) {
+          const lines = sanitizedText.split('\n').filter(line => line.trim());
+          const textRuns: any[] = [];
+          
+          lines.forEach((line, index) => {
+            textRuns.push(new TextRun({
+              text: line.trim(),
+              font: "Arial",
+              size: options.size || 28,
+              bold: options.bold || false,
+              italics: options.italic || false,
+            }));
+            
+            // Add line break except for the last line
+            if (index < lines.length - 1) {
+              textRuns.push(new TextRun({
+                text: '',
+                break: 1
+              }));
+            }
+          });
+          
+          return new Paragraph({
+            children: textRuns,
+            alignment: options.alignment || AlignmentType.LEFT,
+            spacing: options.spacing || { after: 120 },
+            indent: options.indent || undefined,
+            ...options.paragraphOptions
+          });
+        }
+
         return new Paragraph({
           children: [new TextRun({
             text: sanitizedText,
@@ -390,12 +422,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       };
 
-      // Helper function to convert HTML to Word paragraphs, handling <br> tags properly
+      // Helper function to convert HTML to Word paragraphs, handling images and proper formatting
       const htmlToWordParagraphs = (html: string) => {
         const paragraphs = [];
         
-        // First, convert <br> tags to paragraph breaks
+        // Handle images first - extract them and create placeholders
+        const imageMatches = html.match(/<img[^>]+>/gi) || [];
+        let imageCount = 0;
+        
+        // Process images and add them to paragraphs
+        for (const imgTag of imageMatches) {
+          const srcMatch = imgTag.match(/src="([^"]+)"/);
+          if (srcMatch && srcMatch[1]) {
+            const imageSrc = srcMatch[1];
+            
+            // Add a paragraph explaining the document image
+            let documentType = 'Document';
+            if (imageSrc.includes('aadhar') || imgTag.includes('Aadhar') || imgTag.includes('Aadhaar')) {
+              documentType = 'Aadhaar Card';
+            } else if (imageSrc.includes('pan') || imgTag.includes('PAN')) {
+              documentType = 'PAN Card';
+            } else if (imageSrc.includes('property') || imgTag.includes('Property')) {
+              documentType = 'Property Document';
+            }
+            
+            const docPara = createParagraph(`[${documentType} Image - Please attach original document]`, {
+              size: 24,
+              bold: true,
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 240, after: 240 }
+            });
+            if (docPara) paragraphs.push(docPara);
+            
+            // Add a border placeholder
+            const borderPara = createParagraph('_'.repeat(80), {
+              size: 20,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 240 }
+            });
+            if (borderPara) paragraphs.push(borderPara);
+          }
+        }
+        
+        // Remove images from HTML for text processing
         let processedContent = html
+          .replace(/<img[^>]*>/gi, '\n\n[DOCUMENT_IMAGE]\n\n')  // Replace images with placeholders
           .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
           .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
           .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
@@ -409,6 +480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
+          .replace(/\[DOCUMENT_IMAGE\]/g, '') // Remove document image placeholders from text
           .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
           .trim();
 
@@ -425,13 +497,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Check if this looks like a heading (starts with number, short)
             const isHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
             
+            // Check for address blocks (contains multiple lines with address components)
+            const isAddress = trimmedBlock.includes('\n') && 
+                             (trimmedBlock.toLowerCase().includes('address') || 
+                              /\d{6}/.test(trimmedBlock) || // Contains pincode
+                              trimmedBlock.split('\n').length >= 3); // Multiple lines
+            
             const para = createParagraph(trimmedBlock, {
-              size: isTitle ? 44 : (isHeading ? 32 : 28),
+              size: isTitle ? 44 : (isHeading ? 32 : (isAddress ? 26 : 28)),
               bold: isTitle || isHeading,
               alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
               spacing: { 
-                before: isTitle ? 240 : (isHeading ? 160 : 0),
-                after: isTitle ? 320 : (isHeading ? 160 : 120)
+                before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
+                after: isTitle ? 320 : (isHeading ? 160 : (isAddress ? 160 : 120))
               }
             });
             
