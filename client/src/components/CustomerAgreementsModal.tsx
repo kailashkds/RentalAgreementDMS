@@ -147,95 +147,6 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
     window.open(`/agreements?id=${agreement.id}`, '_blank');
   };
 
-  const downloadWordDocument = async (agreement: any) => {
-    try {
-      const response = await fetch('/api/agreements/generate-word', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(agreement),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate Word document');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${agreement.agreementNumber || 'agreement'}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Download Complete",
-        description: `${agreement.agreementNumber} Word document downloaded successfully`,
-      });
-    } catch (error) {
-      console.error('Error downloading Word document:', error);
-      toast({
-        title: "Download Failed",
-        description: "Failed to download Word document. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const copyAgreement = async (agreement: any) => {
-    try {
-      const agreementText = `Agreement: ${agreement.agreementNumber}\nLandlord: ${agreement.ownerDetails?.name}\nTenant: ${agreement.tenantDetails?.name}\nProperty: ${agreement.propertyDetails?.address}\nPeriod: ${agreement.agreementDate} - ${agreement.endDate}`;
-      
-      await navigator.clipboard.writeText(agreementText);
-      
-      toast({
-        title: "Copied!",
-        description: "Agreement details copied to clipboard",
-      });
-    } catch (error) {
-      console.error('Error copying agreement:', error);
-      toast({
-        title: "Copy Failed",
-        description: "Failed to copy agreement details",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const deleteAgreement = async (agreement: any) => {
-    if (!confirm(`Are you sure you want to delete agreement ${agreement.agreementNumber}? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/agreements/${agreement.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete agreement');
-      }
-
-      toast({
-        title: "Deleted",
-        description: `Agreement ${agreement.agreementNumber} has been deleted`,
-      });
-
-      // Refresh the agreements list
-      window.location.reload();
-    } catch (error) {
-      console.error('Error deleting agreement:', error);
-      toast({
-        title: "Delete Failed",
-        description: "Failed to delete agreement. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (!customer) return null;
 
   const agreements = (agreementsData as any)?.agreements || [];
@@ -339,27 +250,16 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                           <Download className="h-4 w-4" />
                         </Button>
                         
-                        {/* Download Word Document Icon */}
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="p-2 h-8 w-8 hover:bg-blue-50 hover:text-blue-600"
-                          onClick={() => downloadWordDocument(agreement)}
-                          title="Download Word Document"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                        
-                        {/* Download Notarized Document Icon */}
+                        {/* Download Document Icon */}
                         {agreement.notarizedDocumentUrl ? (
                           <Button 
                             variant="ghost" 
                             size="sm"
-                            className="p-2 h-8 w-8 hover:bg-orange-50 hover:text-orange-600"
+                            className="p-2 h-8 w-8 hover:bg-purple-50 hover:text-purple-600"
                             onClick={() => downloadNotarizedDocument(agreement)}
                             title="Download Notarized Document"
                           >
-                            <Folder className="h-4 w-4" />
+                            <FileText className="h-4 w-4" />
                           </Button>
                         ) : (
                           <Button 
@@ -369,31 +269,9 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                             disabled
                             title="No notarized document available"
                           >
-                            <Folder className="h-4 w-4" />
+                            <FileText className="h-4 w-4" />
                           </Button>
                         )}
-                        
-                        {/* Copy Agreement Icon */}
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="p-2 h-8 w-8 hover:bg-purple-50 hover:text-purple-600"
-                          onClick={() => copyAgreement(agreement)}
-                          title="Copy Agreement Details"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        
-                        {/* Delete Agreement Icon */}
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="p-2 h-8 w-8 hover:bg-red-50 hover:text-red-600"
-                          onClick={() => deleteAgreement(agreement)}
-                          title="Delete Agreement"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                         
                         {/* Edit Icon */}
                         <Button 
