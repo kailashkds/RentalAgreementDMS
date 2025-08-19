@@ -11,17 +11,6 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-interface Society {
-  id: string;
-  societyName: string;
-  area: string;
-  city: string;
-  state: string;
-  district?: string;
-  pincode: string;
-  landmark?: string;
-}
-
 const propertySchema = z.object({
   customerId: z.string(),
   flatNumber: z.string().min(1, "Flat/House number is required"),
@@ -48,12 +37,17 @@ interface AddPropertyDialogProps {
 
 export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }: AddPropertyDialogProps) {
   const { toast } = useToast();
-  const [selectedSociety, setSelectedSociety] = useState<Society | null>(null);
+  const [buildingFilter, setBuildingFilter] = useState("");
 
-  const { data: societies = [] } = useQuery<Society[]>({
+  const { data: societies = [] } = useQuery<any[]>({
     queryKey: ['/api/societies'],
     enabled: open
   });
+
+  // Get unique buildings/societies for autocomplete
+  const buildingOptions = societies.map(s => s.societyName).filter(name => 
+    buildingFilter ? name.toLowerCase().includes(buildingFilter.toLowerCase()) : true
+  );
 
   const form = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),
@@ -75,19 +69,15 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
 
   const createPropertyMutation = useMutation({
     mutationFn: (data: PropertyFormData) => 
-      apiRequest('/api/properties', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
+      apiRequest('/api/properties', 'POST', data),
     onSuccess: () => {
       toast({ 
         title: "Success", 
         description: "Property added successfully" 
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/properties'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/properties?customerId=${customerId}`] });
       onPropertyAdded();
       form.reset();
-      setSelectedSociety(null);
     },
     onError: (error: any) => {
       toast({ 
@@ -98,10 +88,9 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
     }
   });
 
-  const handleSocietySelect = (societyId: string) => {
-    const society = societies.find(s => s.id === societyId);
+  const handleBuildingSelect = (selectedBuilding: string) => {
+    const society = societies.find(s => s.societyName === selectedBuilding);
     if (society) {
-      setSelectedSociety(society);
       form.setValue('society', society.societyName);
       form.setValue('area', society.area);
       form.setValue('city', society.city);
@@ -110,6 +99,7 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
       form.setValue('district', society.district || '');
       form.setValue('landmark', society.landmark || '');
     }
+    setBuildingFilter("");
   };
 
   const onSubmit = (data: PropertyFormData) => {
@@ -194,37 +184,43 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Address Details</h3>
               
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Select from existing societies</label>
-                <Select onValueChange={handleSocietySelect}>
-                  <SelectTrigger data-testid="select-society">
-                    <SelectValue placeholder="Choose a society or enter manually" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {societies.map((society) => (
-                      <SelectItem key={society.id} value={society.id}>
-                        {society.societyName}, {society.area}, {society.city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <FormField
+                control={form.control}
+                name="society"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Society/Building Name *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input 
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            setBuildingFilter(e.target.value);
+                          }}
+                          data-testid="input-society" 
+                        />
+                        {buildingFilter && buildingOptions.length > 0 && (
+                          <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                            {buildingOptions.slice(0, 10).map((option, index) => (
+                              <div
+                                key={index}
+                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                onClick={() => handleBuildingSelect(option)}
+                              >
+                                {option}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="society"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Society/Building Name *</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-society" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="area"
@@ -238,9 +234,7 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="city"
@@ -254,7 +248,9 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
                     </FormItem>
                   )}
                 />
+              </div>
 
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="state"
@@ -282,9 +278,7 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="district"
@@ -298,21 +292,21 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="landmark"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Landmark</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-landmark" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
+
+              <FormField
+                control={form.control}
+                name="landmark"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Landmark</FormLabel>
+                    <FormControl>
+                      <Input {...field} data-testid="input-landmark" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="flex justify-end gap-2 pt-4">

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building, MapPin, Plus, Eye, ArrowLeft } from "lucide-react";
-// AddPropertyDialog component will be created inline
+import { AddPropertyDialog } from "@/components/AddPropertyDialog";
 import { useState } from "react";
 
 interface Property {
@@ -84,9 +84,9 @@ export default function CustomerProperties() {
         <h2 className="text-xl font-semibold" data-testid="text-properties-count">
           {properties?.length || 0} Properties
         </h2>
-        <Button disabled data-testid="button-add-property">
+        <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-property">
           <Plus className="h-4 w-4 mr-2" />
-          Add Property (Coming Soon)
+          Add Property
         </Button>
       </div>
 
@@ -98,9 +98,9 @@ export default function CustomerProperties() {
             <p className="text-muted-foreground mb-4">
               This customer doesn't have any properties yet.
             </p>
-            <Button disabled data-testid="button-add-first-property">
+            <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-first-property">
               <Plus className="h-4 w-4 mr-2" />
-              Add First Property (Coming Soon)
+              Add First Property
             </Button>
           </CardContent>
         </Card>
@@ -176,7 +176,14 @@ export default function CustomerProperties() {
         </Card>
       )}
 
-
+      {customerId && (
+        <AddPropertyDialog
+          open={showAddDialog}
+          onClose={() => setShowAddDialog(false)}
+          customerId={customerId}
+          onPropertyAdded={handlePropertyAdded}
+        />
+      )}
     </div>
   );
 }
