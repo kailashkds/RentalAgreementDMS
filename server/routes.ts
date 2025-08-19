@@ -390,173 +390,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       };
 
-      // Advanced HTML to Word conversion that preserves template structure
-      const convertTemplateToWord = (htmlContent: string): any[] => {
-        const wordElements: any[] = [];
+      // Helper function to convert HTML to Word paragraphs, handling <br> tags properly
+      const htmlToWordParagraphs = (html: string) => {
+        const paragraphs = [];
         
-        // Clean HTML while preserving structure
-        let cleanHtml = htmlContent
-          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-          .replace(/@media\s+print[^{]*\{[^}]*\}/gi, '');
+        // First, convert <br> tags to paragraph breaks
+        let processedContent = html
+          .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
+          .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
+          .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
+          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n') // Handle headings
+          .replace(/<strong>(.*?)<\/strong>/gi, '$1') // Remove strong tags but keep text
+          .replace(/<b>(.*?)<\/b>/gi, '$1')  // Remove bold tags but keep text
+          .replace(/<[^>]*>/g, '')          // Remove all other HTML tags
+          .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
+          .replace(/&amp;/gi, '&')          // Convert &amp; to &
+          .replace(/&lt;/gi, '<')           // Convert &lt; to <
+          .replace(/&gt;/gi, '>')           // Convert &gt; to >
+          .replace(/&quot;/gi, '"')         // Convert &quot; to "
+          .replace(/&#39;/gi, "'")          // Convert &#39; to '
+          .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
+          .trim();
 
-        // Convert passport photo boxes to proper Word tables
-        cleanHtml = cleanHtml.replace(
-          /<div[^>]*passport-size-box[^>]*>.*?<\/div>/gi,
-          () => {
-            const photoTable = new Table({
-              borders: {
-                top: { style: BorderStyle.SINGLE, size: 2 },
-                bottom: { style: BorderStyle.SINGLE, size: 2 },
-                left: { style: BorderStyle.SINGLE, size: 2 },
-                right: { style: BorderStyle.SINGLE, size: 2 },
-              },
-              width: { size: 3000, type: WidthType.DXA },
-              rows: [new TableRow({
-                children: [new TableCell({
-                  children: [new Paragraph({
-                    children: [new TextRun({ 
-                      text: "Passport Size Photo", 
-                      font: "Arial", 
-                      size: 20 
-                    })],
-                    alignment: AlignmentType.CENTER,
-                    spacing: { after: 600 }
-                  })]
-                })]
-              })]
-            });
-            wordElements.push(photoTable);
-            return '<PHOTO_PLACEHOLDER>';
-          }
-        );
-
-        // Convert document previews to Word tables
-        cleanHtml = cleanHtml.replace(
-          /<div[^>]*document-preview[^>]*>.*?<\/div>/gi,
-          (match) => {
-            const docType = match.includes('Aadhaar') ? 'Aadhaar Card' : 
-                           match.includes('PAN') ? 'PAN Card' : 'Document';
+        // Split by double newlines to create paragraphs
+        const textBlocks = processedContent.split('\n\n').filter(block => block.trim());
+        
+        textBlocks.forEach(block => {
+          const trimmedBlock = block.trim();
+          if (trimmedBlock) {
+            // Check if this looks like a title (all caps, short, centered content)
+            const isTitle = trimmedBlock.length < 100 && trimmedBlock === trimmedBlock.toUpperCase() && 
+                           (trimmedBlock.includes('RENT AGREEMENT') || trimmedBlock.includes('RENTAL AGREEMENT'));
             
-            const docTable = new Table({
-              borders: {
-                top: { style: BorderStyle.SINGLE, size: 1 },
-                bottom: { style: BorderStyle.SINGLE, size: 1 },
-                left: { style: BorderStyle.SINGLE, size: 1 },
-                right: { style: BorderStyle.SINGLE, size: 1 },
-              },
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              rows: [new TableRow({
-                children: [new TableCell({
-                  children: [new Paragraph({
-                    children: [new TextRun({ 
-                      text: `${docType} Preview`, 
-                      font: "Arial", 
-                      size: 24,
-                      bold: true 
-                    })],
-                    alignment: AlignmentType.CENTER,
-                    spacing: { after: 400 }
-                  })]
-                })]
-              })]
+            // Check if this looks like a heading (starts with number, short)
+            const isHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
+            
+            const para = createParagraph(trimmedBlock, {
+              size: isTitle ? 44 : (isHeading ? 32 : 28),
+              bold: isTitle || isHeading,
+              alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+              spacing: { 
+                before: isTitle ? 240 : (isHeading ? 160 : 0),
+                after: isTitle ? 320 : (isHeading ? 160 : 120)
+              }
             });
-            wordElements.push(docTable);
-            return '<DOC_PLACEHOLDER>';
-          }
-        );
-
-        // Advanced HTML processing with proper line break handling
-        let textContent = cleanHtml;
-        
-        // First handle specific HTML elements that need special processing
-        textContent = textContent
-          .replace(/<br\s*\/?>/gi, '||LINEBREAK||')  // Mark line breaks
-          .replace(/<\/p>/gi, '||PARAGRAPH||')       // Mark paragraph breaks
-          .replace(/<p[^>]*>/gi, '')                 // Remove opening p tags
-          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '||PARAGRAPH||$1||PARAGRAPH||')
-          .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '$1')
-          .replace(/<b[^>]*>(.*?)<\/b>/gi, '$1')
-          .replace(/<[^>]*>/g, '')                   // Remove remaining HTML tags
-          .replace(/&nbsp;/gi, ' ')
-          .replace(/&amp;/gi, '&')
-          .replace(/&lt;/gi, '<')
-          .replace(/&gt;/gi, '>')
-          .replace(/&quot;/gi, '"')
-          .replace(/&#39;/gi, "'")
-          .replace(/<PHOTO_PLACEHOLDER>/g, '')
-          .replace(/<DOC_PLACEHOLDER>/g, '')
-          .trim();
-
-        // Now convert markers to actual breaks and create proper paragraph structure
-        textContent = textContent
-          .replace(/\|\|LINEBREAK\|\|/g, '\n')        // Convert line break markers
-          .replace(/\|\|PARAGRAPH\|\|/g, '\n\n')      // Convert paragraph markers
-          .replace(/\s+/g, ' ')                       // Normalize spaces
-          .replace(/\n\s*\n/g, '\n\n')               // Normalize line breaks
-          .trim();
-
-        // Split into individual lines and paragraphs
-        const lines = textContent.split('\n');
-        const paragraphTexts: string[] = [];
-        let currentParagraph = '';
-
-        for (const line of lines) {
-          const trimmedLine = line.trim();
-          if (!trimmedLine) {
-            // Empty line indicates paragraph break
-            if (currentParagraph.trim()) {
-              paragraphTexts.push(currentParagraph.trim());
-              currentParagraph = '';
-            }
-          } else {
-            // Add line to current paragraph
-            if (currentParagraph) {
-              currentParagraph += ' ' + trimmedLine;
-            } else {
-              currentParagraph = trimmedLine;
+            
+            if (para) {
+              paragraphs.push(para);
             }
           }
-        }
-        
-        // Add the last paragraph if it exists
-        if (currentParagraph.trim()) {
-          paragraphTexts.push(currentParagraph.trim());
-        }
-        
-        paragraphTexts.forEach(text => {
-          const trimmedText = text.trim();
-          if (!trimmedText) return;
-
-          // Detect content types for styling
-          const isMainTitle = /RENT AGREEMENT|RENTAL AGREEMENT|રેન્ટ એગ્રીમેન્ટ/i.test(trimmedText);
-          const isSubTitle = /This Agreement|આ કરાર|Between|વચ્ચે/i.test(trimmedText);
-          const isNumbered = /^\d+[\.\)]\s/.test(trimmedText);
-          
-          let fontSize = 28, isBold = false, alignment = AlignmentType.JUSTIFIED;
-          let spacing = { after: 120 };
-
-          if (isMainTitle) {
-            fontSize = 44; isBold = true; alignment = AlignmentType.CENTER;
-            spacing = { after: 480 };
-          } else if (isSubTitle) {
-            fontSize = 32; isBold = true; alignment = AlignmentType.CENTER;
-            spacing = { after: 240 };
-          } else if (isNumbered) {
-            fontSize = 28; spacing = { after: 160 };
-          }
-
-          const paragraph = createParagraph(trimmedText, {
-            size: fontSize, bold: isBold, alignment: alignment, spacing: spacing
-          });
-
-          if (paragraph) wordElements.push(paragraph);
         });
-
-        return wordElements;
+        
+        return paragraphs;
       };
 
       // Convert the processed HTML to Word paragraphs
-      const convertedParagraphs = convertTemplateToWord(processedHtml);
+      const convertedParagraphs = htmlToWordParagraphs(cleanedHtml);
       documentParagraphs.push(...convertedParagraphs);
 
 
