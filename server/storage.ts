@@ -353,7 +353,7 @@ export class DatabaseStorage implements IStorage {
         .limit(1);
 
       let nextNumber = 1;
-      if (Array.isArray(lastAgreement) && lastAgreement.length > 0) {
+      if (lastAgreement.length > 0) {
         const lastNumber = parseInt(lastAgreement[0].agreementNumber.split('-')[2]);
         nextNumber = lastNumber + 1;
       }
@@ -415,7 +415,7 @@ export class DatabaseStorage implements IStorage {
     } as InsertAgreement);
 
     // Update original agreement status
-    await this.updateAgreement(id, { status: "renewed" });
+    await this.updateAgreement(id, { status: "renewed" as any });
 
     return renewedAgreement;
   }
