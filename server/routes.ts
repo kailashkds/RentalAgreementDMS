@@ -383,8 +383,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lines.forEach((line, index) => {
             textRuns.push(new TextRun({
               text: line.trim(),
-              font: "Arial",
-              size: options.size || 28,
+              font: "Times New Roman",
+              size: options.size || 24,
               bold: options.bold || false,
               italics: options.italic || false,
             }));
@@ -410,7 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return new Paragraph({
           children: [new TextRun({
             text: sanitizedText,
-            font: "Arial",
+            font: "Times New Roman",
             size: options.size || 28,
             bold: options.bold || false,
             italics: options.italic || false,
@@ -469,12 +469,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                               trimmedBlock.split('\n').length >= 3); // Multiple lines
             
             const para = createParagraph(trimmedBlock, {
-              size: isTitle ? 44 : (isHeading ? 32 : (isAddress ? 26 : 28)),
+              size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
               bold: isTitle || isHeading,
               alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
               spacing: { 
                 before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
-                after: isTitle ? 320 : (isHeading ? 160 : (isAddress ? 160 : 120))
+                after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
               }
             });
             
@@ -558,7 +558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 8. Witness statement
       const witnessStatement = createParagraph("IN WITNESS WHEREOF, the parties have set their hands on the day and year first above written, without any external influence or pressure from anybody.", {
-        size: 32, // 16pt
+        size: 26, // 16pt
         bold: true,
         alignment: AlignmentType.LEFT,
         spacing: { before: 240, after: 320 }
@@ -584,15 +584,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               new TableCell({
                 children: [
                   new Paragraph({
-                    children: [new TextRun({ text: (safeAgreementData.ownerDetails?.name || '[OWNER_NAME]').toUpperCase(), font: "Arial", size: 28, bold: true })],
+                    children: [new TextRun({ text: (safeAgreementData.ownerDetails?.name || '[OWNER_NAME]').toUpperCase(), font: "Times New Roman", size: 24, bold: true })],
                     spacing: { after: 80 }
                   }),
                   new Paragraph({
-                    children: [new TextRun({ text: "Landlord", font: "Arial", size: 28, italics: true })],
+                    children: [new TextRun({ text: "Landlord", font: "Times New Roman", size: 24, italics: true })],
                     spacing: { after: 400 }
                   }),
                   new Paragraph({
-                    children: [new TextRun({ text: "________________________", font: "Arial", size: 24 })],
+                    children: [new TextRun({ text: "________________________", font: "Times New Roman", size: 24 })],
                   })
                 ],
                 width: { size: 70, type: WidthType.PERCENTAGE }
@@ -600,7 +600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               new TableCell({
                 children: [
                   new Paragraph({
-                    children: [new TextRun({ text: "Passport Size Photo", font: "Arial", size: 20 })],
+                    children: [new TextRun({ text: "Passport Size Photo", font: "Times New Roman", size: 20 })],
                     alignment: AlignmentType.CENTER,
                     spacing: { before: 800, after: 800 }
                   })
@@ -640,15 +640,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
               new TableCell({
                 children: [
                   new Paragraph({
-                    children: [new TextRun({ text: (safeAgreementData.tenantDetails?.name || '[TENANT_NAME]').toUpperCase(), font: "Arial", size: 28, bold: true })],
+                    children: [new TextRun({ text: (safeAgreementData.tenantDetails?.name || '[TENANT_NAME]').toUpperCase(), font: "Times New Roman", size: 24, bold: true })],
                     spacing: { after: 80 }
                   }),
                   new Paragraph({
-                    children: [new TextRun({ text: "Tenant", font: "Arial", size: 28, italics: true })],
+                    children: [new TextRun({ text: "Tenant", font: "Times New Roman", size: 24, italics: true })],
                     spacing: { after: 400 }
                   }),
                   new Paragraph({
-                    children: [new TextRun({ text: "________________________", font: "Arial", size: 24 })],
+                    children: [new TextRun({ text: "________________________", font: "Times New Roman", size: 24 })],
                   })
                 ],
                 width: { size: 70, type: WidthType.PERCENTAGE }
@@ -656,7 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               new TableCell({
                 children: [
                   new Paragraph({
-                    children: [new TextRun({ text: "Passport Size Photo", font: "Arial", size: 20 })],
+                    children: [new TextRun({ text: "Passport Size Photo", font: "Times New Roman", size: 20 })],
                     alignment: AlignmentType.CENTER,
                     spacing: { before: 800, after: 800 }
                   })
@@ -696,11 +696,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               new TableCell({
                 children: [
                   new Paragraph({
-                    children: [new TextRun({ text: "Witnesses", font: "Arial", size: 28, bold: true })],
+                    children: [new TextRun({ text: "Witnesses", font: "Times New Roman", size: 24, bold: true })],
                     spacing: { after: 240 }
                   }),
                   new Paragraph({
-                    children: [new TextRun({ text: "_______________________          _______________________", font: "Arial", size: 24 })],
+                    children: [new TextRun({ text: "_______________________          _______________________", font: "Times New Roman", size: 24 })],
                     spacing: { after: 240 }
                   })
                 ],
@@ -724,7 +724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }));
         
         const landlordDocsTitle = createParagraph("LANDLORD DOCUMENTS", {
-          size: 32,
+          size: 26,
           bold: true,
           alignment: AlignmentType.CENTER,
           spacing: { after: 480 }
@@ -733,7 +733,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (safeAgreementData.ownerDetails?.aadharUrl) {
           const aadharTitle = createParagraph("Aadhaar Card:", {
-            size: 28,
+            size: 24,
             bold: false,
             alignment: AlignmentType.LEFT,
             spacing: { before: 240, after: 240 }
@@ -749,6 +749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               documentParagraphs.push(new Paragraph({
                 children: [
                   new ImageRun({
+                    type: "jpg",
                     data: imageBuffer,
                     transformation: {
                       width: 400,
@@ -788,7 +789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }));
           
           const panTitle = createParagraph("PAN Card:", {
-            size: 28,
+            size: 24,
             bold: false,
             alignment: AlignmentType.LEFT,
             spacing: { before: 240, after: 240 }
@@ -804,6 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               documentParagraphs.push(new Paragraph({
                 children: [
                   new ImageRun({
+                    type: "jpg",
                     data: imageBuffer,
                     transformation: {
                       width: 400,
@@ -846,7 +848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }));
         
         const tenantDocsTitle = createParagraph("TENANT DOCUMENTS", {
-          size: 32,
+          size: 26,
           bold: true,
           alignment: AlignmentType.CENTER,
           spacing: { after: 480 }
@@ -855,7 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (safeAgreementData.tenantDetails?.aadharUrl) {
           const aadharTitle = createParagraph("Aadhaar Card:", {
-            size: 28,
+            size: 24,
             bold: false,
             alignment: AlignmentType.LEFT,
             spacing: { before: 240, after: 240 }
@@ -871,6 +873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               documentParagraphs.push(new Paragraph({
                 children: [
                   new ImageRun({
+                    type: "jpg",
                     data: imageBuffer,
                     transformation: {
                       width: 400,
@@ -910,7 +913,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }));
           
           const panTitle = createParagraph("PAN Card:", {
-            size: 28,
+            size: 24,
             bold: false,
             alignment: AlignmentType.LEFT,
             spacing: { before: 240, after: 240 }
@@ -926,6 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               documentParagraphs.push(new Paragraph({
                 children: [
                   new ImageRun({
+                    type: "jpg",
                     data: imageBuffer,
                     transformation: {
                       width: 400,
@@ -968,7 +972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }));
         
         const propertyDocsTitle = createParagraph("PROPERTY DOCUMENTS", {
-          size: 32,
+          size: 26,
           bold: true,
           alignment: AlignmentType.CENTER,
           spacing: { after: 480 }
@@ -984,6 +988,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             documentParagraphs.push(new Paragraph({
               children: [
                 new ImageRun({
+                    type: "jpg",
                   data: imageBuffer,
                   transformation: {
                     width: 400,
@@ -1017,19 +1022,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`[Word Generation] Created ${documentParagraphs.length} structured elements for Word document`);
 
-      // Create Word document with structured content and proper styling
+      // Create Word document with professional styling matching the PDF exactly
       const doc = new Document({
         styles: {
           default: {
             document: {
               run: {
-                font: "Arial", // Use Arial to match PDF
-                size: 28, // 14pt font size (28 half-points)
+                font: "Times New Roman", // Match PDF font
+                size: 24, // 12pt font size (24 half-points) 
               },
               paragraph: {
                 spacing: {
-                  line: 1.6 * 240, // 1.6 line spacing to match PDF
-                  after: 160, // Paragraph spacing to match PDF
+                  line: 1.5 * 240, // 1.5 line spacing
+                  after: 200, // Paragraph spacing
                 }
               }
             }
@@ -1039,13 +1044,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           properties: {
             page: {
               margin: {
-                top: 1080, // 0.75 inch to match PDF
-                right: 720, // 0.5 inch to match PDF
-                bottom: 1080, // 0.75 inch to match PDF  
-                left: 720 // 0.5 inch to match PDF
+                top: 1440, // 1 inch top margin
+                right: 1440, // 1 inch right margin
+                bottom: 1440, // 1 inch bottom margin
+                left: 1440 // 1 inch left margin
               },
               size: {
                 orientation: "portrait",
+                width: 12240, // 8.5 inches in twips
+                height: 15840 // 11 inches in twips
               }
             }
           },
