@@ -42,8 +42,8 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
     customerId: customer?.id || "",
   });
 
-  const previewAgreementPdf = async (agreementId: string) => {
-    setLoadingStates(prev => ({ ...prev, [`preview-${agreementId}`]: true }));
+  const downloadAgreementPdf = async (agreementId: string) => {
+    setLoadingStates(prev => ({ ...prev, [`pdf-${agreementId}`]: true }));
     
     try {
       const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
@@ -51,7 +51,7 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
         throw new Error('Agreement not found');
       }
 
-      console.log('Starting PDF preview for agreement:', agreement.id);
+      console.log('Starting PDF generation for agreement:', agreement.id);
 
       const response = await fetch('/api/agreements/generate-pdf', {
         method: 'POST',
@@ -78,14 +78,14 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
       if (response.ok) {
         const data = await response.json();
         
-        // Create a temporary HTML page for preview
+        // Create a temporary HTML page for PDF generation
         const printWindow = window.open('', '_blank');
         if (printWindow) {
           printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
-              <title>Rental Agreement Preview - ${agreement.agreementNumber || 'Agreement'}</title>
+              <title>Rental Agreement - ${agreement.agreementNumber || 'Agreement'}</title>
               <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
               <style>
                 @page {
@@ -132,68 +132,6 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                   font-feature-settings: "kern" 1, "liga" 1;
                 }
                 
-                .agreement-content {
-                  max-width: 800px;
-                  margin: 0 auto;
-                  padding: 20px;
-                  background: white;
-                  min-height: 1056px;
-                }
-                
-                /* Enhanced font support for all languages */
-                .gujarati-content, .gujarati-content * {
-                  font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif !important;
-                }
-                
-                /* Enhanced English font support and styling */
-                .english-content, .english-content * {
-                  font-family: Arial, sans-serif !important;
-                  font-size: 14px !important;
-                }
-                
-                /* Consistent spacing for all languages */
-                .party-details p {
-                  margin: 3px 0 !important;
-                  line-height: 1.5 !important;
-                }
-                
-                /* Title styling */
-                h1, h2, h3 {
-                  font-weight: bold !important;
-                  margin: 20px 0 15px 0 !important;
-                  text-align: center !important;
-                }
-                
-                h1 {
-                  font-size: 18px !important;
-                  margin-bottom: 25px !important;
-                }
-                
-                /* Paragraph styling with consistent spacing */
-                p {
-                  margin: 10px 0 !important;
-                  line-height: 1.6 !important;
-                  text-align: justify !important;
-                  text-indent: 0 !important;
-                  padding: 0 !important;
-                }
-                
-                /* List styling */
-                ol, ul {
-                  margin: 10px 0 !important;
-                  padding-left: 30px !important;
-                }
-                
-                li {
-                  margin: 5px 0 !important;
-                  line-height: 1.6 !important;
-                }
-                
-                /* Strong text styling */
-                strong, b {
-                  font-weight: bold !important;
-                }
-                
                 @media print {
                   body { margin: 0; }
                   .no-print { display: none !important; }
@@ -214,39 +152,17 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
           printWindow.document.close();
           
           toast({
-            title: "PDF Preview Opened",
+            title: "PDF Opened",
             description: "Click 'Save as PDF' in the new tab to download",
           });
         } else {
-          throw new Error('Could not open preview window');
+          throw new Error('Could not open PDF window');
         }
       } else {
         const errorData = await response.json();
         console.error('PDF generation error:', errorData);
         throw new Error(errorData.message || 'Failed to generate PDF');
       }
-    } catch (error) {
-      console.error('PDF preview error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to preview PDF.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingStates(prev => ({ ...prev, [`preview-${agreementId}`]: false }));
-    }
-  };
-
-  const downloadAgreementPdf = async (agreementId: string) => {
-    setLoadingStates(prev => ({ ...prev, [`pdf-${agreementId}`]: true }));
-    
-    try {
-      const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
-      if (!agreement) {
-        throw new Error('Agreement not found');
-      }
-
-      await previewAgreementPdf(agreementId);
     } catch (error) {
       console.error('PDF download error:', error);
       toast({
@@ -726,22 +642,7 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                           View
                         </Button>
                         
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => previewAgreementPdf(agreement.id)}
-                          title="Preview PDF"
-                          disabled={loadingStates[`preview-${agreement.id}`]}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          {loadingStates[`preview-${agreement.id}`] ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <Eye className="h-4 w-4 mr-1" />
-                          )}
-                          Preview
-                        </Button>
-                        
+
                         <Button 
                           variant="outline" 
                           size="sm"
