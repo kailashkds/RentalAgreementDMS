@@ -3,17 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Eye, 
-  EyeOff, 
-  RotateCcw, 
-  Power, 
-  PowerOff, 
   Save,
   FileSignature,
   User
@@ -42,10 +37,7 @@ export default function CustomerEditModal({ isOpen, onClose, customer }: Custome
     name: "",
     mobile: "",
     email: "",
-    isActive: true,
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -55,10 +47,7 @@ export default function CustomerEditModal({ isOpen, onClose, customer }: Custome
         name: customer.name,
         mobile: customer.mobile,
         email: customer.email || "",
-        isActive: customer.isActive,
       });
-      setNewPassword("");
-      setShowPassword(false);
     }
   }, [customer]);
 
@@ -88,69 +77,7 @@ export default function CustomerEditModal({ isOpen, onClose, customer }: Custome
     }
   };
 
-  const handleResetPassword = async () => {
-    if (!customer || !newPassword || newPassword.length < 6) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long.",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    setIsLoading(true);
-    try {
-      await apiRequest("PATCH", `/api/customers/${customer.id}/reset-password`, {
-        newPassword
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      
-      toast({
-        title: "Password reset",
-        description: "Customer password has been reset successfully.",
-      });
-      
-      setNewPassword("");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reset password.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleToggleStatus = async () => {
-    if (!customer) return;
-    
-    setIsLoading(true);
-    try {
-      const newStatus = !customer.isActive;
-      await apiRequest("PATCH", `/api/customers/${customer.id}/toggle-status`, {
-        isActive: newStatus
-      });
-      
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      
-      toast({
-        title: `Customer ${newStatus ? "activated" : "deactivated"}`,
-        description: `Customer has been ${newStatus ? "activated" : "deactivated"} successfully.`,
-      });
-      
-      onClose();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update customer status.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   if (!customer) return null;
 
@@ -214,95 +141,7 @@ export default function CustomerEditModal({ isOpen, onClose, customer }: Custome
             </div>
           </div>
 
-          <Separator />
 
-          {/* Password Management */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium">Password Management</h3>
-            
-            <div className="space-y-2">
-              <Label>Current Password</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  value={showPassword ? customer.password : "••••••••••"}
-                  readOnly
-                  className="bg-gray-50 font-mono"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setShowPassword(!showPassword)}
-                  data-testid="button-toggle-password-view"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-              {showPassword && (
-                <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded border font-mono">
-                  {customer.password}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="newPassword"
-                  type="password"
-                  placeholder="Enter new password (min 6 chars)"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  data-testid="input-new-password"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleResetPassword}
-                  disabled={!newPassword || newPassword.length < 6 || isLoading}
-                  data-testid="button-reset-password"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Account Status */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium">Account Status</h3>
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm">Customer Status</p>
-                <p className="text-xs text-gray-500">
-                  {customer.isActive ? "Customer can log in" : "Customer cannot log in"}
-                </p>
-              </div>
-              <Button
-                variant={customer.isActive ? "destructive" : "default"}
-                size="sm"
-                onClick={handleToggleStatus}
-                disabled={isLoading}
-                data-testid="button-toggle-status"
-              >
-                {customer.isActive ? (
-                  <>
-                    <PowerOff className="h-4 w-4 mr-2" />
-                    Deactivate
-                  </>
-                ) : (
-                  <>
-                    <Power className="h-4 w-4 mr-2" />
-                    Activate
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-2 pt-4">
