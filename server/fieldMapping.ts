@@ -950,6 +950,10 @@ html, body {
   border: none !important;
   line-height: 1.6 !important;
   font-size: 14px;
+  text-align: left !important;
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
+  text-rendering: optimizeLegibility;
 }
 
 /* Professional paragraph and heading spacing with explicit font */
@@ -957,13 +961,18 @@ p, div, span, h1, h2, h3, h4, h5, h6 {
   line-height: 1.6 !important;
   margin: 8px 0 !important;
   font-family: ${fontFamily} !important;
+  text-align: left !important;
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
 }
 
 /* Specific overrides for common paragraph spacing */
 p {
   margin: 10px 0 !important;
   line-height: 1.6 !important;
-  text-align: justify !important;
+  text-align: left !important;
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
 }
 
 /* Title styling */
@@ -1008,6 +1017,8 @@ td, th {
   border: none !important;
   outline: none !important;
   font-family: ${fontFamily} !important;
+  word-spacing: normal !important;
+  letter-spacing: normal !important;
 }
 
 /* Specific overrides for agreement content */
@@ -1083,6 +1094,9 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
     line-height: 1.4 !important;
     margin: 0.3em 0 !important;
     font-family: ${fontFamily} !important;
+    text-align: left !important;
+    word-spacing: normal !important;
+    letter-spacing: normal !important;
   }
   
   br {
