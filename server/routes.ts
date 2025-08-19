@@ -832,16 +832,6 @@ Rent Amount:Rs.${safeAgreementData.rentalTerms?.monthlyRent || '[AMOUNT]'} (Rupe
     }
   });
 
-  app.delete("/api/agreements/:id", async (req, res) => {
-    try {
-      await storage.deleteAgreement(req.params.id);
-      res.json({ message: "Agreement deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting agreement:", error);
-      res.status(500).json({ message: "Failed to delete agreement" });
-    }
-  });
-
   app.post("/api/agreements", async (req, res) => {
     try {
       console.log("Received agreement data:", JSON.stringify(req.body, null, 2));

@@ -360,15 +360,13 @@ export class DatabaseStorage implements IStorage {
 
       const agreementNumber = `AGR-${year}-${nextNumber.toString().padStart(3, '0')}`;
 
-      const result = await db
+      const [agreement] = await db
         .insert(agreements)
         .values({
           ...agreementData,
           agreementNumber,
         })
         .returning();
-        
-      const [agreement] = result;
         
       if (!agreement) {
         throw new Error('Failed to create agreement - no data returned');
