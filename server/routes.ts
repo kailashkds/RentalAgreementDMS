@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate Word document
   app.post("/api/agreements/generate-word", async (req, res) => {
     try {
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType } = await import('docx');
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, Media, ImageRun } = await import('docx');
       
       const agreementData = req.body;
       const language = agreementData.language || 'english';
@@ -740,12 +740,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           if (aadharTitle) documentParagraphs.push(aadharTitle);
           
-          const aadharPath = createParagraph(safeAgreementData.ownerDetails.aadharUrl, {
-            size: 24,
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 480 }
-          });
-          if (aadharPath) documentParagraphs.push(aadharPath);
+          // Embed actual image instead of file path
+          try {
+            const imagePath = path.join(process.cwd(), safeAgreementData.ownerDetails.aadharUrl);
+            if (fs.existsSync(imagePath)) {
+              const imageBuffer = fs.readFileSync(imagePath);
+              
+              documentParagraphs.push(new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: imageBuffer,
+                    transformation: {
+                      width: 400,
+                      height: 250,
+                    },
+                  })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 480 }
+              }));
+            } else {
+              // Fallback to file path if image not found
+              const aadharPath = createParagraph(safeAgreementData.ownerDetails.aadharUrl, {
+                size: 24,
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 480 }
+              });
+              if (aadharPath) documentParagraphs.push(aadharPath);
+            }
+          } catch (imageError) {
+            console.error('Error embedding Aadhaar image:', imageError);
+            // Fallback to file path on error
+            const aadharPath = createParagraph(safeAgreementData.ownerDetails.aadharUrl, {
+              size: 24,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 480 }
+            });
+            if (aadharPath) documentParagraphs.push(aadharPath);
+          }
         }
 
         if (safeAgreementData.ownerDetails?.panUrl) {
@@ -763,12 +795,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           if (panTitle) documentParagraphs.push(panTitle);
           
-          const panPath = createParagraph(safeAgreementData.ownerDetails.panUrl, {
-            size: 24,
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 480 }
-          });
-          if (panPath) documentParagraphs.push(panPath);
+          // Embed actual PAN image instead of file path
+          try {
+            const imagePath = path.join(process.cwd(), safeAgreementData.ownerDetails.panUrl);
+            if (fs.existsSync(imagePath)) {
+              const imageBuffer = fs.readFileSync(imagePath);
+              
+              documentParagraphs.push(new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: imageBuffer,
+                    transformation: {
+                      width: 400,
+                      height: 250,
+                    },
+                  })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 480 }
+              }));
+            } else {
+              // Fallback to file path if image not found
+              const panPath = createParagraph(safeAgreementData.ownerDetails.panUrl, {
+                size: 24,
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 480 }
+              });
+              if (panPath) documentParagraphs.push(panPath);
+            }
+          } catch (imageError) {
+            console.error('Error embedding PAN image:', imageError);
+            // Fallback to file path on error
+            const panPath = createParagraph(safeAgreementData.ownerDetails.panUrl, {
+              size: 24,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 480 }
+            });
+            if (panPath) documentParagraphs.push(panPath);
+          }
         }
       }
 
@@ -798,12 +862,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           if (aadharTitle) documentParagraphs.push(aadharTitle);
           
-          const aadharPath = createParagraph(safeAgreementData.tenantDetails.aadharUrl, {
-            size: 24,
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 480 }
-          });
-          if (aadharPath) documentParagraphs.push(aadharPath);
+          // Embed actual tenant Aadhaar image instead of file path
+          try {
+            const imagePath = path.join(process.cwd(), safeAgreementData.tenantDetails.aadharUrl);
+            if (fs.existsSync(imagePath)) {
+              const imageBuffer = fs.readFileSync(imagePath);
+              
+              documentParagraphs.push(new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: imageBuffer,
+                    transformation: {
+                      width: 400,
+                      height: 250,
+                    },
+                  })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 480 }
+              }));
+            } else {
+              // Fallback to file path if image not found
+              const aadharPath = createParagraph(safeAgreementData.tenantDetails.aadharUrl, {
+                size: 24,
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 480 }
+              });
+              if (aadharPath) documentParagraphs.push(aadharPath);
+            }
+          } catch (imageError) {
+            console.error('Error embedding tenant Aadhaar image:', imageError);
+            // Fallback to file path on error
+            const aadharPath = createParagraph(safeAgreementData.tenantDetails.aadharUrl, {
+              size: 24,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 480 }
+            });
+            if (aadharPath) documentParagraphs.push(aadharPath);
+          }
         }
 
         if (safeAgreementData.tenantDetails?.panUrl) {
@@ -821,12 +917,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           if (panTitle) documentParagraphs.push(panTitle);
           
-          const panPath = createParagraph(safeAgreementData.tenantDetails.panUrl, {
-            size: 24,
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 480 }
-          });
-          if (panPath) documentParagraphs.push(panPath);
+          // Embed actual tenant PAN image instead of file path
+          try {
+            const imagePath = path.join(process.cwd(), safeAgreementData.tenantDetails.panUrl);
+            if (fs.existsSync(imagePath)) {
+              const imageBuffer = fs.readFileSync(imagePath);
+              
+              documentParagraphs.push(new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: imageBuffer,
+                    transformation: {
+                      width: 400,
+                      height: 250,
+                    },
+                  })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 480 }
+              }));
+            } else {
+              // Fallback to file path if image not found
+              const panPath = createParagraph(safeAgreementData.tenantDetails.panUrl, {
+                size: 24,
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 480 }
+              });
+              if (panPath) documentParagraphs.push(panPath);
+            }
+          } catch (imageError) {
+            console.error('Error embedding tenant PAN image:', imageError);
+            // Fallback to file path on error
+            const panPath = createParagraph(safeAgreementData.tenantDetails.panUrl, {
+              size: 24,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 480 }
+            });
+            if (panPath) documentParagraphs.push(panPath);
+          }
         }
       }
 
@@ -847,12 +975,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         if (propertyDocsTitle) documentParagraphs.push(propertyDocsTitle);
         
-        const propertyPath = createParagraph(safeAgreementData.propertyDocuments.url, {
-          size: 24,
-          alignment: AlignmentType.CENTER,
-          spacing: { after: 480 }
-        });
-        if (propertyPath) documentParagraphs.push(propertyPath);
+        // Embed actual property document image instead of file path
+        try {
+          const imagePath = path.join(process.cwd(), safeAgreementData.propertyDocuments.url);
+          if (fs.existsSync(imagePath)) {
+            const imageBuffer = fs.readFileSync(imagePath);
+            
+            documentParagraphs.push(new Paragraph({
+              children: [
+                new ImageRun({
+                  data: imageBuffer,
+                  transformation: {
+                    width: 400,
+                    height: 250,
+                  },
+                })
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 480 }
+            }));
+          } else {
+            // Fallback to file path if image not found
+            const propertyPath = createParagraph(safeAgreementData.propertyDocuments.url, {
+              size: 24,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 480 }
+            });
+            if (propertyPath) documentParagraphs.push(propertyPath);
+          }
+        } catch (imageError) {
+          console.error('Error embedding property document image:', imageError);
+          // Fallback to file path on error
+          const propertyPath = createParagraph(safeAgreementData.propertyDocuments.url, {
+            size: 24,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 480 }
+          });
+          if (propertyPath) documentParagraphs.push(propertyPath);
+        }
       }
 
       console.log(`[Word Generation] Created ${documentParagraphs.length} structured elements for Word document`);
