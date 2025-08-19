@@ -422,12 +422,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       };
 
-      // Helper function to convert HTML to Word paragraphs, handling images and proper formatting
+      // Helper function to convert HTML to Word paragraphs, handling bold text and proper formatting
       const htmlToWordParagraphs = (html: string) => {
         const paragraphs = [];
-        
-        // Don't process images here - we'll handle them in separate document sections
-        // Just process the main text content
         
         // Remove images from HTML for text processing
         let processedContent = html
@@ -436,16 +433,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
           .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
           .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n') // Handle headings
-          .replace(/<strong>(.*?)<\/strong>/gi, '$1') // Remove strong tags but keep text
-          .replace(/<b>(.*?)<\/b>/gi, '$1')  // Remove bold tags but keep text
-          .replace(/<[^>]*>/g, '')          // Remove all other HTML tags
           .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
           .replace(/&amp;/gi, '&')          // Convert &amp; to &
           .replace(/&lt;/gi, '<')           // Convert &lt; to <
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
-
           .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
           .trim();
 
@@ -468,18 +461,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
                               /\d{6}/.test(trimmedBlock) || // Contains pincode
                               trimmedBlock.split('\n').length >= 3); // Multiple lines
             
-            const para = createParagraph(trimmedBlock, {
-              size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-              bold: isTitle || isHeading,
-              alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
-              spacing: { 
-                before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
-                after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
+            // Handle mixed bold/regular text within a paragraph
+            if (/<(strong|b)>/i.test(block)) {
+              // This paragraph contains bold text - handle it specially
+              const textRuns = [];
+              let currentText = block;
+              
+              // Process bold tags
+              let match;
+              const boldRegex = /<(strong|b)>(.*?)<\/(strong|b)>/gi;
+              let lastIndex = 0;
+              
+              while ((match = boldRegex.exec(currentText)) !== null) {
+                // Add regular text before bold
+                const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').trim();
+                if (beforeText) {
+                  textRuns.push(new TextRun({
+                    text: beforeText,
+                    font: "Times New Roman",
+                    size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
+                    bold: false
+                  }));
+                }
+                
+                // Add bold text
+                const boldText = match[2].replace(/<[^>]*>/g, '').trim();
+                if (boldText) {
+                  textRuns.push(new TextRun({
+                    text: boldText,
+                    font: "Times New Roman",
+                    size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
+                    bold: true
+                  }));
+                }
+                
+                lastIndex = boldRegex.lastIndex;
               }
-            });
-            
-            if (para) {
-              paragraphs.push(para);
+              
+              // Add remaining regular text after last bold
+              const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').trim();
+              if (afterText) {
+                textRuns.push(new TextRun({
+                  text: afterText,
+                  font: "Times New Roman",
+                  size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
+                  bold: false
+                }));
+              }
+              
+              if (textRuns.length > 0) {
+                paragraphs.push(new Paragraph({
+                  children: textRuns,
+                  alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+                  spacing: { 
+                    before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
+                    after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
+                  }
+                }));
+              }
+            } else {
+              // No bold text - handle normally
+              const cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
+              const para = createParagraph(cleanText, {
+                size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
+                bold: isTitle || isHeading,
+                alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+                spacing: { 
+                  before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
+                  after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
+                }
+              });
+              
+              if (para) {
+                paragraphs.push(para);
+              }
             }
           }
         });
@@ -497,219 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-      console.log(`[Word Generation] Created ${documentParagraphs.length} structured elements for Word document`);
-
-      // Create additional clauses (hardcoded for now - will be replaced with template processing)
-      const clauses = [
-        `That the tenancy shall be initially for the period of with effect from ${safeAgreementData.rentalTerms?.startDate || '[START_DATE]'} to ${safeAgreementData.rentalTerms?.endDate || '[END_DATE]'} and will be renewed every 11 months with mutual consent of both the landlord and tenant.`,
-        
-        `That the rent payable by the tenant to the landlord or his/her Authorized person, in respect of the said premises, shall be ₹${safeAgreementData.rentalTerms?.monthlyRent || '[AMOUNT]'} (${safeAgreementData.rentalTerms?.monthlyRentWords || '[AMOUNT_WORDS]'}) per month which shall be payable on or before ${safeAgreementData.rentalTerms?.paymentDueDateFrom || '[DATE_FROM]'} - ${safeAgreementData.rentalTerms?.paymentDueDateTo || '[DATE_TO]'} date of every succeeding month of the rental period.`,
-        
-        `That the tenant has paid a sum of ₹${safeAgreementData.rentalTerms?.securityDeposit || '[DEPOSIT]'}/- (Rupees ${safeAgreementData.rentalTerms?.securityDepositWords || '[DEPOSIT_WORDS]'} only) as interest-free security deposit, the receipt of which is hereby acknowledged by the landlord. This advance amount shall be returned to the tenant by the landlord at the time of vacating the said premises after adjusting the dues such as rent, water charges, maintenance charges, electricity dues, and cost of damages if any.`,
-        
-        `All the expenses on the said premises such as electric power, water, gas, professional tax, municipal tax, and GST (relating to the tenant business) shall be paid by the tenant. All the above-mentioned paid receipts shall be handed over to the landlord by the Tenant.`,
-        
-        `That the furniture, fittings and fixtures in the house premises are in good condition, and the tenant shall return the same to the landlord in good condition except for normal wear and tear before vacating the house premises. Any damage shall be reimbursed by the tenant to the landlord.`,
-        
-        `That the tenant has agreed to ensure a minimum stay of ${safeAgreementData.rentalTerms?.minimumStay || '[MINIMUM_STAY]'} months. Both parties agree to provide a notice period of ${safeAgreementData.rentalTerms?.noticePeriod || '[NOTICE_PERIOD]'} month(s) before vacating the premises.`,
-        
-        `Tenant affirm that there is no pending or any criminal antecedent against him and he is responsible to file police verification document before appropriate authority within 15 days from the date of this agreement.`,
-        
-        `That the tenant shall not sub-rent or sublet either the entire or any part of the said premises. The premises shall be used only for ${safeAgreementData.propertyDetails?.purpose || '[PURPOSE]'} purposes.`,
-        
-        `That the tenant has agreed to keep the house premises clean and in hygienic condition including the surrounding areas and the tenant has agreed not to do any action that would cause permanent / structural damages / changes without obtaining prior consent from the owner on impact and costs.`,
-        
-        `That the landlord shall be at liberty to inspect the house premises personally or through any authorized person(s) as and when necessary.`,
-        
-        `It is hereby agreed that if default is made by the tenant in payment of the rent for a period of three months, or in observance and performance of any of the covenants and stipulations hereby contained, then on such default, the landlord shall be entitled in addition to or in the alternative to any other remedy that may be available to him at this discretion, to terminate the Rent and eject the tenant from the said premises; and to take possession thereof as full and absolute owner thereof.`,
-        
-        `That the landlord shall be responsible for the payment of all taxes and levies pertaining to the said premises including but not limited to House Tax, Property Tax, other ceases, if any, and any other statutory taxes, levied by the Government or Governmental Departments. During the term of this Agreement, the landlord shall comply with all rules, regulations and requirements of any statutory authority, local, state and central government and governmental departments in respect of the said premises.`
-      ];
-
-      // Add commercial clause if applicable
-      if (safeAgreementData.propertyDetails?.purpose && safeAgreementData.propertyDetails.purpose !== 'Residential') {
-        clauses.push(`The Licensee shall be solely responsible for cancelling or surrendering any registration number, GST number, or any other licenses, permissions, or registrations obtained on the basis of the licensed premises, within one (1) month from the date of vacating the said premises. Deposit shall withhold till the evidence for cancellation of all the documents.`);
-      }
-
-      // Generate numbered clauses
-      clauses.forEach((clause, index) => {
-        const clausePara = createParagraph(`${index + 1}. ${clause}`, {
-          alignment: AlignmentType.JUSTIFIED,
-          spacing: { after: 160 },
-          indent: { left: 720 } // 0.5 inch indent
-        });
-        if (clausePara) documentParagraphs.push(clausePara);
-      });
-
-      // Add additional clauses if present
-      if (safeAgreementData.additionalClauses && safeAgreementData.additionalClauses !== 'No additional clauses specified.') {
-        const additionalTitle = createParagraph("Additional Clause:", {
-          bold: true,
-          spacing: { before: 160, after: 80 }
-        });
-        if (additionalTitle) documentParagraphs.push(additionalTitle);
-        
-        const additionalPara = createParagraph(safeAgreementData.additionalClauses, {
-          alignment: AlignmentType.JUSTIFIED,
-          spacing: { after: 160 }
-        });
-        if (additionalPara) documentParagraphs.push(additionalPara);
-      }
-
-      // 8. Witness statement
-      const witnessStatement = createParagraph("IN WITNESS WHEREOF, the parties have set their hands on the day and year first above written, without any external influence or pressure from anybody.", {
-        size: 26, // 16pt
-        bold: true,
-        alignment: AlignmentType.LEFT,
-        spacing: { before: 240, after: 320 }
-      });
-      if (witnessStatement) documentParagraphs.push(witnessStatement);
-
-      // 9. Signature sections
-      // Create signature table for landlord
-      const landlordSigTable = new Table({
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 1 },
-          bottom: { style: BorderStyle.SINGLE, size: 1 },
-          left: { style: BorderStyle.SINGLE, size: 1 },
-          right: { style: BorderStyle.SINGLE, size: 1 },
-        },
-        width: {
-          size: 100,
-          type: WidthType.PERCENTAGE,
-        },
-        rows: [
-          new TableRow({
-            children: [
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({ text: (safeAgreementData.ownerDetails?.name || '[OWNER_NAME]').toUpperCase(), font: "Times New Roman", size: 24, bold: true })],
-                    spacing: { after: 80 }
-                  }),
-                  new Paragraph({
-                    children: [new TextRun({ text: "Landlord", font: "Times New Roman", size: 24, italics: true })],
-                    spacing: { after: 400 }
-                  }),
-                  new Paragraph({
-                    children: [new TextRun({ text: "________________________", font: "Times New Roman", size: 24 })],
-                  })
-                ],
-                width: { size: 70, type: WidthType.PERCENTAGE }
-              }),
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({ text: "Passport Size Photo", font: "Times New Roman", size: 20 })],
-                    alignment: AlignmentType.CENTER,
-                    spacing: { before: 800, after: 800 }
-                  })
-                ],
-                borders: {
-                  top: { style: BorderStyle.DOT_DASH, size: 1 },
-                  bottom: { style: BorderStyle.DOT_DASH, size: 1 },
-                  left: { style: BorderStyle.DOT_DASH, size: 1 },
-                  right: { style: BorderStyle.DOT_DASH, size: 1 },
-                },
-                width: { size: 30, type: WidthType.PERCENTAGE }
-              })
-            ]
-          })
-        ]
-      });
-      documentParagraphs.push(landlordSigTable);
-
-      // Add spacing
-      documentParagraphs.push(new Paragraph({ spacing: { after: 320 } }));
-
-      // Create signature table for tenant
-      const tenantSigTable = new Table({
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 1 },
-          bottom: { style: BorderStyle.SINGLE, size: 1 },
-          left: { style: BorderStyle.SINGLE, size: 1 },
-          right: { style: BorderStyle.SINGLE, size: 1 },
-        },
-        width: {
-          size: 100,
-          type: WidthType.PERCENTAGE,
-        },
-        rows: [
-          new TableRow({
-            children: [
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({ text: (safeAgreementData.tenantDetails?.name || '[TENANT_NAME]').toUpperCase(), font: "Times New Roman", size: 24, bold: true })],
-                    spacing: { after: 80 }
-                  }),
-                  new Paragraph({
-                    children: [new TextRun({ text: "Tenant", font: "Times New Roman", size: 24, italics: true })],
-                    spacing: { after: 400 }
-                  }),
-                  new Paragraph({
-                    children: [new TextRun({ text: "________________________", font: "Times New Roman", size: 24 })],
-                  })
-                ],
-                width: { size: 70, type: WidthType.PERCENTAGE }
-              }),
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({ text: "Passport Size Photo", font: "Times New Roman", size: 20 })],
-                    alignment: AlignmentType.CENTER,
-                    spacing: { before: 800, after: 800 }
-                  })
-                ],
-                borders: {
-                  top: { style: BorderStyle.DOT_DASH, size: 1 },
-                  bottom: { style: BorderStyle.DOT_DASH, size: 1 },
-                  left: { style: BorderStyle.DOT_DASH, size: 1 },
-                  right: { style: BorderStyle.DOT_DASH, size: 1 },
-                },
-                width: { size: 30, type: WidthType.PERCENTAGE }
-              })
-            ]
-          })
-        ]
-      });
-      documentParagraphs.push(tenantSigTable);
-
-      // Add spacing
-      documentParagraphs.push(new Paragraph({ spacing: { after: 320 } }));
-
-      // Witnesses section
-      const witnessTable = new Table({
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 1 },
-          bottom: { style: BorderStyle.SINGLE, size: 1 },
-          left: { style: BorderStyle.SINGLE, size: 1 },
-          right: { style: BorderStyle.SINGLE, size: 1 },
-        },
-        width: {
-          size: 100,
-          type: WidthType.PERCENTAGE,
-        },
-        rows: [
-          new TableRow({
-            children: [
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({ text: "Witnesses", font: "Times New Roman", size: 24, bold: true })],
-                    spacing: { after: 240 }
-                  }),
-                  new Paragraph({
-                    children: [new TextRun({ text: "_______________________          _______________________", font: "Times New Roman", size: 24 })],
-                    spacing: { after: 240 }
-                  })
-                ],
-              })
-            ]
-          })
-        ]
-      });
-      documentParagraphs.push(witnessTable);
+      console.log(`[Word Generation] Template processing complete with ${documentParagraphs.length} elements`);
 
       // Add document sections if documents exist (matching PDF layout exactly)
       let hasDocuments = false;
