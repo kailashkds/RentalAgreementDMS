@@ -49,8 +49,8 @@ export default function PasswordManagementModal({
 
     try {
       setIsResetting(true);
-      await apiRequest(`/api/customers/${customer.id}`, "PATCH", {
-        password: newPassword.trim()
+      await apiRequest(`/api/customers/${customer.id}/reset-password`, "PATCH", {
+        newPassword: newPassword.trim()
       });
 
       toast({
