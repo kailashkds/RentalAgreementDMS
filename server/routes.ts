@@ -95,11 +95,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/customers", async (req, res) => {
     try {
-      const { search, limit, offset } = req.query;
+      const { search, limit, offset, activeOnly } = req.query;
       const result = await storage.getCustomers(
         search as string,
         limit ? parseInt(limit as string) : undefined,
-        offset ? parseInt(offset as string) : undefined
+        offset ? parseInt(offset as string) : undefined,
+        activeOnly === 'true'
       );
       res.json(result);
     } catch (error) {

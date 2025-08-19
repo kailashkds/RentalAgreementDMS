@@ -257,7 +257,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     }
   }, [editingAgreement, isOpen, reset, toast]);
 
-  const { data: customersData } = useCustomers({ search: "", limit: 100 });
+  const { data: customersData } = useCustomers({ search: "", limit: 100, activeOnly: true });
   const { data: societies } = useSocieties({ limit: 100 });
   
   // Address search hooks

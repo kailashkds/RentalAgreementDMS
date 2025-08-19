@@ -36,7 +36,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Customer operations
-  getCustomers(search?: string, limit?: number, offset?: number): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }>;
+  getCustomers(search?: string, limit?: number, offset?: number, activeOnly?: boolean): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }>;
   getCustomer(id: string): Promise<Customer | undefined>;
   getCustomerByMobile(mobile: string): Promise<Customer | undefined>;
   createCustomer(customer: InsertCustomer & { password?: string | null }): Promise<Customer>;
@@ -127,14 +127,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Customer operations
-  async getCustomers(search?: string, limit = 50, offset = 0): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }> {
-    const whereConditions = search
-      ? or(
+  async getCustomers(search?: string, limit = 50, offset = 0, activeOnly = false): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }> {
+    const conditions = [];
+    
+    if (search) {
+      conditions.push(
+        or(
           ilike(customers.name, `%${search}%`),
           ilike(customers.mobile, `%${search}%`),
           ilike(customers.email, `%${search}%`)
         )
-      : undefined;
+      );
+    }
+    
+    if (activeOnly) {
+      conditions.push(eq(customers.isActive, true));
+    }
+    
+    const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [customersResult, totalResult] = await Promise.all([
       db

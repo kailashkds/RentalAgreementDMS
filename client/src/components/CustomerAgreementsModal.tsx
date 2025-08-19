@@ -14,7 +14,8 @@ import {
   FileText,
   Folder,
   X,
-  ArrowLeft
+  ArrowLeft,
+  Loader2
 } from "lucide-react";
 
 interface Customer {
@@ -35,21 +36,22 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
   const { toast } = useToast();
   const [selectedAgreement, setSelectedAgreement] = useState<any>(null);
   const [showAgreementDetails, setShowAgreementDetails] = useState(false);
+  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
   
   const { data: agreementsData, isLoading } = useAgreements({
     customerId: customer?.id || "",
   });
 
-  const downloadAgreementPdf = async (agreement: any) => {
+  const previewAgreementPdf = async (agreementId: string) => {
+    setLoadingStates(prev => ({ ...prev, [`preview-${agreementId}`]: true }));
+    
     try {
-      console.log('Starting PDF generation for agreement:', agreement.id);
-      console.log('Agreement data:', {
-        hasOwnerDetails: !!agreement.ownerDetails,
-        hasTenantDetails: !!agreement.tenantDetails,
-        hasPropertyDetails: !!agreement.propertyDetails,
-        hasRentalTerms: !!agreement.rentalTerms,
-        agreementNumber: agreement.agreementNumber
-      });
+      const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
+      if (!agreement) {
+        throw new Error('Agreement not found');
+      }
+
+      console.log('Starting PDF preview for agreement:', agreement.id);
 
       const response = await fetch('/api/agreements/generate-pdf', {
         method: 'POST',
@@ -66,7 +68,6 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
           language: agreement.language || 'english',
           additionalClauses: agreement.additionalClauses || [],
           agreementNumber: agreement.agreementNumber,
-          // Include document data for embedding
           documents: agreement.documents || {},
           ownerDocuments: agreement.ownerDocuments || {},
           tenantDocuments: agreement.tenantDocuments || {},
@@ -74,20 +75,17 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
         }),
       });
 
-      console.log('PDF generation response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('PDF generation successful, received HTML');
         
-        // Create a temporary HTML page for printing/PDF generation
+        // Create a temporary HTML page for preview
         const printWindow = window.open('', '_blank');
         if (printWindow) {
           printWindow.document.write(`
             <!DOCTYPE html>
             <html>
             <head>
-              <title>Rental Agreement - ${agreement.agreementNumber || 'Agreement'}</title>
+              <title>Rental Agreement Preview - ${agreement.agreementNumber || 'Agreement'}</title>
               <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
               <style>
                 @page {
@@ -228,12 +226,99 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
         throw new Error(errorData.message || 'Failed to generate PDF');
       }
     } catch (error) {
+      console.error('PDF preview error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to preview PDF.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [`preview-${agreementId}`]: false }));
+    }
+  };
+
+  const downloadAgreementPdf = async (agreementId: string) => {
+    setLoadingStates(prev => ({ ...prev, [`pdf-${agreementId}`]: true }));
+    
+    try {
+      const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
+      if (!agreement) {
+        throw new Error('Agreement not found');
+      }
+
+      await previewAgreementPdf(agreementId);
+    } catch (error) {
       console.error('PDF download error:', error);
       toast({
         title: "Error",
         description: "Failed to download PDF.",
         variant: "destructive",
       });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [`pdf-${agreementId}`]: false }));
+    }
+  };
+
+  const downloadWordDocument = async (agreementId: string) => {
+    setLoadingStates(prev => ({ ...prev, [`word-${agreementId}`]: true }));
+    
+    try {
+      const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
+      if (!agreement) {
+        throw new Error('Agreement not found');
+      }
+
+      console.log('Starting Word document generation for agreement:', agreement.id);
+
+      const response = await fetch('/api/agreements/generate-word', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ownerDetails: agreement.ownerDetails || {},
+          tenantDetails: agreement.tenantDetails || {},
+          propertyDetails: agreement.propertyDetails || {},
+          rentalTerms: agreement.rentalTerms || {},
+          agreementDate: agreement.agreementDate,
+          createdAt: agreement.createdAt,
+          language: agreement.language || 'english',
+          additionalClauses: agreement.additionalClauses || [],
+          agreementNumber: agreement.agreementNumber,
+          documents: agreement.documents || {},
+          ownerDocuments: agreement.ownerDocuments || {},
+          tenantDocuments: agreement.tenantDocuments || {},
+          propertyDocuments: agreement.propertyDocuments || {}
+        }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${agreement.agreementNumber || 'agreement'}.docx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Word Document Downloaded",
+          description: `${agreement.agreementNumber}.docx downloaded successfully`,
+        });
+      } else {
+        const errorData = await response.json();
+        console.error('Word generation error:', errorData);
+        throw new Error(errorData.message || 'Failed to generate Word document');
+      }
+    } catch (error) {
+      console.error('Word download error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download Word document.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [`word-${agreementId}`]: false }));
     }
   };
 
@@ -276,63 +361,7 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
     }
   };
 
-  const downloadWordDocument = async (agreement: any) => {
-    try {
-      console.log('Starting Word generation for agreement:', agreement.id);
 
-      const response = await fetch('/api/agreements/generate-word', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ownerDetails: agreement.ownerDetails || {},
-          tenantDetails: agreement.tenantDetails || {},
-          propertyDetails: agreement.propertyDetails || {},
-          rentalTerms: agreement.rentalTerms || {},
-          agreementDate: agreement.agreementDate,
-          createdAt: agreement.createdAt,
-          language: agreement.language || 'english',
-          additionalClauses: agreement.additionalClauses || [],
-          agreementNumber: agreement.agreementNumber,
-          documents: agreement.documents || {},
-          ownerDocuments: agreement.ownerDocuments || {},
-          tenantDocuments: agreement.tenantDocuments || {},
-          propertyDocuments: agreement.propertyDocuments || {}
-        }),
-      });
-
-      console.log('Word generation response status:', response.status);
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `rental_agreement_${agreement.agreementNumber || 'document'}.docx`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        
-        toast({
-          title: "Word Document Downloaded",
-          description: `Agreement ${agreement.agreementNumber} downloaded as Word document.`,
-        });
-      } else {
-        const errorData = await response.json();
-        console.error('Word generation error:', errorData);
-        throw new Error(errorData.message || 'Failed to generate Word document');
-      }
-    } catch (error) {
-      console.error('Word download error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to download Word document.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const viewAgreement = (agreement: any) => {
     setSelectedAgreement(agreement);
@@ -700,22 +729,48 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => downloadAgreementPdf(agreement)}
+                          onClick={() => previewAgreementPdf(agreement.id)}
+                          title="Preview PDF"
+                          disabled={loadingStates[`preview-${agreement.id}`]}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          {loadingStates[`preview-${agreement.id}`] ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Eye className="h-4 w-4 mr-1" />
+                          )}
+                          Preview
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => downloadAgreementPdf(agreement.id)}
                           title="Download PDF"
+                          disabled={loadingStates[`pdf-${agreement.id}`]}
                           className="text-green-600 hover:text-green-900"
                         >
-                          <Download className="h-4 w-4 mr-1" />
+                          {loadingStates[`pdf-${agreement.id}`] ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-1" />
+                          )}
                           PDF
                         </Button>
 
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => downloadWordDocument(agreement)}
+                          onClick={() => downloadWordDocument(agreement.id)}
                           title="Download Word Document"
+                          disabled={loadingStates[`word-${agreement.id}`]}
                           className="text-blue-600 hover:text-blue-900"
                         >
-                          <FileText className="h-4 w-4 mr-1" />
+                          {loadingStates[`word-${agreement.id}`] ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <FileText className="h-4 w-4 mr-1" />
+                          )}
                           Word
                         </Button>
                         

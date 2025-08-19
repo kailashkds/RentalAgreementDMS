@@ -5,6 +5,7 @@ interface UseCustomersOptions {
   search?: string;
   limit?: number;
   offset?: number;
+  activeOnly?: boolean;
 }
 
 interface CustomersResponse {
@@ -13,15 +14,16 @@ interface CustomersResponse {
 }
 
 export function useCustomers(options: UseCustomersOptions = {}) {
-  const { search, limit = 50, offset = 0 } = options;
+  const { search, limit = 50, offset = 0, activeOnly = false } = options;
   
   const params = new URLSearchParams();
   if (search) params.append('search', search);
+  if (activeOnly) params.append('activeOnly', 'true');
   params.append('limit', limit.toString());
   params.append('offset', offset.toString());
 
   return useQuery<CustomersResponse>({
-    queryKey: ["/api/customers", search, limit, offset],
+    queryKey: ["/api/customers", search, limit, offset, activeOnly],
     queryFn: async () => {
       const response = await fetch(`/api/customers?${params.toString()}`);
       if (!response.ok) {
