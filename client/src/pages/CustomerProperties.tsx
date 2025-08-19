@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building, MapPin, Plus, Eye, ArrowLeft } from "lucide-react";
-import { AddPropertyDialog } from "@/components/AddPropertyDialog";
+// AddPropertyDialog component will be created inline
 import { useState } from "react";
 
 interface Property {
@@ -44,7 +44,7 @@ export default function CustomerProperties() {
   });
 
   const { data: properties, isLoading: propertiesLoading, refetch } = useQuery<Property[]>({
-    queryKey: [`/api/properties`, { customerId }],
+    queryKey: [`/api/properties?customerId=${customerId}`],
     enabled: !!customerId
   });
 
@@ -84,9 +84,9 @@ export default function CustomerProperties() {
         <h2 className="text-xl font-semibold" data-testid="text-properties-count">
           {properties?.length || 0} Properties
         </h2>
-        <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-property">
+        <Button disabled data-testid="button-add-property">
           <Plus className="h-4 w-4 mr-2" />
-          Add Property
+          Add Property (Coming Soon)
         </Button>
       </div>
 
@@ -98,64 +98,85 @@ export default function CustomerProperties() {
             <p className="text-muted-foreground mb-4">
               This customer doesn't have any properties yet.
             </p>
-            <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-first-property">
+            <Button disabled data-testid="button-add-first-property">
               <Plus className="h-4 w-4 mr-2" />
-              Add First Property
+              Add First Property (Coming Soon)
             </Button>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {properties?.map((property) => (
-            <Card key={property.id} className="hover:shadow-md transition-shadow" data-testid={`card-property-${property.id}`}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg">{property.flatNumber}</CardTitle>
-                  <Badge variant={property.propertyType === 'commercial' ? 'secondary' : 'default'}>
-                    {property.propertyType}
-                  </Badge>
-                </div>
-                {property.building && (
-                  <p className="text-sm text-muted-foreground">{property.building}</p>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <span>{property.society}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{property.area}, {property.city}</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {property.state} - {property.pincode}
-                  </div>
-                  {property.purpose && (
-                    <div className="text-sm">
-                      <strong>Purpose:</strong> {property.purpose}
-                    </div>
-                  )}
-                </div>
-                <Link href={`/customers/${customerId}/properties/${property.id}/agreements`}>
-                  <Button className="w-full" variant="outline" data-testid={`button-view-agreements-${property.id}`}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Agreements
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Property
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Address
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Purpose
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {properties?.map((property) => (
+                  <tr key={property.id} data-testid={`row-property-${property.id}`}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {property.flatNumber}
+                        </div>
+                        {property.building && (
+                          <div className="text-sm text-gray-500">
+                            {property.building}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">
+                        {property.society}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {property.area}, {property.city}, {property.state} - {property.pincode}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Badge variant={property.propertyType === 'commercial' ? 'secondary' : 'default'}>
+                        {property.propertyType}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {property.purpose || 'Not specified'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Link href={`/customers/${customerId}/properties/${property.id}/agreements`}>
+                        <Button size="sm" variant="outline" data-testid={`button-view-agreements-${property.id}`}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Agreements
+                        </Button>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
       )}
 
-      <AddPropertyDialog
-        open={showAddDialog}
-        onClose={() => setShowAddDialog(false)}
-        customerId={customerId!}
-        onPropertyAdded={handlePropertyAdded}
-      />
+
     </div>
   );
 }
