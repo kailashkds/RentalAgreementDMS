@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 import { 
   FileSignature, 
   Calendar,
@@ -11,7 +12,9 @@ import {
   Download,
   Eye,
   FileText,
-  Folder
+  Folder,
+  X,
+  ArrowLeft
 } from "lucide-react";
 
 interface Customer {
@@ -30,6 +33,8 @@ interface CustomerAgreementsModalProps {
 
 export default function CustomerAgreementsModal({ isOpen, onClose, customer }: CustomerAgreementsModalProps) {
   const { toast } = useToast();
+  const [selectedAgreement, setSelectedAgreement] = useState<any>(null);
+  const [showAgreementDetails, setShowAgreementDetails] = useState(false);
   
   const { data: agreementsData, isLoading } = useQuery({
     queryKey: ["/api/agreements", customer?.id],
@@ -142,12 +147,169 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
   };
 
   const viewAgreement = (agreement: any) => {
-    window.open(`/agreements?id=${agreement.id}`, '_blank');
+    setSelectedAgreement(agreement);
+    setShowAgreementDetails(true);
+  };
+
+  const handleCloseDetailsView = () => {
+    setShowAgreementDetails(false);
+    setSelectedAgreement(null);
   };
 
   if (!customer) return null;
 
   const agreements = (agreementsData as any)?.agreements || [];
+
+  if (showAgreementDetails && selectedAgreement) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCloseDetailsView}
+                  className="mr-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to List
+                </Button>
+                <FileSignature className="h-5 w-5" />
+                Agreement Details: {selectedAgreement.agreementNumber}
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Agreement Info */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <FileSignature className="h-4 w-4" />
+                    Agreement Information
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div><span className="font-medium">Number:</span> {selectedAgreement.agreementNumber}</div>
+                    <div><span className="font-medium">Status:</span> 
+                      <Badge variant="outline" className="ml-2">
+                        {selectedAgreement.status}
+                      </Badge>
+                    </div>
+                    <div><span className="font-medium">Language:</span> {selectedAgreement.language}</div>
+                    <div><span className="font-medium">Agreement Date:</span> {selectedAgreement.agreementDate}</div>
+                    <div><span className="font-medium">Start Date:</span> {selectedAgreement.startDate}</div>
+                    <div><span className="font-medium">End Date:</span> {selectedAgreement.endDate}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    Download Options
+                  </h3>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadAgreementPdf(selectedAgreement)}
+                      className="w-full justify-start"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </Button>
+                    
+                    {selectedAgreement.notarizedDocumentUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadNotarizedDocument(selectedAgreement)}
+                        className="w-full justify-start"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Download Notarized Document
+                      </Button>
+                    )}
+                    
+                    {!selectedAgreement.notarizedDocumentUrl && (
+                      <div className="text-xs text-gray-500 p-2 bg-yellow-50 rounded border">
+                        No notarized document available
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Property Details */}
+            {selectedAgreement.propertyDetails && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Property Details
+                </h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><span className="font-medium">Address:</span> {selectedAgreement.propertyDetails.address || 'N/A'}</div>
+                  <div><span className="font-medium">City:</span> {selectedAgreement.propertyDetails.city || 'N/A'}</div>
+                  <div><span className="font-medium">State:</span> {selectedAgreement.propertyDetails.state || 'N/A'}</div>
+                  <div><span className="font-medium">Pin Code:</span> {selectedAgreement.propertyDetails.pinCode || 'N/A'}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Rental Terms */}
+            {selectedAgreement.rentalTerms && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Rental Terms
+                </h3>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div><span className="font-medium">Monthly Rent:</span> ₹{selectedAgreement.rentalTerms.monthlyRent || 'N/A'}</div>
+                  <div><span className="font-medium">Security Deposit:</span> ₹{selectedAgreement.rentalTerms.securityDeposit || 'N/A'}</div>
+                  <div><span className="font-medium">Lock-in Period:</span> {selectedAgreement.rentalTerms.lockInPeriod || 'N/A'} months</div>
+                  <div><span className="font-medium">Notice Period:</span> {selectedAgreement.rentalTerms.noticePeriod || 'N/A'} months</div>
+                  <div><span className="font-medium">Rent Due:</span> {selectedAgreement.rentalTerms.rentDueDate || 'N/A'}</div>
+                  <div><span className="font-medium">Late Fee:</span> ₹{selectedAgreement.rentalTerms.lateFeeAmount || 'N/A'}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Owner & Tenant Details */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Owner Details
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div><span className="font-medium">Name:</span> {selectedAgreement.ownerDetails?.name || 'N/A'}</div>
+                  <div><span className="font-medium">Mobile:</span> {selectedAgreement.ownerDetails?.mobile || 'N/A'}</div>
+                  <div><span className="font-medium">Email:</span> {selectedAgreement.ownerDetails?.email || 'N/A'}</div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Tenant Details
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div><span className="font-medium">Name:</span> {selectedAgreement.tenantDetails?.name || 'N/A'}</div>
+                  <div><span className="font-medium">Mobile:</span> {selectedAgreement.tenantDetails?.mobile || 'N/A'}</div>
+                  <div><span className="font-medium">Email:</span> {selectedAgreement.tenantDetails?.email || 'N/A'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
