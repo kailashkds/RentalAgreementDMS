@@ -89,11 +89,17 @@ export default function PasswordManagementModal({
 
       onPasswordReset();
       setNewPassword("");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error resetting password:", error);
+      
+      // Handle specific error messages from server
+      const errorMessage = error?.response?.data?.message || 
+                          error?.message || 
+                          "Failed to reset password. Please try again.";
+      
       toast({
-        title: "Error",
-        description: "Failed to reset password. Please try again.",
+        title: "Password Reset Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

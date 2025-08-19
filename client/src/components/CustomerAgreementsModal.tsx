@@ -2,12 +2,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { 
   FileSignature, 
   Calendar,
   MapPin,
   User,
-  ExternalLink
+  Download,
+  Eye,
+  FileText,
+  Folder
 } from "lucide-react";
 
 interface Customer {
@@ -25,6 +29,8 @@ interface CustomerAgreementsModalProps {
 }
 
 export default function CustomerAgreementsModal({ isOpen, onClose, customer }: CustomerAgreementsModalProps) {
+  const { toast } = useToast();
+  
   const { data: agreementsData, isLoading } = useQuery({
     queryKey: ["/api/agreements", customer?.id],
     queryFn: async () => {
@@ -37,6 +43,107 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
     },
     enabled: !!customer?.id && isOpen,
   });
+
+  const downloadAgreementPdf = async (agreement: any) => {
+    try {
+      const response = await fetch(`/api/agreements/${agreement.id}/pdf`);
+      if (!response.ok) {
+        throw new Error('Failed to get PDF data');
+      }
+      
+      const data = await response.json();
+      
+      // Use the same client-side PDF generation as the main app
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
+      
+      // Create a temporary container for the HTML
+      const tempContainer = document.createElement('div');
+      tempContainer.innerHTML = data.html;
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '-9999px';
+      tempContainer.style.width = '794px'; // A4 width in pixels
+      document.body.appendChild(tempContainer);
+      
+      // Generate PDF from HTML
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        width: 794,
+        height: 1123
+      });
+      
+      // Clean up
+      document.body.removeChild(tempContainer);
+      
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`${agreement.agreementNumber || 'agreement'}.pdf`);
+      
+      toast({
+        title: "Download Complete",
+        description: `${agreement.agreementNumber} PDF downloaded successfully`,
+      });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadNotarizedDocument = async (agreement: any) => {
+    try {
+      if (!agreement.notarizedDocumentUrl) {
+        toast({
+          title: "No Document",
+          description: "No notarized document available for this agreement",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(agreement.notarizedDocumentUrl);
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${agreement.agreementNumber || 'agreement'}_notarized.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Download Complete",
+        description: `Notarized document downloaded successfully`,
+      });
+    } catch (error) {
+      console.error('Error downloading notarized document:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download notarized document. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const viewAgreement = (agreement: any) => {
+    window.open(`/agreements?id=${agreement.id}`, '_blank');
+  };
 
   if (!customer) return null;
 
@@ -114,20 +221,39 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                         </div>
                       </div>
                       
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          const agreementId = agreement?.id;
-                          if (agreementId) {
-                            window.open(`/agreements?id=${agreementId}`, '_blank');
-                          }
-                        }}
-                        data-testid={`button-view-agreement-${safeKey}`}
-                      >
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => viewAgreement(agreement)}
+                          title="View Agreement"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => downloadAgreementPdf(agreement)}
+                          title="Download PDF"
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          PDF
+                        </Button>
+                        
+                        {agreement.notarizedDocumentUrl && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => downloadNotarizedDocument(agreement)}
+                            title="Download Notarized Document"
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            Document
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

@@ -278,6 +278,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download agreement PDF
+  app.get("/api/agreements/:id/pdf", async (req, res) => {
+    try {
+      const agreement = await storage.getAgreement(req.params.id);
+      if (!agreement) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+
+      // Find template for this agreement
+      const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
+      const template = templates.find(t => t.isActive) || templates[0];
+      
+      if (!template) {
+        return res.status(404).json({ message: "No PDF template found" });
+      }
+
+      // Generate PDF HTML content
+      const { generatePdfHtml } = await import("./fieldMapping");
+      const processedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
+      
+      // Return the HTML for client-side PDF generation
+      res.json({
+        html: processedHtml,
+        agreementNumber: agreement.agreementNumber,
+        filename: `${agreement.agreementNumber}.pdf`
+      });
+    } catch (error) {
+      console.error("Error generating agreement PDF:", error);
+      res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
   // Generate Word document
   app.post("/api/agreements/generate-word", async (req, res) => {
     try {
