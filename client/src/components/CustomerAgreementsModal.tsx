@@ -11,7 +11,9 @@ import {
   Download,
   Eye,
   FileText,
-  Folder
+  Folder,
+  Edit,
+  Trash2
 } from "lucide-react";
 
 interface Customer {
@@ -200,59 +202,118 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                     key={safeKey} 
                     className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-medium">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h4 className="font-medium text-lg">
                             {agreement?.agreementNumber || "N/A"}
                           </h4>
-                          <Badge variant="outline">
-                            {agreement?.status || "unknown"}
+                          <Badge 
+                            variant={agreement?.status === 'active' ? 'default' : 'outline'}
+                            className={agreement?.status === 'active' ? 'bg-green-100 text-green-800' : ''}
+                          >
+                            {agreement?.status || "Draft"}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
-                            {agreement?.language || "N/A"}
+                            {agreement?.language || "English"}
                           </Badge>
                         </div>
                         
-                        <div className="text-sm text-gray-600 space-y-1">
-                          <div>Agreement Date: {agreement?.agreementDate || "N/A"}</div>
-                          <div>Start Date: {agreement?.startDate || "N/A"}</div>
-                          <div>End Date: {agreement?.endDate || "N/A"}</div>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-600">
+                          <div><span className="font-medium">Property:</span> {agreement?.propertyDetails?.address || "N/A"}</div>
+                          <div><span className="font-medium">Landlord:</span> {agreement?.ownerDetails?.name || "N/A"}</div>
+                          <div><span className="font-medium">Tenant:</span> {agreement?.tenantDetails?.name || "N/A"}</div>
+                          <div><span className="font-medium">Period:</span> {agreement?.agreementDate || "N/A"} - {agreement?.endDate || "N/A"}</div>
                         </div>
                       </div>
                       
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
+                        {/* View Icon */}
                         <Button 
-                          variant="outline" 
+                          variant="ghost" 
                           size="sm"
+                          className="p-2 h-8 w-8 hover:bg-blue-50 hover:text-blue-600"
                           onClick={() => viewAgreement(agreement)}
                           title="View Agreement"
                         >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
+                          <Eye className="h-4 w-4" />
                         </Button>
                         
+                        {/* Download PDF Icon */}
                         <Button 
-                          variant="outline" 
+                          variant="ghost" 
                           size="sm"
+                          className="p-2 h-8 w-8 hover:bg-green-50 hover:text-green-600"
                           onClick={() => downloadAgreementPdf(agreement)}
                           title="Download PDF"
                         >
-                          <Download className="h-4 w-4 mr-1" />
-                          PDF
+                          <Download className="h-4 w-4" />
                         </Button>
                         
-                        {agreement.notarizedDocumentUrl && (
+                        {/* Download Document Icon */}
+                        {agreement.notarizedDocumentUrl ? (
                           <Button 
-                            variant="outline" 
+                            variant="ghost" 
                             size="sm"
+                            className="p-2 h-8 w-8 hover:bg-purple-50 hover:text-purple-600"
                             onClick={() => downloadNotarizedDocument(agreement)}
                             title="Download Notarized Document"
                           >
-                            <FileText className="h-4 w-4 mr-1" />
-                            Document
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="p-2 h-8 w-8 text-gray-300 cursor-not-allowed"
+                            disabled
+                            title="No notarized document available"
+                          >
+                            <FileText className="h-4 w-4" />
                           </Button>
                         )}
+                        
+                        {/* Edit Icon */}
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="p-2 h-8 w-8 hover:bg-yellow-50 hover:text-yellow-600"
+                          onClick={() => window.open(`/agreements/edit/${agreement.id}`, '_blank')}
+                          title="Edit Agreement"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* Copy Icon */}
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="p-2 h-8 w-8 hover:bg-indigo-50 hover:text-indigo-600"
+                          onClick={() => window.open(`/agreements/copy/${agreement.id}`, '_blank')}
+                          title="Copy Agreement"
+                        >
+                          <FileSignature className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* Delete Icon */}
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="p-2 h-8 w-8 hover:bg-red-50 hover:text-red-600"
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete agreement ${agreement.agreementNumber}?`)) {
+                              // Add delete functionality here
+                              toast({
+                                title: "Delete Agreement",
+                                description: "Delete functionality will be implemented",
+                                variant: "destructive"
+                              });
+                            }
+                          }}
+                          title="Delete Agreement"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
