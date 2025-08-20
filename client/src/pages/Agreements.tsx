@@ -32,6 +32,9 @@ export default function Agreements() {
   const [viewingAgreement, setViewingAgreement] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [customerFilter, setCustomerFilter] = useState("");
+  const [tenantFilter, setTenantFilter] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadingNotarized, setUploadingNotarized] = useState(false);
   const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
@@ -43,6 +46,35 @@ export default function Agreements() {
     limit: 20,
     offset: (currentPage - 1) * 20,
   });
+
+  // Client-side filtering for customer, tenant, and owner
+  const filteredAgreements = agreementsData?.agreements?.filter((agreement: any) => {
+    // Filter by customer name
+    if (customerFilter) {
+      const customerName = agreement.customer?.name?.toLowerCase() || '';
+      if (!customerName.includes(customerFilter.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Filter by tenant name
+    if (tenantFilter) {
+      const tenantName = agreement.tenantDetails?.name?.toLowerCase() || '';
+      if (!tenantName.includes(tenantFilter.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Filter by owner name
+    if (ownerFilter) {
+      const ownerName = agreement.ownerDetails?.name?.toLowerCase() || '';
+      if (!ownerName.includes(ownerFilter.toLowerCase())) {
+        return false;
+      }
+    }
+
+    return true;
+  }) || [];
 
   const handleRenewAgreement = async (agreementId: string) => {
     try {
@@ -537,8 +569,8 @@ export default function Agreements() {
     <AdminLayout title="Agreements" subtitle="Manage rental agreements">
       <div className="space-y-6">
         {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col justify-between items-start gap-4">
+          <div className="flex flex-col lg:flex-row gap-4 w-full">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -561,11 +593,47 @@ export default function Agreements() {
                 <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
+            <Input
+              placeholder="Filter by customer..."
+              value={customerFilter}
+              onChange={(e) => setCustomerFilter(e.target.value)}
+              className="w-full sm:w-48"
+            />
+            <Input
+              placeholder="Filter by tenant..."
+              value={tenantFilter}
+              onChange={(e) => setTenantFilter(e.target.value)}
+              className="w-full sm:w-48"
+            />
+            <Input
+              placeholder="Filter by owner..."
+              value={ownerFilter}
+              onChange={(e) => setOwnerFilter(e.target.value)}
+              className="w-full sm:w-48"
+            />
           </div>
-          <Button onClick={() => setShowWizard(true)} className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Agreement
-          </Button>
+          <div className="flex justify-between items-center w-full">
+            {(customerFilter || tenantFilter || ownerFilter || searchTerm || (statusFilter && statusFilter !== "all")) && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("all");
+                  setCustomerFilter("");
+                  setTenantFilter("");
+                  setOwnerFilter("");
+                }}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Clear all filters
+              </Button>
+            )}
+            <Button onClick={() => setShowWizard(true)} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Agreement
+            </Button>
+          </div>
         </div>
 
         {/* Agreements Table */}
@@ -573,9 +641,9 @@ export default function Agreements() {
           <div className="overflow-x-auto">
             {isLoading ? (
               <div className="p-6 text-center text-gray-500">Loading agreements...</div>
-            ) : agreementsData?.agreements?.length === 0 ? (
+            ) : filteredAgreements?.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
-                {searchTerm || (statusFilter && statusFilter !== "all") ? (
+                {searchTerm || customerFilter || tenantFilter || ownerFilter || (statusFilter && statusFilter !== "all") ? (
                   <>
                     No agreements found matching your criteria.
                     <Button
@@ -583,6 +651,9 @@ export default function Agreements() {
                       onClick={() => {
                         setSearchTerm("");
                         setStatusFilter("all");
+                        setCustomerFilter("");
+                        setTenantFilter("");
+                        setOwnerFilter("");
                       }}
                       className="ml-2 text-blue-600 hover:text-blue-700"
                     >
@@ -632,7 +703,7 @@ export default function Agreements() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {agreementsData?.agreements?.map((agreement: any, index: number) => (
+                  {filteredAgreements?.map((agreement: any, index: number) => (
                     <tr key={agreement.id || index}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-mono font-medium text-gray-900">
