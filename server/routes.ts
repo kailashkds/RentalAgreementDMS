@@ -426,6 +426,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
         // Handle center-aligned elements in HTML
         .replace(/<([^>]*?)text-align:\s*center([^>]*?)>/gi, '<$1text-align:center$2>');
+      
+      // Convert flexbox signature sections to table format for better Word layout
+      cleanedHtml = cleanedHtml.replace(
+        /<div[^>]*class="no-page-break"[^>]*style="[^"]*display:\s*flex[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+        (match, content) => {
+          // Check if this is a signature section (contains landlord/tenant info and passport photo)
+          if (content.includes('Passport Size Photo') && (content.includes('Landlord') || content.includes('Tenant'))) {
+            // Extract the name and role information
+            const nameMatch = content.match(/<p[^>]*style="[^"]*font-weight:\s*bold[^"]*"[^>]*>([^<]+)<\/p>/i);
+            const roleMatch = content.match(/<p[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>([^<]+)<\/p>/i);
+            
+            const name = nameMatch ? nameMatch[1].trim() : '';
+            const role = roleMatch ? roleMatch[1].trim() : '';
+            
+            // Convert to table format
+            return `
+              <table style="width: 100%; border: 1px solid #ccc; margin-top: 40px; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 20px; vertical-align: top; width: 70%;">
+                    <p style="font-weight: bold; font-size: 16px; text-transform: uppercase;">${name}</p>
+                    <p style="font-style: italic;">${role}</p>
+                    <div style="margin-top: 60px; width: 120px; border-top: 1px solid #000;"></div>
+                  </td>
+                  <td style="padding: 20px; text-align: center; vertical-align: top; width: 30%;">
+                    <div style="width: 140px; height: 160px; border: 1px dashed #000; display: inline-block; font-size: 12px; padding-top: 65px;">
+                      Passport Size Photo
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            `;
+          }
+          return match; // Return original if not a signature section
+        }
+      );
 
 
 
@@ -492,12 +527,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       };
 
-      // Helper function to convert HTML to Word paragraphs, handling bold text and proper formatting
+      // Helper function to convert HTML to Word paragraphs, handling bold text, tables, and proper formatting
       const htmlToWordParagraphs = (html: string) => {
         const paragraphs: any[] = [];
         
-        // Remove images from HTML for text processing
+        // First, extract and process tables separately
+        const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+        let tableMatches = [];
+        let match;
+        while ((match = tableRegex.exec(html)) !== null) {
+          tableMatches.push({
+            fullMatch: match[0],
+            content: match[1],
+            index: match.index
+          });
+        }
+        
+        // Process tables and convert to Word tables
+        tableMatches.forEach((tableMatch, tableIndex) => {
+          console.log(`[Word Generation] Processing table ${tableIndex + 1}`);
+          
+          // Extract table rows
+          const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+          const rows = [];
+          let rowMatch;
+          while ((rowMatch = rowRegex.exec(tableMatch.content)) !== null) {
+            const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+            const cells = [];
+            let cellMatch;
+            while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
+              // Clean cell content and extract text
+              const cellContent = cellMatch[1]
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<\/p>/gi, '\n')
+                .replace(/<p[^>]*>/gi, '')
+                .replace(/<div[^>]*>/gi, '')
+                .replace(/<\/div>/gi, '')
+                .replace(/<[^>]*>/g, '')
+                .replace(/&nbsp;/gi, ' ')
+                .replace(/&amp;/gi, '&')
+                .trim();
+              cells.push(cellContent);
+            }
+            if (cells.length > 0) {
+              rows.push(cells);
+            }
+          }
+          
+          // Create Word table
+          if (rows.length > 0) {
+            const tableRows = rows.map(rowCells => {
+              const tableCells = rowCells.map(cellText => 
+                new TableCell({
+                  children: [new Paragraph({
+                    children: [new TextRun({
+                      text: cellText || '',
+                      font: "Arial",
+                      size: 24
+                    })],
+                    alignment: cellText.includes('Passport Size Photo') ? AlignmentType.CENTER : AlignmentType.LEFT
+                  })],
+                  borders: {
+                    top: { style: BorderStyle.SINGLE, size: 1 },
+                    bottom: { style: BorderStyle.SINGLE, size: 1 },
+                    left: { style: BorderStyle.SINGLE, size: 1 },
+                    right: { style: BorderStyle.SINGLE, size: 1 }
+                  },
+                  width: {
+                    size: cellText.includes('Passport Size Photo') ? 30 : 70,
+                    type: WidthType.PERCENTAGE
+                  }
+                })
+              );
+              return new TableRow({ children: tableCells });
+            });
+            
+            paragraphs.push(new Table({
+              rows: tableRows,
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE
+              }
+            }));
+          }
+        });
+        
+        // Remove tables from HTML for regular text processing
         let processedContent = html
+          .replace(tableRegex, '') // Remove tables
           .replace(/<img[^>]*>/gi, '')  // Remove images completely for main text
           .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
           .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
