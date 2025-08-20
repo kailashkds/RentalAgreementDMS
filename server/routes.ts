@@ -427,84 +427,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Handle center-aligned elements in HTML
         .replace(/<([^>]*?)text-align:\s*center([^>]*?)>/gi, '<$1text-align:center$2>');
       
-      // Convert flexbox signature sections to table format for better Word layout  
-      console.log('[Word Generation] Looking for flexbox signature sections...');
+      // Convert flexbox signature sections to table format for better Word layout - more conservative approach
+      console.log('[Word Generation] Looking for signature sections to convert...');
       
-      // First try the exact flexbox pattern
-      let flexboxMatches = 0;
+      // Only convert very specific signature sections that contain both name and passport photo
+      let conversionCount = 0;
       cleanedHtml = cleanedHtml.replace(
         /<div[^>]*class="no-page-break"[^>]*style="[^"]*display:\s*flex[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
         (match, content) => {
-          flexboxMatches++;
-          console.log(`[Word Generation] Found flexbox div ${flexboxMatches}, checking content...`);
-          console.log(`[Word Generation] Content preview: ${content.substring(0, 200)}...`);
+          // Very strict check - must contain both a person's name and passport photo section
+          const hasPassportPhoto = content.includes('Passport Size Photo');
+          const hasPersonalInfo = content.includes('Landlord') || content.includes('Tenant') || content.includes('Witness');
+          const hasSignatureLine = content.includes('_______') || content.includes('border-top: 1px solid');
           
-          // Check if this is a signature section (contains landlord/tenant info and passport photo)
-          if (content.includes('Passport Size Photo') && (content.includes('Landlord') || content.includes('Tenant'))) {
-            console.log('[Word Generation] ✓ Converting flexbox signature section to table');
+          if (hasPassportPhoto && hasPersonalInfo && hasSignatureLine) {
+            conversionCount++;
+            console.log(`[Word Generation] Converting signature section ${conversionCount}`);
             
-            // Extract the name and role information more robustly
-            const nameMatch = content.match(/<p[^>]*>([^<]*(?:LANDLORD|TENANT|[A-Z\s]+))[^<]*<\/p>/i) ||
-                            content.match(/{{[^}]*NAME[^}]*}}/i) ||
-                            content.match(/>([A-Z\s]{2,})</);
+            // Extract name and role more carefully
+            const nameMatch = content.match(/<p[^>]*style="[^"]*font-weight:\s*bold[^"]*"[^>]*>([^<]+)<\/p>/i);
+            const roleMatch = content.match(/<p[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>([^<]+)<\/p>/i);
             
-            const roleMatch = content.match(/<p[^>]*style="[^"]*italic[^"]*"[^>]*>([^<]+)<\/p>/i) ||
-                            content.match(/>(Landlord|Tenant)</i);
+            const name = nameMatch ? nameMatch[1].trim() : '';
+            const role = roleMatch ? roleMatch[1].trim() : '';
             
-            const name = nameMatch ? nameMatch[1].trim() : 'NAME_PLACEHOLDER';
-            const role = roleMatch ? roleMatch[1].trim() : 'ROLE_PLACEHOLDER';
-            
-            console.log(`[Word Generation] Extracted: name="${name}", role="${role}"`);
-            
-            // Return a simple table that matches the PDF layout exactly with proper height
-            return `<table style="width: 100%; border: 1px solid #ccc; margin: 40px 0; border-collapse: collapse; min-height: 240px;">
-              <tr style="height: 240px;">
-                <td style="padding: 20px; vertical-align: top; width: 70%; height: 240px;">
-                  <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">${name}</p>
-                  <p style="font-style: italic; margin: 0 0 120px 0; font-size: 14px;">${role}</p>
-                  <div style="width: 120px; border-top: 1px solid #000; margin-top: 40px;"></div>
-                </td>
-                <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; height: 240px;">
-                  <div style="width: 160px; height: 200px; border: 1px dashed #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1.2;">
-                    Passport Size Photo
-                  </div>
-                </td>
-              </tr>
-            </table>`;
+            // Only convert if we have valid name and role
+            if (name && role) {
+              console.log(`[Word Generation] ✓ Creating table for: ${name} (${role})`);
+              
+              // Return inline table without breaking document flow
+              return `<div style="margin: 20px 0;">
+                <table style="width: 100%; border: 1px solid #ccc; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 20px; vertical-align: top; width: 70%; min-height: 180px;">
+                      <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">${name}</p>
+                      <p style="font-style: italic; margin: 0 0 80px 0; font-size: 14px;">${role}</p>
+                      <div style="width: 120px; border-top: 1px solid #000; margin-top: 20px;"></div>
+                    </td>
+                    <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; min-height: 180px; border-left: 1px solid #ccc;">
+                      <div style="width: 140px; height: 160px; border: 1px dashed #000; margin: 0 auto; font-size: 12px; line-height: 160px; text-align: center;">
+                        Passport Size Photo
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </div>`;
+            }
           }
-          console.log('[Word Generation] ✗ Not a signature section, keeping original');
+          
+          // Return original if not a signature section or missing required elements
           return match;
         }
       );
       
-      console.log(`[Word Generation] Processed ${flexboxMatches} flexbox divs`);
-      
-      // If no flexbox sections found, try alternative patterns
-      if (flexboxMatches === 0) {
-        console.log('[Word Generation] No flexbox found, trying alternative patterns...');
-        
-        // Try to find any section with Passport Size Photo
-        cleanedHtml = cleanedHtml.replace(
-          /<div[^>]*>([\s\S]*?Passport Size Photo[\s\S]*?)<\/div>/gi,
-          (match, content) => {
-            console.log('[Word Generation] Found Passport Size Photo section, converting...');
-            return `<table style="width: 100%; border: 1px solid #ccc; margin: 40px 0; border-collapse: collapse; min-height: 240px;">
-              <tr style="height: 240px;">
-                <td style="padding: 20px; vertical-align: top; width: 70%; height: 240px;">
-                  <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">{{OWNER_NAME}}</p>
-                  <p style="font-style: italic; margin: 0 0 120px 0; font-size: 14px;">Landlord</p>
-                  <div style="width: 120px; border-top: 1px solid #000; margin-top: 40px;"></div>
-                </td>
-                <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; height: 240px;">
-                  <div style="width: 160px; height: 200px; border: 1px dashed #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1.2;">
-                    Passport Size Photo
-                  </div>
-                </td>
-              </tr>
-            </table>`;
-          }
-        );
-      }
+      console.log(`[Word Generation] Converted ${conversionCount} signature sections to tables`);
 
 
 
