@@ -787,8 +787,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Helper function to create Word table from HTML table content
       const createWordTable = (tableContent: string) => {
         try {
-          console.log('[Word Generation] Processing table content:', tableContent.substring(0, 200) + '...');
-          
           // Extract table rows
           const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
           const rows = [];
@@ -801,142 +799,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
             let cellMatch;
             
             while ((cellMatch = cellRegex.exec(rowContent)) !== null) {
-              const fullCellContent = cellMatch[1];
-              console.log('[Word Generation] Processing cell:', fullCellContent.substring(0, 100) + '...');
+              const cellContent = cellMatch[1]
+                .replace(/<[^>]*>/g, '')  // Remove HTML tags
+                .replace(/&nbsp;/gi, ' ')
+                .trim();
               
               const cellParagraphs = [];
               
-              if (fullCellContent.includes('Passport Size Photo')) {
-                // Create passport photo cell - this is the right column
+              if (cellContent.includes('Passport Size Photo')) {
+                // Create passport photo cell
                 cellParagraphs.push(new Paragraph({
                   children: [new TextRun({
-                    text: "",
+                    text: "Passport Size Photo",
                     font: "Arial",
-                    size: 16
-                  })],
-                  spacing: { before: 200, after: 0 }
-                }));
-                cellParagraphs.push(new Paragraph({
-                  children: [new TextRun({
-                    text: "┌─────────────────┐",
-                    font: "Courier New",
                     size: 20
                   })],
                   alignment: AlignmentType.CENTER,
-                  spacing: { after: 40 }
+                  spacing: { before: 500, after: 500 }
                 }));
-                cellParagraphs.push(new Paragraph({
-                  children: [new TextRun({
-                    text: "│ Passport Size │",
-                    font: "Courier New",
-                    size: 20
-                  })],
-                  alignment: AlignmentType.CENTER,
-                  spacing: { after: 40 }
-                }));
-                cellParagraphs.push(new Paragraph({
-                  children: [new TextRun({
-                    text: "│     Photo     │",
-                    font: "Courier New",
-                    size: 20
-                  })],
-                  alignment: AlignmentType.CENTER,
-                  spacing: { after: 40 }
-                }));
-                cellParagraphs.push(new Paragraph({
-                  children: [new TextRun({
-                    text: "└─────────────────┘",
-                    font: "Courier New",
-                    size: 20
-                  })],
-                  alignment: AlignmentType.CENTER,
-                  spacing: { after: 200 }
-                }));
-              } else {
-                // This is a signature cell - left column with name, role, signature
+              } else if (cellContent.includes('_')) {
+                // This is a signature cell with name and signature line
+                const lines = cellContent.split('\n').filter(line => line.trim());
+                lines.forEach((line, index) => {
+                  const trimmedLine = line.trim();
+                  if (trimmedLine && !trimmedLine.match(/^_+$/)) {
+                    const isName = index === 0 || trimmedLine.toUpperCase() === trimmedLine;
+                    const isRole = trimmedLine.toLowerCase().includes('landlord') || 
+                                 trimmedLine.toLowerCase().includes('tenant') || 
+                                 trimmedLine.toLowerCase().includes('witness');
+                    
+                    cellParagraphs.push(new Paragraph({
+                      children: [new TextRun({
+                        text: trimmedLine,
+                        font: "Arial",
+                        size: isName ? 28 : 24,
+                        bold: isName,
+                        italics: isRole
+                      })],
+                      alignment: AlignmentType.LEFT,
+                      spacing: { after: isRole ? 80 : 40 }
+                    }));
+                  }
+                });
                 
-                // Extract name from bold paragraph - get actual names from data
-                let personName = "";
-                let personRole = "";
-                
-                // Check if this is landlord or tenant cell based on content
-                if (fullCellContent.includes('Landlord')) {
-                  personName = safeAgreementData.ownerDetails?.fullName || "LANDLORD";
-                  personRole = "Landlord";
-                } else if (fullCellContent.includes('Tenant')) {
-                  personName = safeAgreementData.tenantDetails?.fullName || "TENANT";
-                  personRole = "Tenant";
-                } else if (fullCellContent.includes('Witnesses')) {
-                  // Handle witnesses row differently
-                  cellParagraphs.push(new Paragraph({
-                    children: [new TextRun({
-                      text: "Witnesses",
-                      font: "Arial",
-                      size: 26,
-                      bold: true
-                    })],
-                    alignment: AlignmentType.LEFT,
-                    spacing: { before: 200, after: 600 }
-                  }));
-                  cellParagraphs.push(new Paragraph({
-                    children: [new TextRun({
-                      text: "_______________________",
-                      font: "Arial",
-                      size: 22
-                    })],
-                    alignment: AlignmentType.CENTER,
-                    spacing: { after: 200 }
-                  }));
-                } else {
-                  // Regular signature line cell
-                  cellParagraphs.push(new Paragraph({
-                    children: [new TextRun({
-                      text: "_______________________",
-                      font: "Arial",
-                      size: 22
-                    })],
-                    alignment: AlignmentType.CENTER,
-                    spacing: { before: 600, after: 200 }
-                  }));
-                }
-                
-                // Add name and role for signature cells
-                if (personName && personRole) {
-                  cellParagraphs.push(new Paragraph({
-                    children: [new TextRun({
-                      text: personName.toUpperCase(),
-                      font: "Arial",
-                      size: 28,
-                      bold: true
-                    })],
-                    alignment: AlignmentType.LEFT,
-                    spacing: { after: 160 }
-                  }));
-                  
-                  cellParagraphs.push(new Paragraph({
-                    children: [new TextRun({
-                      text: personRole,
-                      font: "Arial",
-                      size: 24,
-                      italics: true
-                    })],
-                    alignment: AlignmentType.LEFT,
-                    spacing: { after: 600 }
-                  }));
-                  
-                  cellParagraphs.push(new Paragraph({
-                    children: [new TextRun({
-                      text: "________________________",
-                      font: "Arial",
-                      size: 22
-                    })],
-                    alignment: AlignmentType.LEFT,
-                    spacing: { after: 200 }
-                  }));
-                }
+                // Add signature line
+                cellParagraphs.push(new Paragraph({
+                  children: [new TextRun({
+                    text: "________________________",
+                    font: "Arial",
+                    size: 22
+                  })],
+                  alignment: AlignmentType.LEFT,
+                  spacing: { before: 600, after: 100 }
+                }));
+              } else if (cellContent) {
+                // Regular text cell
+                cellParagraphs.push(new Paragraph({
+                  children: [new TextRun({
+                    text: cellContent,
+                    font: "Arial",
+                    size: 22
+                  })],
+                  alignment: AlignmentType.LEFT
+                }));
               }
-              
-              // cellParagraphs already populated above, no need for additional text
               
               cells.push(new TableCell({
                 children: cellParagraphs.length > 0 ? cellParagraphs : [new Paragraph({
@@ -1129,7 +1055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] Loaded ${logName} image, size: ${imageBuffer.length} bytes`);
             
             // Determine image type
-            let imageType: 'jpg' | 'png' | 'gif' | 'bmp' | 'svg' = 'jpg';
+            let imageType = 'jpg';
             if (imagePath.toLowerCase().endsWith('.png')) {
               imageType = 'png';
             }
