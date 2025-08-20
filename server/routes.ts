@@ -423,41 +423,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
 
-      // Helper function to clean extra spaces
-      const cleanExtraSpaces = (text: string): string => {
-        return text
-          .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
-          .replace(/\s+([.,;:!?])/g, '$1')  // Remove spaces before punctuation
-          .trim();
-      };
 
-      // Helper function to convert names to uppercase for signature lines
-      const formatNameForSignature = (text: string): string => {
-        // Extract name after "Tenant:" or "Landlord:" and convert to uppercase
-        const match = text.match(/^(Tenant|Landlord|TENANT|LANDLORD)\s*:?\s*(.*)$/i);
-        if (match) {
-          const label = match[1];
-          const name = match[2].trim();
-          return `${label}: ${name.toUpperCase()}`;
-        }
-        return text.toUpperCase();
-      };
 
       // Helper function to create paragraph with proper styling
       const createParagraph = (text: string, options: any = {}) => {
         if (!text) return null;
         
         // Ensure text is a string
-        let textStr = String(text);
+        const textStr = String(text);
         if (!textStr.trim()) return null;
-        
-        // Clean extra spaces
-        textStr = cleanExtraSpaces(textStr);
-        
-        // Apply uppercase formatting for signature lines
-        if (options.isSignatureLine) {
-          textStr = formatNameForSignature(textStr);
-        }
         
         const sanitizedText = textStr
           .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
@@ -553,16 +527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                      trimmedBlock.includes('hereinafter called the LANDLORD of the FIRST PART') ||
                                      trimmedBlock.includes('hereinafter called the TENANT of the SECOND PART');
             
-            // Check for specific bold sections as requested
-            const isBoldAgreementClause = trimmedBlock.includes('NOW THIS AGREEMENT WITNESSETH AND IT IS HEREBY AGREED BY AND BETWEEN THE PARTIES AS UNDER:') ||
-                                        trimmedBlock.includes('IN WITNESS WHEREOF, the parties have set their hands on the day and year first above written');
-            
-            // Check for property-related titles that should be bold
-            const isBoldPropertyTitle = /^(Property Address|Property Purpose|Property Furnished Status|Tenure|Monthly Rent|Security Deposit)/i.test(trimmedBlock.trim());
-            
-            // Check for end page signatures (tenant and landlord names should be uppercase)
-            const isSignatureLine = /^(Tenant|Landlord|TENANT|LANDLORD)\s*:?\s*/i.test(trimmedBlock.trim()) && 
-                                   trimmedBlock.length < 100;
+
             
             // Check for address blocks (contains multiple lines with address components)
             const isAddress = trimmedBlock.includes('\n') && 
@@ -583,33 +548,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               while ((match = boldRegex.exec(currentText)) !== null) {
                 // Add regular text before bold
-                let beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').trim();
-                beforeText = cleanExtraSpaces(beforeText);
-                
+                const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').trim();
                 if (beforeText) {
-                  // Apply uppercase formatting for signature lines
-                  if (isSignatureLine) {
-                    beforeText = formatNameForSignature(beforeText);
-                  }
-                  
                   textRuns.push(new TextRun({
                     text: beforeText,
                     font: "Arial",
                     size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-                    bold: isBoldAgreementClause || isBoldPropertyTitle
+                    bold: false
                   }));
                 }
                 
                 // Add bold text
-                let boldText = match[2].replace(/<[^>]*>/g, '').trim();
-                boldText = cleanExtraSpaces(boldText);
-                
+                const boldText = match[2].replace(/<[^>]*>/g, '').trim();
                 if (boldText) {
-                  // Apply uppercase formatting for signature lines
-                  if (isSignatureLine) {
-                    boldText = formatNameForSignature(boldText);
-                  }
-                  
                   textRuns.push(new TextRun({
                     text: boldText,
                     font: "Arial",
@@ -622,20 +573,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               // Add remaining regular text after last bold
-              let afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').trim();
-              afterText = cleanExtraSpaces(afterText);
-              
+              const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').trim();
               if (afterText) {
-                // Apply uppercase formatting for signature lines
-                if (isSignatureLine) {
-                  afterText = formatNameForSignature(afterText);
-                }
-                
                 textRuns.push(new TextRun({
                   text: afterText,
                   font: "Arial",
                   size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-                  bold: isBoldAgreementClause || isBoldPropertyTitle
+                  bold: false
                 }));
               }
               
@@ -653,20 +597,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else {
               // No bold text - handle normally
-              let cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
-              cleanText = cleanExtraSpaces(cleanText);
-              
+              const cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
               const para = createParagraph(cleanText, {
                 size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-                bold: isTitle || isBoldAgreementClause || isBoldPropertyTitle, // Apply bold rules
+                bold: isTitle, // Remove bold from headings unless it's a title
                 alignment: isTitle ? AlignmentType.CENTER : 
                           isPartyDesignation ? AlignmentType.RIGHT : 
                           AlignmentType.JUSTIFIED,
                 spacing: { 
                   before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
                   after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
-                },
-                isSignatureLine: isSignatureLine
+                }
               });
               
               if (para) {
@@ -678,6 +619,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return paragraphs;
       };
+
+      // Extract image URLs from the processed HTML before removing images
+      const extractImageUrls = (html: string) => {
+        const imageUrls = {};
+        const imgRegex = /<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/gi;
+        let match;
+        
+        while ((match = imgRegex.exec(html)) !== null) {
+          const src = match[1];
+          const alt = match[2];
+          
+          console.log(`[Word Generation] Found image: ${alt} -> ${src}`);
+          
+          if (alt.includes('Owner Aadhaar') || alt.includes('Landlord Aadhaar')) {
+            imageUrls['ownerAadhar'] = src;
+          } else if (alt.includes('Owner PAN') || alt.includes('Landlord PAN')) {
+            imageUrls['ownerPan'] = src;
+          } else if (alt.includes('Tenant Aadhaar')) {
+            imageUrls['tenantAadhar'] = src;
+          } else if (alt.includes('Tenant PAN')) {
+            imageUrls['tenantPan'] = src;
+          }
+        }
+        
+        console.log(`[Word Generation] Extracted image URLs:`, imageUrls);
+        return imageUrls;
+      };
+      
+      // Extract image URLs from the processed HTML
+      const documentImages = extractImageUrls(cleanedHtml);
 
       // Convert the processed HTML to Word paragraphs
       const convertedParagraphs = htmlToWordParagraphs(cleanedHtml);
@@ -695,7 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let hasDocuments = false;
 
       // Landlord documents section
-      if (safeAgreementData.ownerDetails?.aadharUrl || safeAgreementData.ownerDetails?.panUrl) {
+      if (documentImages.ownerAadhar || documentImages.ownerPan) {
         hasDocuments = true;
         // Page break for landlord documents
         documentParagraphs.push(new Paragraph({ 
@@ -711,7 +682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         if (landlordDocsTitle) documentParagraphs.push(landlordDocsTitle);
 
-        if (safeAgreementData.ownerDetails?.aadharUrl) {
+        if (documentImages.ownerAadhar) {
           const aadharTitle = createParagraph("Aadhaar Card:", {
             size: 24,
             bold: false,
@@ -722,7 +693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Embed actual image instead of file path
           try {
-            const imagePath = path.join(process.cwd(), safeAgreementData.ownerDetails.aadharUrl);
+            const imagePath = path.join(process.cwd(), documentImages.ownerAadhar);
             console.log(`[Word Generation] Looking for Landlord Aadhaar image at: ${imagePath}`);
             
             if (fs.existsSync(imagePath)) {
@@ -747,7 +718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } else {
               console.log(`[Word Generation] Landlord Aadhaar image not found at path: ${imagePath}`);
               // Fallback to file path if image not found
-              const aadharPath = createParagraph(`Image not found: ${safeAgreementData.ownerDetails.aadharUrl}`, {
+              const aadharPath = createParagraph(`Image not found: ${documentImages.ownerAadhar}`, {
                 size: 24,
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
@@ -757,7 +728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } catch (imageError) {
             console.error('[Word Generation] Error embedding Landlord Aadhaar image:', imageError);
             // Fallback to file path on error
-            const aadharPath = createParagraph(`Error loading image: ${safeAgreementData.ownerDetails.aadharUrl}`, {
+            const aadharPath = createParagraph(`Error loading image: ${documentImages.ownerAadhar}`, {
               size: 24,
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
@@ -766,7 +737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        if (safeAgreementData.ownerDetails?.panUrl) {
+        if (documentImages.ownerPan) {
           // Page break for PAN
           documentParagraphs.push(new Paragraph({ 
             children: [new TextRun({ text: '' })],
@@ -783,7 +754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Embed actual PAN image instead of file path
           try {
-            const imagePath = path.join(process.cwd(), safeAgreementData.ownerDetails.panUrl);
+            const imagePath = path.join(process.cwd(), documentImages.ownerPan);
             console.log(`[Word Generation] Looking for Landlord PAN image at: ${imagePath}`);
             
             if (fs.existsSync(imagePath)) {
@@ -806,7 +777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[Word Generation] Successfully embedded Landlord PAN image`);
             } else {
               console.log(`[Word Generation] Landlord PAN image not found at path: ${imagePath}`);
-              const panPath = createParagraph(`Image not found: ${safeAgreementData.ownerDetails.panUrl}`, {
+              const panPath = createParagraph(`Image not found: ${documentImages.ownerPan}`, {
                 size: 24,
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
@@ -815,7 +786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } catch (imageError) {
             console.error('[Word Generation] Error embedding Landlord PAN image:', imageError);
-            const panPath = createParagraph(`Error loading image: ${safeAgreementData.ownerDetails.panUrl}`, {
+            const panPath = createParagraph(`Error loading image: ${documentImages.ownerPan}`, {
               size: 24,
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
@@ -826,7 +797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Tenant documents section
-      if (safeAgreementData.tenantDetails?.aadharUrl || safeAgreementData.tenantDetails?.panUrl) {
+      if (documentImages.tenantAadhar || documentImages.tenantPan) {
         hasDocuments = true;
         // Page break for tenant documents
         documentParagraphs.push(new Paragraph({ 
@@ -842,7 +813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         if (tenantDocsTitle) documentParagraphs.push(tenantDocsTitle);
 
-        if (safeAgreementData.tenantDetails?.aadharUrl) {
+        if (documentImages.tenantAadhar) {
           const aadharTitle = createParagraph("Aadhaar Card:", {
             size: 24,
             bold: false,
@@ -853,7 +824,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Embed actual tenant Aadhaar image instead of file path
           try {
-            const imagePath = path.join(process.cwd(), safeAgreementData.tenantDetails.aadharUrl);
+            const imagePath = path.join(process.cwd(), documentImages.tenantAadhar);
             console.log(`[Word Generation] Looking for Tenant Aadhaar image at: ${imagePath}`);
             
             if (fs.existsSync(imagePath)) {
@@ -876,7 +847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[Word Generation] Successfully embedded Tenant Aadhaar image`);
             } else {
               console.log(`[Word Generation] Tenant Aadhaar image not found at path: ${imagePath}`);
-              const aadharPath = createParagraph(`Image not found: ${safeAgreementData.tenantDetails.aadharUrl}`, {
+              const aadharPath = createParagraph(`Image not found: ${documentImages.tenantAadhar}`, {
                 size: 24,
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
@@ -885,7 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } catch (imageError) {
             console.error('[Word Generation] Error embedding Tenant Aadhaar image:', imageError);
-            const aadharPath = createParagraph(`Error loading image: ${safeAgreementData.tenantDetails.aadharUrl}`, {
+            const aadharPath = createParagraph(`Error loading image: ${documentImages.tenantAadhar}`, {
               size: 24,
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
@@ -894,7 +865,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        if (safeAgreementData.tenantDetails?.panUrl) {
+        if (documentImages.tenantPan) {
           // Page break for PAN
           documentParagraphs.push(new Paragraph({ 
             children: [new TextRun({ text: '' })],
@@ -911,7 +882,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Embed actual tenant PAN image instead of file path
           try {
-            const imagePath = path.join(process.cwd(), safeAgreementData.tenantDetails.panUrl);
+            const imagePath = path.join(process.cwd(), documentImages.tenantPan);
             console.log(`[Word Generation] Looking for Tenant PAN image at: ${imagePath}`);
             
             if (fs.existsSync(imagePath)) {
@@ -934,7 +905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[Word Generation] Successfully embedded Tenant PAN image`);
             } else {
               console.log(`[Word Generation] Tenant PAN image not found at path: ${imagePath}`);
-              const panPath = createParagraph(`Image not found: ${safeAgreementData.tenantDetails.panUrl}`, {
+              const panPath = createParagraph(`Image not found: ${documentImages.tenantPan}`, {
                 size: 24,
                 alignment: AlignmentType.CENTER,
                 spacing: { after: 480 }
@@ -943,7 +914,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           } catch (imageError) {
             console.error('[Word Generation] Error embedding Tenant PAN image:', imageError);
-            const panPath = createParagraph(`Error loading image: ${safeAgreementData.tenantDetails.panUrl}`, {
+            const panPath = createParagraph(`Error loading image: ${documentImages.tenantPan}`, {
               size: 24,
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
