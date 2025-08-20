@@ -452,11 +452,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      // Pattern to find signature sections based on HTML structure we observed
+      // Simple pattern to detect and replace signature sections
+      // Replace landlord signature section
       cleanedHtml = cleanedHtml.replace(
-        /(<p[^>]*>[\s\S]*?<\/p>[\s\S]*?<p style="font-style: italic;">Landlord<\/p>[\s\S]*?Passport Size Photo)/gi,
+        /<p style="font-style: italic;">Landlord<\/p>[\s\S]*?Passport Size Photo/gi,
         (match) => {
-          // Get the actual owner name from the form data
           const ownerName = safeAgreementData.ownerDetails?.fullName || "LANDLORD";
           const role = "Landlord";
           const sectionId = `${ownerName}-${role}`;
@@ -467,8 +467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] ✓ Converting landlord signature to table: ${ownerName}`);
             
             return `
-<br><br>
-<table border="1" style="width: 100%; border-collapse: collapse;">
+<table border="1" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
   <tr height="200">
     <td width="70%" style="padding: 10px; vertical-align: top;">
       <b style="font-size: 16px; text-transform: uppercase;">${ownerName}</b>
@@ -483,19 +482,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       </div>
     </td>
   </tr>
-</table>
-<br><br>`;
+</table>`;
           }
           
           return match;
         }
       );
       
-      // Pattern for tenant signature
+      // Replace tenant signature section
       cleanedHtml = cleanedHtml.replace(
-        /(<p[^>]*>[\s\S]*?<\/p>[\s\S]*?<p style="font-style: italic;">Tenant<\/p>[\s\S]*?Passport Size Photo)/gi,
+        /<p style="font-style: italic;">Tenant<\/p>[\s\S]*?Passport Size Photo/gi,
         (match) => {
-          // Get the actual tenant name from the form data
           const tenantName = safeAgreementData.tenantDetails?.fullName || "TENANT";
           const role = "Tenant";
           const sectionId = `${tenantName}-${role}`;
@@ -506,8 +503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] ✓ Converting tenant signature to table: ${tenantName}`);
             
             return `
-<br><br>
-<table border="1" style="width: 100%; border-collapse: collapse;">
+<table border="1" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
   <tr height="200">
     <td width="70%" style="padding: 10px; vertical-align: top;">
       <b style="font-size: 16px; text-transform: uppercase;">${tenantName}</b>
@@ -522,8 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       </div>
     </td>
   </tr>
-</table>
-<br><br>`;
+</table>`;
           }
           
           return match;
@@ -1054,10 +1049,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const imageBuffer = fs.readFileSync(imagePath);
             console.log(`[Word Generation] Loaded ${logName} image, size: ${imageBuffer.length} bytes`);
             
-            // Determine image type
-            let imageType = 'jpg';
+            // Determine image type and ensure it's a valid type
+            let imageType: "jpg" | "png" | "gif" | "bmp" | "svg" = 'jpg';
             if (imagePath.toLowerCase().endsWith('.png')) {
               imageType = 'png';
+            } else if (imagePath.toLowerCase().endsWith('.gif')) {
+              imageType = 'gif';
+            } else if (imagePath.toLowerCase().endsWith('.bmp')) {
+              imageType = 'bmp';
+            } else if (imagePath.toLowerCase().endsWith('.svg')) {
+              imageType = 'svg';
             }
             
             documentParagraphs.push(new Paragraph({
