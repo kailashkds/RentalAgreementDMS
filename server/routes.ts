@@ -491,7 +491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Helper function to convert HTML to Word paragraphs, handling bold text and proper formatting
       const htmlToWordParagraphs = (html: string) => {
-        const paragraphs = [];
+        const paragraphs: any[] = [];
         
         // Remove images from HTML for text processing
         let processedContent = html
