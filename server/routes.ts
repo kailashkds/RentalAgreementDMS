@@ -630,10 +630,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let src = match[1];
           const alt = match[2];
           
-          // Ensure we have absolute path by resolving relative paths
+          console.log(`[Word Generation] Raw image found: ${alt} -> ${src.substring(0, 100)}...`);
+          
+          // Handle data URLs (base64 images) - extract from data URL and save temporarily
           if (src.startsWith('data:')) {
-            // Skip data URLs (base64 images)
-            continue;
+            try {
+              // Extract base64 data
+              const base64Data = src.split(',')[1];
+              const buffer = Buffer.from(base64Data, 'base64');
+              
+              // Create temporary file in uploads directory
+              const tempFileName = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+              const tempPath = path.join(process.cwd(), 'uploads', tempFileName);
+              
+              // Write to temporary file
+              fs.writeFileSync(tempPath, buffer);
+              src = tempPath;
+              
+              console.log(`[Word Generation] Converted data URL to file: ${tempPath}`);
+            } catch (error) {
+              console.error(`[Word Generation] Error processing data URL:`, error);
+              continue;
+            }
           } else if (!src.startsWith('/') && !src.startsWith('http')) {
             // Relative path - make it absolute
             src = path.resolve(process.cwd(), src);
@@ -642,7 +660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             src = path.join(process.cwd(), src.substring(1));
           }
           
-          console.log(`[Word Generation] Found image: ${alt} -> ${src}`);
+          console.log(`[Word Generation] Processed image: ${alt} -> ${src}`);
           
           if (alt.includes('Owner Aadhaar') || alt.includes('Landlord Aadhaar')) {
             imageUrls['ownerAadhar'] = src;
