@@ -473,7 +473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return new Paragraph({
             children: textRuns,
             alignment: options.alignment || AlignmentType.LEFT,
-            spacing: options.spacing || { after: 120 },
+            spacing: options.spacing || { after: 80 },
             indent: options.indent || undefined,
             ...options.paragraphOptions
           });
@@ -488,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             italics: options.italic || false,
           })],
           alignment: options.alignment || AlignmentType.LEFT,
-          spacing: options.spacing || { after: 80 },  // Reduced spacing
+          spacing: options.spacing || { after: 80 },
           indent: options.indent || undefined,
           ...options.paragraphOptions
         });
@@ -595,7 +595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   children: textRuns,
                   alignment: isTitle ? AlignmentType.CENTER : 
                            isPartyDesignation ? AlignmentType.RIGHT : 
-                           AlignmentType.JUSTIFIED,
+                           AlignmentType.LEFT,
                   spacing: { 
                     before: isTitle ? 120 : (isHeading ? 80 : (isAddress ? 60 : 0)),
                     after: isTitle ? 160 : (isHeading ? 120 : (isAddress ? 120 : 120))
@@ -610,7 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 bold: isTitle, // Remove bold from headings unless it's a title
                 alignment: isTitle ? AlignmentType.CENTER : 
                           isPartyDesignation ? AlignmentType.RIGHT : 
-                          AlignmentType.JUSTIFIED,
+                          AlignmentType.LEFT,
                 spacing: { 
                   before: isTitle ? 120 : (isHeading ? 80 : (isAddress ? 60 : 0)),
                   after: isTitle ? 160 : (isHeading ? 120 : (isAddress ? 120 : 120))
