@@ -1061,17 +1061,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
               imageType = 'svg';
             }
             
+            // Create image run with proper type handling
+            const imageRunOptions: any = {
+              data: imageBuffer,
+              transformation: {
+                width: 300,
+                height: 200,
+              },
+              type: imageType
+            };
+            
+            // Add fallback for SVG images
+            if (imageType === 'svg') {
+              imageRunOptions.fallback = {
+                data: imageBuffer,
+                transformation: {
+                  width: 300,
+                  height: 200,
+                },
+                type: 'png'
+              };
+            }
+            
             documentParagraphs.push(new Paragraph({
-              children: [
-                new ImageRun({
-                  data: imageBuffer,
-                  transformation: {
-                    width: 300,
-                    height: 200,
-                  },
-                  type: imageType
-                })
-              ],
+              children: [new ImageRun(imageRunOptions)],
               alignment: AlignmentType.CENTER,
               spacing: { after: 480 }
             }));
