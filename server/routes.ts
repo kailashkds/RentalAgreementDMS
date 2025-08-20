@@ -495,68 +495,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const htmlToWordParagraphs = (html: string) => {
         const paragraphs: any[] = [];
         
-        // Remove images from HTML for text processing and clean up excess whitespace
+        // Remove images from HTML for text processing
         let processedContent = html
-          .replace(/<img[^>]*>/gi, '')      // Remove images completely for main text
-          .replace(/<br\s*\/?>/gi, '\n')    // Convert <br> to single newlines (reduce spacing)
-          .replace(/<\/p>/gi, '\n')         // Convert </p> to single newlines
+          .replace(/<img[^>]*>/gi, '')  // Remove images completely for main text
+          .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
+          .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
           .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
-          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n$1\n') // Handle headings with minimal spacing
+          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n') // Handle headings
           .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
           .replace(/&amp;/gi, '&')          // Convert &amp; to &
           .replace(/&lt;/gi, '<')           // Convert &lt; to <
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
-          .replace(/\n\s+/g, '\n')          // Remove extra spaces after newlines
-          .replace(/\s+\n/g, '\n')          // Remove extra spaces before newlines
-          .replace(/\n{3,}/g, '\n\n')       // Limit consecutive newlines to maximum 2
-          .replace(/^\s+|\s+$/gm, '')       // Trim each line
+          .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
           .trim();
 
-        // Split by newlines and filter out empty blocks
-        const textBlocks = processedContent.split('\n').filter(block => block.trim());
-        
-        // Track seen content to prevent duplicates 
-        const seenContent = new Set();
-        const duplicateDetection = new Set([
-          'landlord aadhaar card',
-          'landlord pan card', 
-          'tenant aadhaar card',
-          'tenant pan card',
-          'property documents',
-          'landlord documents',
-          'tenant documents'
-        ]);
+        // Split by double newlines to create paragraphs
+        const textBlocks = processedContent.split('\n\n').filter(block => block.trim());
         
         textBlocks.forEach(block => {
           const trimmedBlock = block.trim();
           if (trimmedBlock) {
-            
-            // Check for duplicate document titles and skip them
-            const lowerBlock = trimmedBlock.toLowerCase();
-            let isDuplicate = false;
-            
-            for (let duplicate of duplicateDetection) {
-              if (lowerBlock.includes(duplicate)) {
-                if (seenContent.has(duplicate)) {
-                  console.log(`[Word Generation] Skipping duplicate: ${trimmedBlock}`);
-                  isDuplicate = true;
-                  break;
-                } else {
-                  seenContent.add(duplicate);
-                  break;
-                }
-              }
-            }
-            
-            if (isDuplicate) {
-              return; // Skip this block
-            }
-            // Check if this looks like a title - more flexible detection
-            const isTitle = trimmedBlock.includes('Rent Agreement') || trimmedBlock.includes('RENT AGREEMENT') || 
-                           trimmedBlock.includes('Rental Agreement') || trimmedBlock.includes('RENTAL AGREEMENT') ||
-                           (trimmedBlock.length < 100 && /rent.*agreement/i.test(trimmedBlock));
+            // Check if this looks like a title (all caps, short, centered content)
+            const isTitle = trimmedBlock.length < 100 && trimmedBlock === trimmedBlock.toUpperCase() && 
+                           (trimmedBlock.includes('RENT AGREEMENT') || trimmedBlock.includes('RENTAL AGREEMENT'));
             
             // Check if this looks like a heading (starts with number, short)
             const isHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
@@ -630,8 +593,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                            isPartyDesignation ? AlignmentType.RIGHT : 
                            AlignmentType.JUSTIFIED,
                   spacing: { 
-                    before: isTitle ? 240 : (isHeading ? 80 : (isAddress ? 60 : 0)),
-                    after: isTitle ? 320 : (isHeading ? 120 : (isAddress ? 120 : 120))
+                    before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
+                    after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
                   }
                 }));
               }
@@ -645,8 +608,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           isPartyDesignation ? AlignmentType.RIGHT : 
                           AlignmentType.JUSTIFIED,
                 spacing: { 
-                  before: isTitle ? 240 : (isHeading ? 80 : (isAddress ? 60 : 0)),
-                  after: isTitle ? 320 : (isHeading ? 120 : (isAddress ? 120 : 120))
+                  before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
+                  after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
                 }
               });
               
