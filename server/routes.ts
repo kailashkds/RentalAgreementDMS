@@ -451,7 +451,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const hasPersonalInfo = content.includes('Landlord') || content.includes('Tenant') || content.includes('Witness');
           const hasSignatureLine = content.includes('_______') || content.includes('border-top: 1px solid');
           
-          // Check if this is a landlord/tenant section (has passport photo) or witness section (no passport photo)
           if (hasPassportPhoto && hasPersonalInfo && hasSignatureLine) {
             // Extract name and role more carefully
             const nameMatch = content.match(/<p[^>]*style="[^"]*font-weight:\s*bold[^"]*"[^>]*>([^<]+)<\/p>/i);
@@ -469,7 +468,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               conversionCount++;
               console.log(`[Word Generation] ✓ Creating table for: ${name} (${role}) - Section ${conversionCount}`);
               
-              // Simple table structure with passport photo box (for landlord/tenant)
+              // Create simple block-level table - no positioning, no flexbox, linear flow
+              console.log(`[Word Generation] ✓ Creating linear table for: ${name} (${role})`);
+              
+              // Simple table structure that stays in document flow
               return `
 <br><br>
 <table border="1" style="width: 100%; border-collapse: collapse;">
@@ -490,30 +492,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 </table>
 <br><br>`;
             }
-          } else if (hasPersonalInfo && hasSignatureLine && content.toLowerCase().includes('witness')) {
-            // Handle witness sections (no passport photo, just signature lines)
-            const nameMatch = content.match(/<p[^>]*style="[^"]*font-weight:\s*bold[^"]*"[^>]*>([^<]+)<\/p>/i);
-            const name = nameMatch ? nameMatch[1].trim() : 'Witnesses';
-            
-            // Count signature lines in witness section
-            const signatureCount = (content.match(/_______/g) || []).length;
-            const signatureLines = Array.from({length: Math.max(signatureCount, 2)}, () => '________________________<br><br>').join('');
-            
-            console.log(`[Word Generation] ✓ Creating witness section for: ${name} with ${signatureCount} signature lines`);
-            
-            // Simple witness table without passport photo
-            return `
-<br><br>
-<table border="1" style="width: 100%; border-collapse: collapse;">
-  <tr height="200">
-    <td style="padding: 10px; vertical-align: top;">
-      <b style="font-size: 16px;">${name}</b>
-      <br><br><br>
-      ${signatureLines}
-    </td>
-  </tr>
-</table>
-<br><br>`;
           }
           
           // Return original if not a signature section or already converted
@@ -651,11 +629,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const documentParagraphs = htmlToWordParagraphs(cleanedHtml);
       
       console.log(`[Word Generation] Created ${documentParagraphs.length} Word elements`);
-
-      // Now create the final Word document with the processed elements  
-      const docElements = documentParagraphs.filter(p => p !== null);
-      
-      console.log(`[Word Generation] Creating document with ${docElements.length} elements`);
+                        children: [new TextRun({
+                          text: trimmedLine,
+                          font: "Arial",
+                          size: isName ? 28 : 24,
+                          bold: isName,
+                          italics: isRole
+                        })],
+                        alignment: AlignmentType.LEFT,
+                        spacing: { after: isRole ? 80 : 40 }
+                      }));
+                    }
+                  });
+                  
+                  // Add signature line with more spacing to match passport photo height
+                  cellParagraphs.push(new Paragraph({
+                    children: [new TextRun({
+                      text: "________________________",
+                      font: "Arial",
+                      size: 22
+                    })],
+                    alignment: AlignmentType.LEFT,
+                    spacing: { before: 600, after: 100 }
+                  }));
+                  
+                  return new TableCell({
+                    children: cellParagraphs,
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1 },
+                      bottom: { style: BorderStyle.SINGLE, size: 1 },
+                      left: { style: BorderStyle.SINGLE, size: 1 },
+                      right: { style: BorderStyle.SINGLE, size: 1 }
+                    },
+                    width: {
+                      size: 70,
+                      type: WidthType.PERCENTAGE
+                    },
+                    verticalAlign: VerticalAlign.TOP
                   });
                 } else {
                   // Handle right column (passport photo)
