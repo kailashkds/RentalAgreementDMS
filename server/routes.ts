@@ -423,13 +423,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
 
+      // Helper function to clean extra spaces
+      const cleanExtraSpaces = (text: string): string => {
+        return text
+          .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
+          .replace(/\s+([.,;:!?])/g, '$1')  // Remove spaces before punctuation
+          .trim();
+      };
+
+      // Helper function to convert names to uppercase for signature lines
+      const formatNameForSignature = (text: string): string => {
+        // Extract name after "Tenant:" or "Landlord:" and convert to uppercase
+        const match = text.match(/^(Tenant|Landlord|TENANT|LANDLORD)\s*:?\s*(.*)$/i);
+        if (match) {
+          const label = match[1];
+          const name = match[2].trim();
+          return `${label}: ${name.toUpperCase()}`;
+        }
+        return text.toUpperCase();
+      };
+
       // Helper function to create paragraph with proper styling
       const createParagraph = (text: string, options: any = {}) => {
         if (!text) return null;
         
         // Ensure text is a string
-        const textStr = String(text);
+        let textStr = String(text);
         if (!textStr.trim()) return null;
+        
+        // Clean extra spaces
+        textStr = cleanExtraSpaces(textStr);
+        
+        // Apply uppercase formatting for signature lines
+        if (options.isSignatureLine) {
+          textStr = formatNameForSignature(textStr);
+        }
         
         const sanitizedText = textStr
           .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
@@ -525,6 +553,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                      trimmedBlock.includes('hereinafter called the LANDLORD of the FIRST PART') ||
                                      trimmedBlock.includes('hereinafter called the TENANT of the SECOND PART');
             
+            // Check for specific bold sections as requested
+            const isBoldAgreementClause = trimmedBlock.includes('NOW THIS AGREEMENT WITNESSETH AND IT IS HEREBY AGREED BY AND BETWEEN THE PARTIES AS UNDER:') ||
+                                        trimmedBlock.includes('IN WITNESS WHEREOF, the parties have set their hands on the day and year first above written');
+            
+            // Check for property-related titles that should be bold
+            const isBoldPropertyTitle = /^(Property Address|Property Purpose|Property Furnished Status|Tenure|Monthly Rent|Security Deposit)/i.test(trimmedBlock.trim());
+            
+            // Check for end page signatures (tenant and landlord names should be uppercase)
+            const isSignatureLine = /^(Tenant|Landlord|TENANT|LANDLORD)\s*:?\s*/i.test(trimmedBlock.trim()) && 
+                                   trimmedBlock.length < 100;
+            
             // Check for address blocks (contains multiple lines with address components)
             const isAddress = trimmedBlock.includes('\n') && 
                              (trimmedBlock.toLowerCase().includes('address') || 
@@ -544,19 +583,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               while ((match = boldRegex.exec(currentText)) !== null) {
                 // Add regular text before bold
-                const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').trim();
+                let beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').trim();
+                beforeText = cleanExtraSpaces(beforeText);
+                
                 if (beforeText) {
+                  // Apply uppercase formatting for signature lines
+                  if (isSignatureLine) {
+                    beforeText = formatNameForSignature(beforeText);
+                  }
+                  
                   textRuns.push(new TextRun({
                     text: beforeText,
                     font: "Arial",
                     size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-                    bold: false
+                    bold: isBoldAgreementClause || isBoldPropertyTitle
                   }));
                 }
                 
                 // Add bold text
-                const boldText = match[2].replace(/<[^>]*>/g, '').trim();
+                let boldText = match[2].replace(/<[^>]*>/g, '').trim();
+                boldText = cleanExtraSpaces(boldText);
+                
                 if (boldText) {
+                  // Apply uppercase formatting for signature lines
+                  if (isSignatureLine) {
+                    boldText = formatNameForSignature(boldText);
+                  }
+                  
                   textRuns.push(new TextRun({
                     text: boldText,
                     font: "Arial",
@@ -569,13 +622,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               // Add remaining regular text after last bold
-              const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').trim();
+              let afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').trim();
+              afterText = cleanExtraSpaces(afterText);
+              
               if (afterText) {
+                // Apply uppercase formatting for signature lines
+                if (isSignatureLine) {
+                  afterText = formatNameForSignature(afterText);
+                }
+                
                 textRuns.push(new TextRun({
                   text: afterText,
                   font: "Arial",
                   size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-                  bold: false
+                  bold: isBoldAgreementClause || isBoldPropertyTitle
                 }));
               }
               
@@ -593,17 +653,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else {
               // No bold text - handle normally
-              const cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
+              let cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
+              cleanText = cleanExtraSpaces(cleanText);
+              
               const para = createParagraph(cleanText, {
                 size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-                bold: isTitle, // Remove bold from headings unless it's a title
+                bold: isTitle || isBoldAgreementClause || isBoldPropertyTitle, // Apply bold rules
                 alignment: isTitle ? AlignmentType.CENTER : 
                           isPartyDesignation ? AlignmentType.RIGHT : 
                           AlignmentType.JUSTIFIED,
                 spacing: { 
                   before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
                   after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
-                }
+                },
+                isSignatureLine: isSignatureLine
               });
               
               if (para) {
