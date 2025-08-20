@@ -578,72 +578,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       };
 
-      // Helper function to convert HTML to Word paragraphs, handling bold text, tables, and proper formatting
+      // Helper function to convert HTML to Word paragraphs, maintaining sequential order
       const htmlToWordParagraphs = (html: string) => {
         const paragraphs: any[] = [];
         
-        // First, extract and process tables separately
-        const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
-        let tableMatches = [];
-        let match;
-        while ((match = tableRegex.exec(html)) !== null) {
-          tableMatches.push({
-            fullMatch: match[0],
-            content: match[1],
-            index: match.index
-          });
-        }
+        // Process HTML sequentially, inserting tables exactly where they appear
+        console.log('[Word Generation] Processing HTML sequentially to maintain order...');
         
-        // Process tables and convert to Word tables
-        tableMatches.forEach((tableMatch, tableIndex) => {
-          console.log(`[Word Generation] Processing table ${tableIndex + 1}`);
-          
-          // Extract table rows
-          const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-          const rows = [];
-          let rowMatch;
-          while ((rowMatch = rowRegex.exec(tableMatch.content)) !== null) {
-            const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-            const cells = [];
-            let cellMatch;
-            while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
-              // Clean cell content and extract text
-              const cellContent = cellMatch[1]
-                .replace(/<br\s*\/?>/gi, '\n')
-                .replace(/<\/p>/gi, '\n')
-                .replace(/<p[^>]*>/gi, '')
-                .replace(/<div[^>]*>/gi, '')
-                .replace(/<\/div>/gi, '')
-                .replace(/<[^>]*>/g, '')
-                .replace(/&nbsp;/gi, ' ')
-                .replace(/&amp;/gi, '&')
-                .trim();
-              cells.push(cellContent);
-            }
-            if (cells.length > 0) {
-              rows.push(cells);
+        let currentPos = 0;
+        const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+        let tableMatch;
+        
+        // Process content before each table and the table itself
+        while ((tableMatch = tableRegex.exec(html)) !== null) {
+          // Process content before the table
+          if (tableMatch.index > currentPos) {
+            const beforeTableHtml = html.slice(currentPos, tableMatch.index);
+            if (beforeTableHtml.trim()) {
+              const textParagraphs = processTextContent(beforeTableHtml);
+              paragraphs.push(...textParagraphs);
             }
           }
           
-          // Create Word table with better formatting
-          if (rows.length > 0) {
-            const tableRows = rows.map(rowCells => {
-              const tableCells = rowCells.map((cellText, cellIndex) => {
-                // Handle left column (landlord/tenant info)
-                if (cellIndex === 0) {
-                  const cellParagraphs = [];
-                  const lines = cellText.split('\n').filter(line => line.trim());
-                  
-                  lines.forEach((line, lineIndex) => {
-                    const trimmedLine = line.trim();
-                    if (trimmedLine) {
-                      // Check if this is a name (first line, usually uppercase)
-                      const isName = lineIndex === 0 && trimmedLine.length > 0;
-                      // Check if this is a role (contains "Landlord" or "Tenant")
-                      const isRole = trimmedLine.toLowerCase().includes('landlord') || 
-                                   trimmedLine.toLowerCase().includes('tenant');
-                      
-                      cellParagraphs.push(new Paragraph({
+          // Process the table itself
+          console.log(`[Word Generation] Processing table at position ${tableMatch.index}`);
+          
+          // Extract table content and create Word table
+          const tableContent = tableMatch[1];
+          const tableWordElement = createWordTable(tableContent);
+          if (tableWordElement) {
+            paragraphs.push(tableWordElement);
+          }
+          
+          currentPos = tableMatch.index + tableMatch[0].length;
+        }
+        
+        // Process remaining content after the last table
+        if (currentPos < html.length) {
+          const remainingHtml = html.slice(currentPos);
+          if (remainingHtml.trim()) {
+            const textParagraphs = processTextContent(remainingHtml);
+            paragraphs.push(...textParagraphs);
+          }
+        }
+        
+        return paragraphs;
+      };
+      
+      // Process HTML and convert to Word paragraphs using sequential approach
+      const documentParagraphs = htmlToWordParagraphs(cleanedHtml);
+      
+      console.log(`[Word Generation] Created ${documentParagraphs.length} Word elements`);
                         children: [new TextRun({
                           text: trimmedLine,
                           font: "Arial",
