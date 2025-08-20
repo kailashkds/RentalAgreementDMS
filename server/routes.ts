@@ -627,8 +627,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let match;
         
         while ((match = imgRegex.exec(html)) !== null) {
-          const src = match[1];
+          let src = match[1];
           const alt = match[2];
+          
+          // Ensure we have absolute path by resolving relative paths
+          if (src.startsWith('data:')) {
+            // Skip data URLs (base64 images)
+            continue;
+          } else if (!src.startsWith('/') && !src.startsWith('http')) {
+            // Relative path - make it absolute
+            src = path.resolve(process.cwd(), src);
+          } else if (src.startsWith('/')) {
+            // Absolute path from root - prepend current working directory
+            src = path.join(process.cwd(), src.substring(1));
+          }
           
           console.log(`[Word Generation] Found image: ${alt} -> ${src}`);
           
@@ -693,7 +705,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Embed actual image instead of file path
           try {
-            const imagePath = path.join(process.cwd(), documentImages.ownerAadhar);
+            // Use the already resolved absolute path from extraction
+            const imagePath = documentImages.ownerAadhar;
             console.log(`[Word Generation] Looking for Landlord Aadhaar image at: ${imagePath}`);
             
             if (fs.existsSync(imagePath)) {
@@ -754,7 +767,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Embed actual PAN image instead of file path
           try {
-            const imagePath = path.join(process.cwd(), documentImages.ownerPan);
+            // Use the already resolved absolute path from extraction
+            const imagePath = documentImages.ownerPan;
             console.log(`[Word Generation] Looking for Landlord PAN image at: ${imagePath}`);
             
             if (fs.existsSync(imagePath)) {
@@ -824,7 +838,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Embed actual tenant Aadhaar image instead of file path
           try {
-            const imagePath = path.join(process.cwd(), documentImages.tenantAadhar);
+            // Use the already resolved absolute path from extraction
+            const imagePath = documentImages.tenantAadhar;
             console.log(`[Word Generation] Looking for Tenant Aadhaar image at: ${imagePath}`);
             
             if (fs.existsSync(imagePath)) {
@@ -882,7 +897,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Embed actual tenant PAN image instead of file path
           try {
-            const imagePath = path.join(process.cwd(), documentImages.tenantPan);
+            // Use the already resolved absolute path from extraction
+            const imagePath = documentImages.tenantPan;
             console.log(`[Word Generation] Looking for Tenant PAN image at: ${imagePath}`);
             
             if (fs.existsSync(imagePath)) {
