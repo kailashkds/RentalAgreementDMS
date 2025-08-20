@@ -467,18 +467,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] ✓ Converting landlord signature to table: ${ownerName}`);
             
             return `
-<table border="1" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-  <tr height="200">
-    <td width="70%" style="padding: 10px; vertical-align: top;">
-      <b style="font-size: 16px; text-transform: uppercase;">${ownerName}</b>
-      <br><br>
-      <i style="font-size: 14px;">${role}</i>
-      <br><br><br><br><br><br><br><br>
-      ________________________
+<table border="1" cellpadding="15" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 2px solid #000;">
+  <tr>
+    <td width="65%" style="padding: 20px; vertical-align: top; border-right: 2px solid #000;">
+      <p style="font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0 0 10px 0;">${ownerName}</p>
+      <p style="font-size: 14px; font-style: italic; margin: 0 0 40px 0;">${role}</p>
+      <p style="margin: 0; border-top: 2px solid #000; width: 200px; height: 20px;">&nbsp;</p>
     </td>
-    <td width="30%" style="padding: 10px; text-align: center; vertical-align: middle; border-left: 1px solid #000;">
-      <div style="border: 1px dashed #000; width: 120px; height: 150px; margin: 0 auto; font-size: 12px; padding-top: 65px;">
-        Passport Size Photo
+    <td width="35%" style="padding: 20px; text-align: center; vertical-align: middle;">
+      <div style="border: 2px dashed #666; width: 140px; height: 180px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">
+        <div style="text-align: center; line-height: 1.3;">
+          Passport<br>Size<br>Photo
+        </div>
       </div>
     </td>
   </tr>
@@ -503,18 +503,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] ✓ Converting tenant signature to table: ${tenantName}`);
             
             return `
-<table border="1" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-  <tr height="200">
-    <td width="70%" style="padding: 10px; vertical-align: top;">
-      <b style="font-size: 16px; text-transform: uppercase;">${tenantName}</b>
-      <br><br>
-      <i style="font-size: 14px;">${role}</i>
-      <br><br><br><br><br><br><br><br>
-      ________________________
+<table border="1" cellpadding="15" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 2px solid #000;">
+  <tr>
+    <td width="65%" style="padding: 20px; vertical-align: top; border-right: 2px solid #000;">
+      <p style="font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0 0 10px 0;">${tenantName}</p>
+      <p style="font-size: 14px; font-style: italic; margin: 0 0 40px 0;">${role}</p>
+      <p style="margin: 0; border-top: 2px solid #000; width: 200px; height: 20px;">&nbsp;</p>
     </td>
-    <td width="30%" style="padding: 10px; text-align: center; vertical-align: middle; border-left: 1px solid #000;">
-      <div style="border: 1px dashed #000; width: 120px; height: 150px; margin: 0 auto; font-size: 12px; padding-top: 65px;">
-        Passport Size Photo
+    <td width="35%" style="padding: 20px; text-align: center; vertical-align: middle;">
+      <div style="border: 2px dashed #666; width: 140px; height: 180px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">
+        <div style="text-align: center; line-height: 1.3;">
+          Passport<br>Size<br>Photo
+        </div>
       </div>
     </td>
   </tr>
