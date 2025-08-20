@@ -872,8 +872,26 @@ function processConditionalLogic(template: string, fieldValues: Record<string, s
 /**
  * Generates PDF-ready HTML from form data and template with document embedding
  */
-export async function generatePdfHtml(formData: any, htmlTemplate: string, language?: string): Promise<string> {
+export async function generatePdfHtml(formData: any, htmlTemplate: string, language?: string, isWordDocument?: boolean): Promise<string> {
   const fieldValues = mapFormDataToTemplateFields(formData, language);
+  
+  // Apply uppercase transformation for specific fields when generating Word documents
+  if (isWordDocument) {
+    // Convert specific name and address fields to uppercase for Word documents
+    const upperCaseFields = [
+      'TENANT_NAME', 'OWNER_NAME', 'LANDLORD_NAME',
+      'TENANT_ADDRESS', 'OWNER_ADDRESS', 'LANDLORD_ADDRESS', 
+      'PROPERTY_ADDRESS', 'TENANT_FULL_ADDRESS', 'OWNER_FULL_ADDRESS', 'PROPERTY_FULL_ADDRESS'
+    ];
+    
+    upperCaseFields.forEach(fieldName => {
+      if (fieldValues[fieldName]) {
+        fieldValues[fieldName] = fieldValues[fieldName].toUpperCase();
+      }
+    });
+    
+    console.log(`[Word Generation] Applied uppercase conversion to name and address fields`);
+  }
   
   // Process document embedding for images/PDFs
   const processedFieldValues = await processDocumentEmbedding(fieldValues, formData);
