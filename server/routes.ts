@@ -443,26 +443,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Handle multi-line text (addresses, etc.)
         if (sanitizedText.includes('\n')) {
-          const lines = sanitizedText.split('\n').filter(line => line.trim());
+          const lines = sanitizedText.split('\n').map(line => line.trim().replace(/\s+/g, ' ')).filter(line => line);
           const textRuns: any[] = [];
           
           lines.forEach((line, index) => {
-            textRuns.push(new TextRun({
-              text: line.trim().replace(/\s+/g, ' '),  // Clean extra spaces in each line
-              font: "Arial",
-              size: options.size || 24,
-              bold: options.bold || false,
-              italics: options.italic || false,
-            }));
-            
-            // Add line break except for the last line
-            if (index < lines.length - 1) {
+            if (line) {  // Only add non-empty lines
               textRuns.push(new TextRun({
-                text: '',
-                break: 1
+                text: line,
+                font: "Arial",
+                size: options.size || 24,
+                bold: options.bold || false,
+                italics: options.italic || false,
               }));
+              
+              // Add line break except for the last line
+              if (index < lines.length - 1) {
+                textRuns.push(new TextRun({
+                  text: '',
+                  break: 1  // This creates a line break within the paragraph
+                }));
+              }
             }
           });
+          
+          if (textRuns.length === 0) return null;  // Return null if no valid content
           
           return new Paragraph({
             children: textRuns,
@@ -495,21 +499,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Remove images from HTML for text processing and clean up extra spaces
         let processedContent = html
           .replace(/<img[^>]*>/gi, '')  // Remove images completely for main text
-          .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
-          .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
+          .replace(/<br\s*\/?>/gi, '|||LINE_BREAK|||')  // Mark line breaks with placeholder
+          .replace(/<\/p>/gi, '|||PARAGRAPH_BREAK|||')       // Mark paragraph breaks
           .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
-          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n') // Handle headings
+          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '|||PARAGRAPH_BREAK|||$1|||PARAGRAPH_BREAK|||') // Handle headings
           .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
           .replace(/&amp;/gi, '&')          // Convert &amp; to &
           .replace(/&lt;/gi, '<')           // Convert &lt; to <
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
-          .replace(/\s+/g, ' ')             // Replace multiple spaces with single space
-          .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
+          .replace(/\s+/g, ' ')             // Replace multiple spaces with single space (but preserve our markers)
+          .replace(/|||LINE_BREAK|||\s*/g, '\n')  // Convert line break markers to single newlines
+          .replace(/|||PARAGRAPH_BREAK|||\s*/g, '\n\n')  // Convert paragraph markers to double newlines
+          .replace(/\n\s*\n\s*\n/g, '\n\n')      // Normalize triple+ newlines to double
           .trim();
 
-        // Split by double newlines to create paragraphs
+        // Split by double newlines to create paragraphs, but preserve single line breaks within paragraphs
         const textBlocks = processedContent.split('\n\n').filter(block => block.trim());
         
         textBlocks.forEach(block => {
@@ -552,23 +558,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Add regular text before bold
                 const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
                 if (beforeText) {
-                  textRuns.push(new TextRun({
-                    text: beforeText,
-                    font: "Arial",
-                    size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
-                    bold: false
-                  }));
+                  // Handle line breaks in regular text
+                  if (beforeText.includes('\n')) {
+                    const lines = beforeText.split('\n').map(line => line.trim()).filter(line => line);
+                    lines.forEach((line, idx) => {
+                      textRuns.push(new TextRun({
+                        text: line,
+                        font: "Arial",
+                        size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
+                        bold: false
+                      }));
+                      if (idx < lines.length - 1) {
+                        textRuns.push(new TextRun({ text: '', break: 1 }));
+                      }
+                    });
+                  } else {
+                    textRuns.push(new TextRun({
+                      text: beforeText,
+                      font: "Arial",
+                      size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
+                      bold: false
+                    }));
+                  }
                 }
                 
                 // Add bold text - only bold if it's a section title
                 const boldText = match[2].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
                 if (boldText) {
-                  textRuns.push(new TextRun({
-                    text: boldText,
-                    font: "Arial",
-                    size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
-                    bold: isSectionTitle || isTitle  // Only bold for section titles and main title
-                  }));
+                  // Handle line breaks in bold text
+                  if (boldText.includes('\n')) {
+                    const lines = boldText.split('\n').map(line => line.trim()).filter(line => line);
+                    lines.forEach((line, idx) => {
+                      textRuns.push(new TextRun({
+                        text: line,
+                        font: "Arial",
+                        size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
+                        bold: isSectionTitle || isTitle  // Only bold for section titles and main title
+                      }));
+                      if (idx < lines.length - 1) {
+                        textRuns.push(new TextRun({ text: '', break: 1 }));
+                      }
+                    });
+                  } else {
+                    textRuns.push(new TextRun({
+                      text: boldText,
+                      font: "Arial",
+                      size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
+                      bold: isSectionTitle || isTitle  // Only bold for section titles and main title
+                    }));
+                  }
                 }
                 
                 lastIndex = boldRegex.lastIndex;
@@ -577,12 +615,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Add remaining regular text after last bold
               const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
               if (afterText) {
-                textRuns.push(new TextRun({
-                  text: afterText,
-                  font: "Arial",
-                  size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
-                  bold: false
-                }));
+                // Handle line breaks in remaining text
+                if (afterText.includes('\n')) {
+                  const lines = afterText.split('\n').map(line => line.trim()).filter(line => line);
+                  lines.forEach((line, idx) => {
+                    textRuns.push(new TextRun({
+                      text: line,
+                      font: "Arial",
+                      size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
+                      bold: false
+                    }));
+                    if (idx < lines.length - 1) {
+                      textRuns.push(new TextRun({ text: '', break: 1 }));
+                    }
+                  });
+                } else {
+                  textRuns.push(new TextRun({
+                    text: afterText,
+                    font: "Arial",
+                    size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
+                    bold: false
+                  }));
+                }
               }
               
               if (textRuns.length > 0) {
