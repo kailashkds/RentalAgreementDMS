@@ -872,34 +872,8 @@ function processConditionalLogic(template: string, fieldValues: Record<string, s
 /**
  * Generates PDF-ready HTML from form data and template with document embedding
  */
-export async function generatePdfHtml(formData: any, htmlTemplate: string, language?: string, isWordDocument?: boolean): Promise<string> {
+export async function generatePdfHtml(formData: any, htmlTemplate: string, language?: string): Promise<string> {
   const fieldValues = mapFormDataToTemplateFields(formData, language);
-  
-  // Apply uppercase transformation for specific fields when generating Word documents
-  if (isWordDocument) {
-    console.log(`[Word Generation] Starting uppercase conversion for Word document...`);
-    console.log(`[Word Generation] Available field names:`, Object.keys(fieldValues));
-    
-    // Convert specific name and address fields to uppercase for Word documents
-    const upperCaseFields = [
-      'TENANT_NAME', 'OWNER_NAME', 'LANDLORD_NAME',
-      'TENANT_ADDRESS', 'OWNER_ADDRESS', 'LANDLORD_ADDRESS', 
-      'PROPERTY_ADDRESS', 'TENANT_FULL_ADDRESS', 'OWNER_FULL_ADDRESS', 'PROPERTY_FULL_ADDRESS'
-    ];
-    
-    let fieldsConverted = 0;
-    upperCaseFields.forEach(fieldName => {
-      if (fieldValues[fieldName]) {
-        console.log(`[Word Generation] Converting ${fieldName}: "${fieldValues[fieldName]}" -> "${fieldValues[fieldName].toUpperCase()}"`);
-        fieldValues[fieldName] = fieldValues[fieldName].toUpperCase();
-        fieldsConverted++;
-      } else {
-        console.log(`[Word Generation] Field ${fieldName} not found or empty`);
-      }
-    });
-    
-    console.log(`[Word Generation] Applied uppercase conversion to ${fieldsConverted} fields for Word document`);
-  }
   
   // Process document embedding for images/PDFs
   const processedFieldValues = await processDocumentEmbedding(fieldValues, formData);

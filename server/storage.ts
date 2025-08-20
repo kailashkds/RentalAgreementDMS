@@ -512,8 +512,50 @@ export class DatabaseStorage implements IStorage {
     return agreement;
   }
 
+  // Helper function to convert names, professions, and addresses to uppercase
+  private convertToUpperCase(data: any): any {
+    if (!data || typeof data !== 'object') return data;
+    
+    const converted = { ...data };
+    
+    // Convert owner details
+    if (converted.ownerDetails) {
+      const owner = converted.ownerDetails;
+      if (owner.name) owner.name = owner.name.toUpperCase();
+      if (owner.profession) owner.profession = owner.profession.toUpperCase();
+      if (owner.address) owner.address = owner.address.toUpperCase();
+      if (owner.fullAddress) owner.fullAddress = owner.fullAddress.toUpperCase();
+    }
+    
+    // Convert tenant details
+    if (converted.tenantDetails) {
+      const tenant = converted.tenantDetails;
+      if (tenant.name) tenant.name = tenant.name.toUpperCase();
+      if (tenant.profession) tenant.profession = tenant.profession.toUpperCase();
+      if (tenant.address) tenant.address = tenant.address.toUpperCase();
+      if (tenant.fullAddress) tenant.fullAddress = tenant.fullAddress.toUpperCase();
+    }
+    
+    // Convert property details addresses
+    if (converted.propertyDetails) {
+      const property = converted.propertyDetails;
+      if (property.address) property.address = property.address.toUpperCase();
+      if (property.fullAddress) property.fullAddress = property.fullAddress.toUpperCase();
+      if (property.flatNumber) property.flatNumber = property.flatNumber.toUpperCase();
+      if (property.society) property.society = property.society.toUpperCase();
+      if (property.area) property.area = property.area.toUpperCase();
+      if (property.city) property.city = property.city.toUpperCase();
+      if (property.state) property.state = property.state.toUpperCase();
+    }
+    
+    return converted;
+  }
+
   async createAgreement(agreementData: InsertAgreement): Promise<Agreement> {
     try {
+      // Convert names, professions, and addresses to uppercase before saving
+      const processedData = this.convertToUpperCase(agreementData);
+      
       // Generate agreement number
       const year = new Date().getFullYear();
       const lastAgreement = await db
@@ -532,13 +574,13 @@ export class DatabaseStorage implements IStorage {
       const agreementNumber = `AGR-${year}-${nextNumber.toString().padStart(3, '0')}`;
 
       // Handle property relationship
-      let propertyId = agreementData.propertyId;
+      let propertyId = processedData.propertyId;
       
       // If property details are provided but no propertyId, create/find property
-      if (!propertyId && agreementData.propertyDetails && agreementData.customerId) {
+      if (!propertyId && processedData.propertyDetails && processedData.customerId) {
         const property = await this.findOrCreatePropertyForAgreement(
-          agreementData.customerId,
-          agreementData.propertyDetails
+          processedData.customerId,
+          processedData.propertyDetails
         );
         propertyId = property.id;
       }
@@ -546,7 +588,7 @@ export class DatabaseStorage implements IStorage {
       const [agreement] = await db
         .insert(agreements)
         .values({
-          ...agreementData,
+          ...processedData,
           agreementNumber,
           propertyId,
         })
