@@ -428,11 +428,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/<([^>]*?)text-align:\s*center([^>]*?)>/gi, '<$1text-align:center$2>');
       
       // Convert flexbox signature sections to table format for better Word layout
+      console.log('[Word Generation] Looking for flexbox signature sections...');
       cleanedHtml = cleanedHtml.replace(
         /<div[^>]*class="no-page-break"[^>]*style="[^"]*display:\s*flex[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
         (match, content) => {
+          console.log('[Word Generation] Found flexbox div, checking content...');
           // Check if this is a signature section (contains landlord/tenant info and passport photo)
           if (content.includes('Passport Size Photo') && (content.includes('Landlord') || content.includes('Tenant'))) {
+            console.log('[Word Generation] Converting flexbox signature section to table');
             // Extract the name and role information
             const nameMatch = content.match(/<p[^>]*style="[^"]*font-weight:\s*bold[^"]*"[^>]*>([^<]+)<\/p>/i);
             const roleMatch = content.match(/<p[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>([^<]+)<\/p>/i);
@@ -440,17 +443,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const name = nameMatch ? nameMatch[1].trim() : '';
             const role = roleMatch ? roleMatch[1].trim() : '';
             
-            // Convert to table format
+            console.log(`[Word Generation] Extracted: name="${name}", role="${role}"`);
+            
+            // Convert to table format with proper height
             return `
-              <table style="width: 100%; border: 1px solid #ccc; margin-top: 40px; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 20px; vertical-align: top; width: 70%;">
-                    <p style="font-weight: bold; font-size: 16px; text-transform: uppercase;">${name}</p>
-                    <p style="font-style: italic;">${role}</p>
-                    <div style="margin-top: 60px; width: 120px; border-top: 1px solid #000;"></div>
+              <table style="width: 100%; border: 1px solid #ccc; margin-top: 40px; border-collapse: collapse; min-height: 200px;">
+                <tr style="height: 200px;">
+                  <td style="padding: 20px; vertical-align: top; width: 70%; height: 200px;">
+                    <p style="font-weight: bold; font-size: 16px; text-transform: uppercase; margin-bottom: 10px;">${name}</p>
+                    <p style="font-style: italic; margin-bottom: 60px;">${role}</p>
+                    <div style="margin-top: 80px; width: 120px; border-top: 1px solid #000; height: 1px;"></div>
                   </td>
-                  <td style="padding: 20px; text-align: center; vertical-align: top; width: 30%;">
-                    <div style="width: 140px; height: 160px; border: 1px dashed #000; display: inline-block; font-size: 12px; padding-top: 65px;">
+                  <td style="padding: 20px; text-align: center; vertical-align: center; width: 30%; height: 200px;">
+                    <div style="width: 140px; height: 160px; border: 1px dashed #000; display: inline-block; font-size: 12px; line-height: 160px; vertical-align: middle;">
                       Passport Size Photo
                     </div>
                   </td>
@@ -458,6 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               </table>
             `;
           }
+          console.log('[Word Generation] Not a signature section, keeping original');
           return match; // Return original if not a signature section
         }
       );
@@ -606,7 +612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     }
                   });
                   
-                  // Add signature line
+                  // Add signature line with more spacing to match passport photo height
                   cellParagraphs.push(new Paragraph({
                     children: [new TextRun({
                       text: "________________________",
@@ -614,7 +620,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       size: 22
                     })],
                     alignment: AlignmentType.LEFT,
-                    spacing: { before: 160, after: 40 }
+                    spacing: { before: 400, after: 100 }
                   }));
                   
                   return new TableCell({
@@ -641,7 +647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         size: 20
                       })],
                       alignment: AlignmentType.CENTER,
-                      spacing: { before: 120, after: 120 }
+                      spacing: { before: 300, after: 300 }
                     })],
                     borders: {
                       top: { style: BorderStyle.SINGLE, size: 1 },
@@ -667,8 +673,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 type: WidthType.PERCENTAGE
               },
               margins: {
-                top: 200,
-                bottom: 200
+                top: 300,
+                bottom: 300
               }
             }));
           }
