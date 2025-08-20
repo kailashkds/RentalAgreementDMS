@@ -320,10 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Parsed agreement data:", JSON.stringify(safeAgreementData, null, 2));
       
       // Generate the HTML with mapped field values using the enhanced field mapping system (now with document embedding)
-      // Pass isWordDocument=true to apply uppercase conversion to name and address fields
-      console.log("[Word Generation] About to call generatePdfHtml with isWordDocument=true");
-      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate, language, true);
-      console.log("[Word Generation] generatePdfHtml completed");
+      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate, language);
       
       // Debug: Log first 500 chars of processed HTML to see if replacement is working
       console.log("First 500 chars of processed HTML:", processedHtml.substring(0, 500));
