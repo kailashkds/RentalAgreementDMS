@@ -529,34 +529,39 @@ export class DatabaseStorage implements IStorage {
     
     const converted = { ...data };
     
+    // Helper function to safely convert string to uppercase
+    const safeUpperCase = (value: any): string => {
+      return (value && typeof value === 'string') ? value.toUpperCase() : value;
+    };
+    
     // Convert owner details
-    if (converted.ownerDetails) {
+    if (converted.ownerDetails && typeof converted.ownerDetails === 'object') {
       const owner = converted.ownerDetails;
-      if (owner.name) owner.name = owner.name.toUpperCase();
-      if (owner.profession) owner.profession = owner.profession.toUpperCase();
-      if (owner.address) owner.address = owner.address.toUpperCase();
-      if (owner.fullAddress) owner.fullAddress = owner.fullAddress.toUpperCase();
+      if (owner.name) owner.name = safeUpperCase(owner.name);
+      if (owner.profession) owner.profession = safeUpperCase(owner.profession);
+      if (owner.address) owner.address = safeUpperCase(owner.address);
+      if (owner.fullAddress) owner.fullAddress = safeUpperCase(owner.fullAddress);
     }
     
     // Convert tenant details
-    if (converted.tenantDetails) {
+    if (converted.tenantDetails && typeof converted.tenantDetails === 'object') {
       const tenant = converted.tenantDetails;
-      if (tenant.name) tenant.name = tenant.name.toUpperCase();
-      if (tenant.profession) tenant.profession = tenant.profession.toUpperCase();
-      if (tenant.address) tenant.address = tenant.address.toUpperCase();
-      if (tenant.fullAddress) tenant.fullAddress = tenant.fullAddress.toUpperCase();
+      if (tenant.name) tenant.name = safeUpperCase(tenant.name);
+      if (tenant.profession) tenant.profession = safeUpperCase(tenant.profession);
+      if (tenant.address) tenant.address = safeUpperCase(tenant.address);
+      if (tenant.fullAddress) tenant.fullAddress = safeUpperCase(tenant.fullAddress);
     }
     
     // Convert property details addresses
-    if (converted.propertyDetails) {
+    if (converted.propertyDetails && typeof converted.propertyDetails === 'object') {
       const property = converted.propertyDetails;
-      if (property.address) property.address = property.address.toUpperCase();
-      if (property.fullAddress) property.fullAddress = property.fullAddress.toUpperCase();
-      if (property.flatNumber) property.flatNumber = property.flatNumber.toUpperCase();
-      if (property.society) property.society = property.society.toUpperCase();
-      if (property.area) property.area = property.area.toUpperCase();
-      if (property.city) property.city = property.city.toUpperCase();
-      if (property.state) property.state = property.state.toUpperCase();
+      if (property.address) property.address = safeUpperCase(property.address);
+      if (property.fullAddress) property.fullAddress = safeUpperCase(property.fullAddress);
+      if (property.flatNumber) property.flatNumber = safeUpperCase(property.flatNumber);
+      if (property.society) property.society = safeUpperCase(property.society);
+      if (property.area) property.area = safeUpperCase(property.area);
+      if (property.city) property.city = safeUpperCase(property.city);
+      if (property.state) property.state = safeUpperCase(property.state);
     }
     
     return converted;
