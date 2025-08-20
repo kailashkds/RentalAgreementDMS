@@ -424,6 +424,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let cleanedHtml = processedHtml
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        // Preserve page breaks and structure
+        .replace(/class="page-break-before"/gi, 'data-page-break="true"')
         // Handle center-aligned elements in HTML
         .replace(/<([^>]*?)text-align:\s*center([^>]*?)>/gi, '<$1text-align:center$2>');
 
@@ -492,49 +494,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       };
 
-      // Helper function to convert HTML to Word paragraphs, handling bold text and proper formatting
+      // Enhanced HTML to Word conversion that preserves PDF-like structure
       const htmlToWordParagraphs = (html: string) => {
         const paragraphs: any[] = [];
         
-        // Remove images from HTML for text processing
-        let processedContent = html
-          .replace(/<img[^>]*>/gi, '')  // Remove images completely for main text
-          .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
-          .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
-          .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
-          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n') // Handle headings
-          .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
-          .replace(/&amp;/gi, '&')          // Convert &amp; to &
-          .replace(/&lt;/gi, '<')           // Convert &lt; to <
-          .replace(/&gt;/gi, '>')           // Convert &gt; to >
-          .replace(/&quot;/gi, '"')         // Convert &quot; to "
-          .replace(/&#39;/gi, "'")          // Convert &#39; to '
-          .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
-          .trim();
-
-        console.log(`[Word Generation] Processed content length: ${processedContent.length}`);
-        console.log(`[Word Generation] First 200 chars: "${processedContent.substring(0, 200)}"`);
-
-        // Split by double newlines to create paragraphs
-        const textBlocks = processedContent.split('\n\n').filter(block => block.trim());
+        // First, identify and handle major sections
+        const sections = [
+          { pattern: /<h[1-3][^>]*>(.*?)<\/h[1-3]>/gi, isHeading: true },
+          { pattern: /<p[^>]*style="[^"]*text-align:\s*center[^"]*"[^>]*>(.*?)<\/p>/gi, isCenter: true },
+          { pattern: /<div[^>]*style="[^"]*text-align:\s*center[^"]*"[^>]*>(.*?)<\/div>/gi, isCenter: true },
+          { pattern: /<strong>(.*?)<\/strong>/gi, isBold: true },
+          { pattern: /<b>(.*?)<\/b>/gi, isBold: true }
+        ];
         
-        console.log(`[Word Generation] Processing ${textBlocks.length} text blocks`);
-        textBlocks.forEach((block, index) => {
-          const trimmedBlock = block.trim();
-          console.log(`[Word Generation] Block ${index}: "${trimmedBlock.substring(0, 50)}${trimmedBlock.length > 50 ? '...' : ''}"`);
-          if (trimmedBlock) {
-            // Check if this looks like a title (rent agreement or rental agreement) - more flexible detection
-            const isTitle = (trimmedBlock.toUpperCase().includes('RENT AGREEMENT') || 
-                           trimmedBlock.toUpperCase().includes('RENTAL AGREEMENT') ||
-                           trimmedBlock.includes('RENT AGREEMENT') ||
-                           trimmedBlock.includes('Rent Agreement'));
-            
-            // Check if the original HTML has center alignment for this text
-            const isCenterAligned = html.includes('text-align: center') && 
-                                  (html.includes(trimmedBlock) || html.includes(trimmedBlock.toLowerCase()));
-            
-            // Final title detection - either detected as title OR has center alignment
-            const shouldCenter = isTitle || isCenterAligned;
+        // Process HTML with better structure preservation
+        let processedContent = html
+          .replace(/<img[^>]*>/gi, '')  // Remove images for text processing
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')  // Remove styles
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove scripts
+          .replace(/<!--[\s\S]*?-->/gi, '') // Remove comments
+          .replace(/<br\s*\/?>/gi, '\n')    // Convert <br> to single newlines
+          .replace(/<\/div>\s*<div/gi, '</div>\n\n<div') // Add spacing between divs
+          .replace(/<\/p>\s*<p/gi, '</p>\n\n<p') // Add spacing between paragraphs
+          .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
+          .replace(/&amp;/gi, '&')          // HTML entity cleanup
+          .replace(/&lt;/gi, '<')
+          .replace(/&gt;/gi, '>')
+          .replace(/&quot;/gi, '"')
+          .replace(/&#39;/gi, "'");
+
+        // Parse HTML elements to create structured Word content
+        const htmlElements = processedContent.match(/<[^>]+>.*?<\/[^>]+>|[^<]+/gi) || [];
+        
+        console.log(`[Word Generation] Processing ${htmlElements.length} HTML elements`);
+        
+        htmlElements.forEach((element, index) => {
+          const trimmedElement = element.trim();
+          if (!trimmedElement) return;
+          
+          console.log(`[Word Generation] Element ${index}: "${trimmedElement.substring(0, 100)}${trimmedElement.length > 100 ? '...' : ''}"`);
+          
+          // Extract text content and determine formatting
+          let textContent = trimmedElement.replace(/<[^>]*>/g, '').trim();
+          if (!textContent) return;
+          
+          // Determine paragraph style based on element type and content
+          let alignment = AlignmentType.LEFT;
+          let bold = false;
+          let size = 22; // Default size
+          let spacing = { after: 100 };
+          
+          // Check for centered content
+          if (trimmedElement.includes('text-align:center') || 
+              trimmedElement.includes('text-align: center') ||
+              trimmedElement.match(/<h[1-3]/i)) {
+            alignment = AlignmentType.CENTER;
+            bold = true;
+            size = 24;
+            spacing = { before: 200, after: 200 };
+          }
+          
+          // Check for bold content
+          if (trimmedElement.includes('<strong>') || 
+              trimmedElement.includes('<b>') ||
+              trimmedElement.includes('<h')) {
+            bold = true;
+          }
+          
+          // Handle section headers
+          if (textContent.includes('LANDLORD DOCUMENTS') || 
+              textContent.includes('TENANT DOCUMENTS') ||
+              textContent.includes('RENT AGREEMENT')) {
+            alignment = AlignmentType.CENTER;
+            bold = true;
+            size = 26;
+            spacing = { before: 300, after: 200 };
+          }
+          
+          // Create paragraph with proper formatting
+          const paragraph = createParagraph(textContent, {
+            alignment: alignment,
+            bold: bold,
+            size: size,
+            spacing: spacing
+          });
+          
+          if (paragraph) {
+            paragraphs.push(paragraph);
+          }
+        
+        return paragraphs;
+      };
             
             // Debug title detection
             if (shouldCenter) {
