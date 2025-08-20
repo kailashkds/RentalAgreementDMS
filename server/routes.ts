@@ -416,10 +416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Use the original language for Word documents and generate the HTML with mapped field values
-      // Pass isWordDocument=true to apply uppercase conversion to name and address fields
-      console.log("[Word Generation] About to call generatePdfHtml with isWordDocument=true");
-      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate, language, true);
-      console.log("[Word Generation] generatePdfHtml completed for Word document");
+      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate, language);
       
       // Create Word document elements that match PDF layout exactly
       const documentParagraphs = [];
@@ -443,7 +440,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
           .replace(/\uFFFD/g, '')
           .replace(/[\u2028\u2029]/g, '\n')
-          .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
           .trim();
 
         if (!sanitizedText) return null;
@@ -499,32 +495,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const htmlToWordParagraphs = (html: string) => {
         const paragraphs: any[] = [];
         
-        // Remove images from HTML for text processing
+        // Remove images from HTML for text processing and clean up excess whitespace
         let processedContent = html
-          .replace(/<img[^>]*>/gi, '')  // Remove images completely for main text
-          .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
-          .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
+          .replace(/<img[^>]*>/gi, '')      // Remove images completely for main text
+          .replace(/<br\s*\/?>/gi, '\n')    // Convert <br> to single newlines (reduce spacing)
+          .replace(/<\/p>/gi, '\n')         // Convert </p> to single newlines
           .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
-          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n') // Handle headings
+          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n$1\n') // Handle headings with minimal spacing
           .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
           .replace(/&amp;/gi, '&')          // Convert &amp; to &
           .replace(/&lt;/gi, '<')           // Convert &lt; to <
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
-          .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
-          .replace(/\s+/g, ' ')             // Remove extra spaces between words
+          .replace(/\n\s+/g, '\n')          // Remove extra spaces after newlines
+          .replace(/\s+\n/g, '\n')          // Remove extra spaces before newlines
+          .replace(/\n{3,}/g, '\n\n')       // Limit consecutive newlines to maximum 2
+          .replace(/^\s+|\s+$/gm, '')       // Trim each line
           .trim();
 
-        // Split by double newlines to create paragraphs
-        const textBlocks = processedContent.split('\n\n').filter(block => block.trim());
+        // Split by newlines and filter out empty blocks
+        const textBlocks = processedContent.split('\n').filter(block => block.trim());
+        
+        // Track seen content to prevent duplicates 
+        const seenContent = new Set();
+        const duplicateDetection = new Set([
+          'landlord aadhaar card',
+          'landlord pan card', 
+          'tenant aadhaar card',
+          'tenant pan card',
+          'property documents',
+          'landlord documents',
+          'tenant documents'
+        ]);
         
         textBlocks.forEach(block => {
           const trimmedBlock = block.trim();
           if (trimmedBlock) {
-            // Check if this looks like a title (all caps, short, centered content)
-            const isTitle = trimmedBlock.length < 100 && trimmedBlock === trimmedBlock.toUpperCase() && 
-                           (trimmedBlock.includes('RENT AGREEMENT') || trimmedBlock.includes('RENTAL AGREEMENT'));
+            
+            // Check for duplicate document titles and skip them
+            const lowerBlock = trimmedBlock.toLowerCase();
+            let isDuplicate = false;
+            
+            for (let duplicate of duplicateDetection) {
+              if (lowerBlock.includes(duplicate)) {
+                if (seenContent.has(duplicate)) {
+                  console.log(`[Word Generation] Skipping duplicate: ${trimmedBlock}`);
+                  isDuplicate = true;
+                  break;
+                } else {
+                  seenContent.add(duplicate);
+                  break;
+                }
+              }
+            }
+            
+            if (isDuplicate) {
+              return; // Skip this block
+            }
+            // Check if this looks like a title - more flexible detection
+            const isTitle = trimmedBlock.includes('Rent Agreement') || trimmedBlock.includes('RENT AGREEMENT') || 
+                           trimmedBlock.includes('Rental Agreement') || trimmedBlock.includes('RENTAL AGREEMENT') ||
+                           (trimmedBlock.length < 100 && /rent.*agreement/i.test(trimmedBlock));
             
             // Check if this looks like a heading (starts with number, short)
             const isHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
@@ -598,8 +630,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                            isPartyDesignation ? AlignmentType.RIGHT : 
                            AlignmentType.JUSTIFIED,
                   spacing: { 
-                    before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
-                    after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
+                    before: isTitle ? 240 : (isHeading ? 80 : (isAddress ? 60 : 0)),
+                    after: isTitle ? 320 : (isHeading ? 120 : (isAddress ? 120 : 120))
                   }
                 }));
               }
@@ -613,8 +645,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           isPartyDesignation ? AlignmentType.RIGHT : 
                           AlignmentType.JUSTIFIED,
                 spacing: { 
-                  before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
-                  after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
+                  before: isTitle ? 240 : (isHeading ? 80 : (isAddress ? 60 : 0)),
+                  after: isTitle ? 320 : (isHeading ? 120 : (isAddress ? 120 : 120))
                 }
               });
               
@@ -1039,175 +1071,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (propertyPath) documentParagraphs.push(propertyPath);
         }
       }
-
-      // Add passport-size photo section based on the provided design
-      console.log(`[Word Generation] Adding passport-size photo section`);
-      
-      // Add some space before the signature section
-      documentParagraphs.push(new Paragraph({
-        children: [new TextRun({ text: '', break: 2 })],
-        spacing: { before: 480, after: 480 }
-      }));
-
-      // Create a table for the passport photo section layout
-      // Note: Table, TableRow, TableCell, WidthType already imported at the top
-      
-      // Get tenant name from the agreement data 
-      const tenantName = safeAgreementData.tenantDetails?.name || 'TENANT NAME';
-      
-      const passportPhotoTable = new Table({
-        width: {
-          size: 100,
-          type: WidthType.PERCENTAGE,
-        },
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 1 },
-          bottom: { style: BorderStyle.SINGLE, size: 1 },
-          left: { style: BorderStyle.SINGLE, size: 1 },
-          right: { style: BorderStyle.SINGLE, size: 1 },
-        },
-        rows: [
-          new TableRow({
-            children: [
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({
-                      text: tenantName.toUpperCase(),
-                      font: "Arial",
-                      size: 24,
-                      bold: true
-                    })],
-                    alignment: AlignmentType.LEFT,
-                    spacing: { after: 120 }
-                  }),
-                  new Paragraph({
-                    children: [new TextRun({
-                      text: "Tenant",
-                      font: "Arial",
-                      size: 20,
-                      italics: true
-                    })],
-                    alignment: AlignmentType.LEFT,
-                    spacing: { after: 240 }
-                  }),
-                  new Paragraph({
-                    children: [new TextRun({
-                      text: "________________________",
-                      font: "Arial",
-                      size: 20
-                    })],
-                    alignment: AlignmentType.LEFT,
-                    spacing: { before: 480 }
-                  })
-                ],
-                width: {
-                  size: 70,
-                  type: WidthType.PERCENTAGE,
-                },
-                margins: {
-                  top: 200,
-                  bottom: 200,
-                  left: 200,
-                  right: 200,
-                },
-              }),
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({
-                      text: "Passport Size Photo",
-                      font: "Arial",
-                      size: 18,
-                      color: "808080"
-                    })],
-                    alignment: AlignmentType.CENTER,
-                    spacing: { before: 600, after: 600 }
-                  })
-                ],
-                width: {
-                  size: 30,
-                  type: WidthType.PERCENTAGE,
-                },
-                margins: {
-                  top: 200,
-                  bottom: 200,
-                  left: 200,
-                  right: 200,
-                },
-                borders: {
-                  top: { style: BorderStyle.DOTTED, size: 1 },
-                  bottom: { style: BorderStyle.DOTTED, size: 1 },
-                  left: { style: BorderStyle.DOTTED, size: 1 },
-                  right: { style: BorderStyle.DOTTED, size: 1 },
-                },
-              }),
-            ],
-          }),
-        ],
-      });
-
-      documentParagraphs.push(passportPhotoTable);
-      
-      // Add witness section 
-      documentParagraphs.push(new Paragraph({
-        children: [new TextRun({ text: '', break: 2 })],
-        spacing: { before: 480, after: 240 }
-      }));
-
-      const witnessesTable = new Table({
-        width: {
-          size: 100,
-          type: WidthType.PERCENTAGE,
-        },
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 1 },
-          bottom: { style: BorderStyle.SINGLE, size: 1 },
-          left: { style: BorderStyle.SINGLE, size: 1 },
-          right: { style: BorderStyle.SINGLE, size: 1 },
-        },
-        rows: [
-          new TableRow({
-            children: [
-              new TableCell({
-                children: [
-                  new Paragraph({
-                    children: [new TextRun({
-                      text: "Witnesses",
-                      font: "Arial",
-                      size: 24,
-                      bold: true
-                    })],
-                    alignment: AlignmentType.LEFT,
-                    spacing: { after: 480 }
-                  }),
-                  new Paragraph({
-                    children: [new TextRun({
-                      text: "________________________________        ________________________________",
-                      font: "Arial",
-                      size: 20
-                    })],
-                    alignment: AlignmentType.LEFT,
-                    spacing: { after: 240 }
-                  })
-                ],
-                width: {
-                  size: 100,
-                  type: WidthType.PERCENTAGE,
-                },
-                margins: {
-                  top: 200,
-                  bottom: 200,
-                  left: 200,
-                  right: 200,
-                },
-              }),
-            ],
-          }),
-        ],
-      });
-
-      documentParagraphs.push(witnessesTable);
 
       console.log(`[Word Generation] Created ${documentParagraphs.length} structured elements for Word document`);
 
