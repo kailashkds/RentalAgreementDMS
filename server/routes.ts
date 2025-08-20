@@ -431,10 +431,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const textStr = String(text);
         if (!textStr.trim()) return null;
         
+        // Remove extra spaces between words and clean text
         const sanitizedText = textStr
           .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
           .replace(/\uFFFD/g, '')
           .replace(/[\u2028\u2029]/g, '\n')
+          .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
           .trim();
 
         if (!sanitizedText) return null;
@@ -446,8 +448,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           lines.forEach((line, index) => {
             textRuns.push(new TextRun({
-              text: line.trim(),
-              font: "Times New Roman",
+              text: line.trim().replace(/\s+/g, ' '),  // Clean extra spaces in each line
+              font: "Arial",
               size: options.size || 24,
               bold: options.bold || false,
               italics: options.italic || false,
@@ -474,7 +476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return new Paragraph({
           children: [new TextRun({
             text: sanitizedText,
-            font: "Times New Roman",
+            font: "Arial",
             size: options.size || 28,
             bold: options.bold || false,
             italics: options.italic || false,
@@ -490,7 +492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const htmlToWordParagraphs = (html: string) => {
         const paragraphs = [];
         
-        // Remove images from HTML for text processing
+        // Remove images from HTML for text processing and clean up extra spaces
         let processedContent = html
           .replace(/<img[^>]*>/gi, '')  // Remove images completely for main text
           .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
@@ -503,6 +505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
+          .replace(/\s+/g, ' ')             // Replace multiple spaces with single space
           .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
           .trim();
 
@@ -510,14 +513,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const textBlocks = processedContent.split('\n\n').filter(block => block.trim());
         
         textBlocks.forEach(block => {
-          const trimmedBlock = block.trim();
+          const trimmedBlock = block.trim().replace(/\s+/g, ' '); // Remove extra spaces
           if (trimmedBlock) {
-            // Check if this looks like a title (all caps, short, centered content)
-            const isTitle = trimmedBlock.length < 100 && trimmedBlock === trimmedBlock.toUpperCase() && 
+            // Check if this looks like a title (RENT AGREEMENT)
+            const isTitle = trimmedBlock === trimmedBlock.toUpperCase() && 
                            (trimmedBlock.includes('RENT AGREEMENT') || trimmedBlock.includes('RENTAL AGREEMENT'));
             
-            // Check if this looks like a heading (starts with number, short)
-            const isHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
+            // Check for "Hereinafter called" lines that should be right-aligned
+            const isHereinafterLine = trimmedBlock.toLowerCase().includes('hereinafter called') && 
+                                     (trimmedBlock.toLowerCase().includes('landlord') || 
+                                      trimmedBlock.toLowerCase().includes('tenant'));
+            
+            // Check if this looks like a section heading (Property Address, Property Purpose, etc.)
+            const isSectionTitle = /^(property\s+address|property\s+purpose|rental\s+terms|agreement\s+details|landlord\s+details|tenant\s+details|witness)/i.test(trimmedBlock) &&
+                                   trimmedBlock.length < 100;
+            
+            // Check if this looks like a numbered heading (starts with number)
+            const isNumberedHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
             
             // Check for address blocks (contains multiple lines with address components)
             const isAddress = trimmedBlock.includes('\n') && 
@@ -538,24 +550,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               while ((match = boldRegex.exec(currentText)) !== null) {
                 // Add regular text before bold
-                const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').trim();
+                const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
                 if (beforeText) {
                   textRuns.push(new TextRun({
                     text: beforeText,
-                    font: "Times New Roman",
-                    size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
+                    font: "Arial",
+                    size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
                     bold: false
                   }));
                 }
                 
-                // Add bold text
-                const boldText = match[2].replace(/<[^>]*>/g, '').trim();
+                // Add bold text - only bold if it's a section title
+                const boldText = match[2].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
                 if (boldText) {
                   textRuns.push(new TextRun({
                     text: boldText,
-                    font: "Times New Roman",
-                    size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-                    bold: true
+                    font: "Arial",
+                    size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
+                    bold: isSectionTitle || isTitle  // Only bold for section titles and main title
                   }));
                 }
                 
@@ -563,12 +575,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               // Add remaining regular text after last bold
-              const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').trim();
+              const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
               if (afterText) {
                 textRuns.push(new TextRun({
                   text: afterText,
-                  font: "Times New Roman",
-                  size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
+                  font: "Arial",
+                  size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
                   bold: false
                 }));
               }
@@ -576,23 +588,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (textRuns.length > 0) {
                 paragraphs.push(new Paragraph({
                   children: textRuns,
-                  alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+                  alignment: isTitle ? AlignmentType.CENTER : (isHereinafterLine ? AlignmentType.RIGHT : AlignmentType.JUSTIFIED),
                   spacing: { 
-                    before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
-                    after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
+                    before: isTitle ? 240 : (isSectionTitle ? 160 : (isNumberedHeading ? 120 : (isAddress ? 120 : 0))),
+                    after: isTitle ? 320 : (isSectionTitle ? 240 : (isNumberedHeading ? 180 : (isAddress ? 240 : 240)))
                   }
                 }));
               }
             } else {
               // No bold text - handle normally
-              const cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
+              const cleanText = trimmedBlock.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ');
               const para = createParagraph(cleanText, {
-                size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-                bold: isTitle || isHeading,
-                alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+                size: isTitle ? 28 : (isSectionTitle ? 26 : (isNumberedHeading ? 24 : (isAddress ? 22 : 24))),
+                bold: isTitle || isSectionTitle,  // Only bold title and section titles
+                alignment: isTitle ? AlignmentType.CENTER : (isHereinafterLine ? AlignmentType.RIGHT : AlignmentType.JUSTIFIED),
                 spacing: { 
-                  before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
-                  after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
+                  before: isTitle ? 240 : (isSectionTitle ? 160 : (isNumberedHeading ? 120 : (isAddress ? 120 : 0))),
+                  after: isTitle ? 320 : (isSectionTitle ? 240 : (isNumberedHeading ? 180 : (isAddress ? 240 : 240)))
                 }
               });
               
