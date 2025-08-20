@@ -416,7 +416,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Use the original language for Word documents and generate the HTML with mapped field values
-      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate, language);
+      // Pass isWordDocument=true to apply uppercase conversion to name and address fields
+      console.log("[Word Generation] About to call generatePdfHtml with isWordDocument=true");
+      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate, language, true);
+      console.log("[Word Generation] generatePdfHtml completed for Word document");
       
       // Create Word document elements that match PDF layout exactly
       const documentParagraphs = [];
@@ -440,6 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
           .replace(/\uFFFD/g, '')
           .replace(/[\u2028\u2029]/g, '\n')
+          .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
           .trim();
 
         if (!sanitizedText) return null;
@@ -509,6 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
           .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
+          .replace(/\s+/g, ' ')             // Remove extra spaces between words
           .trim();
 
         // Split by double newlines to create paragraphs
@@ -1034,6 +1039,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (propertyPath) documentParagraphs.push(propertyPath);
         }
       }
+
+      // Add passport-size photo section based on the provided design
+      console.log(`[Word Generation] Adding passport-size photo section`);
+      
+      // Add some space before the signature section
+      documentParagraphs.push(new Paragraph({
+        children: [new TextRun({ text: '', break: 2 })],
+        spacing: { before: 480, after: 480 }
+      }));
+
+      // Create a table for the passport photo section layout
+      // Note: Table, TableRow, TableCell, WidthType already imported at the top
+      
+      // Get tenant name from the agreement data 
+      const tenantName = safeAgreementData.tenantDetails?.name || 'TENANT NAME';
+      
+      const passportPhotoTable = new Table({
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE,
+        },
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1 },
+          bottom: { style: BorderStyle.SINGLE, size: 1 },
+          left: { style: BorderStyle.SINGLE, size: 1 },
+          right: { style: BorderStyle.SINGLE, size: 1 },
+        },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({
+                      text: tenantName.toUpperCase(),
+                      font: "Arial",
+                      size: 24,
+                      bold: true
+                    })],
+                    alignment: AlignmentType.LEFT,
+                    spacing: { after: 120 }
+                  }),
+                  new Paragraph({
+                    children: [new TextRun({
+                      text: "Tenant",
+                      font: "Arial",
+                      size: 20,
+                      italics: true
+                    })],
+                    alignment: AlignmentType.LEFT,
+                    spacing: { after: 240 }
+                  }),
+                  new Paragraph({
+                    children: [new TextRun({
+                      text: "________________________",
+                      font: "Arial",
+                      size: 20
+                    })],
+                    alignment: AlignmentType.LEFT,
+                    spacing: { before: 480 }
+                  })
+                ],
+                width: {
+                  size: 70,
+                  type: WidthType.PERCENTAGE,
+                },
+                margins: {
+                  top: 200,
+                  bottom: 200,
+                  left: 200,
+                  right: 200,
+                },
+              }),
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({
+                      text: "Passport Size Photo",
+                      font: "Arial",
+                      size: 18,
+                      color: "808080"
+                    })],
+                    alignment: AlignmentType.CENTER,
+                    spacing: { before: 600, after: 600 }
+                  })
+                ],
+                width: {
+                  size: 30,
+                  type: WidthType.PERCENTAGE,
+                },
+                margins: {
+                  top: 200,
+                  bottom: 200,
+                  left: 200,
+                  right: 200,
+                },
+                borders: {
+                  top: { style: BorderStyle.DOTTED, size: 1 },
+                  bottom: { style: BorderStyle.DOTTED, size: 1 },
+                  left: { style: BorderStyle.DOTTED, size: 1 },
+                  right: { style: BorderStyle.DOTTED, size: 1 },
+                },
+              }),
+            ],
+          }),
+        ],
+      });
+
+      documentParagraphs.push(passportPhotoTable);
+      
+      // Add witness section 
+      documentParagraphs.push(new Paragraph({
+        children: [new TextRun({ text: '', break: 2 })],
+        spacing: { before: 480, after: 240 }
+      }));
+
+      const witnessesTable = new Table({
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE,
+        },
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 1 },
+          bottom: { style: BorderStyle.SINGLE, size: 1 },
+          left: { style: BorderStyle.SINGLE, size: 1 },
+          right: { style: BorderStyle.SINGLE, size: 1 },
+        },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({
+                      text: "Witnesses",
+                      font: "Arial",
+                      size: 24,
+                      bold: true
+                    })],
+                    alignment: AlignmentType.LEFT,
+                    spacing: { after: 480 }
+                  }),
+                  new Paragraph({
+                    children: [new TextRun({
+                      text: "________________________________        ________________________________",
+                      font: "Arial",
+                      size: 20
+                    })],
+                    alignment: AlignmentType.LEFT,
+                    spacing: { after: 240 }
+                  })
+                ],
+                width: {
+                  size: 100,
+                  type: WidthType.PERCENTAGE,
+                },
+                margins: {
+                  top: 200,
+                  bottom: 200,
+                  left: 200,
+                  right: 200,
+                },
+              }),
+            ],
+          }),
+        ],
+      });
+
+      documentParagraphs.push(witnessesTable);
 
       console.log(`[Word Generation] Created ${documentParagraphs.length} structured elements for Word document`);
 
