@@ -416,7 +416,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Use the original language for Word documents and generate the HTML with mapped field values
-      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate, language);
+      // Pass isWordDocument=true to apply uppercase conversion to name and address fields
+      console.log("[Word Generation] About to call generatePdfHtml with isWordDocument=true");
+      const processedHtml = await generatePdfHtml(safeAgreementData, template.htmlTemplate, language, true);
+      console.log("[Word Generation] generatePdfHtml completed");
       
       // Create Word document elements that match PDF layout exactly
       const documentParagraphs = [];
