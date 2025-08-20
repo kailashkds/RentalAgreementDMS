@@ -480,12 +480,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           children: [new TextRun({
             text: sanitizedText,
             font: "Arial",
-            size: options.size || 28,
+            size: options.size || 24,
             bold: options.bold || false,
             italics: options.italic || false,
           })],
           alignment: options.alignment || AlignmentType.LEFT,
-          spacing: options.spacing || { after: 120 },
+          spacing: options.spacing || { after: 80 },  // Reduced spacing
           indent: options.indent || undefined,
           ...options.paragraphOptions
         });
@@ -593,8 +593,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                            isPartyDesignation ? AlignmentType.RIGHT : 
                            AlignmentType.JUSTIFIED,
                   spacing: { 
-                    before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
-                    after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
+                    before: isTitle ? 120 : (isHeading ? 80 : (isAddress ? 60 : 0)),
+                    after: isTitle ? 160 : (isHeading ? 120 : (isAddress ? 120 : 120))
                   }
                 }));
               }
@@ -608,8 +608,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           isPartyDesignation ? AlignmentType.RIGHT : 
                           AlignmentType.JUSTIFIED,
                 spacing: { 
-                  before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
-                  after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
+                  before: isTitle ? 120 : (isHeading ? 80 : (isAddress ? 60 : 0)),
+                  after: isTitle ? 160 : (isHeading ? 120 : (isAddress ? 120 : 120))
                 }
               });
               
