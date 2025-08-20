@@ -447,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lines.forEach((line, index) => {
             textRuns.push(new TextRun({
               text: line.trim(),
-              font: "Times New Roman",
+              font: "Arial",
               size: options.size || 24,
               bold: options.bold || false,
               italics: options.italic || false,
@@ -474,7 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return new Paragraph({
           children: [new TextRun({
             text: sanitizedText,
-            font: "Times New Roman",
+            font: "Arial",
             size: options.size || 28,
             bold: options.bold || false,
             italics: options.italic || false,
@@ -519,6 +519,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Check if this looks like a heading (starts with number, short)
             const isHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
             
+            // Check for party designation lines that should be right-aligned
+            const isPartyDesignation = trimmedBlock.includes('Hereinafter called the LANDLORD of the FIRST PART') || 
+                                     trimmedBlock.includes('Hereinafter called the TENANT of the SECOND PART') ||
+                                     trimmedBlock.includes('hereinafter called the LANDLORD of the FIRST PART') ||
+                                     trimmedBlock.includes('hereinafter called the TENANT of the SECOND PART');
+            
             // Check for address blocks (contains multiple lines with address components)
             const isAddress = trimmedBlock.includes('\n') && 
                              (trimmedBlock.toLowerCase().includes('address') || 
@@ -542,7 +548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (beforeText) {
                   textRuns.push(new TextRun({
                     text: beforeText,
-                    font: "Times New Roman",
+                    font: "Arial",
                     size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
                     bold: false
                   }));
@@ -553,7 +559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (boldText) {
                   textRuns.push(new TextRun({
                     text: boldText,
-                    font: "Times New Roman",
+                    font: "Arial",
                     size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
                     bold: true
                   }));
@@ -567,7 +573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (afterText) {
                 textRuns.push(new TextRun({
                   text: afterText,
-                  font: "Times New Roman",
+                  font: "Arial",
                   size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
                   bold: false
                 }));
@@ -576,7 +582,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (textRuns.length > 0) {
                 paragraphs.push(new Paragraph({
                   children: textRuns,
-                  alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+                  alignment: isTitle ? AlignmentType.CENTER : 
+                           isPartyDesignation ? AlignmentType.RIGHT : 
+                           AlignmentType.JUSTIFIED,
                   spacing: { 
                     before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
                     after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
@@ -588,8 +596,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
               const para = createParagraph(cleanText, {
                 size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-                bold: isTitle || isHeading,
-                alignment: isTitle ? AlignmentType.CENTER : AlignmentType.JUSTIFIED,
+                bold: isTitle, // Remove bold from headings unless it's a title
+                alignment: isTitle ? AlignmentType.CENTER : 
+                          isPartyDesignation ? AlignmentType.RIGHT : 
+                          AlignmentType.JUSTIFIED,
                 spacing: { 
                   before: isTitle ? 240 : (isHeading ? 160 : (isAddress ? 120 : 0)),
                   after: isTitle ? 320 : (isHeading ? 240 : (isAddress ? 240 : 240))
