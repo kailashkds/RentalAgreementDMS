@@ -378,7 +378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate Word document
   app.post("/api/agreements/generate-word", async (req, res) => {
     try {
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, Media, ImageRun } = await import('docx');
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, Media, ImageRun, VerticalAlign } = await import('docx');
       
       const agreementData = req.body;
       const language = agreementData.language || 'english';
@@ -574,31 +574,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
-          // Create Word table
+          // Create Word table with better formatting
           if (rows.length > 0) {
             const tableRows = rows.map(rowCells => {
-              const tableCells = rowCells.map(cellText => 
-                new TableCell({
-                  children: [new Paragraph({
+              const tableCells = rowCells.map((cellText, cellIndex) => {
+                // Handle left column (landlord/tenant info)
+                if (cellIndex === 0) {
+                  const cellParagraphs = [];
+                  const lines = cellText.split('\n').filter(line => line.trim());
+                  
+                  lines.forEach((line, lineIndex) => {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine) {
+                      // Check if this is a name (first line, usually uppercase)
+                      const isName = lineIndex === 0 && trimmedLine.length > 0;
+                      // Check if this is a role (contains "Landlord" or "Tenant")
+                      const isRole = trimmedLine.toLowerCase().includes('landlord') || 
+                                   trimmedLine.toLowerCase().includes('tenant');
+                      
+                      cellParagraphs.push(new Paragraph({
+                        children: [new TextRun({
+                          text: trimmedLine,
+                          font: "Arial",
+                          size: isName ? 28 : 24,
+                          bold: isName,
+                          italics: isRole
+                        })],
+                        alignment: AlignmentType.LEFT,
+                        spacing: { after: isRole ? 80 : 40 }
+                      }));
+                    }
+                  });
+                  
+                  // Add signature line
+                  cellParagraphs.push(new Paragraph({
                     children: [new TextRun({
-                      text: cellText || '',
+                      text: "________________________",
                       font: "Arial",
-                      size: 24
+                      size: 22
                     })],
-                    alignment: cellText.includes('Passport Size Photo') ? AlignmentType.CENTER : AlignmentType.LEFT
-                  })],
-                  borders: {
-                    top: { style: BorderStyle.SINGLE, size: 1 },
-                    bottom: { style: BorderStyle.SINGLE, size: 1 },
-                    left: { style: BorderStyle.SINGLE, size: 1 },
-                    right: { style: BorderStyle.SINGLE, size: 1 }
-                  },
-                  width: {
-                    size: cellText.includes('Passport Size Photo') ? 30 : 70,
-                    type: WidthType.PERCENTAGE
-                  }
-                })
-              );
+                    alignment: AlignmentType.LEFT,
+                    spacing: { before: 160, after: 40 }
+                  }));
+                  
+                  return new TableCell({
+                    children: cellParagraphs,
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1 },
+                      bottom: { style: BorderStyle.SINGLE, size: 1 },
+                      left: { style: BorderStyle.SINGLE, size: 1 },
+                      right: { style: BorderStyle.SINGLE, size: 1 }
+                    },
+                    width: {
+                      size: 70,
+                      type: WidthType.PERCENTAGE
+                    },
+                    verticalAlign: VerticalAlign.TOP
+                  });
+                } else {
+                  // Handle right column (passport photo)
+                  return new TableCell({
+                    children: [new Paragraph({
+                      children: [new TextRun({
+                        text: "Passport Size Photo",
+                        font: "Arial",
+                        size: 20
+                      })],
+                      alignment: AlignmentType.CENTER,
+                      spacing: { before: 120, after: 120 }
+                    })],
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 1 },
+                      bottom: { style: BorderStyle.SINGLE, size: 1 },
+                      left: { style: BorderStyle.SINGLE, size: 1 },
+                      right: { style: BorderStyle.SINGLE, size: 1 }
+                    },
+                    width: {
+                      size: 30,
+                      type: WidthType.PERCENTAGE
+                    },
+                    verticalAlign: VerticalAlign.CENTER
+                  });
+                }
+              });
               return new TableRow({ children: tableCells });
             });
             
@@ -607,6 +665,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               width: {
                 size: 100,
                 type: WidthType.PERCENTAGE
+              },
+              margins: {
+                top: 200,
+                bottom: 200
               }
             }));
           }
