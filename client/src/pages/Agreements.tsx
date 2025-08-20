@@ -1,4 +1,5 @@
 import { useState } from "react";
+import React from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,9 +33,9 @@ export default function Agreements() {
   const [viewingAgreement, setViewingAgreement] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [customerFilter, setCustomerFilter] = useState("");
-  const [tenantFilter, setTenantFilter] = useState("");
-  const [ownerFilter, setOwnerFilter] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("all");
+  const [tenantFilter, setTenantFilter] = useState("all");
+  const [ownerFilter, setOwnerFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadingNotarized, setUploadingNotarized] = useState(false);
   const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
@@ -47,28 +48,56 @@ export default function Agreements() {
     offset: (currentPage - 1) * 20,
   });
 
+  // Extract unique values for dropdown options
+  const uniqueCustomers = React.useMemo(() => {
+    const customers = agreementsData?.agreements
+      ?.map((agreement: any) => agreement.customer?.name)
+      .filter((name: string) => name && name.trim() !== '')
+      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
+      .sort() || [];
+    return customers;
+  }, [agreementsData?.agreements]);
+
+  const uniqueTenants = React.useMemo(() => {
+    const tenants = agreementsData?.agreements
+      ?.map((agreement: any) => agreement.tenantDetails?.name)
+      .filter((name: string) => name && name.trim() !== '')
+      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
+      .sort() || [];
+    return tenants;
+  }, [agreementsData?.agreements]);
+
+  const uniqueOwners = React.useMemo(() => {
+    const owners = agreementsData?.agreements
+      ?.map((agreement: any) => agreement.ownerDetails?.name)
+      .filter((name: string) => name && name.trim() !== '')
+      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
+      .sort() || [];
+    return owners;
+  }, [agreementsData?.agreements]);
+
   // Client-side filtering for customer, tenant, and owner
   const filteredAgreements = agreementsData?.agreements?.filter((agreement: any) => {
     // Filter by customer name
-    if (customerFilter) {
-      const customerName = agreement.customer?.name?.toLowerCase() || '';
-      if (!customerName.includes(customerFilter.toLowerCase())) {
+    if (customerFilter && customerFilter !== "all") {
+      const customerName = agreement.customer?.name || '';
+      if (customerName !== customerFilter) {
         return false;
       }
     }
 
     // Filter by tenant name
-    if (tenantFilter) {
-      const tenantName = agreement.tenantDetails?.name?.toLowerCase() || '';
-      if (!tenantName.includes(tenantFilter.toLowerCase())) {
+    if (tenantFilter && tenantFilter !== "all") {
+      const tenantName = agreement.tenantDetails?.name || '';
+      if (tenantName !== tenantFilter) {
         return false;
       }
     }
 
     // Filter by owner name
-    if (ownerFilter) {
-      const ownerName = agreement.ownerDetails?.name?.toLowerCase() || '';
-      if (!ownerName.includes(ownerFilter.toLowerCase())) {
+    if (ownerFilter && ownerFilter !== "all") {
+      const ownerName = agreement.ownerDetails?.name || '';
+      if (ownerName !== ownerFilter) {
         return false;
       }
     }
@@ -593,35 +622,56 @@ export default function Agreements() {
                 <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              placeholder="Filter by customer..."
-              value={customerFilter}
-              onChange={(e) => setCustomerFilter(e.target.value)}
-              className="w-full sm:w-48"
-            />
-            <Input
-              placeholder="Filter by tenant..."
-              value={tenantFilter}
-              onChange={(e) => setTenantFilter(e.target.value)}
-              className="w-full sm:w-48"
-            />
-            <Input
-              placeholder="Filter by owner..."
-              value={ownerFilter}
-              onChange={(e) => setOwnerFilter(e.target.value)}
-              className="w-full sm:w-48"
-            />
+            <Select value={customerFilter} onValueChange={setCustomerFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="All Customers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Customers</SelectItem>
+                {uniqueCustomers.map((customer) => (
+                  <SelectItem key={customer} value={customer}>
+                    {customer}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={tenantFilter} onValueChange={setTenantFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="All Tenants" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tenants</SelectItem>
+                {uniqueTenants.map((tenant) => (
+                  <SelectItem key={tenant} value={tenant}>
+                    {tenant}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="All Owners" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Owners</SelectItem>
+                {uniqueOwners.map((owner) => (
+                  <SelectItem key={owner} value={owner}>
+                    {owner}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex justify-between items-center w-full">
-            {(customerFilter || tenantFilter || ownerFilter || searchTerm || (statusFilter && statusFilter !== "all")) && (
+            {(customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || searchTerm || (statusFilter && statusFilter !== "all")) && (
               <Button
                 variant="outline"
                 onClick={() => {
                   setSearchTerm("");
                   setStatusFilter("all");
-                  setCustomerFilter("");
-                  setTenantFilter("");
-                  setOwnerFilter("");
+                  setCustomerFilter("all");
+                  setTenantFilter("all");
+                  setOwnerFilter("all");
                 }}
                 className="text-gray-600 hover:text-gray-900"
               >
@@ -643,7 +693,7 @@ export default function Agreements() {
               <div className="p-6 text-center text-gray-500">Loading agreements...</div>
             ) : filteredAgreements?.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
-                {searchTerm || customerFilter || tenantFilter || ownerFilter || (statusFilter && statusFilter !== "all") ? (
+                {searchTerm || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
                   <>
                     No agreements found matching your criteria.
                     <Button
@@ -651,9 +701,9 @@ export default function Agreements() {
                       onClick={() => {
                         setSearchTerm("");
                         setStatusFilter("all");
-                        setCustomerFilter("");
-                        setTenantFilter("");
-                        setOwnerFilter("");
+                        setCustomerFilter("all");
+                        setTenantFilter("all");
+                        setOwnerFilter("all");
                       }}
                       className="ml-2 text-blue-600 hover:text-blue-700"
                     >
