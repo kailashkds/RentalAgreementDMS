@@ -427,6 +427,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Handle center-aligned elements in HTML
         .replace(/<([^>]*?)text-align:\s*center([^>]*?)>/gi, '<$1text-align:center$2>');
       
+      // Debug: Show structure of HTML before table conversion
+      console.log('[Word Generation] HTML structure analysis:');
+      const htmlLines = cleanedHtml.split('\n').slice(0, 50);
+      htmlLines.forEach((line, index) => {
+        if (line.includes('Passport Size Photo') || line.includes('Landlord') || line.includes('Tenant')) {
+          console.log(`[Word Generation] Line ${index}: ${line.trim().substring(0, 100)}`);
+        }
+      });
+      
       // Convert flexbox signature sections to table format for better Word layout
       console.log('[Word Generation] Looking for signature sections to convert...');
       
@@ -519,6 +528,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       console.log(`[Word Generation] Converted ${conversionCount} unique signature sections to tables`);
+      
+      // Debug: Show where signature sections appear in HTML
+      console.log('[Word Generation] Checking HTML structure for signature positioning...');
+      const signatureMatches = cleanedHtml.match(/<div[^>]*class="no-page-break"[^>]*style="[^"]*display:\s*flex[^"]*"[^>]*>[\s\S]*?Passport Size Photo[\s\S]*?<\/div>/gi);
+      if (signatureMatches) {
+        console.log(`[Word Generation] Found ${signatureMatches.length} signature sections in HTML`);
+        signatureMatches.forEach((match, index) => {
+          const position = cleanedHtml.indexOf(match);
+          const before = cleanedHtml.substring(Math.max(0, position - 100), position);
+          console.log(`[Word Generation] Signature ${index + 1} context: ...${before.replace(/\n/g, ' ')}[SIGNATURE SECTION]`);
+        });
+      }
 
 
 
