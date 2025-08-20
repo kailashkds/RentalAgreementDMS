@@ -427,75 +427,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Handle center-aligned elements in HTML
         .replace(/<([^>]*?)text-align:\s*center([^>]*?)>/gi, '<$1text-align:center$2>');
       
-      // Debug: Log HTML content to see the actual structure
-      console.log('[Word Generation] HTML structure analysis...');
-      const passportPhotoMatches = cleanedHtml.match(/Passport Size Photo/gi);
-      console.log(`[Word Generation] Found ${passportPhotoMatches ? passportPhotoMatches.length : 0} "Passport Size Photo" occurrences`);
+      // Convert flexbox signature sections to table format for better Word layout  
+      console.log('[Word Generation] Looking for flexbox signature sections...');
       
-      // Look for sections containing passport photo to understand structure
-      const passportSections = cleanedHtml.match(/<div[^>]*>[\s\S]*?Passport Size Photo[\s\S]*?<\/div>/gi);
-      if (passportSections) {
-        console.log(`[Word Generation] Found ${passportSections.length} passport photo sections`);
-        passportSections.forEach((section, index) => {
-          console.log(`[Word Generation] Section ${index + 1} structure: ${section.substring(0, 300)}...`);
-        });
-      }
-      
-      // Convert all sections containing "Passport Size Photo" to table format
-      console.log('[Word Generation] Converting passport photo sections to tables...');
-      let conversions = 0;
-      
+      // First try the exact flexbox pattern
+      let flexboxMatches = 0;
       cleanedHtml = cleanedHtml.replace(
-        /<div[^>]*class="no-page-break"[^>]*>([\s\S]*?Passport Size Photo[\s\S]*?)<\/div>/gi,
+        /<div[^>]*class="no-page-break"[^>]*style="[^"]*display:\s*flex[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
         (match, content) => {
-          conversions++;
-          console.log(`[Word Generation] Converting passport section ${conversions}...`);
-          console.log(`[Word Generation] Section content preview: ${content.substring(0, 200)}...`);
+          flexboxMatches++;
+          console.log(`[Word Generation] Found flexbox div ${flexboxMatches}, checking content...`);
+          console.log(`[Word Generation] Content preview: ${content.substring(0, 200)}...`);
           
-          // Try to extract name and role from the content
-          let name = 'NAME_PLACEHOLDER';
-          let role = 'ROLE_PLACEHOLDER';
-          
-          // Look for patterns like {{OWNER_NAME}} or {{TENANT_NAME}}
-          const ownerNameMatch = content.match(/\{\{OWNER_NAME\}\}/);
-          const tenantNameMatch = content.match(/\{\{TENANT_NAME\}\}/);
-          
-          if (ownerNameMatch) {
-            name = '{{OWNER_NAME}}';
-            role = 'Landlord';
-          } else if (tenantNameMatch) {
-            name = '{{TENANT_NAME}}';  
-            role = 'Tenant';
-          } else {
-            // Try to extract from bold text
-            const boldMatch = content.match(/<p[^>]*style="[^"]*font-weight:\s*bold[^"]*"[^>]*>([^<]+)<\/p>/i);
-            const italicMatch = content.match(/<p[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>([^<]+)<\/p>/i);
+          // Check if this is a signature section (contains landlord/tenant info and passport photo)
+          if (content.includes('Passport Size Photo') && (content.includes('Landlord') || content.includes('Tenant'))) {
+            console.log('[Word Generation] ✓ Converting flexbox signature section to table');
             
-            if (boldMatch) name = boldMatch[1].trim();
-            if (italicMatch) role = italicMatch[1].trim();
+            // Extract the name and role information more robustly
+            const nameMatch = content.match(/<p[^>]*>([^<]*(?:LANDLORD|TENANT|[A-Z\s]+))[^<]*<\/p>/i) ||
+                            content.match(/{{[^}]*NAME[^}]*}}/i) ||
+                            content.match(/>([A-Z\s]{2,})</);
+            
+            const roleMatch = content.match(/<p[^>]*style="[^"]*italic[^"]*"[^>]*>([^<]+)<\/p>/i) ||
+                            content.match(/>(Landlord|Tenant)</i);
+            
+            const name = nameMatch ? nameMatch[1].trim() : 'NAME_PLACEHOLDER';
+            const role = roleMatch ? roleMatch[1].trim() : 'ROLE_PLACEHOLDER';
+            
+            console.log(`[Word Generation] Extracted: name="${name}", role="${role}"`);
+            
+            // Return a simple table that matches the PDF layout exactly with proper height
+            return `<table style="width: 100%; border: 1px solid #ccc; margin: 40px 0; border-collapse: collapse; min-height: 240px;">
+              <tr style="height: 240px;">
+                <td style="padding: 20px; vertical-align: top; width: 70%; height: 240px;">
+                  <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">${name}</p>
+                  <p style="font-style: italic; margin: 0 0 120px 0; font-size: 14px;">${role}</p>
+                  <div style="width: 120px; border-top: 1px solid #000; margin-top: 40px;"></div>
+                </td>
+                <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; height: 240px;">
+                  <div style="width: 160px; height: 200px; border: 1px dashed #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1.2;">
+                    Passport Size Photo
+                  </div>
+                </td>
+              </tr>
+            </table>`;
           }
-          
-          console.log(`[Word Generation] Extracted: name="${name}", role="${role}"`);
-          
-          // Return the enhanced table with proper height
-          return `<table style="width: 100%; border: 1px solid #ccc; margin: 40px 0; border-collapse: collapse; min-height: 240px;">
-            <tr style="height: 240px;">
-              <td style="padding: 20px; vertical-align: top; width: 70%; height: 240px;">
-                <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">${name}</p>
-                <p style="font-style: italic; margin: 0 0 120px 0; font-size: 14px;">${role}</p>
-                <div style="width: 120px; border-top: 1px solid #000; margin-top: 40px;"></div>
-              </td>
-              <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; height: 240px;">
-                <div style="width: 160px; height: 200px; border: 1px dashed #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1.2;">
-                  Passport Size Photo
-                </div>
-              </td>
-            </tr>
-          </table>`;
+          console.log('[Word Generation] ✗ Not a signature section, keeping original');
+          return match;
         }
       );
       
-      console.log(`[Word Generation] Completed ${conversions} passport photo section conversions`);
+      console.log(`[Word Generation] Processed ${flexboxMatches} flexbox divs`);
+      
+      // If no flexbox sections found, try alternative patterns
+      if (flexboxMatches === 0) {
+        console.log('[Word Generation] No flexbox found, trying alternative patterns...');
+        
+        // Try to find any section with Passport Size Photo
+        cleanedHtml = cleanedHtml.replace(
+          /<div[^>]*>([\s\S]*?Passport Size Photo[\s\S]*?)<\/div>/gi,
+          (match, content) => {
+            console.log('[Word Generation] Found Passport Size Photo section, converting...');
+            return `<table style="width: 100%; border: 1px solid #ccc; margin: 40px 0; border-collapse: collapse; min-height: 240px;">
+              <tr style="height: 240px;">
+                <td style="padding: 20px; vertical-align: top; width: 70%; height: 240px;">
+                  <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">{{OWNER_NAME}}</p>
+                  <p style="font-style: italic; margin: 0 0 120px 0; font-size: 14px;">Landlord</p>
+                  <div style="width: 120px; border-top: 1px solid #000; margin-top: 40px;"></div>
+                </td>
+                <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; height: 240px;">
+                  <div style="width: 160px; height: 200px; border: 1px dashed #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1.2;">
+                    Passport Size Photo
+                  </div>
+                </td>
+              </tr>
+            </table>`;
+          }
+        );
+      }
 
 
 
