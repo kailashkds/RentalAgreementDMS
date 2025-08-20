@@ -456,16 +456,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`[Word Generation] Extracted: name="${name}", role="${role}"`);
             
-            // Return a simple table that matches the PDF layout exactly
-            return `<table style="width: 100%; border: 1px solid #ccc; margin: 40px 0; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 20px; vertical-align: top; width: 70%;">
-                  <p style="font-weight: bold; font-size: 16px; margin: 0 0 5px 0;">${name}</p>
-                  <p style="font-style: italic; margin: 0 0 60px 0; font-size: 14px;">${role}</p>
-                  <div style="width: 120px; border-top: 1px solid #000; margin-top: 20px;"></div>
+            // Return a simple table that matches the PDF layout exactly with proper height
+            return `<table style="width: 100%; border: 1px solid #ccc; margin: 40px 0; border-collapse: collapse; min-height: 240px;">
+              <tr style="height: 240px;">
+                <td style="padding: 20px; vertical-align: top; width: 70%; height: 240px;">
+                  <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">${name}</p>
+                  <p style="font-style: italic; margin: 0 0 120px 0; font-size: 14px;">${role}</p>
+                  <div style="width: 120px; border-top: 1px solid #000; margin-top: 40px;"></div>
                 </td>
-                <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; border-left: 1px dashed #000;">
-                  <div style="width: 140px; height: 160px; border: 1px dashed #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px;">
+                <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; height: 240px;">
+                  <div style="width: 160px; height: 200px; border: 1px dashed #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1.2;">
                     Passport Size Photo
                   </div>
                 </td>
@@ -488,15 +488,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           /<div[^>]*>([\s\S]*?Passport Size Photo[\s\S]*?)<\/div>/gi,
           (match, content) => {
             console.log('[Word Generation] Found Passport Size Photo section, converting...');
-            return `<table style="width: 100%; border: 1px solid #ccc; margin: 40px 0; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 20px; vertical-align: top; width: 70%;">
-                  <p style="font-weight: bold; font-size: 16px; margin: 0 0 5px 0;">{{OWNER_NAME}}</p>
-                  <p style="font-style: italic; margin: 0 0 60px 0; font-size: 14px;">Landlord</p>
-                  <div style="width: 120px; border-top: 1px solid #000; margin-top: 20px;"></div>
+            return `<table style="width: 100%; border: 1px solid #ccc; margin: 40px 0; border-collapse: collapse; min-height: 240px;">
+              <tr style="height: 240px;">
+                <td style="padding: 20px; vertical-align: top; width: 70%; height: 240px;">
+                  <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">{{OWNER_NAME}}</p>
+                  <p style="font-style: italic; margin: 0 0 120px 0; font-size: 14px;">Landlord</p>
+                  <div style="width: 120px; border-top: 1px solid #000; margin-top: 40px;"></div>
                 </td>
-                <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%;">
-                  <div style="width: 140px; height: 160px; border: 1px dashed #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px;">
+                <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; height: 240px;">
+                  <div style="width: 160px; height: 200px; border: 1px dashed #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1.2;">
                     Passport Size Photo
                   </div>
                 </td>
@@ -658,7 +658,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       size: 22
                     })],
                     alignment: AlignmentType.LEFT,
-                    spacing: { before: 400, after: 100 }
+                    spacing: { before: 600, after: 100 }
                   }));
                   
                   return new TableCell({
@@ -685,7 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         size: 20
                       })],
                       alignment: AlignmentType.CENTER,
-                      spacing: { before: 300, after: 300 }
+                      spacing: { before: 500, after: 500 }
                     })],
                     borders: {
                       top: { style: BorderStyle.SINGLE, size: 1 },
@@ -711,8 +711,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 type: WidthType.PERCENTAGE
               },
               margins: {
-                top: 300,
-                bottom: 300
+                top: 400,
+                bottom: 400
               }
             }));
           }
