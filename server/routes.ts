@@ -427,7 +427,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse the HTML to extract structured content with proper formatting
       let cleanedHtml = processedHtml
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        // Handle center-aligned elements in HTML
+        .replace(/<([^>]*?)text-align:\s*center([^>]*?)>/gi, '<$1text-align:center$2>');
 
 
 
@@ -514,6 +516,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
           .trim();
 
+        console.log(`[Word Generation] Processed content length: ${processedContent.length}`);
+        console.log(`[Word Generation] First 200 chars: "${processedContent.substring(0, 200)}"`);
+
         // Split by double newlines to create paragraphs
         const textBlocks = processedContent.split('\n\n').filter(block => block.trim());
         
@@ -522,14 +527,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const trimmedBlock = block.trim();
           console.log(`[Word Generation] Block ${index}: "${trimmedBlock.substring(0, 50)}${trimmedBlock.length > 50 ? '...' : ''}"`);
           if (trimmedBlock) {
-            // Check if this looks like a title (rent agreement or rental agreement)
+            // Check if this looks like a title (rent agreement or rental agreement) - more flexible detection
             const isTitle = (trimmedBlock.toUpperCase().includes('RENT AGREEMENT') || 
-                           trimmedBlock.toUpperCase().includes('RENTAL AGREEMENT')) && 
-                           trimmedBlock.length < 100;
+                           trimmedBlock.toUpperCase().includes('RENTAL AGREEMENT') ||
+                           trimmedBlock.includes('RENT AGREEMENT') ||
+                           trimmedBlock.includes('Rent Agreement'));
+            
+            // Check if the original HTML has center alignment for this text
+            const isCenterAligned = html.includes('text-align: center') && 
+                                  (html.includes(trimmedBlock) || html.includes(trimmedBlock.toLowerCase()));
+            
+            // Final title detection - either detected as title OR has center alignment
+            const shouldCenter = isTitle || isCenterAligned;
             
             // Debug title detection
-            if (isTitle) {
-              console.log(`[Word Generation] TITLE DETECTED: "${trimmedBlock}" - will center align`);
+            if (shouldCenter) {
+              console.log(`[Word Generation] TITLE/CENTER DETECTED: "${trimmedBlock}" - will center align (isTitle: ${isTitle}, isCenterAligned: ${isCenterAligned})`);
             }
             
             // Check if this looks like a heading (starts with number, short)
@@ -598,39 +611,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               if (textRuns.length > 0) {
-                const alignment = isTitle ? AlignmentType.CENTER : 
+                const alignment = shouldCenter ? AlignmentType.CENTER : 
                                isPartyDesignation ? AlignmentType.RIGHT : 
                                AlignmentType.LEFT;
                 
-                if (isTitle) {
-                  console.log(`[Word Generation] Applying CENTER alignment to title: "${trimmedBlock}"`);
+                if (shouldCenter) {
+                  console.log(`[Word Generation] Applying CENTER alignment to: "${trimmedBlock}"`);
                 }
                 
                 paragraphs.push(new Paragraph({
                   children: textRuns,
                   alignment: alignment,
                   spacing: { 
-                    before: isTitle ? 120 : (isHeading ? 80 : (isAddress ? 60 : 0)),
-                    after: isTitle ? 160 : (isHeading ? 120 : (isAddress ? 120 : 120))
+                    before: shouldCenter ? 120 : (isHeading ? 80 : (isAddress ? 60 : 0)),
+                    after: shouldCenter ? 160 : (isHeading ? 120 : (isAddress ? 120 : 120))
                   }
                 }));
               }
             } else {
               // No bold text - handle normally
               const cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
-              if (isTitle) {
-                console.log(`[Word Generation] TITLE DETECTED (no bold): "${cleanText}" - will center align`);
+              if (shouldCenter) {
+                console.log(`[Word Generation] CENTER DETECTED (no bold): "${cleanText}" - will center align`);
               }
               
               const para = createParagraph(cleanText, {
-                size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
-                bold: isTitle, // Remove bold from headings unless it's a title
-                alignment: isTitle ? AlignmentType.CENTER : 
+                size: shouldCenter ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
+                bold: shouldCenter, // Bold titles/centered content
+                alignment: shouldCenter ? AlignmentType.CENTER : 
                           isPartyDesignation ? AlignmentType.RIGHT : 
                           AlignmentType.LEFT,
                 spacing: { 
-                  before: isTitle ? 120 : (isHeading ? 80 : (isAddress ? 60 : 0)),
-                  after: isTitle ? 160 : (isHeading ? 120 : (isAddress ? 120 : 120))
+                  before: shouldCenter ? 120 : (isHeading ? 80 : (isAddress ? 60 : 0)),
+                  after: shouldCenter ? 160 : (isHeading ? 120 : (isAddress ? 120 : 120))
                 }
               });
               
