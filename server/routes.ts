@@ -517,9 +517,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         textBlocks.forEach(block => {
           const trimmedBlock = block.trim();
           if (trimmedBlock) {
-            // Check if this looks like a title (all caps, short, centered content)
-            const isTitle = trimmedBlock.length < 100 && trimmedBlock === trimmedBlock.toUpperCase() && 
-                           (trimmedBlock.includes('RENT AGREEMENT') || trimmedBlock.includes('RENTAL AGREEMENT'));
+            // Check if this looks like a title (rent agreement or rental agreement)
+            const isTitle = (trimmedBlock.toUpperCase().includes('RENT AGREEMENT') || 
+                           trimmedBlock.toUpperCase().includes('RENTAL AGREEMENT')) && 
+                           trimmedBlock.length < 100;
             
             // Check if this looks like a heading (starts with number, short)
             const isHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
