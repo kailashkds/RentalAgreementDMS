@@ -468,57 +468,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
               conversionCount++;
               console.log(`[Word Generation] ✓ Creating table for: ${name} (${role}) - Section ${conversionCount}`);
               
-              // Special handling for witness sections with multiple signature lines
-              const isWitnessSection = role.toLowerCase().includes('witness');
-              let tableContent;
+              // Create simple block-level table - no positioning, no flexbox, linear flow
+              console.log(`[Word Generation] ✓ Creating linear table for: ${name} (${role})`);
               
-              if (isWitnessSection && content.includes('_______')) {
-                // Count signature lines for witness section
-                const signatureCount = (content.match(/_______/g) || []).length;
-                console.log(`[Word Generation] Witness section detected with ${signatureCount} signature lines`);
-                
-                // Create witness table with multiple signature rows
-                const witnessRows = Array.from({length: Math.max(signatureCount, 2)}, (_, i) => `
-                  <div style="margin: 15px 0;">
-                    <div style="width: 120px; border-top: 1px solid #000; margin-bottom: 5px;"></div>
-                  </div>
-                `).join('');
-                
-                tableContent = `
-                  <tr>
-                    <td style="padding: 20px; vertical-align: top; width: 70%; min-height: 200px;">
-                      <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0;">${name}</p>
-                      <div style="margin-top: 20px;">${witnessRows}</div>
-                    </td>
-                    <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; min-height: 200px; border-left: 1px solid #ccc;">
-                      <div style="width: 140px; height: 180px; border: 1px dashed #000; margin: 0 auto; font-size: 12px; line-height: 180px; text-align: center;">
-                        Passport Size Photo
-                      </div>
-                    </td>
-                  </tr>`;
-              } else {
-                // Regular landlord/tenant table
-                tableContent = `
-                  <tr>
-                    <td style="padding: 20px; vertical-align: top; width: 70%; min-height: 200px;">
-                      <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">${name}</p>
-                      <p style="font-style: italic; margin: 0 0 100px 0; font-size: 14px;">${role}</p>
-                      <div style="width: 120px; border-top: 1px solid #000; margin-top: 20px;"></div>
-                    </td>
-                    <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; min-height: 200px; border-left: 1px solid #ccc;">
-                      <div style="width: 140px; height: 180px; border: 1px dashed #000; margin: 0 auto; font-size: 12px; line-height: 180px; text-align: center;">
-                        Passport Size Photo
-                      </div>
-                    </td>
-                  </tr>`;
-              }
-              
-              // Return inline table without breaking document flow
-              return `<div style="margin: 30px 0;">
-                <table style="width: 100%; border: 1px solid #ccc; border-collapse: collapse;">
-                  ${tableContent}
-                </table>
-              </div>`;
+              // Simple table structure that stays in document flow
+              return `
+<br><br>
+<table border="1" style="width: 100%; border-collapse: collapse;">
+  <tr height="200">
+    <td width="70%" style="padding: 10px; vertical-align: top;">
+      <b style="font-size: 16px; text-transform: uppercase;">${name}</b>
+      <br><br>
+      <i style="font-size: 14px;">${role}</i>
+      <br><br><br><br><br><br><br><br>
+      ________________________
+    </td>
+    <td width="30%" style="padding: 10px; text-align: center; vertical-align: middle; border-left: 1px solid #000;">
+      <div style="border: 1px dashed #000; width: 120px; height: 150px; margin: 0 auto; font-size: 12px; padding-top: 65px;">
+        Passport Size Photo
+      </div>
+    </td>
+  </tr>
+</table>
+<br><br>`;
             }
           }
           
