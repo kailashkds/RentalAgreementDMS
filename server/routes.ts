@@ -427,11 +427,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Handle center-aligned elements in HTML
         .replace(/<([^>]*?)text-align:\s*center([^>]*?)>/gi, '<$1text-align:center$2>');
       
-      // Convert flexbox signature sections to table format for better Word layout - more conservative approach
+      // Convert flexbox signature sections to table format for better Word layout
       console.log('[Word Generation] Looking for signature sections to convert...');
       
-      // Only convert very specific signature sections that contain both name and passport photo
+      // Track converted sections to avoid duplicates
+      const convertedSections = new Set();
       let conversionCount = 0;
+      
       cleanedHtml = cleanedHtml.replace(
         /<div[^>]*class="no-page-break"[^>]*style="[^"]*display:\s*flex[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
         (match, content) => {
@@ -441,9 +443,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const hasSignatureLine = content.includes('_______') || content.includes('border-top: 1px solid');
           
           if (hasPassportPhoto && hasPersonalInfo && hasSignatureLine) {
-            conversionCount++;
-            console.log(`[Word Generation] Converting signature section ${conversionCount}`);
-            
             // Extract name and role more carefully
             const nameMatch = content.match(/<p[^>]*style="[^"]*font-weight:\s*bold[^"]*"[^>]*>([^<]+)<\/p>/i);
             const roleMatch = content.match(/<p[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>([^<]+)<\/p>/i);
@@ -451,36 +450,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const name = nameMatch ? nameMatch[1].trim() : '';
             const role = roleMatch ? roleMatch[1].trim() : '';
             
-            // Only convert if we have valid name and role
-            if (name && role) {
-              console.log(`[Word Generation] ✓ Creating table for: ${name} (${role})`);
+            // Create unique identifier to avoid duplicates
+            const sectionId = `${name}-${role}`;
+            
+            // Only convert if we have valid name and role and haven't converted this exact section
+            if (name && role && !convertedSections.has(sectionId)) {
+              convertedSections.add(sectionId);
+              conversionCount++;
+              console.log(`[Word Generation] ✓ Creating table for: ${name} (${role}) - Section ${conversionCount}`);
               
-              // Return inline table without breaking document flow
-              return `<div style="margin: 20px 0;">
-                <table style="width: 100%; border: 1px solid #ccc; border-collapse: collapse;">
+              // Special handling for witness sections with multiple signature lines
+              const isWitnessSection = role.toLowerCase().includes('witness');
+              let tableContent;
+              
+              if (isWitnessSection && content.includes('_______')) {
+                // Count signature lines for witness section
+                const signatureCount = (content.match(/_______/g) || []).length;
+                console.log(`[Word Generation] Witness section detected with ${signatureCount} signature lines`);
+                
+                // Create witness table with multiple signature rows
+                const witnessRows = Array.from({length: Math.max(signatureCount, 2)}, (_, i) => `
+                  <div style="margin: 15px 0;">
+                    <div style="width: 120px; border-top: 1px solid #000; margin-bottom: 5px;"></div>
+                  </div>
+                `).join('');
+                
+                tableContent = `
                   <tr>
-                    <td style="padding: 20px; vertical-align: top; width: 70%; min-height: 180px;">
-                      <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">${name}</p>
-                      <p style="font-style: italic; margin: 0 0 80px 0; font-size: 14px;">${role}</p>
-                      <div style="width: 120px; border-top: 1px solid #000; margin-top: 20px;"></div>
+                    <td style="padding: 20px; vertical-align: top; width: 70%; min-height: 200px;">
+                      <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0;">${name}</p>
+                      <div style="margin-top: 20px;">${witnessRows}</div>
                     </td>
-                    <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; min-height: 180px; border-left: 1px solid #ccc;">
-                      <div style="width: 140px; height: 160px; border: 1px dashed #000; margin: 0 auto; font-size: 12px; line-height: 160px; text-align: center;">
+                    <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; min-height: 200px; border-left: 1px solid #ccc;">
+                      <div style="width: 140px; height: 180px; border: 1px dashed #000; margin: 0 auto; font-size: 12px; line-height: 180px; text-align: center;">
                         Passport Size Photo
                       </div>
                     </td>
-                  </tr>
+                  </tr>`;
+              } else {
+                // Regular landlord/tenant table
+                tableContent = `
+                  <tr>
+                    <td style="padding: 20px; vertical-align: top; width: 70%; min-height: 200px;">
+                      <p style="font-weight: bold; font-size: 16px; margin: 0 0 8px 0; text-transform: uppercase;">${name}</p>
+                      <p style="font-style: italic; margin: 0 0 100px 0; font-size: 14px;">${role}</p>
+                      <div style="width: 120px; border-top: 1px solid #000; margin-top: 20px;"></div>
+                    </td>
+                    <td style="padding: 20px; text-align: center; vertical-align: middle; width: 30%; min-height: 200px; border-left: 1px solid #ccc;">
+                      <div style="width: 140px; height: 180px; border: 1px dashed #000; margin: 0 auto; font-size: 12px; line-height: 180px; text-align: center;">
+                        Passport Size Photo
+                      </div>
+                    </td>
+                  </tr>`;
+              }
+              
+              // Return inline table without breaking document flow
+              return `<div style="margin: 30px 0;">
+                <table style="width: 100%; border: 1px solid #ccc; border-collapse: collapse;">
+                  ${tableContent}
                 </table>
               </div>`;
             }
           }
           
-          // Return original if not a signature section or missing required elements
+          // Return original if not a signature section or already converted
           return match;
         }
       );
       
-      console.log(`[Word Generation] Converted ${conversionCount} signature sections to tables`);
+      console.log(`[Word Generation] Converted ${conversionCount} unique signature sections to tables`);
 
 
 
