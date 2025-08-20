@@ -1043,22 +1043,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
             imagePath = path.join(process.cwd(), docUrl.substring(1)); // Remove leading slash
           }
           
-          console.log(`[Word Generation] Looking for ${logName} image at: ${imagePath}`);
+          console.log(`[Word Generation] Looking for ${logName} document at: ${imagePath}`);
           
           if (fs.existsSync(imagePath)) {
-            const imageBuffer = fs.readFileSync(imagePath);
-            console.log(`[Word Generation] Loaded ${logName} image, size: ${imageBuffer.length} bytes`);
+            console.log(`[Word Generation] Found ${logName} document, size: ${fs.statSync(imagePath).size} bytes`);
             
-            // Determine image type and ensure it's a valid type
+            let imageBuffer: Buffer;
             let imageType: "jpg" | "png" | "gif" | "bmp" | "svg" = 'jpg';
-            if (imagePath.toLowerCase().endsWith('.png')) {
-              imageType = 'png';
-            } else if (imagePath.toLowerCase().endsWith('.gif')) {
-              imageType = 'gif';
-            } else if (imagePath.toLowerCase().endsWith('.bmp')) {
-              imageType = 'bmp';
-            } else if (imagePath.toLowerCase().endsWith('.svg')) {
-              imageType = 'svg';
+            
+            // Handle PDF files by converting to images
+            if (imagePath.toLowerCase().endsWith('.pdf')) {
+              try {
+                console.log(`[Word Generation] Converting PDF to images for ${logName}...`);
+                const pdfImages = await convertPdfToImages(imagePath);
+                
+                if (pdfImages && pdfImages.length > 0) {
+                  // Use the first page of the PDF
+                  const firstPageBase64 = pdfImages[0].replace(/^data:image\/[^;]+;base64,/, '');
+                  imageBuffer = Buffer.from(firstPageBase64, 'base64');
+                  imageType = 'png'; // PDF conversion typically produces PNG
+                  console.log(`[Word Generation] Successfully converted PDF to image for ${logName}, size: ${imageBuffer.length} bytes`);
+                } else {
+                  throw new Error('PDF conversion returned no images');
+                }
+              } catch (pdfError) {
+                console.error(`[Word Generation] Failed to convert PDF to image for ${logName}:`, pdfError);
+                const errorPara = createParagraph(`PDF conversion failed: ${docUrl}`, {
+                  size: 24,
+                  alignment: AlignmentType.CENTER,
+                  spacing: { after: 480 }
+                });
+                if (errorPara) documentParagraphs.push(errorPara);
+                return;
+              }
+            } else {
+              // Handle regular image files
+              imageBuffer = fs.readFileSync(imagePath);
+              console.log(`[Word Generation] Loaded ${logName} image, size: ${imageBuffer.length} bytes`);
+              
+              // Determine image type
+              if (imagePath.toLowerCase().endsWith('.png')) {
+                imageType = 'png';
+              } else if (imagePath.toLowerCase().endsWith('.gif')) {
+                imageType = 'gif';
+              } else if (imagePath.toLowerCase().endsWith('.bmp')) {
+                imageType = 'bmp';
+              } else if (imagePath.toLowerCase().endsWith('.svg')) {
+                imageType = 'svg';
+              }
             }
             
             // Create image run with proper type handling
