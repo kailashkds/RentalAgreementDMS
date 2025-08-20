@@ -277,6 +277,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Main agreements endpoint - list all agreements with filtering and pagination
+  app.get("/api/agreements", async (req, res) => {
+    try {
+      const { search, limit, offset, status, customerId, propertyId } = req.query;
+      
+      const filters: any = {};
+      if (status) filters.status = status as string;
+      if (customerId) filters.customerId = customerId as string;
+      if (propertyId) filters.propertyId = propertyId as string;
+      
+      const result = await storage.getAgreements({
+        ...filters,
+        search: search as string,
+        limit: limit ? parseInt(limit as string) : undefined,
+        offset: offset ? parseInt(offset as string) : undefined
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching agreements:", error);
+      res.status(500).json({ message: "Failed to fetch agreements" });
+    }
+  });
+
+  // Get single agreement by ID
+  app.get("/api/agreements/:id", async (req, res) => {
+    try {
+      const agreement = await storage.getAgreement(req.params.id);
+      if (!agreement) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+      res.json(agreement);
+    } catch (error) {
+      console.error("Error fetching agreement:", error);
+      res.status(500).json({ message: "Failed to fetch agreement" });
+    }
+  });
+
   // Quick PDF download endpoint for form data
   app.post("/api/agreements/generate-pdf", async (req, res) => {
     try {
