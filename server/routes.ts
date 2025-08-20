@@ -517,13 +517,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Split by double newlines to create paragraphs
         const textBlocks = processedContent.split('\n\n').filter(block => block.trim());
         
-        textBlocks.forEach(block => {
+        console.log(`[Word Generation] Processing ${textBlocks.length} text blocks`);
+        textBlocks.forEach((block, index) => {
           const trimmedBlock = block.trim();
+          console.log(`[Word Generation] Block ${index}: "${trimmedBlock.substring(0, 50)}${trimmedBlock.length > 50 ? '...' : ''}"`);
           if (trimmedBlock) {
             // Check if this looks like a title (rent agreement or rental agreement)
             const isTitle = (trimmedBlock.toUpperCase().includes('RENT AGREEMENT') || 
                            trimmedBlock.toUpperCase().includes('RENTAL AGREEMENT')) && 
                            trimmedBlock.length < 100;
+            
+            // Debug title detection
+            if (isTitle) {
+              console.log(`[Word Generation] TITLE DETECTED: "${trimmedBlock}" - will center align`);
+            }
             
             // Check if this looks like a heading (starts with number, short)
             const isHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
@@ -591,11 +598,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               if (textRuns.length > 0) {
+                const alignment = isTitle ? AlignmentType.CENTER : 
+                               isPartyDesignation ? AlignmentType.RIGHT : 
+                               AlignmentType.LEFT;
+                
+                if (isTitle) {
+                  console.log(`[Word Generation] Applying CENTER alignment to title: "${trimmedBlock}"`);
+                }
+                
                 paragraphs.push(new Paragraph({
                   children: textRuns,
-                  alignment: isTitle ? AlignmentType.CENTER : 
-                           isPartyDesignation ? AlignmentType.RIGHT : 
-                           AlignmentType.LEFT,
+                  alignment: alignment,
                   spacing: { 
                     before: isTitle ? 120 : (isHeading ? 80 : (isAddress ? 60 : 0)),
                     after: isTitle ? 160 : (isHeading ? 120 : (isAddress ? 120 : 120))
@@ -605,6 +618,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } else {
               // No bold text - handle normally
               const cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
+              if (isTitle) {
+                console.log(`[Word Generation] TITLE DETECTED (no bold): "${cleanText}" - will center align`);
+              }
+              
               const para = createParagraph(cleanText, {
                 size: isTitle ? 28 : (isHeading ? 26 : (isAddress ? 22 : 24)),
                 bold: isTitle, // Remove bold from headings unless it's a title
