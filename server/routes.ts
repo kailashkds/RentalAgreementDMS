@@ -622,7 +622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Extract image URLs from the processed HTML before removing images
       const extractImageUrls = (html: string) => {
-        const imageUrls = {};
+        const imageUrls: { [key: string]: string } = {};
         const imgRegex = /<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/gi;
         let match;
         
@@ -635,12 +635,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Handle data URLs (base64 images) - extract from data URL and save temporarily
           if (src.startsWith('data:')) {
             try {
-              // Extract base64 data
+              // Extract base64 data and determine file extension
               const base64Data = src.split(',')[1];
               const buffer = Buffer.from(base64Data, 'base64');
               
+              // Determine file extension from MIME type
+              let fileExt = '.jpg';
+              if (src.includes('data:image/png')) {
+                fileExt = '.png';
+              } else if (src.includes('data:image/jpeg')) {
+                fileExt = '.jpg';
+              }
+              
               // Create temporary file in uploads directory
-              const tempFileName = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+              const tempFileName = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}${fileExt}`;
               const tempPath = path.join(process.cwd(), 'uploads', tempFileName);
               
               // Write to temporary file
@@ -739,7 +747,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     transformation: {
                       width: 300,
                       height: 200,
-                    }
+                    },
+                    type: 'jpg'
                   })
                 ],
                 alignment: AlignmentType.CENTER,
@@ -800,7 +809,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     transformation: {
                       width: 300,
                       height: 200,
-                    }
+                    },
+                    type: 'jpg'
                   })
                 ],
                 alignment: AlignmentType.CENTER,
@@ -871,7 +881,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     transformation: {
                       width: 300,
                       height: 200,
-                    }
+                    },
+                    type: 'jpg'
                   })
                 ],
                 alignment: AlignmentType.CENTER,
@@ -930,7 +941,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     transformation: {
                       width: 300,
                       height: 200,
-                    }
+                    },
+                    type: 'jpg'
                   })
                 ],
                 alignment: AlignmentType.CENTER,
@@ -992,7 +1004,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   transformation: {
                     width: 300,
                     height: 200,
-                  }
+                  },
+                  type: 'jpg'
                 })
               ],
               alignment: AlignmentType.CENTER,
@@ -1084,6 +1097,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
       
+      // Clean up temporary files
+      Object.values(documentImages).forEach((imagePath: string) => {
+        if (imagePath.includes('temp_')) {
+          try {
+            fs.unlinkSync(imagePath);
+            console.log(`[Word Generation] Cleaned up temporary file: ${imagePath}`);
+          } catch (cleanupError) {
+            console.warn(`[Word Generation] Could not clean up temporary file: ${imagePath}`, cleanupError);
+          }
+        }
+      });
+
       // Send the Word document buffer properly
       res.end(docxBuffer);
       
