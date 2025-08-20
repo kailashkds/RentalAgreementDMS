@@ -539,8 +539,23 @@ export class DatabaseStorage implements IStorage {
       const owner = converted.ownerDetails;
       if (owner.name) owner.name = safeUpperCase(owner.name);
       if (owner.profession) owner.profession = safeUpperCase(owner.profession);
+      if (owner.occupation) owner.occupation = safeUpperCase(owner.occupation);
       if (owner.address) owner.address = safeUpperCase(owner.address);
       if (owner.fullAddress) owner.fullAddress = safeUpperCase(owner.fullAddress);
+      // Convert individual address components
+      if (owner.houseNumber) owner.houseNumber = safeUpperCase(owner.houseNumber);
+      if (owner.society) owner.society = safeUpperCase(owner.society);
+      if (owner.area) owner.area = safeUpperCase(owner.area);
+      if (owner.city) owner.city = safeUpperCase(owner.city);
+      if (owner.state) owner.state = safeUpperCase(owner.state);
+      // Handle nested address object
+      if (owner.address && typeof owner.address === 'object') {
+        if (owner.address.flatNo) owner.address.flatNo = safeUpperCase(owner.address.flatNo);
+        if (owner.address.society) owner.address.society = safeUpperCase(owner.address.society);
+        if (owner.address.area) owner.address.area = safeUpperCase(owner.address.area);
+        if (owner.address.city) owner.address.city = safeUpperCase(owner.address.city);
+        if (owner.address.state) owner.address.state = safeUpperCase(owner.address.state);
+      }
     }
     
     // Convert tenant details
@@ -548,8 +563,23 @@ export class DatabaseStorage implements IStorage {
       const tenant = converted.tenantDetails;
       if (tenant.name) tenant.name = safeUpperCase(tenant.name);
       if (tenant.profession) tenant.profession = safeUpperCase(tenant.profession);
+      if (tenant.occupation) tenant.occupation = safeUpperCase(tenant.occupation);
       if (tenant.address) tenant.address = safeUpperCase(tenant.address);
       if (tenant.fullAddress) tenant.fullAddress = safeUpperCase(tenant.fullAddress);
+      // Convert individual address components
+      if (tenant.houseNumber) tenant.houseNumber = safeUpperCase(tenant.houseNumber);
+      if (tenant.society) tenant.society = safeUpperCase(tenant.society);
+      if (tenant.area) tenant.area = safeUpperCase(tenant.area);
+      if (tenant.city) tenant.city = safeUpperCase(tenant.city);
+      if (tenant.state) tenant.state = safeUpperCase(tenant.state);
+      // Handle nested address object
+      if (tenant.address && typeof tenant.address === 'object') {
+        if (tenant.address.flatNo) tenant.address.flatNo = safeUpperCase(tenant.address.flatNo);
+        if (tenant.address.society) tenant.address.society = safeUpperCase(tenant.address.society);
+        if (tenant.address.area) tenant.address.area = safeUpperCase(tenant.address.area);
+        if (tenant.address.city) tenant.address.city = safeUpperCase(tenant.address.city);
+        if (tenant.address.state) tenant.address.state = safeUpperCase(tenant.address.state);
+      }
     }
     
     // Convert property details addresses
@@ -558,10 +588,19 @@ export class DatabaseStorage implements IStorage {
       if (property.address) property.address = safeUpperCase(property.address);
       if (property.fullAddress) property.fullAddress = safeUpperCase(property.fullAddress);
       if (property.flatNumber) property.flatNumber = safeUpperCase(property.flatNumber);
+      if (property.houseNumber) property.houseNumber = safeUpperCase(property.houseNumber);
       if (property.society) property.society = safeUpperCase(property.society);
       if (property.area) property.area = safeUpperCase(property.area);
       if (property.city) property.city = safeUpperCase(property.city);
       if (property.state) property.state = safeUpperCase(property.state);
+      // Handle nested address object
+      if (property.address && typeof property.address === 'object') {
+        if (property.address.flatNo) property.address.flatNo = safeUpperCase(property.address.flatNo);
+        if (property.address.society) property.address.society = safeUpperCase(property.address.society);
+        if (property.address.area) property.address.area = safeUpperCase(property.address.area);
+        if (property.address.city) property.address.city = safeUpperCase(property.address.city);
+        if (property.address.state) property.address.state = safeUpperCase(property.address.state);
+      }
     }
     
     return converted;
