@@ -578,56 +578,316 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       };
 
-      // Helper function to convert HTML to Word paragraphs, maintaining sequential order
-      const htmlToWordParagraphs = (html: string) => {
+      // Helper function to process text content and convert to Word paragraphs
+      const processTextContent = (htmlContent: string) => {
         const paragraphs: any[] = [];
         
-        // Process HTML sequentially, inserting tables exactly where they appear
-        console.log('[Word Generation] Processing HTML sequentially to maintain order...');
+        // Clean HTML and extract text content
+        let processedContent = htmlContent
+          .replace(/<img[^>]*>/gi, '')  // Remove images completely for main text
+          .replace(/<br\s*\/?>/gi, '\n\n')  // Convert <br> to double newlines
+          .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
+          .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
+          .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n') // Handle headings
+          .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
+          .replace(/&amp;/gi, '&')          // Convert &amp; to &
+          .replace(/&lt;/gi, '<')           // Convert &lt; to <
+          .replace(/&gt;/gi, '>')           // Convert &gt; to >
+          .replace(/&quot;/gi, '"')         // Convert &quot; to "
+          .replace(/&#39;/gi, "'")          // Convert &#39; to '
+          .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
+          .trim();
+
+        // Split by double newlines to create paragraphs
+        const textBlocks = processedContent.split('\n\n').filter(block => block.trim());
         
-        let currentPos = 0;
-        const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
-        let tableMatch;
-        
-        // Process content before each table and the table itself
-        while ((tableMatch = tableRegex.exec(html)) !== null) {
-          // Process content before the table
-          if (tableMatch.index > currentPos) {
-            const beforeTableHtml = html.slice(currentPos, tableMatch.index);
-            if (beforeTableHtml.trim()) {
-              const textParagraphs = processTextContent(beforeTableHtml);
-              paragraphs.push(...textParagraphs);
+        textBlocks.forEach((block) => {
+          const trimmedBlock = block.trim();
+          if (trimmedBlock) {
+            // Check if this looks like a title (rent agreement or rental agreement)
+            const isTitle = (trimmedBlock.toUpperCase().includes('RENT AGREEMENT') || 
+                           trimmedBlock.toUpperCase().includes('RENTAL AGREEMENT'));
+            
+            // Check if the original HTML has center alignment for this text
+            const isCenterAligned = htmlContent.includes('text-align: center') && 
+                                  htmlContent.includes(trimmedBlock);
+            
+            // Final title detection
+            const shouldCenter = isTitle || isCenterAligned;
+            
+            // Check if this looks like a heading (starts with number)
+            const isHeading = /^\d+\.?\s/.test(trimmedBlock) && trimmedBlock.length < 200;
+            
+            // Check for party designation lines that should be right-aligned
+            const isPartyDesignation = trimmedBlock.includes('Hereinafter called the LANDLORD') || 
+                                     trimmedBlock.includes('Hereinafter called the TENANT');
+            
+            // Handle mixed bold/regular text within a paragraph
+            if (/<(strong|b)>/i.test(block)) {
+              const textRuns = [];
+              let currentText = block;
+              
+              // Process bold tags
+              let match;
+              const boldRegex = /<(strong|b)>(.*?)<\/(strong|b)>/gi;
+              let lastIndex = 0;
+              
+              while ((match = boldRegex.exec(currentText)) !== null) {
+                // Add regular text before bold
+                const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').trim();
+                if (beforeText) {
+                  textRuns.push(new TextRun({
+                    text: beforeText,
+                    font: "Arial",
+                    size: isTitle ? 28 : (isHeading ? 26 : 24),
+                    bold: false
+                  }));
+                }
+                
+                // Add bold text
+                const boldText = match[2].replace(/<[^>]*>/g, '').trim();
+                if (boldText) {
+                  textRuns.push(new TextRun({
+                    text: boldText,
+                    font: "Arial",
+                    size: isTitle ? 28 : (isHeading ? 26 : 24),
+                    bold: true
+                  }));
+                }
+                
+                lastIndex = boldRegex.lastIndex;
+              }
+              
+              // Add remaining regular text after last bold
+              const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').trim();
+              if (afterText) {
+                textRuns.push(new TextRun({
+                  text: afterText,
+                  font: "Arial",
+                  size: isTitle ? 28 : (isHeading ? 26 : 24),
+                  bold: false
+                }));
+              }
+              
+              if (textRuns.length > 0) {
+                const alignment = shouldCenter ? AlignmentType.CENTER : 
+                               isPartyDesignation ? AlignmentType.RIGHT : 
+                               AlignmentType.LEFT;
+                
+                paragraphs.push(new Paragraph({
+                  children: textRuns,
+                  alignment: alignment,
+                  spacing: { 
+                    before: shouldCenter ? 120 : (isHeading ? 80 : 0),
+                    after: shouldCenter ? 160 : (isHeading ? 120 : 120)
+                  }
+                }));
+              }
+            } else {
+              // No bold text - handle normally
+              const cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
+              
+              const para = createParagraph(cleanText, {
+                size: shouldCenter ? 28 : (isHeading ? 26 : 24),
+                bold: shouldCenter, // Bold titles/centered content
+                alignment: shouldCenter ? AlignmentType.CENTER : 
+                          isPartyDesignation ? AlignmentType.RIGHT : 
+                          AlignmentType.LEFT,
+                spacing: { 
+                  before: shouldCenter ? 120 : (isHeading ? 80 : 0),
+                  after: shouldCenter ? 160 : (isHeading ? 120 : 120)
+                }
+              });
+              
+              if (para) {
+                paragraphs.push(para);
+              }
             }
           }
-          
-          // Process the table itself
-          console.log(`[Word Generation] Processing table at position ${tableMatch.index}`);
-          
-          // Extract table content and create Word table
-          const tableContent = tableMatch[1];
-          const tableWordElement = createWordTable(tableContent);
-          if (tableWordElement) {
-            paragraphs.push(tableWordElement);
-          }
-          
-          currentPos = tableMatch.index + tableMatch[0].length;
-        }
-        
-        // Process remaining content after the last table
-        if (currentPos < html.length) {
-          const remainingHtml = html.slice(currentPos);
-          if (remainingHtml.trim()) {
-            const textParagraphs = processTextContent(remainingHtml);
-            paragraphs.push(...textParagraphs);
-          }
-        }
+        });
         
         return paragraphs;
       };
+
+      // Helper function to create Word table from HTML table content
+      const createWordTable = (tableContent: string) => {
+        try {
+          // Extract table rows
+          const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+          const rows = [];
+          let rowMatch;
+          
+          while ((rowMatch = rowRegex.exec(tableContent)) !== null) {
+            const rowContent = rowMatch[1];
+            const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+            const cells = [];
+            let cellMatch;
+            
+            while ((cellMatch = cellRegex.exec(rowContent)) !== null) {
+              const cellContent = cellMatch[1]
+                .replace(/<[^>]*>/g, '')  // Remove HTML tags
+                .replace(/&nbsp;/gi, ' ')
+                .trim();
+              
+              const cellParagraphs = [];
+              
+              if (cellContent.includes('Passport Size Photo')) {
+                // Create passport photo cell
+                cellParagraphs.push(new Paragraph({
+                  children: [new TextRun({
+                    text: "Passport Size Photo",
+                    font: "Arial",
+                    size: 20
+                  })],
+                  alignment: AlignmentType.CENTER,
+                  spacing: { before: 500, after: 500 }
+                }));
+              } else if (cellContent.includes('_')) {
+                // This is a signature cell with name and signature line
+                const lines = cellContent.split('\n').filter(line => line.trim());
+                lines.forEach((line, index) => {
+                  const trimmedLine = line.trim();
+                  if (trimmedLine && !trimmedLine.match(/^_+$/)) {
+                    const isName = index === 0 || trimmedLine.toUpperCase() === trimmedLine;
+                    const isRole = trimmedLine.toLowerCase().includes('landlord') || 
+                                 trimmedLine.toLowerCase().includes('tenant') || 
+                                 trimmedLine.toLowerCase().includes('witness');
+                    
+                    cellParagraphs.push(new Paragraph({
+                      children: [new TextRun({
+                        text: trimmedLine,
+                        font: "Arial",
+                        size: isName ? 28 : 24,
+                        bold: isName,
+                        italics: isRole
+                      })],
+                      alignment: AlignmentType.LEFT,
+                      spacing: { after: isRole ? 80 : 40 }
+                    }));
+                  }
+                });
+                
+                // Add signature line
+                cellParagraphs.push(new Paragraph({
+                  children: [new TextRun({
+                    text: "________________________",
+                    font: "Arial",
+                    size: 22
+                  })],
+                  alignment: AlignmentType.LEFT,
+                  spacing: { before: 600, after: 100 }
+                }));
+              } else if (cellContent) {
+                // Regular text cell
+                cellParagraphs.push(new Paragraph({
+                  children: [new TextRun({
+                    text: cellContent,
+                    font: "Arial",
+                    size: 22
+                  })],
+                  alignment: AlignmentType.LEFT
+                }));
+              }
+              
+              cells.push(new TableCell({
+                children: cellParagraphs.length > 0 ? cellParagraphs : [new Paragraph({
+                  children: [new TextRun({ text: '' })]
+                })],
+                borders: {
+                  top: { style: BorderStyle.SINGLE, size: 1 },
+                  bottom: { style: BorderStyle.SINGLE, size: 1 },
+                  left: { style: BorderStyle.SINGLE, size: 1 },
+                  right: { style: BorderStyle.SINGLE, size: 1 }
+                },
+                verticalAlign: VerticalAlign.TOP
+              }));
+            }
+            
+            if (cells.length > 0) {
+              rows.push(new TableRow({ children: cells }));
+            }
+          }
+          
+          if (rows.length > 0) {
+            return new Table({
+              rows: rows,
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE
+              },
+              margins: {
+                top: 200,
+                bottom: 200
+              }
+            });
+          }
+        } catch (error) {
+          console.error('[Word Generation] Error creating table:', error);
+        }
+        
+        return null;
+      };
+
+
       
-      // Process HTML and convert to Word paragraphs using sequential approach
-      const processedParagraphs = htmlToWordParagraphs(cleanedHtml);
-      documentParagraphs.push(...processedParagraphs);
+      // Process HTML sequentially to maintain exact order (tables exactly where they appear)
+      console.log('[Word Generation] Processing HTML sequentially to maintain order...');
+      
+      const processHtmlSequentially = (html: string) => {
+        const elements: any[] = [];
+        
+        // Find all table positions in the HTML
+        const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+        const tablePositions = [];
+        let match;
+        
+        while ((match = tableRegex.exec(html)) !== null) {
+          tablePositions.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            content: match[1],
+            fullMatch: match[0]
+          });
+        }
+        
+        console.log(`[Word Generation] Found ${tablePositions.length} tables in HTML`);
+        
+        let currentPos = 0;
+        
+        // Process content between tables
+        for (let i = 0; i <= tablePositions.length; i++) {
+          const tableStart = i < tablePositions.length ? tablePositions[i].start : html.length;
+          
+          // Process text content before this table
+          if (tableStart > currentPos) {
+            const textContent = html.slice(currentPos, tableStart);
+            if (textContent.trim()) {
+              console.log(`[Word Generation] Processing text content: "${textContent.substring(0, 50)}..."`);
+              const textElements = processTextContent(textContent);
+              elements.push(...textElements);
+            }
+          }
+          
+          // Process the table if it exists
+          if (i < tablePositions.length) {
+            const table = tablePositions[i];
+            console.log(`[Word Generation] Processing table at position ${table.start}`);
+            
+            // Create Word table from HTML table content
+            const wordTable = createWordTable(table.content);
+            if (wordTable) {
+              elements.push(wordTable);
+            }
+            
+            currentPos = table.end;
+          }
+        }
+        
+        return elements;
+      };
+      
+      const processedElements = processHtmlSequentially(cleanedHtml);
+      documentParagraphs.push(...processedElements);
       
       console.log(`[Word Generation] Created ${documentParagraphs.length} Word elements`);
       
