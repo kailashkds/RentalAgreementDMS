@@ -436,42 +436,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      // Convert flexbox signature sections to table format for better Word layout
+      // Convert signature sections to table format for better Word layout
       console.log('[Word Generation] Looking for signature sections to convert...');
       
       // Track converted sections to avoid duplicates
       const convertedSections = new Set();
       let conversionCount = 0;
       
+      // Log actual HTML content to debug signature sections
+      console.log('[Word Generation] Scanning HTML for signature patterns...');
+      const sampleLines = cleanedHtml.split('\n').slice(0, 200);
+      sampleLines.forEach((line, index) => {
+        if (line.includes('NIKHILESH') || line.includes('KAILASH') || line.includes('Landlord') || line.includes('Tenant') || line.includes('Passport Size Photo')) {
+          console.log(`[Word Generation] Line ${index}: ${line.trim()}`);
+        }
+      });
+      
+      // Pattern to find signature sections based on HTML structure we observed
       cleanedHtml = cleanedHtml.replace(
-        /<div[^>]*class="no-page-break"[^>]*style="[^"]*display:\s*flex[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
-        (match, content) => {
-          // Very strict check - must contain both a person's name and passport photo section
-          const hasPassportPhoto = content.includes('Passport Size Photo');
-          const hasPersonalInfo = content.includes('Landlord') || content.includes('Tenant') || content.includes('Witness');
-          const hasSignatureLine = content.includes('_______') || content.includes('border-top: 1px solid');
+        /(<p[^>]*>[\s\S]*?<\/p>[\s\S]*?<p style="font-style: italic;">Landlord<\/p>[\s\S]*?Passport Size Photo)/gi,
+        (match) => {
+          // Get the actual owner name from the form data
+          const ownerName = safeAgreementData.ownerDetails?.fullName || "LANDLORD";
+          const role = "Landlord";
+          const sectionId = `${ownerName}-${role}`;
           
-          if (hasPassportPhoto && hasPersonalInfo && hasSignatureLine) {
-            // Extract name and role more carefully
-            const nameMatch = content.match(/<p[^>]*style="[^"]*font-weight:\s*bold[^"]*"[^>]*>([^<]+)<\/p>/i);
-            const roleMatch = content.match(/<p[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>([^<]+)<\/p>/i);
+          if (!convertedSections.has(sectionId)) {
+            convertedSections.add(sectionId);
+            conversionCount++;
+            console.log(`[Word Generation] ✓ Converting landlord signature to table: ${ownerName}`);
             
-            const name = nameMatch ? nameMatch[1].trim() : '';
-            const role = roleMatch ? roleMatch[1].trim() : '';
+            return `
+<br><br>
+<table border="1" style="width: 100%; border-collapse: collapse;">
+  <tr height="200">
+    <td width="70%" style="padding: 10px; vertical-align: top;">
+      <b style="font-size: 16px; text-transform: uppercase;">${ownerName}</b>
+      <br><br>
+      <i style="font-size: 14px;">${role}</i>
+      <br><br><br><br><br><br><br><br>
+      ________________________
+    </td>
+    <td width="30%" style="padding: 10px; text-align: center; vertical-align: middle; border-left: 1px solid #000;">
+      <div style="border: 1px dashed #000; width: 120px; height: 150px; margin: 0 auto; font-size: 12px; padding-top: 65px;">
+        Passport Size Photo
+      </div>
+    </td>
+  </tr>
+</table>
+<br><br>`;
+          }
+          
+          return match;
+        }
+      );
+      
+      // Pattern for tenant signature
+      cleanedHtml = cleanedHtml.replace(
+        /(<p[^>]*>[\s\S]*?<\/p>[\s\S]*?<p style="font-style: italic;">Tenant<\/p>[\s\S]*?Passport Size Photo)/gi,
+        (match) => {
+          // Get the actual tenant name from the form data
+          const tenantName = safeAgreementData.tenantDetails?.fullName || "TENANT";
+          const role = "Tenant";
+          const sectionId = `${tenantName}-${role}`;
+          
+          if (!convertedSections.has(sectionId)) {
+            convertedSections.add(sectionId);
+            conversionCount++;
+            console.log(`[Word Generation] ✓ Converting tenant signature to table: ${tenantName}`);
             
-            // Create unique identifier to avoid duplicates
+            return `
+<br><br>
+<table border="1" style="width: 100%; border-collapse: collapse;">
+  <tr height="200">
+    <td width="70%" style="padding: 10px; vertical-align: top;">
+      <b style="font-size: 16px; text-transform: uppercase;">${tenantName}</b>
+      <br><br>
+      <i style="font-size: 14px;">${role}</i>
+      <br><br><br><br><br><br><br><br>
+      ________________________
+    </td>
+    <td width="30%" style="padding: 10px; text-align: center; vertical-align: middle; border-left: 1px solid #000;">
+      <div style="border: 1px dashed #000; width: 120px; height: 150px; margin: 0 auto; font-size: 12px; padding-top: 65px;">
+        Passport Size Photo
+      </div>
+    </td>
+  </tr>
+</table>
+<br><br>`;
+          }
+          
+          return match;
+        }
+      );
+      
+      // Generic pattern for any signature with "Passport Size Photo"
+      cleanedHtml = cleanedHtml.replace(
+        /([A-Z\s]{8,30}[\s\S]{1,300}?Passport Size Photo)/gi,
+        (match) => {
+          // Extract potential name from the match
+          const nameMatch = match.match(/([A-Z]{2,}(?:\s+[A-Z]{2,})*)/);
+          const roleMatch = match.match(/(Landlord|Tenant|Witness)/i);
+          
+          if (nameMatch && roleMatch) {
+            const name = nameMatch[1].trim();
+            const role = roleMatch[1].trim();
             const sectionId = `${name}-${role}`;
             
-            // Only convert if we have valid name and role and haven't converted this exact section
-            if (name && role && !convertedSections.has(sectionId)) {
+            if (!convertedSections.has(sectionId)) {
               convertedSections.add(sectionId);
               conversionCount++;
-              console.log(`[Word Generation] ✓ Creating table for: ${name} (${role}) - Section ${conversionCount}`);
+              console.log(`[Word Generation] ✓ Converting generic signature to table: ${name} (${role})`);
               
-              // Create simple block-level table - no positioning, no flexbox, linear flow
-              console.log(`[Word Generation] ✓ Creating linear table for: ${name} (${role})`);
-              
-              // Simple table structure that stays in document flow
               return `
 <br><br>
 <table border="1" style="width: 100%; border-collapse: collapse;">
@@ -494,7 +570,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
-          // Return original if not a signature section or already converted
           return match;
         }
       );
@@ -890,6 +965,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
       documentParagraphs.push(...processedElements);
       
       console.log(`[Word Generation] Created ${documentParagraphs.length} Word elements`);
+      
+      // Add embedded document images if they exist
+      const addDocumentImages = async () => {
+        let hasDocuments = false;
+        
+        // Process owner documents
+        if (safeAgreementData.ownerDocuments?.aadharUrl || safeAgreementData.ownerDocuments?.panUrl) {
+          hasDocuments = true;
+          
+          // Page break for landlord documents
+          documentParagraphs.push(new Paragraph({ 
+            children: [new TextRun({ text: '' })],
+            pageBreakBefore: true
+          }));
+          
+          const landlordDocsTitle = createParagraph("LANDLORD DOCUMENTS", {
+            size: 26,
+            bold: true,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 480 }
+          });
+          if (landlordDocsTitle) documentParagraphs.push(landlordDocsTitle);
+
+          // Add Aadhaar if exists
+          if (safeAgreementData.ownerDocuments?.aadharUrl) {
+            await addDocumentImage(safeAgreementData.ownerDocuments.aadharUrl, "Aadhaar Card:", "Landlord Aadhaar");
+          }
+          
+          // Add PAN if exists
+          if (safeAgreementData.ownerDocuments?.panUrl) {
+            await addDocumentImage(safeAgreementData.ownerDocuments.panUrl, "PAN Card:", "Landlord PAN");
+          }
+        }
+        
+        // Process tenant documents
+        if (safeAgreementData.tenantDocuments?.aadharUrl || safeAgreementData.tenantDocuments?.panUrl) {
+          hasDocuments = true;
+          
+          // Page break for tenant documents
+          documentParagraphs.push(new Paragraph({ 
+            children: [new TextRun({ text: '' })],
+            pageBreakBefore: true
+          }));
+          
+          const tenantDocsTitle = createParagraph("TENANT DOCUMENTS", {
+            size: 26,
+            bold: true,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 480 }
+          });
+          if (tenantDocsTitle) documentParagraphs.push(tenantDocsTitle);
+
+          // Add Aadhaar if exists
+          if (safeAgreementData.tenantDocuments?.aadharUrl) {
+            await addDocumentImage(safeAgreementData.tenantDocuments.aadharUrl, "Aadhaar Card:", "Tenant Aadhaar");
+          }
+          
+          // Add PAN if exists
+          if (safeAgreementData.tenantDocuments?.panUrl) {
+            await addDocumentImage(safeAgreementData.tenantDocuments.panUrl, "PAN Card:", "Tenant PAN");
+          }
+        }
+        
+        return hasDocuments;
+      };
+      
+      // Helper function to add document image
+      const addDocumentImage = async (docUrl: string, titleText: string, logName: string) => {
+        const title = createParagraph(titleText, {
+          size: 24,
+          bold: false,
+          alignment: AlignmentType.LEFT,
+          spacing: { before: 240, after: 240 }
+        });
+        if (title) documentParagraphs.push(title);
+        
+        try {
+          // Handle different URL formats
+          let imagePath = docUrl;
+          if (docUrl.startsWith('/uploads/')) {
+            imagePath = path.join(process.cwd(), docUrl.substring(1)); // Remove leading slash
+          }
+          
+          console.log(`[Word Generation] Looking for ${logName} image at: ${imagePath}`);
+          
+          if (fs.existsSync(imagePath)) {
+            const imageBuffer = fs.readFileSync(imagePath);
+            console.log(`[Word Generation] Loaded ${logName} image, size: ${imageBuffer.length} bytes`);
+            
+            // Determine image type
+            let imageType = 'jpg';
+            if (imagePath.toLowerCase().endsWith('.png')) {
+              imageType = 'png';
+            }
+            
+            documentParagraphs.push(new Paragraph({
+              children: [
+                new ImageRun({
+                  data: imageBuffer,
+                  transformation: {
+                    width: 300,
+                    height: 200,
+                  },
+                  type: imageType
+                })
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 480 }
+            }));
+            console.log(`[Word Generation] Successfully embedded ${logName} image`);
+          } else {
+            console.log(`[Word Generation] ${logName} image not found at path: ${imagePath}`);
+            const errorPara = createParagraph(`Image not found: ${docUrl}`, {
+              size: 24,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 480 }
+            });
+            if (errorPara) documentParagraphs.push(errorPara);
+          }
+        } catch (imageError) {
+          console.error(`[Word Generation] Error embedding ${logName} image:`, imageError);
+          const errorPara = createParagraph(`Error loading image: ${docUrl}`, {
+            size: 24,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 480 }
+          });
+          if (errorPara) documentParagraphs.push(errorPara);
+        }
+      };
+      
+      // Add document images
+      await addDocumentImages();
+      
+      console.log(`[Word Generation] Final document has ${documentParagraphs.length} elements`);
       
       // Create the Word document
       console.log(`[Word Generation] Creating document with ${documentParagraphs.length} paragraphs`);
