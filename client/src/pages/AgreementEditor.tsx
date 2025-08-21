@@ -2,7 +2,10 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, FileText } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, FileText, Search, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 export default function AgreementEditor() {
@@ -11,6 +14,11 @@ export default function AgreementEditor() {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  
+  // Find & Replace functionality
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [findText, setFindText] = useState('');
+  const [replaceText, setReplaceText] = useState('');
   
   // Get data from URL params or local storage
   const urlParams = new URLSearchParams(window.location.search);
@@ -34,6 +42,86 @@ export default function AgreementEditor() {
       setIsDirty(true);
       sessionStorage.setItem('editorHtmlContent', editorRef.current.innerHTML);
     }
+  };
+
+  // Text formatting functions
+  const formatText = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    handleContentChange();
+  };
+
+  // Find and replace functionality
+  const findAndHighlight = (text: string) => {
+    if (!editorRef.current || !text) return;
+    
+    const walker = document.createTreeWalker(
+      editorRef.current,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+
+    const textNodes: Text[] = [];
+    let node;
+    while (node = walker.nextNode()) {
+      textNodes.push(node as Text);
+    }
+
+    textNodes.forEach(textNode => {
+      const parent = textNode.parentNode;
+      if (parent && textNode.textContent?.toLowerCase().includes(text.toLowerCase())) {
+        const regex = new RegExp(text, 'gi');
+        const highlightedHTML = textNode.textContent.replace(
+          regex,
+          `<span style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 2px;">$&</span>`
+        );
+        
+        const temp = document.createElement('div');
+        temp.innerHTML = highlightedHTML;
+        
+        while (temp.firstChild) {
+          parent.insertBefore(temp.firstChild, textNode);
+        }
+        parent.removeChild(textNode);
+      }
+    });
+  };
+
+  const clearHighlights = () => {
+    if (!editorRef.current) return;
+    
+    const highlights = editorRef.current.querySelectorAll('span[style*="background-color: #ffeb3b"]');
+    highlights.forEach(highlight => {
+      const parent = highlight.parentNode;
+      if (parent) {
+        parent.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
+      }
+    });
+  };
+
+  const handleFind = () => {
+    clearHighlights();
+    if (findText) {
+      findAndHighlight(findText);
+    }
+  };
+
+  const handleReplaceAll = () => {
+    if (!editorRef.current || !findText) return;
+    
+    let content = editorRef.current.innerHTML;
+    const regex = new RegExp(findText, 'gi');
+    content = content.replace(regex, replaceText);
+    editorRef.current.innerHTML = content;
+    handleContentChange();
+    
+    toast({
+      title: "Replace Complete",
+      description: `Replaced all instances of "${findText}" with "${replaceText}".`,
+    });
+    
+    setShowFindReplace(false);
+    setFindText('');
+    setReplaceText('');
   };
 
   const generatePDF = async () => {
@@ -135,6 +223,129 @@ export default function AgreementEditor() {
                 {isGeneratingPdf ? 'Generating...' : 'Generate PDF'}
               </Button>
             </CardTitle>
+            
+            {/* Formatting Toolbar */}
+            <div className="flex items-center gap-2 p-3 border rounded-md bg-gray-50">
+              {/* Text Formatting */}
+              <div className="flex items-center gap-1 border-r pr-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => formatText('bold')} 
+                  className="h-8 px-2" 
+                  title="Bold"
+                  data-testid="format-bold"
+                >
+                  <Bold className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => formatText('italic')} 
+                  className="h-8 px-2" 
+                  title="Italic"
+                  data-testid="format-italic"
+                >
+                  <Italic className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => formatText('underline')} 
+                  className="h-8 px-2" 
+                  title="Underline"
+                  data-testid="format-underline"
+                >
+                  <Underline className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Text Alignment */}
+              <div className="flex items-center gap-1 border-r pr-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => formatText('justifyLeft')} 
+                  className="h-8 px-2" 
+                  title="Align Left"
+                  data-testid="align-left"
+                >
+                  <AlignLeft className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => formatText('justifyCenter')} 
+                  className="h-8 px-2" 
+                  title="Align Center"
+                  data-testid="align-center"
+                >
+                  <AlignCenter className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => formatText('justifyRight')} 
+                  className="h-8 px-2" 
+                  title="Align Right"
+                  data-testid="align-right"
+                >
+                  <AlignRight className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Find & Replace */}
+              <div className="flex items-center gap-1">
+                <Dialog open={showFindReplace} onOpenChange={setShowFindReplace}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 px-2" 
+                      title="Find & Replace"
+                      data-testid="find-replace-btn"
+                    >
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Find & Replace</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="find-text">Find</Label>
+                        <Input
+                          id="find-text"
+                          value={findText}
+                          onChange={(e) => setFindText(e.target.value)}
+                          placeholder="Enter text to find..."
+                          data-testid="find-input"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="replace-text">Replace with</Label>
+                        <Input
+                          id="replace-text"
+                          value={replaceText}
+                          onChange={(e) => setReplaceText(e.target.value)}
+                          placeholder="Enter replacement text..."
+                          data-testid="replace-input"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={handleFind} variant="outline" data-testid="find-btn">
+                          Find
+                        </Button>
+                        <Button onClick={handleReplaceAll} data-testid="replace-all-btn">
+                          Replace All
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div
