@@ -454,11 +454,20 @@ export class DatabaseStorage implements IStorage {
     
     // Only apply date filtering if we have valid date parameters and it's not 'all'
     if (startDate && endDate && startDate.trim() && endDate.trim()) {
-      // Custom date range filtering
-      dateCondition = and(
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDate})`,
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDate})`
-      );
+      try {
+        // Custom date range filtering - validate dates first
+        const parsedStart = new Date(startDate.trim());
+        const parsedEnd = new Date(endDate.trim());
+        
+        if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
+          dateCondition = and(
+            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDate.trim()})`,
+            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDate.trim()})`
+          );
+        }
+      } catch (e) {
+        console.error('Invalid custom date range:', startDate, endDate);
+      }
     } else if (dateFilter && dateFilter.trim() && 
               ['today', 'tomorrow', 'thisWeek', 'thisMonth', 'next3Months', 'next6Months', 'thisYear'].includes(dateFilter.trim())) {
       // Calculate date range for predefined filters
@@ -527,10 +536,25 @@ export class DatabaseStorage implements IStorage {
       
       // Only create date condition if we have valid date strings
       if (startDateStr && endDateStr && startDateStr.trim() && endDateStr.trim()) {
-        dateCondition = and(
-          sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDateStr})`,
-          sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDateStr})`
-        );
+        try {
+          // Validate the calculated dates before using them
+          const parsedStart = new Date(startDateStr.trim());
+          const parsedEnd = new Date(endDateStr.trim());
+          
+          if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
+            dateCondition = and(
+              sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDateStr.trim()})`,
+              sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDateStr.trim()})`
+            );
+            console.log(`[Date Filter] Applied ${dateFilter} filter: ${startDateStr.trim()} to ${endDateStr.trim()}`);
+          } else {
+            console.error('Invalid calculated dates:', startDateStr, endDateStr);
+          }
+        } catch (e) {
+          console.error('Error creating date condition:', e);
+        }
+      } else {
+        console.log(`[Date Filter] No valid date range calculated for filter: ${dateFilter}`);
       }
     }
     // For 'all' filter or no filter, dateCondition remains undefined (no date filtering)
