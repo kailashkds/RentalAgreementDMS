@@ -499,10 +499,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId, status, search, dateFilter, startDate, endDate, limit, offset } = req.query;
       
-      // Validate and clean date parameters
-      const cleanStartDate = startDate && startDate !== "" ? startDate as string : undefined;
-      const cleanEndDate = endDate && endDate !== "" ? endDate as string : undefined;
-      const cleanDateFilter = dateFilter && dateFilter !== "" ? dateFilter as string : undefined;
+      // Validate and clean date parameters - be very strict
+      const cleanStartDate = startDate && typeof startDate === 'string' && startDate.trim() !== "" && startDate !== "undefined" ? startDate.trim() : undefined;
+      const cleanEndDate = endDate && typeof endDate === 'string' && endDate.trim() !== "" && endDate !== "undefined" ? endDate.trim() : undefined;
+      const cleanDateFilter = dateFilter && typeof dateFilter === 'string' && dateFilter.trim() !== "" && dateFilter !== "all" ? dateFilter.trim() : undefined;
+      
+      console.log('Route date params:', { originalStartDate: startDate, originalEndDate: endDate, originalDateFilter: dateFilter });
+      console.log('Cleaned date params:', { cleanStartDate, cleanEndDate, cleanDateFilter });
       
       const result = await storage.getAgreements({
         customerId: customerId as string,

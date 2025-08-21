@@ -113,8 +113,8 @@ export default function Agreements() {
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
     dateFilter: dateFilter === "all" ? "" : dateFilter,
-    startDate: dateRange?.start?.toISOString().split('T')[0] || (customStartDate ? customStartDate.toISOString().split('T')[0] : ""),
-    endDate: dateRange?.end?.toISOString().split('T')[0] || (customEndDate ? customEndDate.toISOString().split('T')[0] : ""),
+    startDate: dateRange?.start?.toISOString().split('T')[0] || (customStartDate ? customStartDate.toISOString().split('T')[0] : undefined),
+    endDate: dateRange?.end?.toISOString().split('T')[0] || (customEndDate ? customEndDate.toISOString().split('T')[0] : undefined),
     limit: 20,
     offset: (currentPage - 1) * 20,
   });

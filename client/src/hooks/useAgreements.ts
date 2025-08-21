@@ -24,9 +24,9 @@ export function useAgreements(options: UseAgreementsOptions = {}) {
   if (customerId) params.append('customerId', customerId);
   if (status) params.append('status', status);
   if (search) params.append('search', search);
-  if (dateFilter && dateFilter !== "") params.append('dateFilter', dateFilter);
-  if (startDate && startDate !== "") params.append('startDate', startDate);
-  if (endDate && endDate !== "") params.append('endDate', endDate);
+  if (dateFilter && dateFilter !== "" && dateFilter !== "all") params.append('dateFilter', dateFilter);
+  if (startDate && startDate !== "" && startDate !== undefined) params.append('startDate', startDate);
+  if (endDate && endDate !== "" && endDate !== undefined) params.append('endDate', endDate);
   params.append('limit', limit.toString());
   params.append('offset', offset.toString());
 
