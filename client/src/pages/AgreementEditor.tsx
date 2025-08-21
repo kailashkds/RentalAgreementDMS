@@ -59,20 +59,15 @@ export default function AgreementEditor() {
               setLastSaved(new Date(data.editedAt));
             }
           } else {
-            // No edited content, use session storage as fallback
-            const sessionContent = sessionStorage.getItem('editorHtmlContent');
-            if (sessionContent) {
-              setHtmlContent(sessionContent);
-            }
+            // No edited content yet, generate it from the agreement data
+            console.log('No edited content found, generating from agreement data');
+            await generateInitialContent();
           }
         }
       } catch (error) {
         console.error('Error loading edited content:', error);
-        // Fallback to session storage
-        const sessionContent = sessionStorage.getItem('editorHtmlContent');
-        if (sessionContent) {
-          setHtmlContent(sessionContent);
-        }
+        // Generate initial content if loading fails
+        await generateInitialContent();
       } finally {
         setIsLoading(false);
       }
@@ -80,6 +75,42 @@ export default function AgreementEditor() {
 
     loadContent();
   }, [agreementId]);
+
+  // Function to generate initial content from agreement data
+  const generateInitialContent = async () => {
+    try {
+      // Generate PDF content which gives us the HTML
+      const pdfResponse = await apiRequest('POST', '/api/agreements/generate-pdf', {
+        agreementId: agreementId,
+        language: language
+      });
+      
+      if (pdfResponse && pdfResponse.html) {
+        // Extract content from the generated HTML, removing PDF-specific styles
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = pdfResponse.html;
+        
+        // Remove script tags, style tags with PDF styles, etc.
+        const scripts = tempDiv.querySelectorAll('script');
+        const pdfStyles = tempDiv.querySelectorAll('style');
+        scripts.forEach(script => script.remove());
+        pdfStyles.forEach(style => style.remove());
+        
+        // Get the main content area
+        const body = tempDiv.querySelector('body');
+        if (body) {
+          setHtmlContent(body.innerHTML);
+        } else {
+          setHtmlContent(tempDiv.innerHTML);
+        }
+      } else {
+        setHtmlContent('<p>Failed to load agreement content. Please try again.</p>');
+      }
+    } catch (error) {
+      console.error('Error generating initial content:', error);
+      setHtmlContent('<p>Failed to load agreement content. Please try again.</p>');
+    }
+  };
 
   // Load content into editor when it changes
   useEffect(() => {

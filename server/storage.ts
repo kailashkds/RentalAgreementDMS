@@ -665,7 +665,7 @@ export class DatabaseStorage implements IStorage {
         propertyId = property.id;
       }
 
-      const [agreement] = await db
+      const result = await db
         .insert(agreements)
         .values({
           ...processedData,
@@ -673,6 +673,8 @@ export class DatabaseStorage implements IStorage {
           propertyId,
         })
         .returning();
+      
+      const agreement = result[0];
         
       if (!agreement) {
         throw new Error('Failed to create agreement - no data returned');
