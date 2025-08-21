@@ -290,12 +290,12 @@ export default function AgreementEditor() {
       </div>
 
       <div className="grid grid-cols-12 gap-6">
-        {/* Toolbar */}
-        <Card className="col-span-12">
-          <CardHeader>
+        {/* Sticky Toolbar */}
+        <Card className="col-span-12 sticky top-4 z-10 bg-white shadow-md">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg">Formatting Tools</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
@@ -414,7 +414,7 @@ export default function AgreementEditor() {
         </Card>
 
         {/* Editor */}
-        <Card className="col-span-12">
+        <Card className="col-span-12 mt-4">
           <CardHeader>
             <CardTitle className="text-lg">Document Content</CardTitle>
           </CardHeader>
