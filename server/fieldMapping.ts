@@ -1626,14 +1626,11 @@ async function createEmbeddedDocumentHtml(documentUrl: string, fieldName: string
  */
 function createEmbeddedImageHtml(dataUrl: string, documentType: string): string {
   return `
-<div class="document-page" style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid; page-break-before: always;">
-  <div style="text-align: center; margin: 10px 0;">
+<div style="margin: 10px 0; padding: 10px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid;">
+  <div style="text-align: center; margin: 5px 0;">
     <img src="${dataUrl}" 
-         style="max-width: 100%; max-height: 400px; border: none; border-radius: 0; box-shadow: none;" 
+         style="width: auto; height: auto; max-width: 100%; max-height: 400px; border: 1px solid #ccc; display: block; margin: 0 auto;" 
          alt="${documentType}" />
-  </div>
-  <div style="text-align: center; margin-top: 8px;">
-    <small style="color: #666; font-style: italic;">Document image embedded in agreement</small>
   </div>
 </div>`;
 }
@@ -1709,7 +1706,7 @@ export async function convertPdfToImages(pdfPath: string, documentType: string):
     }
     
     // Generate HTML for each image (without title)
-    let htmlContent = `<div style="margin: 20px 0; page-break-inside: avoid;">`;
+    let htmlContent = `<div style="margin: 10px 0; page-break-inside: avoid;">`;
     
     for (let i = 0; i < imageFiles.length; i++) {
       const imageFile = imageFiles[i];
@@ -1720,13 +1717,14 @@ export async function convertPdfToImages(pdfPath: string, documentType: string):
       const base64Data = imageBuffer.toString('base64');
       const dataUrl = `data:image/png;base64,${base64Data}`;
       
-      // Add page break before each image except the first one, and document-page class
-      const pageBreakClass = i > 0 ? 'page-break-before' : '';
+      // Only add page break for subsequent images within the same document (i > 0)
+      // Don't use document-page class which forces unnecessary page breaks
+      const pageBreakStyle = i > 0 ? 'page-break-before: always;' : '';
       
       htmlContent += `
-      <div style="margin: 15px 0; text-align: center;" class="document-page ${pageBreakClass}">
+      <div style="margin: 10px 0; text-align: center; ${pageBreakStyle}">
         <img src="${dataUrl}" 
-             style="width: auto; height: auto; max-width: 100%; max-height: 600px; border: none; display: block; margin: 0 auto;" 
+             style="width: auto; height: auto; max-width: 100%; max-height: 550px; border: none; display: block; margin: 0 auto;" 
              alt="${documentType} - Page ${i + 1}" />
       </div>`;
       
