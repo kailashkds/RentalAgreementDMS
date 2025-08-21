@@ -952,6 +952,9 @@ export default function Agreements() {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Notary Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -1022,6 +1025,28 @@ export default function Agreements() {
                           {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            agreement.status === "draft"
+                              ? "bg-gray-100 text-gray-800"
+                              : agreement.status === "active"
+                              ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                ? "bg-green-100 text-green-800"
+                                : "bg-amber-100 text-amber-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {agreement.status === "draft"
+                            ? "Complete Agreement First"
+                            : agreement.status === "active"
+                            ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                              ? "Notarized"
+                              : "Pending"
+                            : "N/A"
+                          }
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
                           <Button 
@@ -1033,15 +1058,52 @@ export default function Agreements() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-green-600 hover:text-green-900"
-                            onClick={() => handleDownloadAgreement(agreement)}
-                            title="Download PDF"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          {(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) ? (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-green-600 hover:text-green-900"
+                                  title="Download Options"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-48 p-2">
+                                <div className="space-y-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
+                                    onClick={() => handleDownloadAgreement(agreement)}
+                                  >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Download Agreement PDF
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                    onClick={() => handleDownloadNotarizedFromTable(agreement)}
+                                  >
+                                    <Award className="h-4 w-4 mr-2" />
+                                    Download Notarized Document
+                                  </Button>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          ) : (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-green-600 hover:text-green-900"
+                              onClick={() => handleDownloadAgreement(agreement)}
+                              title="Download PDF"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -1060,29 +1122,17 @@ export default function Agreements() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          {agreement.status === "active" && (
-                            agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl ? (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-amber-600 hover:text-amber-900"
-                                onClick={() => handleDownloadNotarizedFromTable(agreement)}
-                                title="Download Notarized Document"
-                              >
-                                <Award className="h-4 w-4" />
-                              </Button>
-                            ) : (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-purple-600 hover:text-purple-900"
-                                onClick={() => handleNotarizedUploadFromTable(agreement.id)}
-                                disabled={uploadingNotarized}
-                                title="Upload Notarized Document"
-                              >
-                                <Upload className="h-4 w-4" />
-                              </Button>
-                            )
+                          {agreement.status === "active" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-purple-600 hover:text-purple-900"
+                              onClick={() => handleNotarizedUploadFromTable(agreement.id)}
+                              disabled={uploadingNotarized}
+                              title="Upload Notarized Document"
+                            >
+                              <Upload className="h-4 w-4" />
+                            </Button>
                           )}
                           {agreement.status === "active" && (
                             <Button 
@@ -1438,22 +1488,30 @@ export default function Agreements() {
                 </div>
                 <div className="bg-slate-50 p-6">
                   <div className="flex flex-wrap gap-3 mb-6">
-                    <Button
-                      onClick={() => downloadAgreementPdf(viewingAgreement)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 shadow-sm"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
-                    </Button>
-
-                    
-                    {(viewingAgreement.notarizedDocument?.url || viewingAgreement.notarizedDocumentUrl) && (
+                    {(viewingAgreement.notarizedDocument?.url || viewingAgreement.notarizedDocumentUrl) ? (
+                      <div className="flex gap-3">
+                        <Button
+                          onClick={() => downloadAgreementPdf(viewingAgreement)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 shadow-sm"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download Agreement PDF
+                        </Button>
+                        <Button
+                          onClick={() => downloadNotarizedDocument(viewingAgreement)}
+                          className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 shadow-sm"
+                        >
+                          <Award className="h-4 w-4 mr-2" />
+                          Download Notarized Document
+                        </Button>
+                      </div>
+                    ) : (
                       <Button
-                        onClick={() => downloadNotarizedDocument(viewingAgreement)}
-                        className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 shadow-sm"
+                        onClick={() => downloadAgreementPdf(viewingAgreement)}
+                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 shadow-sm"
                       >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Download Notarized Document
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Agreement PDF
                       </Button>
                     )}
                   </div>
