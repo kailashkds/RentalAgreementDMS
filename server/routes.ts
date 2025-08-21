@@ -467,13 +467,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] ✓ Converting landlord signature to table: ${ownerName}`);
             
             return `
-<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #000;">
+<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
   <tr>
-    <td width="60%" style="padding: 15px; vertical-align: top; border-right: 1px solid #000;">
+    <td width="60%" style="padding: 15px; vertical-align: top;">
       <p style="font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; color: green;">${ownerName}</p>
       <p style="font-size: 14px; font-style: italic; margin: 0 0 60px 0; color: green;">${role}</p>
       <div style="margin: 20px 0;">
-        <p style="margin: 0 0 5px 0; font-size: 12px;">_________________________</p>
+        <p style="margin: 0 0 5px 0; font-size: 12px; border-bottom: 1px solid #000; width: 200px; height: 15px;">&nbsp;</p>
         <p style="margin: 0; font-size: 12px; text-align: center; width: 200px;">Signature</p>
       </div>
     </td>
@@ -484,19 +484,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     </td>
   </tr>
 </table>
+
 <div style="margin: 30px 0 20px 0;">
   <p style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">Witnesses</p>
-  <table style="width: 100%; border-collapse: collapse;">
-    <tr>
-      <td style="width: 45%; padding: 0 10px 0 0;">
-        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
-      </td>
-      <td style="width: 10%; text-align: center;">&nbsp;</td>
-      <td style="width: 45%; padding: 0 0 0 10px;">
-        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
-      </td>
-    </tr>
-  </table>
+  <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+    <div style="width: 45%;">
+      <p style="margin: 0; border-bottom: 1px solid #000; height: 15px;">&nbsp;</p>
+    </div>
+    <div style="width: 45%;">
+      <p style="margin: 0; border-bottom: 1px solid #000; height: 15px;">&nbsp;</p>
+    </div>
+  </div>
 </div>`;
           }
           
@@ -518,13 +516,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] ✓ Converting tenant signature to table: ${tenantName}`);
             
             return `
-<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #000;">
+<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
   <tr>
-    <td width="60%" style="padding: 15px; vertical-align: top; border-right: 1px solid #000;">
+    <td width="60%" style="padding: 15px; vertical-align: top;">
       <p style="font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; color: green;">${tenantName}</p>
       <p style="font-size: 14px; font-style: italic; margin: 0 0 60px 0; color: green;">${role}</p>
       <div style="margin: 20px 0;">
-        <p style="margin: 0 0 5px 0; font-size: 12px;">_________________________</p>
+        <p style="margin: 0 0 5px 0; font-size: 12px; border-bottom: 1px solid #000; width: 200px; height: 15px;">&nbsp;</p>
         <p style="margin: 0; font-size: 12px; text-align: center; width: 200px;">Signature</p>
       </div>
     </td>
@@ -535,19 +533,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     </td>
   </tr>
 </table>
+
 <div style="margin: 30px 0 20px 0;">
   <p style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">Witnesses</p>
-  <table style="width: 100%; border-collapse: collapse;">
-    <tr>
-      <td style="width: 45%; padding: 0 10px 0 0;">
-        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
-      </td>
-      <td style="width: 10%; text-align: center;">&nbsp;</td>
-      <td style="width: 45%; padding: 0 0 0 10px;">
-        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
-      </td>
-    </tr>
-  </table>
+  <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+    <div style="width: 45%;">
+      <p style="margin: 0; border-bottom: 1px solid #000; height: 15px;">&nbsp;</p>
+    </div>
+    <div style="width: 45%;">
+      <p style="margin: 0; border-bottom: 1px solid #000; height: 15px;">&nbsp;</p>
+    </div>
+  </div>
 </div>`;
           }
           
@@ -672,7 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             italics: options.italic || false,
           })],
           alignment: options.alignment || AlignmentType.LEFT,
-          spacing: options.spacing || { after: 80, line: 276 },
+          spacing: options.spacing || { after: 80 },
           indent: options.indent || undefined,
           ...options.paragraphOptions
         });
@@ -695,7 +691,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
-          .replace(/\s+/g, ' ')             // Fix: Replace multiple spaces with single space
           .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
           .trim();
 
@@ -780,8 +775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   alignment: alignment,
                   spacing: { 
                     before: shouldCenter ? 120 : (isHeading ? 80 : 0),
-                    after: shouldCenter ? 160 : (isHeading ? 120 : 100),
-                    line: 276  // Fix: Set normal line height (1.15x spacing)
+                    after: shouldCenter ? 160 : (isHeading ? 120 : 120)
                   }
                 }));
               }
@@ -797,8 +791,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           AlignmentType.LEFT,
                 spacing: { 
                   before: shouldCenter ? 120 : (isHeading ? 80 : 0),
-                  after: shouldCenter ? 160 : (isHeading ? 120 : 100),
-                  line: 276  // Fix: Set normal line height (1.15x spacing)
+                  after: shouldCenter ? 160 : (isHeading ? 120 : 120)
                 }
               });
               
@@ -1061,24 +1054,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Helper function to add document image
       const addDocumentImage = async (docUrl: string, titleText: string, logName: string) => {
-        // Fix: Don't add duplicate titles - the title is already in the HTML content
-        // Only add title for images that don't have one already
-        const shouldAddTitle = !processedElements.some(elem => 
-          elem.root && elem.root.children && 
-          elem.root.children.some((child: any) => 
-            child.text && child.text.includes(titleText.replace(':', ''))
-          )
-        );
-        
-        if (shouldAddTitle) {
-          const title = createParagraph(titleText, {
-            size: 24,
-            bold: false,
-            alignment: AlignmentType.LEFT,
-            spacing: { before: 240, after: 240 }
-          });
-          if (title) documentParagraphs.push(title);
-        }
+        const title = createParagraph(titleText, {
+          size: 24,
+          bold: false,
+          alignment: AlignmentType.LEFT,
+          spacing: { before: 240, after: 240 }
+        });
+        if (title) documentParagraphs.push(title);
         
         try {
           // Handle different URL formats
@@ -1099,7 +1081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (imagePath.toLowerCase().endsWith('.pdf')) {
               try {
                 console.log(`[Word Generation] Converting PDF to images for ${logName}...`);
-                const pdfImages = await convertPdfToImages(imagePath, `${logName} Document`);
+                const pdfImages = await convertPdfToImages(imagePath, logName);
                 
                 if (pdfImages && pdfImages.length > 0) {
                   // Use the first page of the PDF
