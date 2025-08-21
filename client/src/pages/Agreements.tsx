@@ -49,47 +49,6 @@ export default function Agreements() {
   const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
   const { toast } = useToast();
 
-  // Get date range for server-side filtering
-  const dateRange = dateFilter !== "all" ? getDateRange(dateFilter) : null;
-
-  const { data: agreementsData, isLoading } = useAgreements({
-    search: searchTerm,
-    status: statusFilter === "all" ? "" : statusFilter,
-    dateFilter: dateFilter === "all" ? "" : dateFilter,
-    startDate: dateRange?.start?.toISOString().split('T')[0] || (customStartDate ? customStartDate.toISOString().split('T')[0] : ""),
-    endDate: dateRange?.end?.toISOString().split('T')[0] || (customEndDate ? customEndDate.toISOString().split('T')[0] : ""),
-    limit: 20,
-    offset: (currentPage - 1) * 20,
-  });
-
-  // Extract unique values for dropdown options
-  const uniqueCustomers = React.useMemo(() => {
-    const customers = agreementsData?.agreements
-      ?.map((agreement: any) => agreement.customer?.name)
-      .filter((name: string) => name && name.trim() !== '')
-      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
-      .sort() || [];
-    return customers;
-  }, [agreementsData?.agreements]);
-
-  const uniqueTenants = React.useMemo(() => {
-    const tenants = agreementsData?.agreements
-      ?.map((agreement: any) => agreement.tenantDetails?.name)
-      .filter((name: string) => name && name.trim() !== '')
-      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
-      .sort() || [];
-    return tenants;
-  }, [agreementsData?.agreements]);
-
-  const uniqueOwners = React.useMemo(() => {
-    const owners = agreementsData?.agreements
-      ?.map((agreement: any) => agreement.ownerDetails?.name)
-      .filter((name: string) => name && name.trim() !== '')
-      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
-      .sort() || [];
-    return owners;
-  }, [agreementsData?.agreements]);
-
   // Date range calculation helper function
   const getDateRange = (filterType: string) => {
     const today = new Date();
@@ -146,6 +105,47 @@ export default function Agreements() {
         return null;
     }
   };
+
+  // Get date range for server-side filtering
+  const dateRange = dateFilter !== "all" ? getDateRange(dateFilter) : null;
+
+  const { data: agreementsData, isLoading } = useAgreements({
+    search: searchTerm,
+    status: statusFilter === "all" ? "" : statusFilter,
+    dateFilter: dateFilter === "all" ? "" : dateFilter,
+    startDate: dateRange?.start?.toISOString().split('T')[0] || (customStartDate ? customStartDate.toISOString().split('T')[0] : ""),
+    endDate: dateRange?.end?.toISOString().split('T')[0] || (customEndDate ? customEndDate.toISOString().split('T')[0] : ""),
+    limit: 20,
+    offset: (currentPage - 1) * 20,
+  });
+
+  // Extract unique values for dropdown options
+  const uniqueCustomers = React.useMemo(() => {
+    const customers = agreementsData?.agreements
+      ?.map((agreement: any) => agreement.customer?.name)
+      .filter((name: string) => name && name.trim() !== '')
+      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
+      .sort() || [];
+    return customers;
+  }, [agreementsData?.agreements]);
+
+  const uniqueTenants = React.useMemo(() => {
+    const tenants = agreementsData?.agreements
+      ?.map((agreement: any) => agreement.tenantDetails?.name)
+      .filter((name: string) => name && name.trim() !== '')
+      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
+      .sort() || [];
+    return tenants;
+  }, [agreementsData?.agreements]);
+
+  const uniqueOwners = React.useMemo(() => {
+    const owners = agreementsData?.agreements
+      ?.map((agreement: any) => agreement.ownerDetails?.name)
+      .filter((name: string) => name && name.trim() !== '')
+      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
+      .sort() || [];
+    return owners;
+  }, [agreementsData?.agreements]);
 
   // Client-side filtering for customer, tenant, and owner (date filtering is now server-side)
   const filteredAgreements = agreementsData?.agreements?.filter((agreement: any) => {
