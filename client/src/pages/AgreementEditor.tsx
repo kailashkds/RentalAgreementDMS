@@ -4,13 +4,38 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Download, FileText, Bold, Italic, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Download, 
+  FileText, 
+  Bold, 
+  Italic, 
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  List,
+  ListOrdered,
+  Table,
+  Type,
+  Heading1,
+  Heading2,
+  Indent,
+  Outdent,
+  Undo,
+  Redo
+} from 'lucide-react';
+
+// HTML2PDF with proper typing
+declare const html2pdf: any;
 
 interface EditorProps {
   initialHtml?: string;
   agreementNumber?: string;
   language?: string;
 }
+
+// Advanced WYSIWYG Editor implementation
 
 export default function AgreementEditor() {
   const [location, navigate] = useLocation();
@@ -44,11 +69,10 @@ export default function AgreementEditor() {
       }
     };
 
-    // Add event listeners for drag handles and table interactions
+    // Setup table interactions
     const setupTableInteractions = () => {
       if (!editorRef.current) return;
 
-      // Handle row addition via drag handles
       editorRef.current.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
         if (target.classList.contains('row-add-handle')) {
@@ -60,7 +84,6 @@ export default function AgreementEditor() {
             const referenceRow = rows[Math.min(rowIndex, rows.length - 1)];
             const newRow = referenceRow.cloneNode(true) as HTMLElement;
             
-            // Clear cell content and add resize handles
             const cells = newRow.querySelectorAll('td, th');
             cells.forEach(cell => {
               (cell as HTMLElement).innerHTML = '<div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>';
@@ -124,13 +147,83 @@ export default function AgreementEditor() {
       });
     };
 
-    // Setup interactions after content is loaded
     setTimeout(setupTableInteractions, 100);
   }, [htmlContent]);
 
   const handleContentChange = () => {
     if (editorRef.current) {
       setIsDirty(true);
+      // Auto-save to session storage
+      sessionStorage.setItem('editorHtmlContent', editorRef.current.innerHTML);
+    }
+  };
+
+  // Export to PDF functionality
+  const exportToPDF = async () => {
+    if (!editorRef.current) {
+      toast({
+        title: "No content to export",
+        description: "Please add some content before exporting to PDF.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+    try {
+      // Load html2pdf dynamically
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default;
+
+      // Create a clean copy of the content for PDF
+      const contentClone = editorRef.current.cloneNode(true) as HTMLElement;
+      
+      // Remove editor-specific elements (handles, controls)
+      const elementsToRemove = contentClone.querySelectorAll('.row-add-handle, .col-add-handle, .cell-resize-handle, .table-controls, .row-handles, .col-handles');
+      elementsToRemove.forEach(el => el.remove());
+
+      // Create container with proper PDF styling
+      const pdfContainer = document.createElement('div');
+      pdfContainer.style.padding = '20px';
+      pdfContainer.style.fontFamily = 'Arial, sans-serif';
+      pdfContainer.style.lineHeight = '1.6';
+      pdfContainer.style.color = '#000';
+      pdfContainer.style.backgroundColor = '#fff';
+      pdfContainer.appendChild(contentClone);
+
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `${agreementNumber}_edited.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          letterRendering: true
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait',
+          compress: true
+        }
+      };
+
+      await html2pdf().set(opt).from(pdfContainer).save();
+      
+      toast({
+        title: "PDF Export Successful",
+        description: `Document exported as ${agreementNumber}_edited.pdf`,
+      });
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      toast({
+        title: "PDF Export Failed", 
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -349,122 +442,134 @@ export default function AgreementEditor() {
         {/* Sticky Toolbar */}
         <Card className="col-span-12 sticky top-4 z-10 bg-white shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Formatting Tools</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Microsoft Word-Style Editor</CardTitle>
+              <div className="flex items-center gap-2">
+                {isDirty && <Badge variant="destructive" className="animate-pulse">Unsaved</Badge>}
+                <Button 
+                  onClick={exportToPDF}
+                  disabled={isGeneratingPdf}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  size="sm"
+                >
+                  {isGeneratingPdf ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                      Generating PDF...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export PDF
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="pt-2">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('bold')}
-                data-testid="button-bold"
-              >
-                <Bold className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('italic')}
-                data-testid="button-italic"
-              >
-                <Italic className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('justifyLeft')}
-                data-testid="button-align-left"
-              >
-                <AlignLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('justifyCenter')}
-                data-testid="button-align-center"
-              >
-                <AlignCenter className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('justifyRight')}
-                data-testid="button-align-right"
-              >
-                <AlignRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('formatBlock', 'h1')}
-                data-testid="button-heading-1"
-              >
-                H1
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('formatBlock', 'h2')}
-                data-testid="button-heading-2"
-              >
-                H2
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('formatBlock', 'p')}
-                data-testid="button-paragraph"
-              >
-                P
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={insertTable}
-                data-testid="button-insert-table"
-              >
-                Insert Table
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={insertSignatureSection}
-                data-testid="button-insert-signature"
-              >
-                Insert Signature
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('insertUnorderedList')}
-                data-testid="button-bullet-list"
-              >
-                • List
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('insertOrderedList')}
-                data-testid="button-numbered-list"
-              >
-                1. List
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('outdent')}
-                data-testid="button-outdent"
-              >
-                ← Indent
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => formatText('indent')}
-                data-testid="button-indent"
-              >
-                → Indent
-              </Button>
+            {/* Microsoft Word-style Comprehensive Toolbar */}
+            <div className="bg-gray-50 border rounded-lg p-3">
+              {/* Row 1: Text Formatting & Headings */}
+              <div className="flex flex-wrap items-center gap-2 mb-2 pb-2 border-b border-gray-200">
+                <div className="flex items-center gap-1 border-r pr-2">
+                  <select 
+                    className="text-sm border rounded px-2 py-1"
+                    onChange={(e) => formatText('formatBlock', e.target.value)}
+                  >
+                    <option value="div">Normal</option>
+                    <option value="h1">Heading 1</option>
+                    <option value="h2">Heading 2</option>
+                    <option value="h3">Heading 3</option>
+                    <option value="p">Paragraph</option>
+                  </select>
+                  <select 
+                    className="text-sm border rounded px-2 py-1 ml-1"
+                    onChange={(e) => formatText('fontSize', e.target.value)}
+                  >
+                    <option value="3">12pt</option>
+                    <option value="4">14pt</option>
+                    <option value="5">16pt</option>
+                    <option value="6">18pt</option>
+                    <option value="7">24pt</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1 border-r pr-2">
+                  <Button variant="ghost" size="sm" onClick={() => formatText('bold')} className="h-8 w-8 p-0" title="Bold">
+                    <Bold className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => formatText('italic')} className="h-8 w-8 p-0" title="Italic">
+                    <Italic className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => formatText('underline')} className="h-8 w-8 p-0" title="Underline">
+                    <Underline className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <input 
+                    type="color" 
+                    className="w-8 h-8 border rounded cursor-pointer"
+                    onChange={(e) => formatText('foreColor', e.target.value)}
+                    title="Text Color"
+                  />
+                  <input 
+                    type="color" 
+                    className="w-8 h-8 border rounded cursor-pointer ml-1"
+                    onChange={(e) => formatText('backColor', e.target.value)}
+                    title="Background Color"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Alignment, Lists, & Advanced Features */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1 border-r pr-2">
+                  <Button variant="ghost" size="sm" onClick={() => formatText('justifyLeft')} className="h-8 w-8 p-0" title="Align Left">
+                    <AlignLeft className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => formatText('justifyCenter')} className="h-8 w-8 p-0" title="Center">
+                    <AlignCenter className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => formatText('justifyRight')} className="h-8 w-8 p-0" title="Align Right">
+                    <AlignRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-1 border-r pr-2">
+                  <Button variant="ghost" size="sm" onClick={() => formatText('insertUnorderedList')} className="h-8 w-8 p-0" title="Bullet List">
+                    <List className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => formatText('insertOrderedList')} className="h-8 w-8 p-0" title="Numbered List">
+                    <ListOrdered className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => formatText('outdent')} className="h-8 w-8 p-0" title="Decrease Indent">
+                    <Outdent className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => formatText('indent')} className="h-8 w-8 p-0" title="Increase Indent">
+                    <Indent className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-1 border-r pr-2">
+                  <Button variant="ghost" size="sm" onClick={insertTable} className="h-8 w-8 p-0" title="Insert Table">
+                    <Table className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={insertSignatureSection} className="h-8 w-8 p-0" title="Insert Signature">
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => formatText('undo')} className="h-8 w-8 p-0" title="Undo">
+                    <Undo className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => formatText('redo')} className="h-8 w-8 p-0" title="Redo">
+                    <Redo className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -493,8 +598,8 @@ export default function AgreementEditor() {
               data-testid="content-editor"
             />
             
-            {/* Enhanced CSS for Microsoft Word-like table manipulation */}
-            <style jsx>{`
+            <style>{`
+              /* WYSIWYG Editor Styles */
               .table-wrapper {
                 user-select: none;
               }
@@ -563,6 +668,27 @@ export default function AgreementEditor() {
                 transform: scale(1.05);
               }
               
+              /* WYSIWYG Editor Content Area */
+              .wysiwyg-editor {
+                min-height: 600px;
+                padding: 40px;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                font-family: 'Times New Roman', serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #000;
+                outline: none;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+              }
+              
+              .wysiwyg-editor:focus {
+                outline: none;
+                border-color: #007bff;
+                box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+              }
+              
               /* Better visual feedback for contenteditable elements */
               [contenteditable="true"]:focus {
                 outline: 1px solid #007bff;
@@ -581,31 +707,6 @@ export default function AgreementEditor() {
               
               div[contenteditable="true"]:focus {
                 background-color: transparent !important;
-              }
-              
-              /* Context menu styling */
-              .context-menu {
-                position: fixed;
-                background: white;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                z-index: 1000;
-              }
-              
-              .context-menu button {
-                display: block;
-                width: 100%;
-                padding: 8px 12px;
-                background: none;
-                border: none;
-                text-align: left;
-                cursor: pointer;
-                font-size: 14px;
-              }
-              
-              .context-menu button:hover {
-                background-color: #f8f9fa;
               }
             `}</style>
           </CardContent>

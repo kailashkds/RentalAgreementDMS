@@ -11,6 +11,8 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@ckeditor/ckeditor5-build-decoupled-document": "^41.4.2",
+    "@ckeditor/ckeditor5-react": "^11.0.0",
     "@google-cloud/storage": "^7.16.0",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
@@ -70,6 +72,7 @@
     "google-auth-library": "^10.2.1",
     "html-docx-js": "^0.3.1",
     "html2canvas": "^1.4.1",
+    "html2pdf.js": "^0.10.3",
     "input-otp": "^1.4.2",
     "jspdf": "^3.0.1",
     "lucide-react": "^0.453.0",
