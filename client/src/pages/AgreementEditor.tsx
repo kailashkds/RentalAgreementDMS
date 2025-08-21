@@ -34,6 +34,67 @@ export default function AgreementEditor() {
     if (editorRef.current && htmlContent) {
       editorRef.current.innerHTML = htmlContent;
     }
+
+    // Add global functions for table manipulation
+    (window as any).addTableRow = (button: HTMLElement) => {
+      const table = button.closest('table');
+      if (table) {
+        const tbody = table.querySelector('tbody') || table;
+        const firstRow = tbody.querySelector('tr');
+        if (firstRow) {
+          const newRow = firstRow.cloneNode(true) as HTMLElement;
+          const cells = newRow.querySelectorAll('td, th');
+          cells.forEach(cell => {
+            (cell as HTMLElement).textContent = '';
+          });
+          tbody.appendChild(newRow);
+          handleContentChange();
+        }
+      }
+    };
+
+    (window as any).removeTableRow = (button: HTMLElement) => {
+      const table = button.closest('table');
+      if (table) {
+        const rows = table.querySelectorAll('tr');
+        if (rows.length > 1) {
+          rows[rows.length - 1].remove();
+          handleContentChange();
+        }
+      }
+    };
+
+    (window as any).addTableCol = (button: HTMLElement) => {
+      const table = button.closest('table');
+      if (table) {
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+          const cell = document.createElement('td');
+          cell.style.border = '1px solid #000';
+          cell.style.padding = '8px';
+          cell.contentEditable = 'true';
+          cell.textContent = '';
+          row.appendChild(cell);
+        });
+        handleContentChange();
+      }
+    };
+
+    (window as any).removeTableCol = (button: HTMLElement) => {
+      const table = button.closest('table');
+      if (table) {
+        const rows = table.querySelectorAll('tr');
+        const firstRow = rows[0];
+        if (firstRow && firstRow.children.length > 1) {
+          rows.forEach(row => {
+            if (row.children.length > 0) {
+              row.removeChild(row.children[row.children.length - 1]);
+            }
+          });
+          handleContentChange();
+        }
+      }
+    };
   }, [htmlContent]);
 
   const handleContentChange = () => {
@@ -47,52 +108,67 @@ export default function AgreementEditor() {
     handleContentChange();
   };
 
-  const insertTable = () => {
-    const tableHtml = `
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-        <tr>
-          <td style="border: 1px solid #000; padding: 8px;">Header 1</td>
-          <td style="border: 1px solid #000; padding: 8px;">Header 2</td>
-        </tr>
-        <tr>
-          <td style="border: 1px solid #000; padding: 8px;">Cell 1</td>
-          <td style="border: 1px solid #000; padding: 8px;">Cell 2</td>
-        </tr>
-      </table>
-    `;
-    
+  const insertAtCursor = (html: string) => {
     if (editorRef.current) {
+      editorRef.current.focus();
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         const range = selection.getRangeAt(0);
-        range.insertNode(range.createContextualFragment(tableHtml));
+        range.deleteContents();
+        const fragment = range.createContextualFragment(html);
+        range.insertNode(fragment);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
       } else {
-        editorRef.current.innerHTML += tableHtml;
+        // If no selection, insert at end
+        editorRef.current.innerHTML += html;
       }
       handleContentChange();
     }
   };
 
+  const insertTable = () => {
+    const tableHtml = `
+      <table class="editable-table" style="width: 100%; border-collapse: collapse; margin: 20px 0; position: relative;" 
+             contenteditable="false" 
+             onmouseenter="this.querySelector('.table-controls').style.display='block'"
+             onmouseleave="this.querySelector('.table-controls').style.display='none'">
+        <div class="table-controls" style="display: none; position: absolute; top: -30px; right: 0; background: #f0f0f0; padding: 5px; border-radius: 4px; font-size: 12px;">
+          <button onclick="addTableRow(this)" style="margin-right: 5px; padding: 2px 6px; font-size: 11px;">+Row</button>
+          <button onclick="removeTableRow(this)" style="margin-right: 5px; padding: 2px 6px; font-size: 11px;">-Row</button>
+          <button onclick="addTableCol(this)" style="margin-right: 5px; padding: 2px 6px; font-size: 11px;">+Col</button>
+          <button onclick="removeTableCol(this)" style="padding: 2px 6px; font-size: 11px;">-Col</button>
+        </div>
+        <tr>
+          <td style="border: 1px solid #000; padding: 8px; min-width: 100px;" contenteditable="true">Header 1</td>
+          <td style="border: 1px solid #000; padding: 8px; min-width: 100px;" contenteditable="true">Header 2</td>
+        </tr>
+        <tr>
+          <td style="border: 1px solid #000; padding: 8px;" contenteditable="true">Cell 1</td>
+          <td style="border: 1px solid #000; padding: 8px;" contenteditable="true">Cell 2</td>
+        </tr>
+      </table>
+    `;
+    insertAtCursor(tableHtml);
+  };
+
   const insertSignatureSection = () => {
     const signatureHtml = `
-      <div style="margin: 40px 0; display: flex; justify-content: space-between;">
-        <div>
-          <p><strong>Owner Signature</strong></p>
-          <p style="margin-top: 40px;">_____________________</p>
+      <div style="margin: 40px 0; display: flex; justify-content: space-between; border: 1px dashed #ccc; padding: 20px; position: relative;" class="signature-section">
+        <div style="flex: 1; text-align: center;">
+          <p style="font-weight: bold;">Owner Signature</p>
+          <div style="margin: 40px 0; border-bottom: 1px solid #000; width: 200px; margin-left: auto; margin-right: auto;"></div>
           <p>Date: ___________</p>
         </div>
-        <div>
-          <p><strong>Tenant Signature</strong></p>
-          <p style="margin-top: 40px;">_____________________</p>
+        <div style="flex: 1; text-align: center;">
+          <p style="font-weight: bold;">Tenant Signature</p>
+          <div style="margin: 40px 0; border-bottom: 1px solid #000; width: 200px; margin-left: auto; margin-right: auto;"></div>
           <p>Date: ___________</p>
         </div>
       </div>
     `;
-    
-    if (editorRef.current) {
-      editorRef.current.innerHTML += signatureHtml;
-      handleContentChange();
-    }
+    insertAtCursor(signatureHtml);
   };
 
   const generatePdf = async () => {
@@ -301,6 +377,38 @@ export default function AgreementEditor() {
               >
                 Insert Signature
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => formatText('insertUnorderedList')}
+                data-testid="button-bullet-list"
+              >
+                • List
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => formatText('insertOrderedList')}
+                data-testid="button-numbered-list"
+              >
+                1. List
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => formatText('outdent')}
+                data-testid="button-outdent"
+              >
+                ← Indent
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => formatText('indent')}
+                data-testid="button-indent"
+              >
+                → Indent
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -328,6 +436,57 @@ export default function AgreementEditor() {
               onInput={handleContentChange}
               data-testid="content-editor"
             />
+            
+            {/* Enhanced CSS for better table and element manipulation */}
+            <style jsx>{`
+              .editable-table {
+                position: relative;
+                resize: both;
+                overflow: auto;
+                min-width: 200px;
+                min-height: 100px;
+              }
+              
+              .editable-table:hover {
+                outline: 2px dashed #007bff;
+              }
+              
+              .signature-section {
+                position: relative;
+                resize: both;
+                overflow: auto;
+                min-width: 300px;
+                min-height: 150px;
+              }
+              
+              .signature-section:hover {
+                border-color: #007bff !important;
+                background-color: #f8f9fa;
+              }
+              
+              .table-controls button {
+                background: #007bff;
+                color: white;
+                border: none;
+                border-radius: 2px;
+                cursor: pointer;
+              }
+              
+              .table-controls button:hover {
+                background: #0056b3;
+              }
+              
+              /* Make tables draggable */
+              .editable-table {
+                cursor: move;
+              }
+              
+              /* Better visual feedback for contenteditable elements */
+              [contenteditable="true"]:focus {
+                outline: 1px solid #007bff;
+                background-color: #f8f9fa;
+              }
+            `}</style>
           </CardContent>
         </Card>
       </div>
