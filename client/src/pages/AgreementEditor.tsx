@@ -499,14 +499,15 @@ export default function AgreementEditor() {
                 user-select: none;
               }
               
-              .table-wrapper:hover {
-                background-color: rgba(0, 123, 255, 0.05);
+              .table-wrapper:hover .word-table {
+                background-color: rgba(0, 123, 255, 0.02);
                 border-radius: 4px;
               }
               
               .word-table {
                 border: 2px solid transparent;
-                transition: border-color 0.2s;
+                transition: border-color 0.2s, background-color 0.2s;
+                background-color: transparent;
               }
               
               .word-table:hover {
@@ -564,14 +565,22 @@ export default function AgreementEditor() {
               
               /* Better visual feedback for contenteditable elements */
               [contenteditable="true"]:focus {
-                outline: 2px solid #007bff;
-                background-color: rgba(0, 123, 255, 0.05);
-                box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+                outline: 1px solid #007bff;
+                background-color: transparent;
               }
               
-              /* Table cell selection */
-              td:hover {
+              /* Table cell selection - only for table cells */
+              .word-table td:hover {
                 background-color: rgba(0, 123, 255, 0.1);
+              }
+              
+              /* Remove blue tint from general content */
+              div[contenteditable="true"] {
+                background-color: transparent !important;
+              }
+              
+              div[contenteditable="true"]:focus {
+                background-color: transparent !important;
               }
               
               /* Context menu styling */
