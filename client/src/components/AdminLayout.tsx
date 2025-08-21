@@ -71,7 +71,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     <div className="flex h-screen bg-muted/30 overflow-hidden">
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col h-screen">
-        <div className="px-6 py-4 border-b border-gray-200 h-20 flex items-center">
+        <div className="px-6 py-4 border-b border-gray-200 h-20 flex items-center flex-shrink-0">
           <div className="flex justify-center w-full">
             <img 
               src="https://quickkaraar.com/images/logo.png" 
@@ -81,37 +81,15 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
           </div>
         </div>
         
-        <nav className="mt-6 flex-1 flex flex-col">
-          <div className="px-4 space-y-2">
-            {filteredNavigation.map((item) => {
-              const isActive = location === item.href;
-              return (
-                <Link key={item.name} href={item.href}
-                    className={cn(
-                      "flex items-center px-4 py-3 rounded-lg font-medium transition-colors",
-                      isActive
-                        ? "text-primary bg-primary/10"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-primary"
-                    )}
-                  >
-                    <item.icon className="w-5 h-5 mr-3" />
-                    {item.name}
-                </Link>
-              );
-            })}
-          </div>
-          
-          <div className="px-4 mt-8">
-            <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Settings
-            </h3>
-            <div className="mt-2 space-y-2">
-              {settingsNavigation.map((item) => {
+        <nav className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-4 py-6">
+            <div className="space-y-2">
+              {filteredNavigation.map((item) => {
                 const isActive = location === item.href;
                 return (
                   <Link key={item.name} href={item.href}
                       className={cn(
-                        "flex items-center px-4 py-3 rounded-lg transition-colors",
+                        "flex items-center px-4 py-3 rounded-lg font-medium transition-colors",
                         isActive
                           ? "text-primary bg-primary/10"
                           : "text-gray-600 hover:bg-gray-50 hover:text-primary"
@@ -123,10 +101,31 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                 );
               })}
             </div>
+            
+            <div className="mt-8">
+              <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Settings
+              </h3>
+              <div className="mt-2 space-y-2">
+                {settingsNavigation.map((item) => {
+                  const isActive = location === item.href;
+                  return (
+                    <Link key={item.name} href={item.href}
+                        className={cn(
+                          "flex items-center px-4 py-3 rounded-lg transition-colors",
+                          isActive
+                            ? "text-primary bg-primary/10"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-primary"
+                        )}
+                      >
+                        <item.icon className="w-5 h-5 mr-3" />
+                        {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          
-          {/* Spacer to push user info to bottom */}
-          <div className="flex-1"></div>
         </nav>
         
         {/* User info and logout at bottom */}
