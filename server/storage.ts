@@ -459,7 +459,8 @@ export class DatabaseStorage implements IStorage {
         sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDate})`,
         sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDate})`
       );
-    } else if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom' && dateFilter.trim()) {
+    } else if (dateFilter && dateFilter.trim() && 
+              ['today', 'tomorrow', 'thisWeek', 'thisMonth', 'next3Months', 'next6Months', 'thisYear'].includes(dateFilter.trim())) {
       // Calculate date range for predefined filters
       const today = new Date();
       let startDateStr: string | undefined;
@@ -521,7 +522,6 @@ export class DatabaseStorage implements IStorage {
           break;
         default:
           // For unknown filters, don't apply date filtering
-          dateCondition = undefined;
           break;
       }
       
