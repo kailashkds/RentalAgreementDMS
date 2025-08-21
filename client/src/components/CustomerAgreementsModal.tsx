@@ -314,68 +314,6 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
     }
   };
 
-  const downloadWordDocument = async (agreementId: string) => {
-    setLoadingStates(prev => ({ ...prev, [`word-${agreementId}`]: true }));
-    
-    try {
-      const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
-      if (!agreement) {
-        throw new Error('Agreement not found');
-      }
-
-      console.log('Starting Word document generation for agreement:', agreement.id);
-
-      const response = await fetch('/api/agreements/generate-word', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ownerDetails: agreement.ownerDetails || {},
-          tenantDetails: agreement.tenantDetails || {},
-          propertyDetails: agreement.propertyDetails || {},
-          rentalTerms: agreement.rentalTerms || {},
-          agreementDate: agreement.agreementDate,
-          createdAt: agreement.createdAt,
-          language: agreement.language || 'english',
-          additionalClauses: agreement.additionalClauses || [],
-          agreementNumber: agreement.agreementNumber,
-          documents: agreement.documents || {},
-          ownerDocuments: agreement.ownerDocuments || {},
-          tenantDocuments: agreement.tenantDocuments || {},
-          propertyDocuments: agreement.propertyDocuments || {}
-        }),
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${agreement.agreementNumber || 'agreement'}.docx`;
-        link.click();
-        window.URL.revokeObjectURL(url);
-        
-        toast({
-          title: "Word Document Downloaded",
-          description: `${agreement.agreementNumber}.docx downloaded successfully`,
-        });
-      } else {
-        const errorData = await response.json();
-        console.error('Word generation error:', errorData);
-        throw new Error(errorData.message || 'Failed to generate Word document');
-      }
-    } catch (error) {
-      console.error('Word download error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to download Word document.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingStates(prev => ({ ...prev, [`word-${agreementId}`]: false }));
-    }
-  };
 
   const downloadNotarizedDocument = async (agreement: any) => {
     try {
@@ -660,13 +598,6 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                       <Download className="h-4 w-4 mr-2" />
                       PDF
                     </Button>
-                    <Button
-                      onClick={() => downloadWordDocument(selectedAgreement)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Word
-                    </Button>
                     {(selectedAgreement.notarizedDocument?.url || selectedAgreement.notarizedDocumentUrl) && (
                       <Button
                         onClick={() => downloadNotarizedDocument(selectedAgreement)}
@@ -798,21 +729,6 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                           PDF
                         </Button>
 
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => downloadWordDocument(agreement.id)}
-                          title="Download Word Document"
-                          disabled={loadingStates[`word-${agreement.id}`]}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          {loadingStates[`word-${agreement.id}`] ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <FileText className="h-4 w-4 mr-1" />
-                          )}
-                          Word
-                        </Button>
                         
                         {(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
                           <Button 

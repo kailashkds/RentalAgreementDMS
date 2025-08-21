@@ -253,64 +253,6 @@ export default function Agreements() {
 
 
 
-  const handleDownloadWordAgreement = async (agreement: any) => {
-    try {
-      console.log('Starting Word generation for agreement:', agreement.id);
-
-      const response = await fetch('/api/agreements/generate-word', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ownerDetails: agreement.ownerDetails || {},
-          tenantDetails: agreement.tenantDetails || {},
-          propertyDetails: agreement.propertyDetails || {},
-          rentalTerms: agreement.rentalTerms || {},
-          agreementDate: agreement.agreementDate,
-          createdAt: agreement.createdAt,
-          language: agreement.language || 'english',
-          additionalClauses: agreement.additionalClauses || [],
-          agreementNumber: agreement.agreementNumber,
-          documents: agreement.documents || {},
-          ownerDocuments: agreement.ownerDocuments || {},
-          tenantDocuments: agreement.tenantDocuments || {},
-          propertyDocuments: agreement.propertyDocuments || {}
-        }),
-      });
-
-      console.log('Word generation response status:', response.status);
-
-      if (response.ok) {
-        // Create download link for Word document
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `rental_agreement_${agreement.agreementNumber || 'document'}.docx`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        
-        toast({
-          title: "Word Document Downloaded",
-          description: `Agreement ${agreement.agreementNumber} has been downloaded as Word document.`,
-        });
-      } else {
-        const errorData = await response.json();
-        console.error('Word generation error:', errorData);
-        throw new Error(errorData.message || 'Failed to generate Word document');
-      }
-    } catch (error) {
-      console.error('Word download error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to download Word document.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleViewAgreement = (agreementId: string) => {
     const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
@@ -994,15 +936,6 @@ export default function Agreements() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-blue-600 hover:text-blue-900"
-                            onClick={() => handleDownloadWordAgreement(agreement)}
-                            title="Download Word Document"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
                             className="text-amber-600 hover:text-amber-900"
                             onClick={() => setEditingAgreement(agreement)}
                             title="Edit Agreement"
@@ -1371,13 +1304,6 @@ export default function Agreements() {
                       Download PDF
                     </Button>
 
-                    <Button
-                      onClick={() => downloadWordDocument(viewingAgreement)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-sm"
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Download Word
-                    </Button>
                     
                     {(viewingAgreement.notarizedDocument?.url || viewingAgreement.notarizedDocumentUrl) && (
                       <Button
@@ -1535,13 +1461,6 @@ export default function Agreements() {
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Download PDF
-                  </Button>
-                  <Button
-                    onClick={() => handleDownloadWordAgreement(viewingAgreement)}
-                    className="bg-slate-700 hover:bg-slate-800 text-white px-6 py-2 shadow-sm"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Download Word
                   </Button>
                   <Button
                     variant="outline"
