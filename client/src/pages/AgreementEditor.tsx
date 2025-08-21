@@ -35,66 +35,97 @@ export default function AgreementEditor() {
       editorRef.current.innerHTML = htmlContent;
     }
 
-    // Add global functions for table manipulation
-    (window as any).addTableRow = (button: HTMLElement) => {
-      const table = button.closest('table');
-      if (table) {
-        const tbody = table.querySelector('tbody') || table;
-        const firstRow = tbody.querySelector('tr');
-        if (firstRow) {
-          const newRow = firstRow.cloneNode(true) as HTMLElement;
-          const cells = newRow.querySelectorAll('td, th');
-          cells.forEach(cell => {
-            (cell as HTMLElement).textContent = '';
-          });
-          tbody.appendChild(newRow);
-          handleContentChange();
-        }
-      }
-    };
-
-    (window as any).removeTableRow = (button: HTMLElement) => {
-      const table = button.closest('table');
-      if (table) {
-        const rows = table.querySelectorAll('tr');
-        if (rows.length > 1) {
-          rows[rows.length - 1].remove();
-          handleContentChange();
-        }
-      }
-    };
-
-    (window as any).addTableCol = (button: HTMLElement) => {
-      const table = button.closest('table');
-      if (table) {
-        const rows = table.querySelectorAll('tr');
-        rows.forEach(row => {
-          const cell = document.createElement('td');
-          cell.style.border = '1px solid #000';
-          cell.style.padding = '8px';
-          cell.contentEditable = 'true';
-          cell.textContent = '';
-          row.appendChild(cell);
-        });
+    // Add global functions for advanced table manipulation
+    (window as any).deleteTable = (tableId: string) => {
+      const tableWrapper = document.getElementById(tableId)?.closest('.table-wrapper');
+      if (tableWrapper) {
+        tableWrapper.remove();
         handleContentChange();
       }
     };
 
-    (window as any).removeTableCol = (button: HTMLElement) => {
-      const table = button.closest('table');
-      if (table) {
-        const rows = table.querySelectorAll('tr');
-        const firstRow = rows[0];
-        if (firstRow && firstRow.children.length > 1) {
-          rows.forEach(row => {
-            if (row.children.length > 0) {
-              row.removeChild(row.children[row.children.length - 1]);
+    // Add event listeners for drag handles and table interactions
+    const setupTableInteractions = () => {
+      if (!editorRef.current) return;
+
+      // Handle row addition via drag handles
+      editorRef.current.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target.classList.contains('row-add-handle')) {
+          const table = target.closest('.table-wrapper')?.querySelector('table');
+          const rowIndex = parseInt(target.dataset.row || '0');
+          
+          if (table) {
+            const rows = table.querySelectorAll('tr');
+            const referenceRow = rows[Math.min(rowIndex, rows.length - 1)];
+            const newRow = referenceRow.cloneNode(true) as HTMLElement;
+            
+            // Clear cell content and add resize handles
+            const cells = newRow.querySelectorAll('td, th');
+            cells.forEach(cell => {
+              (cell as HTMLElement).innerHTML = '<div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>';
+            });
+            
+            if (rowIndex === 0) {
+              table.insertBefore(newRow, table.firstChild);
+            } else {
+              referenceRow.insertAdjacentElement('afterend', newRow);
             }
-          });
-          handleContentChange();
+            handleContentChange();
+          }
         }
-      }
+        
+        if (target.classList.contains('col-add-handle')) {
+          const table = target.closest('.table-wrapper')?.querySelector('table');
+          const colIndex = parseInt(target.dataset.col || '0');
+          
+          if (table) {
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+              const cells = Array.from(row.children);
+              const referenceIndex = Math.min(colIndex, cells.length - 1);
+              const newCell = document.createElement('td');
+              newCell.style.border = '1px solid #000';
+              newCell.style.padding = '8px';
+              newCell.style.position = 'relative';
+              newCell.contentEditable = 'true';
+              newCell.innerHTML = '<div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>';
+              
+              if (colIndex === 0) {
+                row.insertBefore(newCell, row.firstChild);
+              } else {
+                cells[referenceIndex].insertAdjacentElement('afterend', newCell);
+              }
+            });
+            handleContentChange();
+          }
+        }
+      });
+
+      // Show/hide handles on hover
+      editorRef.current.addEventListener('mouseover', (e) => {
+        const tableWrapper = (e.target as HTMLElement).closest('.table-wrapper');
+        if (tableWrapper) {
+          const handles = tableWrapper.querySelectorAll('.row-add-handle, .col-add-handle, .cell-resize-handle, .table-controls');
+          handles.forEach(handle => {
+            (handle as HTMLElement).style.opacity = '1';
+          });
+        }
+      });
+
+      editorRef.current.addEventListener('mouseout', (e) => {
+        const tableWrapper = (e.target as HTMLElement).closest('.table-wrapper');
+        if (tableWrapper && !tableWrapper.contains(e.relatedTarget as Node)) {
+          const handles = tableWrapper.querySelectorAll('.row-add-handle, .col-add-handle, .cell-resize-handle, .table-controls');
+          handles.forEach(handle => {
+            (handle as HTMLElement).style.opacity = '0';
+          });
+        }
+      });
     };
+
+    // Setup interactions after content is loaded
+    setTimeout(setupTableInteractions, 100);
   }, [htmlContent]);
 
   const handleContentChange = () => {
@@ -129,26 +160,51 @@ export default function AgreementEditor() {
   };
 
   const insertTable = () => {
+    const tableId = 'table_' + Date.now();
     const tableHtml = `
-      <table class="editable-table" style="width: 100%; border-collapse: collapse; margin: 20px 0; position: relative;" 
-             contenteditable="false" 
-             onmouseenter="this.querySelector('.table-controls').style.display='block'"
-             onmouseleave="this.querySelector('.table-controls').style.display='none'">
-        <div class="table-controls" style="display: none; position: absolute; top: -30px; right: 0; background: #f0f0f0; padding: 5px; border-radius: 4px; font-size: 12px;">
-          <button onclick="addTableRow(this)" style="margin-right: 5px; padding: 2px 6px; font-size: 11px;">+Row</button>
-          <button onclick="removeTableRow(this)" style="margin-right: 5px; padding: 2px 6px; font-size: 11px;">-Row</button>
-          <button onclick="addTableCol(this)" style="margin-right: 5px; padding: 2px 6px; font-size: 11px;">+Col</button>
-          <button onclick="removeTableCol(this)" style="padding: 2px 6px; font-size: 11px;">-Col</button>
+      <div class="table-wrapper" style="position: relative; margin: 20px 0;">
+        <!-- Row add handles (left side) -->
+        <div class="row-handles" style="position: absolute; left: -30px; top: 0; width: 25px; height: 100%;">
+          <div class="row-add-handle" data-row="0" style="position: absolute; top: -5px; left: 0; width: 20px; height: 10px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add row above">+</div>
+          <div class="row-add-handle" data-row="1" style="position: absolute; top: 35px; left: 0; width: 20px; height: 10px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add row between">+</div>
+          <div class="row-add-handle" data-row="2" style="position: absolute; bottom: -5px; left: 0; width: 20px; height: 10px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add row below">+</div>
         </div>
-        <tr>
-          <td style="border: 1px solid #000; padding: 8px; min-width: 100px;" contenteditable="true">Header 1</td>
-          <td style="border: 1px solid #000; padding: 8px; min-width: 100px;" contenteditable="true">Header 2</td>
-        </tr>
-        <tr>
-          <td style="border: 1px solid #000; padding: 8px;" contenteditable="true">Cell 1</td>
-          <td style="border: 1px solid #000; padding: 8px;" contenteditable="true">Cell 2</td>
-        </tr>
-      </table>
+        
+        <!-- Column add handles (top) -->
+        <div class="col-handles" style="position: absolute; top: -30px; left: 0; width: 100%; height: 25px;">
+          <div class="col-add-handle" data-col="0" style="position: absolute; top: 0; left: -5px; width: 10px; height: 20px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add column before">+</div>
+          <div class="col-add-handle" data-col="1" style="position: absolute; top: 0; left: 47.5%; width: 10px; height: 20px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add column between">+</div>
+          <div class="col-add-handle" data-col="2" style="position: absolute; top: 0; right: -5px; width: 10px; height: 20px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add column after">+</div>
+        </div>
+
+        <table id="${tableId}" class="word-table" style="width: 100%; border-collapse: collapse; position: relative; cursor: default;" contenteditable="false">
+          <tr>
+            <td style="border: 1px solid #000; padding: 8px; min-width: 100px; position: relative;" contenteditable="true">
+              Header 1
+              <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>
+            </td>
+            <td style="border: 1px solid #000; padding: 8px; min-width: 100px; position: relative;" contenteditable="true">
+              Header 2
+              <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #000; padding: 8px; position: relative;" contenteditable="true">
+              Cell 1
+              <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>
+            </td>
+            <td style="border: 1px solid #000; padding: 8px; position: relative;" contenteditable="true">
+              Cell 2
+              <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>
+            </td>
+          </tr>
+        </table>
+        
+        <!-- Table selection and delete controls -->
+        <div class="table-controls" style="position: absolute; top: -50px; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 5px; opacity: 0; transition: opacity 0.2s;">
+          <button onclick="deleteTable('${tableId}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">Delete Table</button>
+        </div>
+      </div>
     `;
     insertAtCursor(tableHtml);
   };
@@ -437,18 +493,49 @@ export default function AgreementEditor() {
               data-testid="content-editor"
             />
             
-            {/* Enhanced CSS for better table and element manipulation */}
+            {/* Enhanced CSS for Microsoft Word-like table manipulation */}
             <style jsx>{`
-              .editable-table {
-                position: relative;
-                resize: both;
-                overflow: auto;
-                min-width: 200px;
-                min-height: 100px;
+              .table-wrapper {
+                user-select: none;
               }
               
-              .editable-table:hover {
-                outline: 2px dashed #007bff;
+              .table-wrapper:hover {
+                background-color: rgba(0, 123, 255, 0.05);
+                border-radius: 4px;
+              }
+              
+              .word-table {
+                border: 2px solid transparent;
+                transition: border-color 0.2s;
+              }
+              
+              .word-table:hover {
+                border-color: #007bff;
+              }
+              
+              .row-add-handle, .col-add-handle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: bold;
+                color: white;
+                transition: opacity 0.2s, transform 0.1s;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+              }
+              
+              .row-add-handle:hover, .col-add-handle:hover {
+                transform: scale(1.1);
+                opacity: 1 !important;
+              }
+              
+              .cell-resize-handle {
+                transition: opacity 0.2s;
+              }
+              
+              .cell-resize-handle:hover {
+                opacity: 1 !important;
+                transform: scale(1.2);
               }
               
               .signature-section {
@@ -457,33 +544,58 @@ export default function AgreementEditor() {
                 overflow: auto;
                 min-width: 300px;
                 min-height: 150px;
+                transition: all 0.2s;
               }
               
               .signature-section:hover {
                 border-color: #007bff !important;
                 background-color: #f8f9fa;
+                transform: scale(1.01);
               }
               
-              .table-controls button {
-                background: #007bff;
-                color: white;
-                border: none;
-                border-radius: 2px;
-                cursor: pointer;
+              .table-controls {
+                transition: opacity 0.2s;
               }
               
               .table-controls button:hover {
-                background: #0056b3;
-              }
-              
-              /* Make tables draggable */
-              .editable-table {
-                cursor: move;
+                background: #c82333;
+                transform: scale(1.05);
               }
               
               /* Better visual feedback for contenteditable elements */
               [contenteditable="true"]:focus {
-                outline: 1px solid #007bff;
+                outline: 2px solid #007bff;
+                background-color: rgba(0, 123, 255, 0.05);
+                box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+              }
+              
+              /* Table cell selection */
+              td:hover {
+                background-color: rgba(0, 123, 255, 0.1);
+              }
+              
+              /* Context menu styling */
+              .context-menu {
+                position: fixed;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                z-index: 1000;
+              }
+              
+              .context-menu button {
+                display: block;
+                width: 100%;
+                padding: 8px 12px;
+                background: none;
+                border: none;
+                text-align: left;
+                cursor: pointer;
+                font-size: 14px;
+              }
+              
+              .context-menu button:hover {
                 background-color: #f8f9fa;
               }
             `}</style>
