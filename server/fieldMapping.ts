@@ -1627,9 +1627,6 @@ async function createEmbeddedDocumentHtml(documentUrl: string, fieldName: string
 function createEmbeddedImageHtml(dataUrl: string, documentType: string): string {
   return `
 <div class="document-page" style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid; page-break-before: always;">
-  <div style="margin-bottom: 10px;">
-    <strong style="color: #2c3e50; font-size: 16px;">📄 ${documentType}</strong>
-  </div>
   <div style="text-align: center; margin: 10px 0;">
     <img src="${dataUrl}" 
          style="max-width: 100%; max-height: 400px; border: none; border-radius: 0; box-shadow: none;" 
@@ -1647,9 +1644,6 @@ function createEmbeddedImageHtml(dataUrl: string, documentType: string): string 
 function createEmbeddedPdfHtml(dataUrl: string, documentType: string): string {
   return `
 <div style="margin: 15px 0; padding: 15px; border: none; border-radius: 0; background-color: transparent; page-break-inside: avoid;">
-  <div style="margin-bottom: 10px;">
-    <strong style="color: #2c3e50; font-size: 16px;">📄 ${documentType}</strong>
-  </div>
   <div style="text-align: center; margin: 10px 0;">
     <iframe src="${dataUrl}" 
             style="width: 100%; height: 400px; border: none; border-radius: 0;" 
@@ -1714,9 +1708,8 @@ export async function convertPdfToImages(pdfPath: string, documentType: string):
       return null;
     }
     
-    // Generate HTML for each image
-    let htmlContent = `<div style="margin: 20px 0; page-break-inside: avoid;">
-      <p style="color: #333; font-weight: bold; margin: 10px 0; text-align: center;">${documentType}</p>`;
+    // Generate HTML for each image (without title)
+    let htmlContent = `<div style="margin: 20px 0; page-break-inside: avoid;">`;
     
     for (let i = 0; i < imageFiles.length; i++) {
       const imageFile = imageFiles[i];

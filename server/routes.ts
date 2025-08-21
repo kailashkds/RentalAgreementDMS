@@ -1011,11 +1011,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Add Aadhaar if exists
           if (safeAgreementData.ownerDocuments?.aadharUrl) {
+            const aadharTitle = createParagraph("Aadhaar Card:", {
+              size: 22,
+              bold: true,
+              alignment: AlignmentType.LEFT,
+              spacing: { before: 240, after: 120 }
+            });
+            if (aadharTitle) documentParagraphs.push(aadharTitle);
             await addDocumentImage(safeAgreementData.ownerDocuments.aadharUrl, "Landlord Aadhaar");
           }
           
           // Add PAN if exists
           if (safeAgreementData.ownerDocuments?.panUrl) {
+            const panTitle = createParagraph("PAN Card:", {
+              size: 22,
+              bold: true,
+              alignment: AlignmentType.LEFT,
+              spacing: { before: 240, after: 120 }
+            });
+            if (panTitle) documentParagraphs.push(panTitle);
             await addDocumentImage(safeAgreementData.ownerDocuments.panUrl, "Landlord PAN");
           }
         }
@@ -1040,11 +1054,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Add Aadhaar if exists
           if (safeAgreementData.tenantDocuments?.aadharUrl) {
+            const aadharTitle = createParagraph("Aadhaar Card:", {
+              size: 22,
+              bold: true,
+              alignment: AlignmentType.LEFT,
+              spacing: { before: 240, after: 120 }
+            });
+            if (aadharTitle) documentParagraphs.push(aadharTitle);
             await addDocumentImage(safeAgreementData.tenantDocuments.aadharUrl, "Tenant Aadhaar");
           }
           
           // Add PAN if exists
           if (safeAgreementData.tenantDocuments?.panUrl) {
+            const panTitle = createParagraph("PAN Card:", {
+              size: 22,
+              bold: true,
+              alignment: AlignmentType.LEFT,
+              spacing: { before: 240, after: 120 }
+            });
+            if (panTitle) documentParagraphs.push(panTitle);
             await addDocumentImage(safeAgreementData.tenantDocuments.panUrl, "Tenant PAN");
           }
         }
