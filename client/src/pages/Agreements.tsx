@@ -41,6 +41,7 @@ export default function Agreements() {
   const [viewingAgreement, setViewingAgreement] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [notaryFilter, setNotaryFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("all");
   const [tenantFilter, setTenantFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
@@ -174,8 +175,20 @@ export default function Agreements() {
     return owners;
   }, [agreementsData?.agreements]);
 
-  // Client-side filtering for customer, tenant, and owner (date filtering is now server-side)
+  // Client-side filtering for customer, tenant, owner, and notary (date filtering is now server-side)
   const filteredAgreements = agreementsData?.agreements?.filter((agreement: any) => {
+    // Filter by notary status
+    if (notaryFilter && notaryFilter !== "all") {
+      const notaryStatus = agreement.status === "draft" 
+        ? "complete_first" 
+        : agreement.status === "active" 
+        ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) 
+          ? "notarized" 
+          : "pending"
+        : "n_a";
+      if (notaryStatus !== notaryFilter) return false;
+    }
+
     // Filter by customer name
     if (customerFilter && customerFilter !== "all") {
       const customerName = agreement.customer?.name || '';
@@ -749,6 +762,17 @@ export default function Agreements() {
                 <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={notaryFilter} onValueChange={setNotaryFilter}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="All Notary" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Notary</SelectItem>
+                <SelectItem value="notarized">Notarized</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="complete_first">Complete First</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={customerFilter} onValueChange={setCustomerFilter}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="All Customers" />
@@ -861,12 +885,13 @@ export default function Agreements() {
             </div>
           )}
           <div className="flex justify-between items-center w-full">
-            {(customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || searchTerm || (statusFilter && statusFilter !== "all")) && (
+            {(notaryFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || searchTerm || (statusFilter && statusFilter !== "all")) && (
               <Button
                 variant="outline"
                 onClick={() => {
                   setSearchTerm("");
                   setStatusFilter("all");
+                  setNotaryFilter("all");
                   setCustomerFilter("all");
                   setTenantFilter("all");
                   setOwnerFilter("all");
@@ -894,7 +919,7 @@ export default function Agreements() {
               <div className="p-6 text-center text-gray-500">Loading agreements...</div>
             ) : filteredAgreements?.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
-                {searchTerm || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
+                {searchTerm || notaryFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
                   <>
                     No agreements found matching your criteria.
                     <Button
@@ -902,6 +927,7 @@ export default function Agreements() {
                       onClick={() => {
                         setSearchTerm("");
                         setStatusFilter("all");
+                        setNotaryFilter("all");
                         setCustomerFilter("all");
                         setTenantFilter("all");
                         setOwnerFilter("all");
