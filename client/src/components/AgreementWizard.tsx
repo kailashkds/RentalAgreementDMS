@@ -991,15 +991,17 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
         if (response.ok) {
           const result = await response.json();
-          setPdfData({
-            html: result.html,
-            agreementNumber: agreement.agreementNumber
-          });
-          setPdfState('ready');
+          
+          // Store HTML content in session storage for the editor
+          sessionStorage.setItem('editorHtmlContent', result.html);
+          
+          // Redirect to editor instead of generating PDF directly
+          const editorUrl = `/agreement-editor?agreementNumber=${agreement.agreementNumber}&language=${selectedLanguage}`;
+          window.location.href = editorUrl;
           
           toast({
-            title: "PDF Generated Successfully", 
-            description: `Agreement ${agreement.agreementNumber} PDF is ready for download.${editingAgreement ? ' (Updated)' : ''}`,
+            title: "Agreement ready for editing",
+            description: `Agreement ${agreement.agreementNumber} opened in editor.`,
           });
         } else {
           throw new Error('Failed to generate PDF');
@@ -2300,14 +2302,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                     aria-live="polite"
                   >
                     {pdfState === 'creating' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                    {pdfState === 'idle' && "Create PDF"}
-                    {pdfState === 'creating' && "Creating PDF..."}
-                    {pdfState === 'ready' && (
-                      <>
-                        <Download className="mr-2 h-5 w-5" />
-                        Download PDF
-                      </>
-                    )}
+                    {pdfState === 'idle' && "Edit & Generate PDF"}
+                    {pdfState === 'creating' && "Preparing Editor..."}
                   </Button>
                   {pdfState === 'ready' && pdfData && (
                     <p className="text-sm text-green-600 mt-2 text-center">
