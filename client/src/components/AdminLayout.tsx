@@ -68,9 +68,9 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   };
 
   return (
-    <div className="flex h-screen bg-muted/30">
+    <div className="flex h-screen bg-muted/30 overflow-hidden">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col h-full">
+      <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col h-screen">
         <div className="px-6 py-4 border-b border-gray-200 h-20 flex items-center">
           <div className="flex justify-center w-full">
             <img 
@@ -130,7 +130,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         </nav>
         
         {/* User info and logout at bottom */}
-        <div className="px-4 py-1 bg-gray-50 border-t">
+        <div className="px-4 py-4 bg-gray-50 border-t flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -149,9 +149,9 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+        <header className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
           <div className="px-6 py-4 h-20 flex items-center">
             <div className="flex items-center justify-between w-full">
               <div>
@@ -184,8 +184,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto">
-          <div className="px-6 pt-6 pb-0">{children}</div>
+        <main className="flex-1 overflow-auto bg-muted/30">
+          <div className="px-6 py-6 min-h-full">{children}</div>
         </main>
       </div>
     </div>
