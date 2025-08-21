@@ -1070,7 +1070,7 @@ export default function Agreements() {
                                   <Download className="h-4 w-4" />
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-48 p-2">
+                              <PopoverContent className="w-56 p-2">
                                 <div className="space-y-2">
                                   <Button
                                     variant="ghost"
@@ -1079,7 +1079,7 @@ export default function Agreements() {
                                     onClick={() => handleDownloadAgreement(agreement)}
                                   >
                                     <Download className="h-4 w-4 mr-2" />
-                                    Download Agreement PDF
+                                    Agreement PDF
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -1088,7 +1088,7 @@ export default function Agreements() {
                                     onClick={() => handleDownloadNotarizedFromTable(agreement)}
                                   >
                                     <Award className="h-4 w-4 mr-2" />
-                                    Download Notarized Document
+                                    Notarized Document
                                   </Button>
                                 </div>
                               </PopoverContent>
@@ -1495,14 +1495,14 @@ export default function Agreements() {
                           className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 shadow-sm"
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          Download Agreement PDF
+                          Agreement PDF
                         </Button>
                         <Button
                           onClick={() => downloadNotarizedDocument(viewingAgreement)}
                           className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 shadow-sm"
                         >
                           <Award className="h-4 w-4 mr-2" />
-                          Download Notarized Document
+                          Notarized Document
                         </Button>
                       </div>
                     ) : (
@@ -1511,7 +1511,7 @@ export default function Agreements() {
                         className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 shadow-sm"
                       >
                         <Download className="h-4 w-4 mr-2" />
-                        Download Agreement PDF
+                        Download PDF
                       </Button>
                     )}
                   </div>
