@@ -39,11 +39,6 @@ const navigation = [
   { name: "WhatsApp", href: "/whatsapp", icon: MessageSquare },
 ];
 
-const settingsNavigation = [
-  { name: "Admin Users", href: "/admin/users", icon: Shield },
-  { name: "System Settings", href: "/settings", icon: Settings },
-  { name: "Profile", href: "/profile", icon: UserCircle },
-];
 
 export default function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
   const [location] = useLocation();
@@ -101,29 +96,6 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
             })}
           </div>
           
-          <div className="px-4 mt-8">
-            <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Settings
-            </h3>
-            <div className="mt-2 space-y-2">
-              {settingsNavigation.map((item) => {
-                const isActive = location === item.href;
-                return (
-                  <Link key={item.name} href={item.href}
-                      className={cn(
-                        "flex items-center px-4 py-3 rounded-lg transition-colors",
-                        isActive
-                          ? "text-primary bg-primary/10"
-                          : "text-gray-600 hover:bg-gray-50 hover:text-primary"
-                      )}
-                    >
-                      <item.icon className="w-5 h-5 mr-3" />
-                      {item.name}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
           
           {/* Spacer to push user info to bottom */}
           <div className="flex-1"></div>
