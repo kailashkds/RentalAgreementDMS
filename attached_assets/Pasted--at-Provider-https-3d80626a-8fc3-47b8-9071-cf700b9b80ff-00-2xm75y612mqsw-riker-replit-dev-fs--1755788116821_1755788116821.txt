@@ -1,0 +1,42 @@
+    at Provider (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=ca3c2b47:38:15)
+    at Dialog (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-dialog.js?v=ca3c2b47:52:5)
+    at AgreementWizard (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/src/components/AgreementWizard.tsx:52:43)
+    at div
+    at main
+    at div
+    at div
+    at AdminLayout (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/src/components/AdminLayout.tsx:55:39)
+    at Agreements (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/src/pages/Agreements.tsx:54:24)
+    at Route (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=ca3c2b47:323:16)
+    at Switch (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=ca3c2b47:379:17)
+    at AuthenticatedRouter (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/src/App.tsx?v=TJB83pFUlA6ONr52Rdttf:40:49)
+    at Provider (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=ca3c2b47:38:15)
+    at TooltipProvider (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=ca3c2b47:61:5)
+    at QueryClientProvider (https://3d80626a-8fc3-47b8-9071-cf700b9b80ff-00-2xm75y612mqsw.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=ca3c2b47:2805:3)
+    at App
+printWarning @ chunk-RPCDYKBN.js?v=ca3c2b47:521
+error @ chunk-RPCDYKBN.js?v=ca3c2b47:505
+validateFunctionComponentInDev @ chunk-RPCDYKBN.js?v=ca3c2b47:15013
+mountIndeterminateComponent @ chunk-RPCDYKBN.js?v=ca3c2b47:14988
+beginWork @ chunk-RPCDYKBN.js?v=ca3c2b47:15914
+beginWork$1 @ chunk-RPCDYKBN.js?v=ca3c2b47:19753
+performUnitOfWork @ chunk-RPCDYKBN.js?v=ca3c2b47:19198
+workLoopSync @ chunk-RPCDYKBN.js?v=ca3c2b47:19137
+renderRootSync @ chunk-RPCDYKBN.js?v=ca3c2b47:19116
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=ca3c2b47:18874
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=ca3c2b47:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=ca3c2b47:18627Understand this error
+@radix-ui_react-dialog.js?v=ca3c2b47:339 Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+(anonymous) @ @radix-ui_react-dialog.js?v=ca3c2b47:339
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=ca3c2b47:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=ca3c2b47:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=ca3c2b47:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=ca3c2b47:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=ca3c2b47:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=ca3c2b47:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=ca3c2b47:19447
+commitRootImpl @ chunk-RPCDYKBN.js?v=ca3c2b47:19416
+commitRoot @ chunk-RPCDYKBN.js?v=ca3c2b47:19277
+performSyncWorkOnRoot @ chunk-RPCDYKBN.js?v=ca3c2b47:18895
+flushSyncCallbacks @ chunk-RPCDYKBN.js?v=ca3c2b47:9119
+(anonymous) @ chunk-RPCDYKBN.js?v=ca3c2b47:18627Understand this warning

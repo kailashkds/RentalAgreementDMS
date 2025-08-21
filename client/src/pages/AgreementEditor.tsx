@@ -92,10 +92,12 @@ export default function AgreementEditor() {
         language: language
       });
       
-      if (pdfResponse && pdfResponse.html) {
+      const pdfData = await pdfResponse.json();
+      
+      if (pdfData && pdfData.html) {
         // Extract content from the generated HTML, removing PDF-specific styles
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = pdfResponse.html;
+        tempDiv.innerHTML = pdfData.html;
         
         // Remove script tags, style tags with PDF styles, etc.
         const scripts = tempDiv.querySelectorAll('script');
