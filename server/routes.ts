@@ -1085,7 +1085,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (imagePath.toLowerCase().endsWith('.pdf')) {
               try {
                 console.log(`[Word Generation] Converting PDF to images for ${logName}...`);
-                const pdfImages = await convertPdfToImages(imagePath);
+                const pdfImages = await convertPdfToImages(imagePath, logName);
                 
                 if (pdfImages && pdfImages.length > 0) {
                   // Use the first page of the PDF
