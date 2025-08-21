@@ -452,17 +452,18 @@ export class DatabaseStorage implements IStorage {
     // Build date condition for agreement end date filtering
     let dateCondition;
     
-    if (startDate && endDate) {
+    // Only apply date filtering if we have valid date parameters and it's not 'all'
+    if (startDate && endDate && startDate.trim() && endDate.trim()) {
       // Custom date range filtering
       dateCondition = and(
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDate}`,
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDate}`
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDate})`,
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDate})`
       );
-    } else if (dateFilter && dateFilter !== 'all') {
+    } else if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom' && dateFilter.trim()) {
       // Calculate date range for predefined filters
       const today = new Date();
-      let startDateStr: string;
-      let endDateStr: string;
+      let startDateStr: string | undefined;
+      let endDateStr: string | undefined;
 
       switch (dateFilter) {
         case 'today':
@@ -519,15 +520,20 @@ export class DatabaseStorage implements IStorage {
           endDateStr = yearEnd.toISOString().split('T')[0];
           break;
         default:
-          return { agreements: [], total: 0 };
+          // For unknown filters, don't apply date filtering
+          dateCondition = undefined;
+          break;
       }
       
-      // Filter by agreement end date using calculated date range
-      dateCondition = and(
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDateStr}`,
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDateStr}`
-      );
+      // Only create date condition if we have valid date strings
+      if (startDateStr && endDateStr && startDateStr.trim() && endDateStr.trim()) {
+        dateCondition = and(
+          sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDateStr})`,
+          sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDateStr})`
+        );
+      }
     }
+    // For 'all' filter or no filter, dateCondition remains undefined (no date filtering)
     
     const whereConditions = and(
       customerId ? eq(agreements.customerId, customerId) : undefined,
