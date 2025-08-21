@@ -380,6 +380,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, Media, ImageRun, VerticalAlign } = await import('docx');
       
+      // Helper function to detect Gujarati text and return appropriate font
+      const getFontForText = (text: string): string => {
+        if (!text) return "Arial";
+        
+        // Check if text contains Gujarati Unicode characters (U+0A80-U+0AFF)
+        const gujaratiRegex = /[\u0A80-\u0AFF]/;
+        if (gujaratiRegex.test(text)) {
+          return "Shruti"; // Primary Gujarati font, fallback would be Nirmala UI
+        }
+        
+        return "Arial"; // Default for English and other text
+      };
+
       const agreementData = req.body;
       const language = agreementData.language || 'english';
 
@@ -638,7 +651,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lines.forEach((line, index) => {
             textRuns.push(new TextRun({
               text: line.trim(),
-              font: "Arial",
+              font: getFontForText(line.trim()),
               size: options.size || 24,
               bold: options.bold || false,
               italics: options.italic || false,
@@ -665,7 +678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return new Paragraph({
           children: [new TextRun({
             text: sanitizedText,
-            font: "Arial",
+            font: getFontForText(sanitizedText),
             size: options.size || 24,
             bold: options.bold || false,
             italics: options.italic || false,
@@ -737,7 +750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (beforeText) {
                   textRuns.push(new TextRun({
                     text: beforeText,
-                    font: "Arial",
+                    font: getFontForText(beforeText),
                     size: isTitle ? 28 : (isHeading ? 26 : 24),
                     bold: false
                   }));
@@ -748,7 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (boldText) {
                   textRuns.push(new TextRun({
                     text: boldText,
-                    font: "Arial",
+                    font: getFontForText(boldText),
                     size: isTitle ? 28 : (isHeading ? 26 : 24),
                     bold: true
                   }));
@@ -762,7 +775,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (afterText) {
                 textRuns.push(new TextRun({
                   text: afterText,
-                  font: "Arial",
+                  font: getFontForText(afterText),
                   size: isTitle ? 28 : (isHeading ? 26 : 24),
                   bold: false
                 }));
@@ -835,7 +848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 cellParagraphs.push(new Paragraph({
                   children: [new TextRun({
                     text: "Passport Size Photo",
-                    font: "Arial",
+                    font: getFontForText("Passport Size Photo"),
                     size: 20
                   })],
                   alignment: AlignmentType.CENTER,
@@ -855,7 +868,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     cellParagraphs.push(new Paragraph({
                       children: [new TextRun({
                         text: trimmedLine,
-                        font: "Arial",
+                        font: getFontForText(trimmedLine),
                         size: isName ? 28 : 24,
                         bold: isName,
                         italics: isRole
@@ -870,7 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 cellParagraphs.push(new Paragraph({
                   children: [new TextRun({
                     text: "________________________",
-                    font: "Arial",
+                    font: getFontForText("________________________"),
                     size: 22
                   })],
                   alignment: AlignmentType.LEFT,
@@ -881,7 +894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 cellParagraphs.push(new Paragraph({
                   children: [new TextRun({
                     text: cellContent,
-                    font: "Arial",
+                    font: getFontForText(cellContent),
                     size: 22
                   })],
                   alignment: AlignmentType.LEFT
