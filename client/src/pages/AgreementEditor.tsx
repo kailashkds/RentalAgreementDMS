@@ -23,8 +23,20 @@ import {
   Indent,
   Outdent,
   Undo,
-  Redo
+  Redo,
+  Search,
+  Replace,
+  Upload,
+  Image,
+  Plus,
+  Minus,
+  Move,
+  X
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 // HTML2PDF with proper typing
 declare const html2pdf: any;
@@ -43,6 +55,16 @@ export default function AgreementEditor() {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  
+  // Find & Replace functionality
+  const [showFindReplace, setShowFindReplace] = useState(false);
+  const [findText, setFindText] = useState('');
+  const [replaceText, setReplaceText] = useState('');
+  
+  // Image upload functionality
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Get data from URL params or local storage
   const urlParams = new URLSearchParams(window.location.search);
@@ -66,6 +88,77 @@ export default function AgreementEditor() {
       if (tableWrapper) {
         tableWrapper.remove();
         handleContentChange();
+      }
+    };
+
+    (window as any).addTableRow = (tableId: string) => {
+      const table = document.getElementById(tableId);
+      if (table) {
+        const tbody = table.querySelector('tbody') || table;
+        const firstRow = tbody.querySelector('tr');
+        if (firstRow) {
+          const newRow = firstRow.cloneNode(true) as HTMLElement;
+          const cells = newRow.querySelectorAll('td, th');
+          cells.forEach((cell, index) => {
+            (cell as HTMLElement).innerHTML = `<div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 6px; height: 6px; background: #007bff; opacity: 0; cursor: se-resize; border-radius: 1px;"></div>${index === 0 ? (tbody.children.length + 1) + '.' : 'New content...'}`;
+          });
+          tbody.appendChild(newRow);
+          handleContentChange();
+        }
+      }
+    };
+
+    (window as any).addTableCol = (tableId: string) => {
+      const table = document.getElementById(tableId);
+      if (table) {
+        const rows = table.querySelectorAll('tr');
+        rows.forEach((row, rowIndex) => {
+          const newCell = document.createElement(rowIndex === 0 ? 'th' : 'td');
+          newCell.style.border = '1px solid #ddd';
+          newCell.style.padding = '12px';
+          newCell.style.position = 'relative';
+          newCell.contentEditable = 'true';
+          if (rowIndex === 0) {
+            newCell.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            newCell.style.color = 'white';
+            newCell.style.fontWeight = 'bold';
+            newCell.style.textAlign = 'center';
+            newCell.innerHTML = 'New Column';
+          } else {
+            newCell.style.background = rowIndex % 2 === 0 ? '#fff' : '#f8f9fa';
+            newCell.innerHTML = '<div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 6px; height: 6px; background: #007bff; opacity: 0; cursor: se-resize; border-radius: 1px;"></div>New content...';
+          }
+          row.appendChild(newCell);
+        });
+        handleContentChange();
+      }
+    };
+
+    (window as any).removeTableRow = (tableId: string) => {
+      const table = document.getElementById(tableId);
+      if (table) {
+        const tbody = table.querySelector('tbody') || table;
+        const rows = tbody.querySelectorAll('tr');
+        if (rows.length > 1) {
+          rows[rows.length - 1].remove();
+          handleContentChange();
+        }
+      }
+    };
+
+    (window as any).removeTableCol = (tableId: string) => {
+      const table = document.getElementById(tableId);
+      if (table) {
+        const rows = table.querySelectorAll('tr');
+        const firstRow = rows[0];
+        if (firstRow && firstRow.children.length > 1) {
+          rows.forEach(row => {
+            if (row.children.length > 0) {
+              row.removeChild(row.children[row.children.length - 1]);
+            }
+          });
+          handleContentChange();
+        }
       }
     };
 
@@ -227,6 +320,179 @@ export default function AgreementEditor() {
     }
   };
 
+  // Find & Replace functionality
+  const handleFind = () => {
+    if (!findText || !editorRef.current) return;
+    
+    const content = editorRef.current.innerHTML;
+    const searchRegex = new RegExp(findText, 'gi');
+    const matches = content.match(searchRegex);
+    
+    if (matches) {
+      // Highlight found text
+      const highlightedContent = content.replace(searchRegex, `<mark style="background-color: yellow;">$&</mark>`);
+      editorRef.current.innerHTML = highlightedContent;
+      
+      toast({
+        title: "Search Complete",
+        description: `Found ${matches.length} instances of "${findText}"`,
+      });
+    } else {
+      toast({
+        title: "No matches found",
+        description: `No instances of "${findText}" were found.`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleReplace = () => {
+    if (!findText || !editorRef.current) return;
+    
+    const content = editorRef.current.innerHTML;
+    // Remove existing highlights first
+    const cleanContent = content.replace(/<mark[^>]*>(.*?)<\/mark>/gi, '$1');
+    
+    const searchRegex = new RegExp(findText, 'gi');
+    const matches = cleanContent.match(searchRegex);
+    
+    if (matches) {
+      const replacedContent = cleanContent.replace(searchRegex, replaceText);
+      editorRef.current.innerHTML = replacedContent;
+      handleContentChange();
+      
+      toast({
+        title: "Replace Complete",
+        description: `Replaced ${matches.length} instances of "${findText}" with "${replaceText}"`,
+      });
+    } else {
+      toast({
+        title: "No matches found",
+        description: `No instances of "${findText}" were found to replace.`,
+        variant: "destructive"
+      });
+    }
+    
+    // Clear search state
+    setFindText('');
+    setReplaceText('');
+    setShowFindReplace(false);
+  };
+
+  // Image upload functionality
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          setUploadedImages(prev => [...prev, imageUrl]);
+          insertImage(imageUrl);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        toast({
+          title: "Invalid file type",
+          description: "Please select image files only (JPG, PNG, GIF, etc.)",
+          variant: "destructive"
+        });
+      }
+    });
+  };
+
+  const insertImage = (imageUrl: string) => {
+    if (!editorRef.current) return;
+    
+    const imageHtml = `
+      <div class="image-container" style="margin: 20px 0; text-align: center;">
+        <img src="${imageUrl}" 
+             style="max-width: 100%; height: auto; border: 1px solid #ccc; cursor: pointer;" 
+             onclick="this.style.maxWidth = this.style.maxWidth === '50%' ? '100%' : '50%'"
+             alt="Uploaded image" />
+        <div style="font-size: 10px; color: #666; margin-top: 5px;">
+          Click image to resize • Drag to reposition
+        </div>
+      </div>
+    `;
+    
+    // Insert at cursor position
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createRange().createContextualFragment(imageHtml));
+    } else {
+      // Append to end if no selection
+      editorRef.current.insertAdjacentHTML('beforeend', imageHtml);
+    }
+    
+    handleContentChange();
+    setShowImageUpload(false);
+    
+    toast({
+      title: "Image Added",
+      description: "Image inserted successfully. Click to resize.",
+    });
+  };
+
+  // Enhanced signature section management
+  const addSignatureSection = () => {
+    if (!editorRef.current) return;
+    
+    const signatureHtml = `
+      <div class="signature-section" style="margin: 40px 0; border: 1px dashed #007bff; padding: 20px; position: relative;">
+        <div style="position: absolute; top: 5px; right: 5px;">
+          <button onclick="this.parentElement.parentElement.remove(); handleContentChange();" 
+                  style="background: #dc3545; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 12px;">
+            ×
+          </button>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: end; margin-top: 20px;">
+          <div style="text-align: left; width: 45%;">
+            <div style="border-bottom: 1px solid #000; width: 200px; height: 40px; margin-bottom: 10px;"></div>
+            <div contenteditable="true" style="font-weight: bold; outline: none; border: 1px dashed #ccc; padding: 4px;">
+              [Name]
+            </div>
+            <div contenteditable="true" style="font-size: 12px; outline: none; border: 1px dashed #ccc; padding: 4px; margin-top: 2px;">
+              [Role/Title]
+            </div>
+            <div style="font-size: 12px; margin-top: 5px;">Date: ___________</div>
+          </div>
+          <div style="text-align: right; width: 45%;">
+            <div style="border-bottom: 1px solid #000; width: 200px; height: 40px; margin-bottom: 10px; margin-left: auto;"></div>
+            <div contenteditable="true" style="font-weight: bold; outline: none; border: 1px dashed #ccc; padding: 4px; text-align: center;">
+              [Name]
+            </div>
+            <div contenteditable="true" style="font-size: 12px; outline: none; border: 1px dashed #ccc; padding: 4px; margin-top: 2px; text-align: center;">
+              [Role/Title]
+            </div>
+            <div style="font-size: 12px; margin-top: 5px; text-align: center;">Date: ___________</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Insert at cursor position or at end
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createRange().createContextualFragment(signatureHtml));
+    } else {
+      editorRef.current.insertAdjacentHTML('beforeend', signatureHtml);
+    }
+    
+    handleContentChange();
+    
+    toast({
+      title: "Signature Section Added",
+      description: "Click on the name/role fields to edit them.",
+    });
+  };
+
   const formatText = (command: string, value?: string) => {
     document.execCommand(command, false, value);
     handleContentChange();
@@ -334,39 +600,69 @@ export default function AgreementEditor() {
   const insertTable = () => {
     const tableId = 'table_' + Date.now();
     const tableHtml = `
-      <div class="table-wrapper" style="position: relative; margin: 20px 0; border: 2px solid transparent; border-radius: 4px;">
-        <!-- Table Controls -->
-        <div class="table-controls" style="position: absolute; top: -45px; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 4px; opacity: 0; transition: opacity 0.2s; display: flex; gap: 2px;">
-          <button onclick="addTableRow('${tableId}')" style="background: #28a745; color: white; border: none; padding: 2px 6px; border-radius: 2px; cursor: pointer; font-size: 11px;" title="Add Row">+Row</button>
-          <button onclick="addTableCol('${tableId}')" style="background: #007bff; color: white; border: none; padding: 2px 6px; border-radius: 2px; cursor: pointer; font-size: 11px;" title="Add Column">+Col</button>
-          <button onclick="deleteTable('${tableId}')" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 2px; cursor: pointer; font-size: 11px;" title="Delete Table">Delete</button>
+      <div class="table-wrapper" style="position: relative; margin: 30px 0; border: 2px solid transparent; border-radius: 8px; background: #f8f9fa; padding: 15px;">
+        <!-- Enhanced Table Controls -->
+        <div class="table-controls" style="position: absolute; top: -50px; right: 0; background: white; border: 1px solid #ddd; border-radius: 6px; padding: 6px; opacity: 0; transition: opacity 0.3s; display: flex; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+          <button onclick="addTableRow('${tableId}')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Add Row">+ Row</button>
+          <button onclick="addTableCol('${tableId}')" style="background: #007bff; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Add Column">+ Col</button>
+          <button onclick="removeTableRow('${tableId}')" style="background: #ffc107; color: #212529; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Remove Row">- Row</button>
+          <button onclick="removeTableCol('${tableId}')" style="background: #fd7e14; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Remove Column">- Col</button>
+          <button onclick="deleteTable('${tableId}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Delete Table">🗑 Delete</button>
         </div>
 
-        <table id="${tableId}" class="agreement-table" style="width: 100%; border-collapse: collapse; position: relative;" contenteditable="false">
-          <tr>
-            <td style="border: 1px solid #000; padding: 12px; position: relative; background: #f8f9fa;" 
-                contenteditable="true">
-              <strong>Clause</strong>
-            </td>
-            <td style="border: 1px solid #000; padding: 12px; position: relative; background: #f8f9fa;" 
-                contenteditable="true">
-              <strong>Description</strong>
-            </td>
-          </tr>
-          <tr>
-            <td style="border: 1px solid #000; padding: 12px; position: relative;" 
-                contenteditable="true">
-              1.
-            </td>
-            <td style="border: 1px solid #000; padding: 12px; position: relative;" 
-                contenteditable="true">
-              Enter clause details here...
-            </td>
-          </tr>
+        <!-- Row/Column Add Handles -->
+        <div class="row-handles" style="position: absolute; left: -25px; top: 15px; bottom: 15px; width: 20px; opacity: 0; transition: opacity 0.3s;">
+          <div class="row-add-handle" data-row="0" style="position: absolute; top: 0; width: 20px; height: 20px; background: #28a745; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;" title="Add row above">+</div>
+          <div class="row-add-handle" data-row="1" style="position: absolute; bottom: 0; width: 20px; height: 20px; background: #28a745; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;" title="Add row below">+</div>
+        </div>
+        
+        <div class="col-handles" style="position: absolute; top: -25px; left: 15px; right: 15px; height: 20px; opacity: 0; transition: opacity 0.3s;">
+          <div class="col-add-handle" data-col="0" style="position: absolute; left: 0; width: 20px; height: 20px; background: #007bff; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;" title="Add column left">+</div>
+          <div class="col-add-handle" data-col="1" style="position: absolute; right: 0; width: 20px; height: 20px; background: #007bff; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;" title="Add column right">+</div>
+        </div>
+
+        <table id="${tableId}" class="agreement-table" style="width: 100%; border-collapse: collapse; position: relative; background: white; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" contenteditable="false">
+          <thead>
+            <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+              <th style="border: 1px solid #333; padding: 15px; color: white; font-weight: bold; text-align: center;" contenteditable="true">Clause</th>
+              <th style="border: 1px solid #333; padding: 15px; color: white; font-weight: bold; text-align: center;" contenteditable="true">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 12px; position: relative; background: #fff;" contenteditable="true">
+                <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 6px; height: 6px; background: #007bff; opacity: 0; cursor: se-resize; border-radius: 1px;"></div>
+                1.
+              </td>
+              <td style="border: 1px solid #ddd; padding: 12px; position: relative; background: #fff;" contenteditable="true">
+                <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 6px; height: 6px; background: #007bff; opacity: 0; cursor: se-resize; border-radius: 1px;"></div>
+                Enter clause details here...
+              </td>
+            </tr>
+            <tr style="background: #f8f9fa;">
+              <td style="border: 1px solid #ddd; padding: 12px; position: relative;" contenteditable="true">
+                <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 6px; height: 6px; background: #007bff; opacity: 0; cursor: se-resize; border-radius: 1px;"></div>
+                2.
+              </td>
+              <td style="border: 1px solid #ddd; padding: 12px; position: relative;" contenteditable="true">
+                <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 6px; height: 6px; background: #007bff; opacity: 0; cursor: se-resize; border-radius: 1px;"></div>
+                Enter additional clause details...
+              </td>
+            </tr>
+          </tbody>
         </table>
+        
+        <div style="text-align: center; margin-top: 10px; color: #6c757d; font-size: 11px;">
+          Hover to show controls • Click cells to edit • Drag corners to resize
+        </div>
       </div>
     `;
     insertAtCursor(tableHtml);
+    
+    toast({
+      title: "Advanced Table Added",
+      description: "Professional table with enhanced controls inserted.",
+    });
   };
 
   const insertSignatureSection = () => {
@@ -466,6 +762,9 @@ export default function AgreementEditor() {
       setIsGeneratingPdf(false);
     }
   };
+
+  // Utility functions already defined above
+
 
   const goBack = () => {
     if (isDirty) {
@@ -648,14 +947,81 @@ export default function AgreementEditor() {
                 </div>
               </div>
 
-              {/* Row 3: Document Elements */}
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Row 3: Advanced Features */}
+              <div className="flex flex-wrap items-center gap-2 mb-2 pb-2 border-b border-gray-200">
                 <div className="flex items-center gap-1 border-r pr-2">
-                  <Button variant="ghost" size="sm" onClick={insertTable} className="h-8 px-2" title="Insert Table">
+                  <Dialog open={showFindReplace} onOpenChange={setShowFindReplace}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 px-2" title="Find & Replace">
+                        <Search className="h-4 w-4 mr-1" />
+                        Find
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Find & Replace</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 pt-4">
+                        <div>
+                          <Label htmlFor="find-text">Find:</Label>
+                          <Input
+                            id="find-text"
+                            value={findText}
+                            onChange={(e) => setFindText(e.target.value)}
+                            placeholder="Enter text to find..."
+                            onKeyDown={(e) => e.key === 'Enter' && handleFind()}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="replace-text">Replace with:</Label>
+                          <Input
+                            id="replace-text"
+                            value={replaceText}
+                            onChange={(e) => setReplaceText(e.target.value)}
+                            placeholder="Enter replacement text..."
+                            onKeyDown={(e) => e.key === 'Enter' && handleReplace()}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button onClick={handleFind} variant="outline" className="flex-1">
+                            <Search className="h-4 w-4 mr-2" />
+                            Find All
+                          </Button>
+                          <Button onClick={handleReplace} className="flex-1">
+                            <Replace className="h-4 w-4 mr-2" />
+                            Replace All
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 px-2" 
+                    title="Upload Image"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-1" />
+                    Image
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    style={{ display: 'none' }}
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 border-r pr-2">
+                  <Button variant="ghost" size="sm" onClick={insertTable} className="h-8 px-2" title="Insert Advanced Table">
                     <Table className="h-4 w-4 mr-1" />
                     Table
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={insertSignatureSection} className="h-8 px-2" title="Add Signature">
+                  <Button variant="ghost" size="sm" onClick={addSignatureSection} className="h-8 px-2" title="Add Enhanced Signature">
                     <FileText className="h-4 w-4 mr-1" />
                     Signature
                   </Button>
@@ -664,9 +1030,6 @@ export default function AgreementEditor() {
                 <div className="flex items-center gap-1 border-r pr-2">
                   <Button variant="ghost" size="sm" onClick={insertPageBreak} className="h-8 px-2" title="Page Break">
                     ⏎ Page Break
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={insertImagePlaceholder} className="h-8 px-2" title="Image Placeholder">
-                    🖼 Image
                   </Button>
                 </div>
 
@@ -677,6 +1040,13 @@ export default function AgreementEditor() {
                   <Button variant="ghost" size="sm" onClick={() => formatText('redo')} className="h-8 w-8 p-0" title="Redo">
                     <Redo className="h-4 w-4" />
                   </Button>
+                </div>
+              </div>
+              
+              {/* Row 4: Document Elements */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                  Professional Legal Editor • Advanced Table Controls • Multiple Signatures • Image Upload • Find & Replace
                 </div>
               </div>
             </div>
