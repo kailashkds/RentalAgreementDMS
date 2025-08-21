@@ -109,15 +109,13 @@ export default function Agreements() {
     }
   };
 
-  // Get date range for server-side filtering
-  const dateRange = dateFilter !== "all" && dateFilter !== "" ? getDateRange(dateFilter) : null;
-
   const { data: agreementsData, isLoading } = useAgreements({
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
-    dateFilter: dateFilter === "all" ? "" : dateFilter,
-    startDate: dateRange?.start?.toISOString().split('T')[0] || (customStartDate ? customStartDate.toISOString().split('T')[0] : undefined),
-    endDate: dateRange?.end?.toISOString().split('T')[0] || (customEndDate ? customEndDate.toISOString().split('T')[0] : undefined),
+    dateFilter: dateFilter === "all" ? "" : (dateFilter === "custom" ? "" : dateFilter),
+    // Only send custom start/end dates when using custom filter
+    startDate: dateFilter === "custom" && customStartDate ? customStartDate.toISOString().split('T')[0] : undefined,
+    endDate: dateFilter === "custom" && customEndDate ? customEndDate.toISOString().split('T')[0] : undefined,
     limit: 20,
     offset: (currentPage - 1) * 20,
   });

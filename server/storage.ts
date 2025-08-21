@@ -452,24 +452,9 @@ export class DatabaseStorage implements IStorage {
     // Build date condition for agreement end date filtering
     let dateCondition;
     
-    // Only apply date filtering if we have valid date parameters and it's not 'all'
-    if (startDate && endDate && startDate.trim() && endDate.trim()) {
-      try {
-        // Custom date range filtering - validate dates first
-        const parsedStart = new Date(startDate.trim());
-        const parsedEnd = new Date(endDate.trim());
-        
-        if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
-          dateCondition = and(
-            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDate.trim()})`,
-            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDate.trim()})`
-          );
-        }
-      } catch (e) {
-        console.error('Invalid custom date range:', startDate, endDate);
-      }
-    } else if (dateFilter && dateFilter.trim() && 
-              ['today', 'tomorrow', 'thisWeek', 'thisMonth', 'next3Months', 'next6Months', 'thisYear'].includes(dateFilter.trim())) {
+    // Priority: If dateFilter is provided, use it and ignore startDate/endDate from frontend
+    if (dateFilter && dateFilter.trim() && 
+        ['today', 'tomorrow', 'thisWeek', 'thisMonth', 'next3Months', 'next6Months', 'thisYear'].includes(dateFilter.trim())) {
       // Calculate date range for predefined filters
       const today = new Date();
       let startDateStr: string | undefined;
@@ -555,6 +540,22 @@ export class DatabaseStorage implements IStorage {
         }
       } else {
         console.log(`[Date Filter] No valid date range calculated for filter: ${dateFilter}`);
+      }
+    } else if (startDate && endDate && startDate.trim() && endDate.trim()) {
+      try {
+        // Custom date range filtering - only when no predefined dateFilter
+        const parsedStart = new Date(startDate.trim());
+        const parsedEnd = new Date(endDate.trim());
+        
+        if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
+          dateCondition = and(
+            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDate.trim()})`,
+            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDate.trim()})`
+          );
+          console.log(`[Date Filter] Applied custom range: ${startDate.trim()} to ${endDate.trim()}`);
+        }
+      } catch (e) {
+        console.error('Invalid custom date range:', startDate, endDate);
       }
     }
     // For 'all' filter or no filter, dateCondition remains undefined (no date filtering)
