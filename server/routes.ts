@@ -1011,12 +1011,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Add Aadhaar if exists
           if (safeAgreementData.ownerDocuments?.aadharUrl) {
-            await addDocumentImage(safeAgreementData.ownerDocuments.aadharUrl, "Aadhaar Card:", "Landlord Aadhaar");
+            await addDocumentImage(safeAgreementData.ownerDocuments.aadharUrl, "Landlord Aadhaar");
           }
           
           // Add PAN if exists
           if (safeAgreementData.ownerDocuments?.panUrl) {
-            await addDocumentImage(safeAgreementData.ownerDocuments.panUrl, "PAN Card:", "Landlord PAN");
+            await addDocumentImage(safeAgreementData.ownerDocuments.panUrl, "Landlord PAN");
           }
         }
         
@@ -1040,12 +1040,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Add Aadhaar if exists
           if (safeAgreementData.tenantDocuments?.aadharUrl) {
-            await addDocumentImage(safeAgreementData.tenantDocuments.aadharUrl, "Aadhaar Card:", "Tenant Aadhaar");
+            await addDocumentImage(safeAgreementData.tenantDocuments.aadharUrl, "Tenant Aadhaar");
           }
           
           // Add PAN if exists
           if (safeAgreementData.tenantDocuments?.panUrl) {
-            await addDocumentImage(safeAgreementData.tenantDocuments.panUrl, "PAN Card:", "Tenant PAN");
+            await addDocumentImage(safeAgreementData.tenantDocuments.panUrl, "Tenant PAN");
           }
         }
         
@@ -1053,14 +1053,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Helper function to add document image
-      const addDocumentImage = async (docUrl: string, titleText: string, logName: string) => {
-        const title = createParagraph(titleText, {
-          size: 24,
-          bold: false,
-          alignment: AlignmentType.LEFT,
-          spacing: { before: 240, after: 240 }
-        });
-        if (title) documentParagraphs.push(title);
+      const addDocumentImage = async (docUrl: string, logName: string) => {
         
         try {
           // Handle different URL formats
