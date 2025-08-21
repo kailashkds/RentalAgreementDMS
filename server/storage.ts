@@ -452,66 +452,80 @@ export class DatabaseStorage implements IStorage {
     // Build date condition for agreement end date filtering
     let dateCondition;
     
-    console.log('Date filter params:', { dateFilter, startDate, endDate });
-    
-    if (startDate && endDate && startDate.trim() !== "" && endDate.trim() !== "") {
-      console.log('Using provided date range:', startDate, 'to', endDate);
-      // Use the provided date range - filter by agreement end date
+    if (startDate && endDate) {
+      // Custom date range filtering
       dateCondition = and(
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDate})`,
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDate})`
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDate}`,
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDate}`
       );
-    } else if (dateFilter && dateFilter.trim() !== "" && dateFilter !== 'all' && dateFilter !== 'custom') {
-      // Calculate date range on server-side for predefined filters
+    } else if (dateFilter && dateFilter !== 'all') {
+      // Calculate date range for predefined filters
       const today = new Date();
-      let rangeStart: Date;
-      let rangeEnd: Date;
+      let startDateStr: string;
+      let endDateStr: string;
 
       switch (dateFilter) {
         case 'today':
-          rangeStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-          rangeEnd = new Date(rangeStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+          // Today: end_date == today
+          const todayStr = today.toISOString().split('T')[0];
+          startDateStr = todayStr;
+          endDateStr = todayStr;
           break;
         case 'tomorrow':
+          // Tomorrow: end_date == (today + 1)
           const tomorrow = new Date(today);
           tomorrow.setDate(today.getDate() + 1);
-          rangeStart = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
-          rangeEnd = new Date(rangeStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+          const tomorrowStr = tomorrow.toISOString().split('T')[0];
+          startDateStr = tomorrowStr;
+          endDateStr = tomorrowStr;
           break;
         case 'thisWeek':
-          rangeStart = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
-          rangeEnd = endOfWeek(today, { weekStartsOn: 0 });
+          // This Week: end_date between Monday and Sunday of current week
+          const currentDay = today.getDay();
+          const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+          const monday = new Date(today);
+          monday.setDate(today.getDate() + mondayOffset);
+          const sunday = new Date(monday);
+          sunday.setDate(monday.getDate() + 6);
+          startDateStr = monday.toISOString().split('T')[0];
+          endDateStr = sunday.toISOString().split('T')[0];
           break;
         case 'thisMonth':
-          rangeStart = startOfMonth(today);
-          rangeEnd = endOfMonth(today);
+          // This Month: end_date between first and last day of current month
+          const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+          const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          startDateStr = firstDay.toISOString().split('T')[0];
+          endDateStr = lastDay.toISOString().split('T')[0];
           break;
         case 'next3Months':
-          rangeStart = today;
-          rangeEnd = addMonths(today, 3);
+          // Next 3 Months: end_date between today and (today + 3 months)
+          const threeMonthsLater = new Date(today);
+          threeMonthsLater.setMonth(today.getMonth() + 3);
+          startDateStr = today.toISOString().split('T')[0];
+          endDateStr = threeMonthsLater.toISOString().split('T')[0];
           break;
         case 'next6Months':
-          rangeStart = today;
-          rangeEnd = addMonths(today, 6);
+          // Next 6 Months: end_date between today and (today + 6 months)
+          const sixMonthsLater = new Date(today);
+          sixMonthsLater.setMonth(today.getMonth() + 6);
+          startDateStr = today.toISOString().split('T')[0];
+          endDateStr = sixMonthsLater.toISOString().split('T')[0];
           break;
         case 'thisYear':
-          rangeStart = startOfYear(today);
-          rangeEnd = endOfYear(today);
+          // This Year: end_date between January 1st and December 31st of current year
+          const yearStart = new Date(today.getFullYear(), 0, 1);
+          const yearEnd = new Date(today.getFullYear(), 11, 31);
+          startDateStr = yearStart.toISOString().split('T')[0];
+          endDateStr = yearEnd.toISOString().split('T')[0];
           break;
         default:
-          rangeStart = today;
-          rangeEnd = today;
+          return { agreements: [], total: 0 };
       }
-
-      const startDateStr = rangeStart.toISOString().split('T')[0];
-      const endDateStr = rangeEnd.toISOString().split('T')[0];
-      
-      console.log('Calculated date range for filter:', dateFilter, startDateStr, 'to', endDateStr);
       
       // Filter by agreement end date using calculated date range
       dateCondition = and(
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDateStr})`,
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDateStr})`
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDateStr}`,
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDateStr}`
       );
     }
     
