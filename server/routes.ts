@@ -467,22 +467,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] ✓ Converting landlord signature to table: ${ownerName}`);
             
             return `
-<table border="1" cellpadding="15" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 2px solid #000;">
+<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #000;">
   <tr>
-    <td width="65%" style="padding: 20px; vertical-align: top; border-right: 2px solid #000;">
-      <p style="font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0 0 10px 0;">${ownerName}</p>
-      <p style="font-size: 14px; font-style: italic; margin: 0 0 40px 0;">${role}</p>
-      <p style="margin: 0; border-top: 2px solid #000; width: 200px; height: 20px;">&nbsp;</p>
+    <td width="60%" style="padding: 15px; vertical-align: top; border-right: 1px solid #000;">
+      <p style="font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; color: green;">${ownerName}</p>
+      <p style="font-size: 14px; font-style: italic; margin: 0 0 60px 0; color: green;">${role}</p>
+      <div style="margin: 20px 0;">
+        <p style="margin: 0 0 5px 0; font-size: 12px;">_________________________</p>
+        <p style="margin: 0; font-size: 12px; text-align: center; width: 200px;">Signature</p>
+      </div>
     </td>
-    <td width="35%" style="padding: 20px; text-align: center; vertical-align: middle;">
-      <div style="border: 2px dashed #666; width: 140px; height: 180px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">
-        <div style="text-align: center; line-height: 1.3;">
-          Passport<br>Size<br>Photo
-        </div>
+    <td width="40%" style="padding: 15px; text-align: center; vertical-align: top;">
+      <div style="border: 1px dashed #000; width: 120px; height: 140px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #666;">
+        Passport Size Photo
       </div>
     </td>
   </tr>
-</table>`;
+</table>
+<div style="margin: 30px 0 20px 0;">
+  <p style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">Witnesses</p>
+  <table style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td style="width: 45%; padding: 0 10px 0 0;">
+        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
+      </td>
+      <td style="width: 10%; text-align: center;">&nbsp;</td>
+      <td style="width: 45%; padding: 0 0 0 10px;">
+        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
+      </td>
+    </tr>
+  </table>
+</div>`;
           }
           
           return match;
@@ -503,22 +518,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] ✓ Converting tenant signature to table: ${tenantName}`);
             
             return `
-<table border="1" cellpadding="15" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 2px solid #000;">
+<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #000;">
   <tr>
-    <td width="65%" style="padding: 20px; vertical-align: top; border-right: 2px solid #000;">
-      <p style="font-size: 18px; font-weight: bold; text-transform: uppercase; margin: 0 0 10px 0;">${tenantName}</p>
-      <p style="font-size: 14px; font-style: italic; margin: 0 0 40px 0;">${role}</p>
-      <p style="margin: 0; border-top: 2px solid #000; width: 200px; height: 20px;">&nbsp;</p>
+    <td width="60%" style="padding: 15px; vertical-align: top; border-right: 1px solid #000;">
+      <p style="font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; color: green;">${tenantName}</p>
+      <p style="font-size: 14px; font-style: italic; margin: 0 0 60px 0; color: green;">${role}</p>
+      <div style="margin: 20px 0;">
+        <p style="margin: 0 0 5px 0; font-size: 12px;">_________________________</p>
+        <p style="margin: 0; font-size: 12px; text-align: center; width: 200px;">Signature</p>
+      </div>
     </td>
-    <td width="35%" style="padding: 20px; text-align: center; vertical-align: middle;">
-      <div style="border: 2px dashed #666; width: 140px; height: 180px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">
-        <div style="text-align: center; line-height: 1.3;">
-          Passport<br>Size<br>Photo
-        </div>
+    <td width="40%" style="padding: 15px; text-align: center; vertical-align: top;">
+      <div style="border: 1px dashed #000; width: 120px; height: 140px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #666;">
+        Passport Size Photo
       </div>
     </td>
   </tr>
-</table>`;
+</table>
+<div style="margin: 30px 0 20px 0;">
+  <p style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">Witnesses</p>
+  <table style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td style="width: 45%; padding: 0 10px 0 0;">
+        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
+      </td>
+      <td style="width: 10%; text-align: center;">&nbsp;</td>
+      <td style="width: 45%; padding: 0 0 0 10px;">
+        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
+      </td>
+    </tr>
+  </table>
+</div>`;
           }
           
           return match;
