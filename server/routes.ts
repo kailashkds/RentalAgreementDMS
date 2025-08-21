@@ -424,6 +424,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let cleanedHtml = processedHtml
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        // Remove signature section checkmarks that create duplicate document titles
+        .replace(/<p[^>]*>\s*✓\s*(Aadhar Card Attached|PAN Card Attached|Aadhaar Card Attached)\s*<\/p>/gi, '')
+        .replace(/<p[^>]*color:\s*#666[^>]*>\s*✓[^<]*<\/p>/gi, '') // Remove checkmark paragraphs
         // Handle center-aligned elements in HTML
         .replace(/<([^>]*?)text-align:\s*center([^>]*?)>/gi, '<$1text-align:center$2>');
       
