@@ -320,6 +320,18 @@ export default function Agreements() {
     input.click();
   };
 
+  const handleDownloadNotarizedFromTable = (agreement: any) => {
+    const notarizedUrl = agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl;
+    if (notarizedUrl) {
+      const link = document.createElement('a');
+      link.href = notarizedUrl;
+      link.download = agreement.notarizedDocument?.originalName || `${agreement.agreementNumber}-notarized.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   const handleNotarizedFileSelect = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -960,16 +972,28 @@ export default function Agreements() {
                             <Edit className="h-4 w-4" />
                           </Button>
                           {agreement.status === "active" && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-purple-600 hover:text-purple-900"
-                              onClick={() => handleNotarizedUploadFromTable(agreement.id)}
-                              disabled={uploadingNotarized}
-                              title="Upload Notarized Document"
-                            >
-                              <Upload className="h-4 w-4" />
-                            </Button>
+                            agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl ? (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-green-600 hover:text-green-900"
+                                onClick={() => handleDownloadNotarizedFromTable(agreement)}
+                                title="Download Notarized Document"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-purple-600 hover:text-purple-900"
+                                onClick={() => handleNotarizedUploadFromTable(agreement.id)}
+                                disabled={uploadingNotarized}
+                                title="Upload Notarized Document"
+                              >
+                                <Upload className="h-4 w-4" />
+                              </Button>
+                            )
                           )}
                           {agreement.status === "active" && (
                             <Button 
