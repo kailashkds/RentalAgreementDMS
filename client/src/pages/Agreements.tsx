@@ -307,6 +307,19 @@ export default function Agreements() {
     }
   };
 
+  const handleNotarizedUploadFromTable = (agreementId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        handleUploadNotarizedDocument(agreementId, file);
+      }
+    };
+    input.click();
+  };
+
   const handleNotarizedFileSelect = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -946,6 +959,18 @@ export default function Agreements() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
+                          {agreement.status === "active" && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-purple-600 hover:text-purple-900"
+                              onClick={() => handleNotarizedUploadFromTable(agreement.id)}
+                              disabled={uploadingNotarized}
+                              title="Upload Notarized Document"
+                            >
+                              <Upload className="h-4 w-4" />
+                            </Button>
+                          )}
                           {agreement.status === "active" && (
                             <Button 
                               variant="ghost" 
