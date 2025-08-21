@@ -82,83 +82,140 @@ export default function AgreementEditor() {
       editorRef.current.innerHTML = htmlContent;
     }
 
-    // Add global functions for advanced table manipulation
-    (window as any).deleteTable = (tableId: string) => {
-      const tableWrapper = document.getElementById(tableId)?.closest('.table-wrapper');
-      if (tableWrapper) {
-        tableWrapper.remove();
-        handleContentChange();
-      }
-    };
-
-    (window as any).addTableRow = (tableId: string) => {
-      const table = document.getElementById(tableId);
-      if (table) {
-        const tbody = table.querySelector('tbody') || table;
-        const firstRow = tbody.querySelector('tr');
-        if (firstRow) {
-          const newRow = firstRow.cloneNode(true) as HTMLElement;
-          const cells = newRow.querySelectorAll('td, th');
-          cells.forEach((cell, index) => {
-            (cell as HTMLElement).innerHTML = `<div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 6px; height: 6px; background: #007bff; opacity: 0; cursor: se-resize; border-radius: 1px;"></div>${index === 0 ? (tbody.children.length + 1) + '.' : 'New content...'}`;
-          });
-          tbody.appendChild(newRow);
-          handleContentChange();
-        }
-      }
-    };
-
-    (window as any).addTableCol = (tableId: string) => {
-      const table = document.getElementById(tableId);
-      if (table) {
-        const rows = table.querySelectorAll('tr');
-        rows.forEach((row, rowIndex) => {
-          const newCell = document.createElement(rowIndex === 0 ? 'th' : 'td');
-          newCell.style.border = '1px solid #ddd';
-          newCell.style.padding = '12px';
-          newCell.style.position = 'relative';
-          newCell.contentEditable = 'true';
-          if (rowIndex === 0) {
-            newCell.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-            newCell.style.color = 'white';
-            newCell.style.fontWeight = 'bold';
-            newCell.style.textAlign = 'center';
-            newCell.innerHTML = 'New Column';
-          } else {
-            newCell.style.background = rowIndex % 2 === 0 ? '#fff' : '#f8f9fa';
-            newCell.innerHTML = '<div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 6px; height: 6px; background: #007bff; opacity: 0; cursor: se-resize; border-radius: 1px;"></div>New content...';
+    // Define global table functions with proper scope
+    const globalThis = window as any;
+    
+    globalThis.deleteTable = (tableId: string) => {
+      try {
+        const table = document.getElementById(tableId);
+        const tableWrapper = table?.closest('.table-wrapper');
+        if (tableWrapper) {
+          tableWrapper.remove();
+          setIsDirty(true);
+          if (editorRef.current) {
+            sessionStorage.setItem('editorHtmlContent', editorRef.current.innerHTML);
           }
-          row.appendChild(newCell);
-        });
-        handleContentChange();
-      }
-    };
-
-    (window as any).removeTableRow = (tableId: string) => {
-      const table = document.getElementById(tableId);
-      if (table) {
-        const tbody = table.querySelector('tbody') || table;
-        const rows = tbody.querySelectorAll('tr');
-        if (rows.length > 1) {
-          rows[rows.length - 1].remove();
-          handleContentChange();
         }
+      } catch (error) {
+        console.error('Error deleting table:', error);
       }
     };
 
-    (window as any).removeTableCol = (tableId: string) => {
-      const table = document.getElementById(tableId);
-      if (table) {
-        const rows = table.querySelectorAll('tr');
-        const firstRow = rows[0];
-        if (firstRow && firstRow.children.length > 1) {
-          rows.forEach(row => {
-            if (row.children.length > 0) {
-              row.removeChild(row.children[row.children.length - 1]);
+    globalThis.addTableRow = (tableId: string) => {
+      try {
+        const table = document.getElementById(tableId);
+        if (table) {
+          const tbody = table.querySelector('tbody');
+          const targetBody = tbody || table;
+          const lastRow = targetBody.querySelector('tr:last-child');
+          
+          if (lastRow) {
+            const newRow = lastRow.cloneNode(true) as HTMLElement;
+            const cells = newRow.querySelectorAll('td, th');
+            const rowNumber = targetBody.children.length + 1;
+            
+            cells.forEach((cell, index) => {
+              const htmlCell = cell as HTMLElement;
+              if (htmlCell.tagName === 'TD') {
+                htmlCell.innerHTML = `<div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 6px; height: 6px; background: #007bff; opacity: 0; cursor: se-resize; border-radius: 1px;"></div>${index === 0 ? rowNumber + '.' : 'New content...'}`;
+                htmlCell.style.background = rowNumber % 2 === 0 ? '#f8f9fa' : '#fff';
+              }
+            });
+            
+            targetBody.appendChild(newRow);
+            setIsDirty(true);
+            if (editorRef.current) {
+              sessionStorage.setItem('editorHtmlContent', editorRef.current.innerHTML);
             }
-          });
-          handleContentChange();
+          }
         }
+      } catch (error) {
+        console.error('Error adding table row:', error);
+      }
+    };
+
+    globalThis.addTableCol = (tableId: string) => {
+      try {
+        const table = document.getElementById(tableId);
+        if (table) {
+          const rows = table.querySelectorAll('tr');
+          
+          rows.forEach((row, rowIndex) => {
+            const isHeader = rowIndex === 0;
+            const newCell = document.createElement(isHeader ? 'th' : 'td');
+            
+            newCell.style.border = '1px solid #ddd';
+            newCell.style.padding = '12px';
+            newCell.style.position = 'relative';
+            newCell.contentEditable = 'true';
+            
+            if (isHeader) {
+              newCell.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+              newCell.style.color = 'white';
+              newCell.style.fontWeight = 'bold';
+              newCell.style.textAlign = 'center';
+              newCell.innerHTML = 'New Column';
+            } else {
+              newCell.style.background = rowIndex % 2 === 1 ? '#f8f9fa' : '#fff';
+              newCell.innerHTML = '<div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 6px; height: 6px; background: #007bff; opacity: 0; cursor: se-resize; border-radius: 1px;"></div>New content...';
+            }
+            
+            row.appendChild(newCell);
+          });
+          
+          setIsDirty(true);
+          if (editorRef.current) {
+            sessionStorage.setItem('editorHtmlContent', editorRef.current.innerHTML);
+          }
+        }
+      } catch (error) {
+        console.error('Error adding table column:', error);
+      }
+    };
+
+    globalThis.removeTableRow = (tableId: string) => {
+      try {
+        const table = document.getElementById(tableId);
+        if (table) {
+          const tbody = table.querySelector('tbody');
+          const targetBody = tbody || table;
+          const rows = targetBody.querySelectorAll('tr');
+          
+          if (rows.length > 1) {
+            rows[rows.length - 1].remove();
+            setIsDirty(true);
+            if (editorRef.current) {
+              sessionStorage.setItem('editorHtmlContent', editorRef.current.innerHTML);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error removing table row:', error);
+      }
+    };
+
+    globalThis.removeTableCol = (tableId: string) => {
+      try {
+        const table = document.getElementById(tableId);
+        if (table) {
+          const rows = table.querySelectorAll('tr');
+          const firstRow = rows[0];
+          
+          if (firstRow && firstRow.children.length > 1) {
+            rows.forEach(row => {
+              if (row.children.length > 0) {
+                row.removeChild(row.children[row.children.length - 1]);
+              }
+            });
+            
+            setIsDirty(true);
+            if (editorRef.current) {
+              sessionStorage.setItem('editorHtmlContent', editorRef.current.innerHTML);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error removing table column:', error);
       }
     };
 
@@ -241,7 +298,64 @@ export default function AgreementEditor() {
     };
 
     setTimeout(setupTableInteractions, 100);
+    setupTableEventListeners();
   }, [htmlContent]);
+
+  // Setup event listeners for table buttons
+  const setupTableEventListeners = () => {
+    if (!editorRef.current) return;
+
+    // Remove existing listeners to prevent duplicates
+    const existingButtons = editorRef.current.querySelectorAll('.table-btn');
+    existingButtons.forEach(btn => {
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode?.replaceChild(newBtn, btn);
+    });
+
+    // Add click listeners to all table buttons
+    editorRef.current.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      
+      if (target.classList.contains('table-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const action = target.dataset.action;
+        const tableId = target.dataset.table;
+        
+        if (!tableId) return;
+
+        try {
+          switch (action) {
+            case 'addRow':
+              (window as any).addTableRow(tableId);
+              break;
+            case 'addCol':
+              (window as any).addTableCol(tableId);
+              break;
+            case 'removeRow':
+              (window as any).removeTableRow(tableId);
+              break;
+            case 'removeCol':
+              (window as any).removeTableCol(tableId);
+              break;
+            case 'delete':
+              if (confirm('Are you sure you want to delete this table?')) {
+                (window as any).deleteTable(tableId);
+              }
+              break;
+          }
+        } catch (error) {
+          console.error('Error handling table action:', error);
+          toast({
+            title: "Table Action Error",
+            description: "There was an error performing the table action. Please try again.",
+            variant: "destructive"
+          });
+        }
+      }
+    });
+  };
 
   const handleContentChange = () => {
     if (editorRef.current) {
@@ -600,25 +714,14 @@ export default function AgreementEditor() {
   const insertTable = () => {
     const tableId = 'table_' + Date.now();
     const tableHtml = `
-      <div class="table-wrapper" style="position: relative; margin: 30px 0; border: 2px solid transparent; border-radius: 8px; background: #f8f9fa; padding: 15px;">
+      <div class="table-wrapper" data-table-id="${tableId}" style="position: relative; margin: 30px 0; border: 2px solid transparent; border-radius: 8px; background: #f8f9fa; padding: 15px;">
         <!-- Enhanced Table Controls -->
         <div class="table-controls" style="position: absolute; top: -50px; right: 0; background: white; border: 1px solid #ddd; border-radius: 6px; padding: 6px; opacity: 0; transition: opacity 0.3s; display: flex; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
-          <button onclick="addTableRow('${tableId}')" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Add Row">+ Row</button>
-          <button onclick="addTableCol('${tableId}')" style="background: #007bff; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Add Column">+ Col</button>
-          <button onclick="removeTableRow('${tableId}')" style="background: #ffc107; color: #212529; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Remove Row">- Row</button>
-          <button onclick="removeTableCol('${tableId}')" style="background: #fd7e14; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Remove Column">- Col</button>
-          <button onclick="deleteTable('${tableId}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Delete Table">🗑 Delete</button>
-        </div>
-
-        <!-- Row/Column Add Handles -->
-        <div class="row-handles" style="position: absolute; left: -25px; top: 15px; bottom: 15px; width: 20px; opacity: 0; transition: opacity 0.3s;">
-          <div class="row-add-handle" data-row="0" style="position: absolute; top: 0; width: 20px; height: 20px; background: #28a745; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;" title="Add row above">+</div>
-          <div class="row-add-handle" data-row="1" style="position: absolute; bottom: 0; width: 20px; height: 20px; background: #28a745; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;" title="Add row below">+</div>
-        </div>
-        
-        <div class="col-handles" style="position: absolute; top: -25px; left: 15px; right: 15px; height: 20px; opacity: 0; transition: opacity 0.3s;">
-          <div class="col-add-handle" data-col="0" style="position: absolute; left: 0; width: 20px; height: 20px; background: #007bff; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;" title="Add column left">+</div>
-          <div class="col-add-handle" data-col="1" style="position: absolute; right: 0; width: 20px; height: 20px; background: #007bff; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;" title="Add column right">+</div>
+          <button class="table-btn" data-action="addRow" data-table="${tableId}" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Add Row">+ Row</button>
+          <button class="table-btn" data-action="addCol" data-table="${tableId}" style="background: #007bff; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Add Column">+ Col</button>
+          <button class="table-btn" data-action="removeRow" data-table="${tableId}" style="background: #ffc107; color: #212529; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Remove Row">- Row</button>
+          <button class="table-btn" data-action="removeCol" data-table="${tableId}" style="background: #fd7e14; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Remove Column">- Col</button>
+          <button class="table-btn" data-action="delete" data-table="${tableId}" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;" title="Delete Table">🗑 Delete</button>
         </div>
 
         <table id="${tableId}" class="agreement-table" style="width: 100%; border-collapse: collapse; position: relative; background: white; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" contenteditable="false">
@@ -653,15 +756,18 @@ export default function AgreementEditor() {
         </table>
         
         <div style="text-align: center; margin-top: 10px; color: #6c757d; font-size: 11px;">
-          Hover to show controls • Click cells to edit • Drag corners to resize
+          Hover to show controls • Click cells to edit • Professional table functionality
         </div>
       </div>
     `;
     insertAtCursor(tableHtml);
     
+    // Add event listeners for the new table
+    setTimeout(() => setupTableEventListeners(), 100);
+    
     toast({
       title: "Advanced Table Added",
-      description: "Professional table with enhanced controls inserted.",
+      description: "Professional table with enhanced controls inserted. Hover to see controls!",
     });
   };
 
@@ -1081,6 +1187,24 @@ export default function AgreementEditor() {
               /* WYSIWYG Editor Styles */
               .table-wrapper {
                 user-select: none;
+              }
+              
+              /* Table control hover effects */
+              .table-wrapper:hover .table-controls {
+                opacity: 1 !important;
+              }
+              
+              .table-wrapper:hover {
+                border-color: #007bff !important;
+              }
+              
+              .table-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+              }
+              
+              .agreement-table:hover .cell-resize-handle {
+                opacity: 0.6 !important;
               }
               
               .table-wrapper:hover .word-table {
