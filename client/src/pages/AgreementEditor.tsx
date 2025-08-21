@@ -392,8 +392,14 @@ export default function AgreementEditor() {
       
       toast({
         title: "PDF Generated Successfully",
-        description: "The agreement has been opened in a new window for download.",
+        description: "The agreement has been opened in a new window for download. Closing editor...",
       });
+      
+      // Close the editor and return to agreements list after successful PDF generation
+      setTimeout(() => {
+        navigate('/agreements');
+      }, 1500); // Small delay to let user see the success message
+      
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
