@@ -528,8 +528,8 @@ export class DatabaseStorage implements IStorage {
           
           if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
             dateCondition = and(
-              sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDateStr.trim()})`,
-              sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDateStr.trim()})`
+              sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDateStr.trim()}`,
+              sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDateStr.trim()}`
             );
             console.log(`[Date Filter] Applied ${dateFilter} filter: ${startDateStr.trim()} to ${endDateStr.trim()}`);
           } else {
@@ -549,8 +549,8 @@ export class DatabaseStorage implements IStorage {
         
         if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
           dateCondition = and(
-            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDate.trim()})`,
-            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDate.trim()})`
+            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDate.trim()}`,
+            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDate.trim()}`
           );
           console.log(`[Date Filter] Applied custom range: ${startDate.trim()} to ${endDate.trim()}`);
         }
