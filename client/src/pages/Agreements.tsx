@@ -1025,7 +1025,7 @@ export default function Agreements() {
                           {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             agreement.status === "draft"
@@ -1038,7 +1038,7 @@ export default function Agreements() {
                           }`}
                         >
                           {agreement.status === "draft"
-                            ? "Complete Agreement First"
+                            ? "Complete First"
                             : agreement.status === "active"
                             ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
                               ? "Notarized"
@@ -1104,15 +1104,6 @@ export default function Agreements() {
                               <Download className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-blue-600 hover:text-blue-900"
-                            onClick={() => navigate(`/agreement-editor?agreementId=${agreement.id}&agreementNumber=${agreement.agreementNumber}&language=${agreement.language || 'english'}`)}
-                            title="Edit Document"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
