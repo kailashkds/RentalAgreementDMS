@@ -1062,76 +1062,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     }
   };
 
-  // Word document generation function
-  const handleWordGeneration = async () => {
-    const formData = watch();
-    
-    try {
-      let agreement;
-      
-      if (editingAgreement) {
-        // Update existing agreement
-        agreement = await updateAgreement(formData, editingAgreement.id);
-      } else {
-        // Create new agreement
-        agreement = await finalizeAgreement(formData);
-      }
-      
-      const selectedLanguage = formData.language || 'english';
-      
-      // Generate Word document
-      const response = await fetch('/api/agreements/generate-word', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          language: selectedLanguage,
-          agreementNumber: agreement.agreementNumber,
-          documents: documents,
-          ownerDocuments: {
-            aadharUrl: documents.ownerAadhar || null,
-            panUrl: documents.ownerPan || null
-          },
-          tenantDocuments: {
-            aadharUrl: documents.tenantAadhar || null,
-            panUrl: documents.tenantPan || null
-          },
-          propertyDocuments: {
-            urls: documents.propertyDocuments || null
-          }
-        }),
-      });
-
-      if (response.ok) {
-        // Create download link for Word document
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `rental_agreement_${agreement.agreementNumber}.docx`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        
-        toast({
-          title: "Word Document Downloaded",
-          description: `Agreement ${agreement.agreementNumber} has been downloaded as Word document.`,
-        });
-      } else {
-        throw new Error('Failed to generate Word document');
-      }
-    } catch (error) {
-      console.error('Word generation error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate Word document.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const downloadAgreement = async () => {
     const formData = watch();
@@ -2312,21 +2242,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   )}
                 </div>
 
-                {/* Word Document Generation Button */}
-                <div className="border-t pt-4">
-                  <Button 
-                    onClick={handleWordGeneration}
-                    disabled={!canProceed(currentStep)}
-                    className="w-full h-12 text-lg font-semibold bg-green-600 hover:bg-green-700 text-white"
-                    variant="outline"
-                  >
-                    <Download className="mr-2 h-5 w-5" />
-                    Download as Word Document (.docx)
-                  </Button>
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    Alternative format for editing in Microsoft Word or similar applications
-                  </p>
-                </div>
               </CardContent>
             </Card>
           </div>

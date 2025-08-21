@@ -228,6 +228,25 @@ export default function AgreementEditor() {
   const generatePDF = async () => {
     if (!editorRef.current || isGeneratingPdf) return;
     
+    // Auto-save changes before generating PDF
+    if (isDirty) {
+      try {
+        await handleSave();
+        toast({
+          title: "Changes Saved",
+          description: "Your changes have been saved before generating the PDF.",
+        });
+      } catch (error) {
+        console.error('Error saving changes:', error);
+        toast({
+          title: "Save Failed", 
+          description: "Failed to save changes before generating PDF. Please save manually first.",
+          variant: "destructive",
+        });
+        return; // Don't generate PDF if save failed
+      }
+    }
+    
     setIsGeneratingPdf(true);
     try {
       // Get the current editor content
