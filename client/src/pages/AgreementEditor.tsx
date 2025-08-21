@@ -129,36 +129,150 @@ export default function AgreementEditor() {
     
     setIsGeneratingPdf(true);
     try {
+      // Get the current editor content
       const editorContent = editorRef.current.innerHTML;
       
-      const response = await fetch('/api/agreements/generate-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          content: editorContent,
-          agreementNumber,
-          language 
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to generate PDF');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `Agreement_${agreementNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
+      // Create a temporary HTML page for printing/PDF generation
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Agreement - ${agreementNumber}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              @page {
+                margin: 15mm 10mm 20mm 10mm;
+                @bottom-center { content: none; }
+                @bottom-left { content: none; }
+                @bottom-right { 
+                  content: "Page " counter(page) " of " counter(pages);
+                  font-size: 10px;
+                  color: #666;
+                  font-family: ${language === 'gujarati' 
+                    ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif'
+                    : language === 'hindi'
+                    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                    : language === 'tamil'
+                    ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                    : language === 'marathi'
+                    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                    : 'Arial, sans-serif'};
+                }
+                @top-center { content: none; }
+                @top-left { content: none; }
+                @top-right { content: none; }
+              }
+              
+              body { 
+                font-family: ${language === 'gujarati' 
+                  ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
+                  : language === 'hindi'
+                  ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                  : language === 'tamil'
+                  ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                  : language === 'marathi'
+                  ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                  : 'Arial, sans-serif'}; 
+                margin: 0;
+                padding: 20px;
+                line-height: 1.6;
+                background: white;
+                font-size: 14px;
+                text-rendering: optimizeLegibility;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                font-feature-settings: "kern" 1, "liga" 1;
+              }
+              
+              .agreement-content {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                background: white;
+                min-height: 1056px;
+              }
+              
+              /* Enhanced font support for all languages */
+              .gujarati-content, .gujarati-content * {
+                font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif !important;
+              }
+              
+              /* Enhanced English font support and styling */
+              .english-content, .english-content * {
+                font-family: Arial, sans-serif !important;
+                font-size: 14px !important;
+              }
+              
+              /* Consistent spacing for all languages */
+              .party-details p {
+                margin: 3px 0 !important;
+                line-height: 1.5 !important;
+              }
+              
+              /* Title styling */
+              h1, h2, h3 {
+                font-weight: bold !important;
+                margin: 20px 0 15px 0 !important;
+                text-align: center !important;
+              }
+              
+              h1 {
+                font-size: 20px !important;
+              }
+              
+              /* Page break controls */
+              .page-break-before {
+                page-break-before: always !important;
+              }
+              
+              .document-page {
+                page-break-before: always !important;
+                page-break-inside: avoid !important;
+                margin: 20px 0 !important;
+              }
+              
+              .document-page:first-child {
+                page-break-before: auto !important;
+              }
+              
+              /* Hide any editing artifacts */
+              [contenteditable] {
+                -webkit-user-modify: read-only !important;
+                -moz-user-modify: read-only !important;
+                user-modify: read-only !important;
+              }
+              
+              /* Remove any highlight from find/replace */
+              span[style*="background-color: #ffeb3b"] {
+                background-color: transparent !important;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="agreement-content ${language === 'gujarati' ? 'gujarati-content' : 'english-content'}">
+              ${editorContent}
+            </div>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+        
+        // Focus the new window and trigger print dialog
+        printWindow.focus();
+        
+        // Small delay to ensure content is loaded before printing
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      } else {
+        throw new Error('Could not open print window - popup blocked?');
+      }
+      
       toast({
         title: "PDF Generated Successfully",
-        description: "The agreement has been downloaded as a PDF.",
+        description: "The agreement has been opened in a new window for download.",
       });
     } catch (error) {
       console.error('Error generating PDF:', error);
