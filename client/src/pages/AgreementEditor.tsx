@@ -232,6 +232,85 @@ export default function AgreementEditor() {
     handleContentChange();
   };
 
+  // Apply predefined styles for agreements
+  const applyStyle = (styleName: string) => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const element = document.createElement('div');
+    
+    switch (styleName) {
+      case 'agreement-title':
+        element.style.fontSize = '18pt';
+        element.style.fontWeight = 'bold';
+        element.style.textAlign = 'center';
+        element.style.marginBottom = '20px';
+        element.style.textTransform = 'uppercase';
+        break;
+      case 'clause-heading':
+        element.style.fontSize = '14pt';
+        element.style.fontWeight = 'bold';
+        element.style.marginTop = '16px';
+        element.style.marginBottom = '8px';
+        break;
+      case 'body-text':
+        element.style.fontSize = '12pt';
+        element.style.lineHeight = '1.5';
+        element.style.textAlign = 'justify';
+        break;
+      case 'h1':
+        formatText('formatBlock', 'h1');
+        return;
+      case 'h2':
+        formatText('formatBlock', 'h2');
+        return;
+    }
+
+    if (styleName !== 'h1' && styleName !== 'h2') {
+      element.innerHTML = range.toString();
+      range.deleteContents();
+      range.insertNode(element);
+      handleContentChange();
+    }
+  };
+
+  // Set line spacing for paragraphs
+  const setLineSpacing = (spacing: string) => {
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const parentElement = range.commonAncestorContainer.nodeType === Node.TEXT_NODE 
+        ? range.commonAncestorContainer.parentElement 
+        : range.commonAncestorContainer as HTMLElement;
+      
+      if (parentElement && editorRef.current?.contains(parentElement)) {
+        parentElement.style.lineHeight = spacing;
+        handleContentChange();
+      }
+    }
+  };
+
+  // Insert page break
+  const insertPageBreak = () => {
+    const pageBreakHtml = `<div style="page-break-before: always; border-top: 2px dashed #ccc; margin: 20px 0; padding: 10px; text-align: center; color: #666; background: #f9f9f9;">── Page Break ──</div>`;
+    insertAtCursor(pageBreakHtml);
+  };
+
+  // Insert image placeholder
+  const insertImagePlaceholder = () => {
+    const imagePlaceholderHtml = `
+      <div style="border: 2px dashed #007bff; padding: 20px; margin: 10px 0; text-align: center; background: #f8f9fa; border-radius: 4px;">
+        <div style="font-size: 48px; color: #007bff; margin-bottom: 10px;">🖼</div>
+        <div style="color: #666; font-size: 14px;">
+          <strong>Image Placeholder</strong><br>
+          (Passport photo, seal, or document image)
+        </div>
+      </div>
+    `;
+    insertAtCursor(imagePlaceholderHtml);
+  };
+
   const insertAtCursor = (html: string) => {
     if (editorRef.current) {
       editorRef.current.focus();
@@ -255,48 +334,50 @@ export default function AgreementEditor() {
   const insertTable = () => {
     const tableId = 'table_' + Date.now();
     const tableHtml = `
-      <div class="table-wrapper" style="position: relative; margin: 20px 0;">
-        <!-- Row add handles (left side) -->
-        <div class="row-handles" style="position: absolute; left: -30px; top: 0; width: 25px; height: 100%;">
-          <div class="row-add-handle" data-row="0" style="position: absolute; top: -5px; left: 0; width: 20px; height: 10px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add row above">+</div>
-          <div class="row-add-handle" data-row="1" style="position: absolute; top: 35px; left: 0; width: 20px; height: 10px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add row between">+</div>
-          <div class="row-add-handle" data-row="2" style="position: absolute; bottom: -5px; left: 0; width: 20px; height: 10px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add row below">+</div>
-        </div>
-        
-        <!-- Column add handles (top) -->
-        <div class="col-handles" style="position: absolute; top: -30px; left: 0; width: 100%; height: 25px;">
-          <div class="col-add-handle" data-col="0" style="position: absolute; top: 0; left: -5px; width: 10px; height: 20px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add column before">+</div>
-          <div class="col-add-handle" data-col="1" style="position: absolute; top: 0; left: 47.5%; width: 10px; height: 20px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add column between">+</div>
-          <div class="col-add-handle" data-col="2" style="position: absolute; top: 0; right: -5px; width: 10px; height: 20px; background: #007bff; opacity: 0; cursor: pointer; border-radius: 3px;" title="Add column after">+</div>
+      <div class="table-wrapper" style="position: relative; margin: 20px 0; border: 2px solid transparent; border-radius: 4px;">
+        <!-- Table Controls -->
+        <div class="table-controls" style="position: absolute; top: -45px; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 4px; opacity: 0; transition: opacity 0.2s; display: flex; gap: 2px;">
+          <button onclick="addTableRow('${tableId}')" style="background: #28a745; color: white; border: none; padding: 2px 6px; border-radius: 2px; cursor: pointer; font-size: 11px;" title="Add Row">+Row</button>
+          <button onclick="addTableCol('${tableId}')" style="background: #007bff; color: white; border: none; padding: 2px 6px; border-radius: 2px; cursor: pointer; font-size: 11px;" title="Add Column">+Col</button>
+          <button onclick="deleteTable('${tableId}')" style="background: #dc3545; color: white; border: none; padding: 2px 6px; border-radius: 2px; cursor: pointer; font-size: 11px;" title="Delete Table">Delete</button>
         </div>
 
-        <table id="${tableId}" class="word-table" style="width: 100%; border-collapse: collapse; position: relative; cursor: default;" contenteditable="false">
+        <table id="${tableId}" class="agreement-table" style="width: 100%; border-collapse: collapse; position: relative;" contenteditable="false">
           <tr>
-            <td style="border: 1px solid #000; padding: 8px; min-width: 100px; position: relative;" contenteditable="true">
-              Header 1
-              <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>
+            <td style="border: 1px solid #000; padding: 12px; position: relative; background: #f8f9fa;" 
+                contenteditable="true" 
+                oncontextmenu="showCellMenu(event, this)"
+                onclick="selectCell(this)">
+              <strong>Clause</strong>
+              <div class="cell-menu" style="display: none; position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 4px; z-index: 1000; font-size: 12px;">
+                <div onclick="mergeCells(this)" style="padding: 4px 8px; cursor: pointer; hover:background-color: #f0f0f0;">Merge Right</div>
+                <div onclick="splitCell(this)" style="padding: 4px 8px; cursor: pointer; hover:background-color: #f0f0f0;">Split Cell</div>
+                <div onclick="setBorder(this, 'solid')" style="padding: 4px 8px; cursor: pointer; hover:background-color: #f0f0f0;">Solid Border</div>
+                <div onclick="setBorder(this, 'dashed')" style="padding: 4px 8px; cursor: pointer; hover:background-color: #f0f0f0;">Dashed Border</div>
+              </div>
             </td>
-            <td style="border: 1px solid #000; padding: 8px; min-width: 100px; position: relative;" contenteditable="true">
-              Header 2
-              <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>
+            <td style="border: 1px solid #000; padding: 12px; position: relative; background: #f8f9fa;" 
+                contenteditable="true" 
+                oncontextmenu="showCellMenu(event, this)"
+                onclick="selectCell(this)">
+              <strong>Description</strong>
             </td>
           </tr>
           <tr>
-            <td style="border: 1px solid #000; padding: 8px; position: relative;" contenteditable="true">
-              Cell 1
-              <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>
+            <td style="border: 1px solid #000; padding: 12px; position: relative;" 
+                contenteditable="true" 
+                oncontextmenu="showCellMenu(event, this)"
+                onclick="selectCell(this)">
+              1.
             </td>
-            <td style="border: 1px solid #000; padding: 8px; position: relative;" contenteditable="true">
-              Cell 2
-              <div class="cell-resize-handle" style="position: absolute; bottom: -2px; right: -2px; width: 4px; height: 4px; background: #007bff; opacity: 0; cursor: se-resize;"></div>
+            <td style="border: 1px solid #000; padding: 12px; position: relative;" 
+                contenteditable="true" 
+                oncontextmenu="showCellMenu(event, this)"
+                onclick="selectCell(this)">
+              Enter clause details here...
             </td>
           </tr>
         </table>
-        
-        <!-- Table selection and delete controls -->
-        <div class="table-controls" style="position: absolute; top: -50px; right: 0; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 5px; opacity: 0; transition: opacity 0.2s;">
-          <button onclick="deleteTable('${tableId}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;">Delete Table</button>
-        </div>
       </div>
     `;
     insertAtCursor(tableHtml);
@@ -468,24 +549,37 @@ export default function AgreementEditor() {
             </div>
           </CardHeader>
           <CardContent className="pt-2">
-            {/* Microsoft Word-style Comprehensive Toolbar */}
+            {/* Agreement-Focused Document Editor Toolbar */}
             <div className="bg-gray-50 border rounded-lg p-3">
-              {/* Row 1: Text Formatting & Headings */}
+              {/* Row 1: Styles and Font Settings */}
               <div className="flex flex-wrap items-center gap-2 mb-2 pb-2 border-b border-gray-200">
                 <div className="flex items-center gap-1 border-r pr-2">
                   <select 
-                    className="text-sm border rounded px-2 py-1"
-                    onChange={(e) => formatText('formatBlock', e.target.value)}
+                    className="text-sm border rounded px-3 py-1 min-w-[140px]"
+                    onChange={(e) => applyStyle(e.target.value)}
+                    defaultValue="body-text"
                   >
-                    <option value="div">Normal</option>
+                    <option value="agreement-title">Agreement Title</option>
+                    <option value="clause-heading">Clause Heading</option>
+                    <option value="body-text">Body Text</option>
                     <option value="h1">Heading 1</option>
                     <option value="h2">Heading 2</option>
-                    <option value="h3">Heading 3</option>
-                    <option value="p">Paragraph</option>
                   </select>
+                  
+                  <select 
+                    className="text-sm border rounded px-2 py-1 ml-1"
+                    onChange={(e) => formatText('fontName', e.target.value)}
+                    defaultValue="Times New Roman"
+                  >
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Calibri">Calibri</option>
+                  </select>
+                  
                   <select 
                     className="text-sm border rounded px-2 py-1 ml-1"
                     onChange={(e) => formatText('fontSize', e.target.value)}
+                    defaultValue="4"
                   >
                     <option value="3">12pt</option>
                     <option value="4">14pt</option>
@@ -508,23 +602,21 @@ export default function AgreementEditor() {
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <input 
-                    type="color" 
-                    className="w-8 h-8 border rounded cursor-pointer"
+                  <select 
+                    className="text-sm border rounded px-2 py-1"
                     onChange={(e) => formatText('foreColor', e.target.value)}
+                    defaultValue="#000000"
                     title="Text Color"
-                  />
-                  <input 
-                    type="color" 
-                    className="w-8 h-8 border rounded cursor-pointer ml-1"
-                    onChange={(e) => formatText('backColor', e.target.value)}
-                    title="Background Color"
-                  />
+                  >
+                    <option value="#000000">Black</option>
+                    <option value="#6B7280">Gray</option>
+                    <option value="#2563EB">Blue</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Row 2: Alignment, Lists, & Advanced Features */}
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Row 2: Paragraph Formatting */}
+              <div className="flex flex-wrap items-center gap-2 mb-2 pb-2 border-b border-gray-200">
                 <div className="flex items-center gap-1 border-r pr-2">
                   <Button variant="ghost" size="sm" onClick={() => formatText('justifyLeft')} className="h-8 w-8 p-0" title="Align Left">
                     <AlignLeft className="h-4 w-4" />
@@ -535,15 +627,23 @@ export default function AgreementEditor() {
                   <Button variant="ghost" size="sm" onClick={() => formatText('justifyRight')} className="h-8 w-8 p-0" title="Align Right">
                     <AlignRight className="h-4 w-4" />
                   </Button>
+                  <Button variant="ghost" size="sm" onClick={() => formatText('justifyFull')} className="h-8 w-8 p-0" title="Justify">
+                    <Type className="h-4 w-4" />
+                  </Button>
                 </div>
 
                 <div className="flex items-center gap-1 border-r pr-2">
-                  <Button variant="ghost" size="sm" onClick={() => formatText('insertUnorderedList')} className="h-8 w-8 p-0" title="Bullet List">
-                    <List className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => formatText('insertOrderedList')} className="h-8 w-8 p-0" title="Numbered List">
-                    <ListOrdered className="h-4 w-4" />
-                  </Button>
+                  <select 
+                    className="text-sm border rounded px-2 py-1"
+                    onChange={(e) => setLineSpacing(e.target.value)}
+                    defaultValue="1.5"
+                    title="Line Spacing"
+                  >
+                    <option value="1.0">1.0</option>
+                    <option value="1.5">1.5</option>
+                    <option value="2.0">2.0</option>
+                  </select>
+                  
                   <Button variant="ghost" size="sm" onClick={() => formatText('outdent')} className="h-8 w-8 p-0" title="Decrease Indent">
                     <Outdent className="h-4 w-4" />
                   </Button>
@@ -552,12 +652,35 @@ export default function AgreementEditor() {
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-1 border-r pr-2">
-                  <Button variant="ghost" size="sm" onClick={insertTable} className="h-8 w-8 p-0" title="Insert Table">
-                    <Table className="h-4 w-4" />
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => formatText('insertUnorderedList')} className="h-8 w-8 p-0" title="Bullet List">
+                    <List className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={insertSignatureSection} className="h-8 w-8 p-0" title="Insert Signature">
-                    <FileText className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" onClick={() => formatText('insertOrderedList')} className="h-8 w-8 p-0" title="Numbered List">
+                    <ListOrdered className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Row 3: Document Elements */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1 border-r pr-2">
+                  <Button variant="ghost" size="sm" onClick={insertTable} className="h-8 px-2" title="Insert Table">
+                    <Table className="h-4 w-4 mr-1" />
+                    Table
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={insertSignatureSection} className="h-8 px-2" title="Add Signature">
+                    <FileText className="h-4 w-4 mr-1" />
+                    Signature
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-1 border-r pr-2">
+                  <Button variant="ghost" size="sm" onClick={insertPageBreak} className="h-8 px-2" title="Page Break">
+                    ⏎ Page Break
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={insertImagePlaceholder} className="h-8 px-2" title="Image Placeholder">
+                    🖼 Image
                   </Button>
                 </div>
 
