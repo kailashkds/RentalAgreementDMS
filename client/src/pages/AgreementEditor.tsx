@@ -48,24 +48,31 @@ export default function AgreementEditor() {
 
       try {
         // Try to load edited content from database first
+        console.log(`[Editor] Loading content for agreement ${agreementId}`);
         const response = await fetch(`/api/agreements/${agreementId}/edited-content`);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log(`[Editor] API Response:`, data);
           
-          if (data.editedContent) {
+          if (data.editedContent && data.editedContent.trim() !== '') {
             // Load previously edited content
+            console.log(`[Editor] Found saved edited content (${data.editedContent.length} characters)`);
             setHtmlContent(data.editedContent);
             if (data.editedAt) {
               setLastSaved(new Date(data.editedAt));
             }
           } else {
             // No edited content yet, generate it from the agreement data
-            console.log('No edited content found, generating from agreement data');
+            console.log('[Editor] No edited content found, generating from agreement data');
             await generateInitialContent();
           }
+        } else {
+          console.log(`[Editor] API response not OK: ${response.status}`);
+          await generateInitialContent();
         }
       } catch (error) {
-        console.error('Error loading edited content:', error);
+        console.error('[Editor] Error loading edited content:', error);
         // Generate initial content if loading fails
         await generateInitialContent();
       } finally {
@@ -125,14 +132,16 @@ export default function AgreementEditor() {
 
     try {
       setIsSaving(true);
+      console.log(`[Editor] Auto-saving content (${content.length} characters)`);
       await apiRequest('POST', `/api/agreements/${agreementId}/save-content`, {
         editedContent: content
       });
       
+      console.log('[Editor] Auto-save successful');
       setLastSaved(new Date());
       setIsDirty(false);
     } catch (error) {
-      console.error('Auto-save failed:', error);
+      console.error('[Editor] Auto-save failed:', error);
     } finally {
       setIsSaving(false);
     }
@@ -143,6 +152,7 @@ export default function AgreementEditor() {
     if (!editorRef.current || !agreementId) return;
 
     const content = editorRef.current.innerHTML;
+    console.log(`[Editor] Manual save triggered (${content.length} characters)`);
     await autoSave(content);
     
     toast({
