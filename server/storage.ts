@@ -451,13 +451,13 @@ export class DatabaseStorage implements IStorage {
     
     // Build date condition for agreement end date filtering
     let dateCondition;
-    if (startDate && endDate && startDate !== "" && endDate !== "") {
-      // Use the provided date range
+    if (startDate && endDate) {
+      // Use the provided date range - filter by agreement end date
       dateCondition = and(
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDate}`,
-        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDate}`
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDate})`,
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDate})`
       );
-    } else if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom' && dateFilter !== "") {
+    } else if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom') {
       // Calculate date range on server-side for predefined filters
       const today = new Date();
       let rangeStart: Date;
@@ -502,12 +502,11 @@ export class DatabaseStorage implements IStorage {
       const startDateStr = rangeStart.toISOString().split('T')[0];
       const endDateStr = rangeEnd.toISOString().split('T')[0];
       
-      if (startDateStr && endDateStr) {
-        dateCondition = and(
-          sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDateStr}`,
-          sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDateStr}`
-        );
-      }
+      // Filter by agreement end date using calculated date range
+      dateCondition = and(
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= DATE(${startDateStr})`,
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= DATE(${endDateStr})`
+      );
     }
     
     const whereConditions = and(

@@ -498,13 +498,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/agreements", async (req, res) => {
     try {
       const { customerId, status, search, dateFilter, startDate, endDate, limit, offset } = req.query;
+      
+      // Validate and clean date parameters
+      const cleanStartDate = startDate && startDate !== "" ? startDate as string : undefined;
+      const cleanEndDate = endDate && endDate !== "" ? endDate as string : undefined;
+      const cleanDateFilter = dateFilter && dateFilter !== "" ? dateFilter as string : undefined;
+      
       const result = await storage.getAgreements({
         customerId: customerId as string,
         status: status as string,
         search: search as string,
-        dateFilter: dateFilter as string,
-        startDate: startDate as string,
-        endDate: endDate as string,
+        dateFilter: cleanDateFilter,
+        startDate: cleanStartDate,
+        endDate: cleanEndDate,
         limit: limit ? parseInt(limit as string) : undefined,
         offset: offset ? parseInt(offset as string) : undefined,
       });

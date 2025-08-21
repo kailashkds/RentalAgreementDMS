@@ -107,7 +107,7 @@ export default function Agreements() {
   };
 
   // Get date range for server-side filtering
-  const dateRange = dateFilter !== "all" ? getDateRange(dateFilter) : null;
+  const dateRange = dateFilter !== "all" && dateFilter !== "" ? getDateRange(dateFilter) : null;
 
   const { data: agreementsData, isLoading } = useAgreements({
     search: searchTerm,
