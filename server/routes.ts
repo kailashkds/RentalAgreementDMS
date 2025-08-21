@@ -467,13 +467,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] ✓ Converting landlord signature to table: ${ownerName}`);
             
             return `
-<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #000;">
   <tr>
-    <td width="60%" style="padding: 15px; vertical-align: top;">
+    <td width="60%" style="padding: 15px; vertical-align: top; border-right: 1px solid #000;">
       <p style="font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; color: green;">${ownerName}</p>
       <p style="font-size: 14px; font-style: italic; margin: 0 0 60px 0; color: green;">${role}</p>
       <div style="margin: 20px 0;">
-        <p style="margin: 0 0 5px 0; font-size: 12px; border-bottom: 1px solid #000; width: 200px; height: 15px;">&nbsp;</p>
+        <p style="margin: 0 0 5px 0; font-size: 12px;">_________________________</p>
         <p style="margin: 0; font-size: 12px; text-align: center; width: 200px;">Signature</p>
       </div>
     </td>
@@ -484,17 +484,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     </td>
   </tr>
 </table>
-
 <div style="margin: 30px 0 20px 0;">
   <p style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">Witnesses</p>
-  <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-    <div style="width: 45%;">
-      <p style="margin: 0; border-bottom: 1px solid #000; height: 15px;">&nbsp;</p>
-    </div>
-    <div style="width: 45%;">
-      <p style="margin: 0; border-bottom: 1px solid #000; height: 15px;">&nbsp;</p>
-    </div>
-  </div>
+  <table style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td style="width: 45%; padding: 0 10px 0 0;">
+        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
+      </td>
+      <td style="width: 10%; text-align: center;">&nbsp;</td>
+      <td style="width: 45%; padding: 0 0 0 10px;">
+        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
+      </td>
+    </tr>
+  </table>
 </div>`;
           }
           
@@ -516,13 +518,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Word Generation] ✓ Converting tenant signature to table: ${tenantName}`);
             
             return `
-<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+<table border="1" cellpadding="0" cellspacing="0" style="width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #000;">
   <tr>
-    <td width="60%" style="padding: 15px; vertical-align: top;">
+    <td width="60%" style="padding: 15px; vertical-align: top; border-right: 1px solid #000;">
       <p style="font-size: 16px; font-weight: bold; text-transform: uppercase; margin: 0 0 5px 0; color: green;">${tenantName}</p>
       <p style="font-size: 14px; font-style: italic; margin: 0 0 60px 0; color: green;">${role}</p>
       <div style="margin: 20px 0;">
-        <p style="margin: 0 0 5px 0; font-size: 12px; border-bottom: 1px solid #000; width: 200px; height: 15px;">&nbsp;</p>
+        <p style="margin: 0 0 5px 0; font-size: 12px;">_________________________</p>
         <p style="margin: 0; font-size: 12px; text-align: center; width: 200px;">Signature</p>
       </div>
     </td>
@@ -533,17 +535,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     </td>
   </tr>
 </table>
-
 <div style="margin: 30px 0 20px 0;">
   <p style="font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">Witnesses</p>
-  <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-    <div style="width: 45%;">
-      <p style="margin: 0; border-bottom: 1px solid #000; height: 15px;">&nbsp;</p>
-    </div>
-    <div style="width: 45%;">
-      <p style="margin: 0; border-bottom: 1px solid #000; height: 15px;">&nbsp;</p>
-    </div>
-  </div>
+  <table style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td style="width: 45%; padding: 0 10px 0 0;">
+        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
+      </td>
+      <td style="width: 10%; text-align: center;">&nbsp;</td>
+      <td style="width: 45%; padding: 0 0 0 10px;">
+        <p style="margin: 0; border-top: 1px solid #000; height: 15px;">&nbsp;</p>
+      </td>
+    </tr>
+  </table>
 </div>`;
           }
           
