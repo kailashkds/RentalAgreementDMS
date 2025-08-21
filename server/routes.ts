@@ -688,14 +688,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
           .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
           .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n') // Handle headings
-          .replace(/<[^>]*>/g, ' ')         // Replace all remaining HTML tags with single space
           .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
           .replace(/&amp;/gi, '&')          // Convert &amp; to &
           .replace(/&lt;/gi, '<')           // Convert &lt; to <
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
-          .replace(/\s+/g, ' ')             // Replace multiple spaces with single space
           .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
           .trim();
 
@@ -735,7 +733,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               while ((match = boldRegex.exec(currentText)) !== null) {
                 // Add regular text before bold
-                const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').trim();
                 if (beforeText) {
                   textRuns.push(new TextRun({
                     text: beforeText,
@@ -746,7 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
                 
                 // Add bold text
-                const boldText = match[2].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                const boldText = match[2].replace(/<[^>]*>/g, '').trim();
                 if (boldText) {
                   textRuns.push(new TextRun({
                     text: boldText,
@@ -760,7 +758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               // Add remaining regular text after last bold
-              const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+              const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').trim();
               if (afterText) {
                 textRuns.push(new TextRun({
                   text: afterText,
@@ -786,7 +784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else {
               // No bold text - handle normally
-              const cleanText = trimmedBlock.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ');
+              const cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
               
               const para = createParagraph(cleanText, {
                 size: shouldCenter ? 28 : (isHeading ? 26 : 24),
