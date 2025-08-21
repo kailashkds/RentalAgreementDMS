@@ -31,6 +31,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, ilike, desc, and, or, count, sql } from "drizzle-orm";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths } from "date-fns";
 import bcrypt from "bcrypt";
 
 export interface IStorage {
@@ -381,19 +382,6 @@ export class DatabaseStorage implements IStorage {
     return propertiesWithCounts;
   }
 
-  async getProperties(customerId: string): Promise<Property[]> {
-    const result = await db
-      .select()
-      .from(properties)
-      .where(eq(properties.customerId, customerId))
-      .orderBy(desc(properties.createdAt));
-    return result;
-  }
-
-  async getProperty(id: string): Promise<Property | undefined> {
-    const [property] = await db.select().from(properties).where(eq(properties.id, id));
-    return property;
-  }
 
   async findOrCreatePropertyForAgreement(customerId: string, propertyDetails: any): Promise<Property> {
     // Extract property details from agreement
@@ -453,16 +441,79 @@ export class DatabaseStorage implements IStorage {
     propertyId?: string;
     status?: string;
     search?: string;
+    dateFilter?: string;
+    startDate?: string;
+    endDate?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ agreements: Agreement[]; total: number }> {
-    const { customerId, propertyId, status, search, limit = 50, offset = 0 } = filters || {};
+    const { customerId, propertyId, status, search, dateFilter, startDate, endDate, limit = 50, offset = 0 } = filters || {};
+    
+    // Build date condition for agreement end date filtering
+    let dateCondition;
+    if (startDate && endDate) {
+      // Use the provided date range
+      dateCondition = and(
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDate}`,
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDate}`
+      );
+    } else if (dateFilter && dateFilter !== 'all' && dateFilter !== 'custom') {
+      // Calculate date range on server-side for predefined filters
+      const today = new Date();
+      let rangeStart: Date;
+      let rangeEnd: Date;
+
+      switch (dateFilter) {
+        case 'today':
+          rangeStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          rangeEnd = new Date(rangeStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+          break;
+        case 'tomorrow':
+          const tomorrow = new Date(today);
+          tomorrow.setDate(today.getDate() + 1);
+          rangeStart = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
+          rangeEnd = new Date(rangeStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+          break;
+        case 'thisWeek':
+          rangeStart = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
+          rangeEnd = endOfWeek(today, { weekStartsOn: 0 });
+          break;
+        case 'thisMonth':
+          rangeStart = startOfMonth(today);
+          rangeEnd = endOfMonth(today);
+          break;
+        case 'next3Months':
+          rangeStart = today;
+          rangeEnd = addMonths(today, 3);
+          break;
+        case 'next6Months':
+          rangeStart = today;
+          rangeEnd = addMonths(today, 6);
+          break;
+        case 'thisYear':
+          rangeStart = startOfYear(today);
+          rangeEnd = endOfYear(today);
+          break;
+        default:
+          rangeStart = today;
+          rangeEnd = today;
+      }
+
+      const startDateStr = rangeStart.toISOString().split('T')[0];
+      const endDateStr = rangeEnd.toISOString().split('T')[0];
+      
+      dateCondition = and(
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDateStr}`,
+        sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDateStr}`
+      );
+    }
     
     const whereConditions = and(
       customerId ? eq(agreements.customerId, customerId) : undefined,
       propertyId ? eq(agreements.propertyId, propertyId) : undefined,
       status ? eq(agreements.status, status) : undefined,
-      search ? ilike(agreements.agreementNumber, `%${search}%`) : undefined
+      search ? ilike(agreements.agreementNumber, `%${search}%`) : undefined,
+      dateCondition
     );
 
     const [agreementsResult, totalResult] = await Promise.all([

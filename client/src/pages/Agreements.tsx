@@ -49,9 +49,15 @@ export default function Agreements() {
   const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
   const { toast } = useToast();
 
+  // Get date range for server-side filtering
+  const dateRange = dateFilter !== "all" ? getDateRange(dateFilter) : null;
+
   const { data: agreementsData, isLoading } = useAgreements({
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
+    dateFilter: dateFilter === "all" ? "" : dateFilter,
+    startDate: dateRange?.start?.toISOString().split('T')[0] || (customStartDate ? customStartDate.toISOString().split('T')[0] : ""),
+    endDate: dateRange?.end?.toISOString().split('T')[0] || (customEndDate ? customEndDate.toISOString().split('T')[0] : ""),
     limit: 20,
     offset: (currentPage - 1) * 20,
   });
@@ -141,7 +147,7 @@ export default function Agreements() {
     }
   };
 
-  // Client-side filtering for customer, tenant, owner, and date
+  // Client-side filtering for customer, tenant, and owner (date filtering is now server-side)
   const filteredAgreements = agreementsData?.agreements?.filter((agreement: any) => {
     // Filter by customer name
     if (customerFilter && customerFilter !== "all") {
@@ -164,17 +170,6 @@ export default function Agreements() {
       const ownerName = agreement.ownerDetails?.name || '';
       if (ownerName !== ownerFilter) {
         return false;
-      }
-    }
-
-    // Filter by date
-    if (dateFilter && dateFilter !== "all") {
-      const dateRange = getDateRange(dateFilter);
-      if (dateRange && agreement.agreementDate) {
-        const agreementDate = new Date(agreement.agreementDate);
-        if (agreementDate < dateRange.start || agreementDate > dateRange.end) {
-          return false;
-        }
       }
     }
 
