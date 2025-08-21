@@ -32,8 +32,10 @@ import {
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 export default function Agreements() {
+  const [, navigate] = useLocation();
   const [showWizard, setShowWizard] = useState(false);
   const [editingAgreement, setEditingAgreement] = useState<any>(null);
   const [viewingAgreement, setViewingAgreement] = useState<any>(null);
@@ -330,6 +332,68 @@ export default function Agreements() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    }
+  };
+
+  const downloadAgreementPdf = async (agreement: any) => {
+    try {
+      const response = await fetch(`/api/agreements/${agreement.id}/pdf`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${agreement.agreementNumber}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadNotarizedDocument = async (agreement: any) => {
+    try {
+      if (agreement.notarizedDocument?.url) {
+        const link = document.createElement('a');
+        link.href = agreement.notarizedDocument.url;
+        link.download = agreement.notarizedDocument.originalName || 'notarized-document.pdf';
+        link.click();
+        
+        toast({
+          title: "Document Downloaded",
+          description: `${agreement.notarizedDocument.originalName} downloaded successfully`,
+        });
+      } else if (agreement.notarizedDocumentUrl) {
+        const link = document.createElement('a');
+        link.href = agreement.notarizedDocumentUrl;
+        link.download = `notarized-${agreement.agreementNumber}.pdf`;
+        link.click();
+        
+        toast({
+          title: "Document Downloaded",
+          description: "Notarized document downloaded successfully",
+        });
+      } else {
+        toast({
+          title: "No Document",
+          description: "No notarized document available for this agreement",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download document. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
