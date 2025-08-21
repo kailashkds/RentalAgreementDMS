@@ -688,9 +688,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAgreement(id: string, agreementData: Partial<InsertAgreement>): Promise<Agreement> {
+    // Get the existing agreement to preserve editedContent if not explicitly provided
+    const existingAgreement = await this.getAgreement(id);
+    if (!existingAgreement) {
+      throw new Error("Agreement not found");
+    }
+
+    // Preserve editedContent and editedAt if not explicitly provided in update data
+    const updateData = {
+      ...agreementData,
+      updatedAt: new Date(),
+      // Preserve existing editedContent if not being updated
+      ...(agreementData.editedContent === undefined && {
+        editedContent: existingAgreement.editedContent,
+        editedAt: existingAgreement.editedAt
+      })
+    };
+
     const [agreement] = await db
       .update(agreements)
-      .set({ ...agreementData, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(agreements.id, id))
       .returning();
     return agreement;
