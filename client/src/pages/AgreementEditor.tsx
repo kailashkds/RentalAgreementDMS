@@ -392,7 +392,7 @@ export default function AgreementEditor() {
       
       toast({
         title: "PDF Generated Successfully",
-        description: "The agreement has been opened in a new window for download. Closing editor...",
+        description: "The agreement has been opened in a new window for download.",
       });
       
       // Close the editor and return to agreements list after successful PDF generation
