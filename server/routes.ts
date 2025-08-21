@@ -537,16 +537,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { editedContent } = req.body;
 
-      if (!editedContent) {
+      console.log(`[Backend] Saving edited content for agreement ${id} (${editedContent?.length || 0} characters)`);
+
+      if (!editedContent || editedContent.trim() === '') {
+        console.log(`[Backend] No content provided for agreement ${id}`);
         return res.status(400).json({ message: "Edited content is required" });
       }
 
       const agreement = await storage.getAgreement(id);
       if (!agreement) {
+        console.log(`[Backend] Agreement ${id} not found`);
         return res.status(404).json({ message: "Agreement not found" });
       }
 
       await storage.saveEditedContent(id, editedContent);
+      console.log(`[Backend] Successfully saved edited content for agreement ${id}`);
       
       res.json({ 
         success: true, 
@@ -554,7 +559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         savedAt: new Date().toISOString()
       });
     } catch (error) {
-      console.error("Error saving edited content:", error);
+      console.error(`[Backend] Error saving edited content for agreement ${req.params.id}:`, error);
       res.status(500).json({ message: "Failed to save edited content" });
     }
   });
@@ -564,19 +569,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       
+      console.log(`[Backend] Fetching edited content for agreement ${id}`);
+      
       const agreement = await storage.getAgreement(id);
       if (!agreement) {
+        console.log(`[Backend] Agreement ${id} not found`);
         return res.status(404).json({ message: "Agreement not found" });
       }
+
+      const hasEditedContent = !!(agreement.editedContent && agreement.editedContent.trim());
+      console.log(`[Backend] Agreement ${id} has edited content: ${hasEditedContent} (${agreement.editedContent?.length || 0} characters)`);
 
       res.json({
         success: true,
         editedContent: agreement.editedContent || null,
         editedAt: agreement.editedAt || null,
-        hasEdits: !!agreement.editedContent
+        hasEdits: hasEditedContent
       });
     } catch (error) {
-      console.error("Error fetching edited content:", error);
+      console.error(`[Backend] Error fetching edited content for agreement ${req.params.id}:`, error);
       res.status(500).json({ message: "Failed to fetch edited content" });
     }
   });

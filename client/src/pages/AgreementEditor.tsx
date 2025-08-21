@@ -169,6 +169,8 @@ export default function AgreementEditor() {
       setIsDirty(true);
       const content = editorRef.current.innerHTML;
       
+      console.log(`[Editor] Content changed, length: ${content.length}, will auto-save in 2 seconds`);
+      
       // Save to session storage as backup
       sessionStorage.setItem('editorHtmlContent', content);
       
@@ -178,8 +180,9 @@ export default function AgreementEditor() {
       }
       
       // Auto-save after 2 seconds of inactivity
-      if (agreementId) {
+      if (agreementId && content.trim().length > 0) {
         autoSaveTimeout.current = setTimeout(() => {
+          console.log(`[Editor] Auto-save timeout triggered, saving content`);
           autoSave(content);
         }, 2000);
       }
