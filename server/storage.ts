@@ -30,7 +30,7 @@ import {
   type InsertAdminUser,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, ilike, desc, and, or, count, sql } from "drizzle-orm";
+import { eq, ilike, desc, and, or, count, sql, gte, lte } from "drizzle-orm";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths } from "date-fns";
 import bcrypt from "bcrypt";
 
@@ -528,8 +528,8 @@ export class DatabaseStorage implements IStorage {
           
           if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
             dateCondition = and(
-              sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDateStr.trim()}`,
-              sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDateStr.trim()}`
+              gte(agreements.endDate, startDateStr.trim()),
+              lte(agreements.endDate, endDateStr.trim())
             );
             console.log(`[Date Filter] Applied ${dateFilter} filter: ${startDateStr.trim()} to ${endDateStr.trim()}`);
           } else {
@@ -549,8 +549,8 @@ export class DatabaseStorage implements IStorage {
         
         if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
           dateCondition = and(
-            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) >= ${startDate.trim()}`,
-            sql`DATE(CAST(${agreements.rentalTerms}->>'endDate' AS TEXT)) <= ${endDate.trim()}`
+            gte(agreements.endDate, startDate.trim()),
+            lte(agreements.endDate, endDate.trim())
           );
           console.log(`[Date Filter] Applied custom range: ${startDate.trim()} to ${endDate.trim()}`);
         }
