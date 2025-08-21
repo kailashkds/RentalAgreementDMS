@@ -672,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             italics: options.italic || false,
           })],
           alignment: options.alignment || AlignmentType.LEFT,
-          spacing: options.spacing || { after: 80 },
+          spacing: options.spacing || { after: 80, line: 276 },
           indent: options.indent || undefined,
           ...options.paragraphOptions
         });
@@ -695,6 +695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
+          .replace(/\s+/g, ' ')             // Fix: Replace multiple spaces with single space
           .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
           .trim();
 
@@ -779,7 +780,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   alignment: alignment,
                   spacing: { 
                     before: shouldCenter ? 120 : (isHeading ? 80 : 0),
-                    after: shouldCenter ? 160 : (isHeading ? 120 : 120)
+                    after: shouldCenter ? 160 : (isHeading ? 120 : 100),
+                    line: 276  // Fix: Set normal line height (1.15x spacing)
                   }
                 }));
               }
@@ -795,7 +797,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                           AlignmentType.LEFT,
                 spacing: { 
                   before: shouldCenter ? 120 : (isHeading ? 80 : 0),
-                  after: shouldCenter ? 160 : (isHeading ? 120 : 120)
+                  after: shouldCenter ? 160 : (isHeading ? 120 : 100),
+                  line: 276  // Fix: Set normal line height (1.15x spacing)
                 }
               });
               
@@ -1058,13 +1061,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Helper function to add document image
       const addDocumentImage = async (docUrl: string, titleText: string, logName: string) => {
-        const title = createParagraph(titleText, {
-          size: 24,
-          bold: false,
-          alignment: AlignmentType.LEFT,
-          spacing: { before: 240, after: 240 }
-        });
-        if (title) documentParagraphs.push(title);
+        // Fix: Don't add duplicate titles - the title is already in the HTML content
+        // Only add title for images that don't have one already
+        const shouldAddTitle = !processedElements.some(elem => 
+          elem.root && elem.root.children && 
+          elem.root.children.some((child: any) => 
+            child.text && child.text.includes(titleText.replace(':', ''))
+          )
+        );
+        
+        if (shouldAddTitle) {
+          const title = createParagraph(titleText, {
+            size: 24,
+            bold: false,
+            alignment: AlignmentType.LEFT,
+            spacing: { before: 240, after: 240 }
+          });
+          if (title) documentParagraphs.push(title);
+        }
         
         try {
           // Handle different URL formats
@@ -1085,7 +1099,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (imagePath.toLowerCase().endsWith('.pdf')) {
               try {
                 console.log(`[Word Generation] Converting PDF to images for ${logName}...`);
-                const pdfImages = await convertPdfToImages(imagePath, logName);
+                const pdfImages = await convertPdfToImages(imagePath, `${logName} Document`);
                 
                 if (pdfImages && pdfImages.length > 0) {
                   // Use the first page of the PDF
