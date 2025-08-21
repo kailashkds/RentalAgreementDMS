@@ -1121,33 +1121,12 @@ div, p, h1, h2, h3, h4, h5, h6, span, img, iframe, embed {
 }
 </style>`;
 
-  // Add Google Fonts link for better Unicode support
-  const googleFontsLink = language === 'gujarati' 
-    ? '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&display=swap" rel="stylesheet">'
-    : language === 'hindi' || language === 'marathi'
-    ? '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;500;600;700&display=swap" rel="stylesheet">'
-    : language === 'tamil'
-    ? '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">'
-    : '';
-
   // Always inject the complete CSS with page numbering for all templates
   if (!processedHtml.includes('<style')) {
     // Add CSS at the beginning of the HTML with aggressive text spacing overrides
     const cssWithOverrides = pageBreakCSS.replace(
       '<style>',
       `<style>
-/* CRITICAL: Web font loading for PDF generation */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap');
-
-/* Ensure fonts are loaded before rendering */
-@font-face {
-  font-family: 'Noto Sans Gujarati';
-  font-style: normal;
-  font-weight: 400;
-  src: url(https://fonts.gstatic.com/s/notosansgujarati/v23/wXKwE3kTposypRyd7lbMDaGOhCsOxCbBHLM8w.woff2) format('woff2');
-  unicode-range: U+0A80-U+0AFF;
-}
-
 /* CRITICAL: Override text justification that causes spacing issues */
 * {
   word-spacing: normal !important;
@@ -1285,54 +1264,6 @@ h1, h2, h3, h4, h5, h6 {
 </style>`;
       
       processedHtml = processedHtml.replace(styleMatch[0], newStyle);
-    }
-  }
-  
-  // Ensure proper HTML structure and Google Fonts loading for PDF generation
-  if (!processedHtml.includes('<!DOCTYPE')) {
-    // Create complete HTML document with proper font loading
-    processedHtml = `<!DOCTYPE html>
-<html lang="${language === 'gujarati' ? 'gu' : language === 'hindi' ? 'hi' : language === 'tamil' ? 'ta' : language === 'marathi' ? 'mr' : 'en'}">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rental Agreement</title>
-${googleFontsLink}
-<style>
-  /* Ensure web fonts are loaded for PDF generation */
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap');
-  
-  body { 
-    font-family: ${fontFamily} !important; 
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  * { 
-    font-family: ${fontFamily} !important; 
-  }
-</style>
-</head>
-<body>
-${processedHtml}
-</body>
-</html>`;
-  } else {
-    // Insert Google Fonts link and ensure proper font loading
-    if (!processedHtml.includes('fonts.googleapis.com')) {
-      processedHtml = processedHtml.replace(
-        /<head[^>]*>/i,
-        `$&
-${googleFontsLink}
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap');
-  
-  body, * { 
-    font-family: ${fontFamily} !important; 
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-</style>`
-      );
     }
   }
   

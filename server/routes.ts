@@ -380,24 +380,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, Media, ImageRun, VerticalAlign } = await import('docx');
       
-      // Helper function to detect Gujarati text and return appropriate font
-      const getFontForText = (text: string): string => {
-        if (!text || text.trim() === '') return "Arial";
-        
-        // Comprehensive Gujarati Unicode detection
-        // U+0A80-U+0AFF: Gujarati block
-        // U+0964-U+0965: Devanagari/Gujarati punctuation (।॥)  
-        // U+0AE6-U+0AEF: Gujarati digits
-        const gujaratiRegex = /[\u0A80-\u0AFF\u0964-\u0965]/;
-        
-        if (gujaratiRegex.test(text)) {
-          console.log(`[Word Generation] Detected Gujarati text: "${text.substring(0, 50)}..." - applying Gujarati font`);
-          return "Shruti"; // Primary Gujarati Unicode font (fallback: Nirmala UI)
-        }
-        
-        return "Arial"; // Default for English and other text
-      };
-
       const agreementData = req.body;
       const language = agreementData.language || 'english';
 
@@ -656,7 +638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lines.forEach((line, index) => {
             textRuns.push(new TextRun({
               text: line.trim(),
-              font: getFontForText(line.trim()),
+              font: "Arial",
               size: options.size || 24,
               bold: options.bold || false,
               italics: options.italic || false,
@@ -683,7 +665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return new Paragraph({
           children: [new TextRun({
             text: sanitizedText,
-            font: getFontForText(sanitizedText),
+            font: "Arial",
             size: options.size || 24,
             bold: options.bold || false,
             italics: options.italic || false,
@@ -706,12 +688,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/<\/p>/gi, '\n\n')       // Convert </p> to double newlines
           .replace(/<p[^>]*>/gi, '')        // Remove <p> opening tags
           .replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi, '\n\n$1\n\n') // Handle headings
+          .replace(/<[^>]*>/g, ' ')         // Replace all remaining HTML tags with single space
           .replace(/&nbsp;/gi, ' ')         // Convert &nbsp; to spaces
           .replace(/&amp;/gi, '&')          // Convert &amp; to &
           .replace(/&lt;/gi, '<')           // Convert &lt; to <
           .replace(/&gt;/gi, '>')           // Convert &gt; to >
           .replace(/&quot;/gi, '"')         // Convert &quot; to "
           .replace(/&#39;/gi, "'")          // Convert &#39; to '
+          .replace(/\s+/g, ' ')             // Replace multiple spaces with single space
           .replace(/\n\s*\n/g, '\n\n')      // Normalize multiple newlines
           .trim();
 
@@ -751,22 +735,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               while ((match = boldRegex.exec(currentText)) !== null) {
                 // Add regular text before bold
-                const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').trim();
+                const beforeText = currentText.substring(lastIndex, match.index).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
                 if (beforeText) {
                   textRuns.push(new TextRun({
                     text: beforeText,
-                    font: getFontForText(beforeText),
+                    font: "Arial",
                     size: isTitle ? 28 : (isHeading ? 26 : 24),
                     bold: false
                   }));
                 }
                 
                 // Add bold text
-                const boldText = match[2].replace(/<[^>]*>/g, '').trim();
+                const boldText = match[2].replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
                 if (boldText) {
                   textRuns.push(new TextRun({
                     text: boldText,
-                    font: getFontForText(boldText),
+                    font: "Arial",
                     size: isTitle ? 28 : (isHeading ? 26 : 24),
                     bold: true
                   }));
@@ -776,11 +760,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               
               // Add remaining regular text after last bold
-              const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').trim();
+              const afterText = currentText.substring(lastIndex).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
               if (afterText) {
                 textRuns.push(new TextRun({
                   text: afterText,
-                  font: getFontForText(afterText),
+                  font: "Arial",
                   size: isTitle ? 28 : (isHeading ? 26 : 24),
                   bold: false
                 }));
@@ -802,7 +786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else {
               // No bold text - handle normally
-              const cleanText = trimmedBlock.replace(/<[^>]*>/g, '');
+              const cleanText = trimmedBlock.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ');
               
               const para = createParagraph(cleanText, {
                 size: shouldCenter ? 28 : (isHeading ? 26 : 24),
@@ -853,7 +837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 cellParagraphs.push(new Paragraph({
                   children: [new TextRun({
                     text: "Passport Size Photo",
-                    font: getFontForText("Passport Size Photo"),
+                    font: "Arial",
                     size: 20
                   })],
                   alignment: AlignmentType.CENTER,
@@ -873,7 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     cellParagraphs.push(new Paragraph({
                       children: [new TextRun({
                         text: trimmedLine,
-                        font: getFontForText(trimmedLine),
+                        font: "Arial",
                         size: isName ? 28 : 24,
                         bold: isName,
                         italics: isRole
@@ -888,7 +872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 cellParagraphs.push(new Paragraph({
                   children: [new TextRun({
                     text: "________________________",
-                    font: getFontForText("________________________"),
+                    font: "Arial",
                     size: 22
                   })],
                   alignment: AlignmentType.LEFT,
@@ -899,7 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 cellParagraphs.push(new Paragraph({
                   children: [new TextRun({
                     text: cellContent,
-                    font: getFontForText(cellContent),
+                    font: "Arial",
                     size: 22
                   })],
                   alignment: AlignmentType.LEFT
