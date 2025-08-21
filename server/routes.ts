@@ -382,12 +382,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Helper function to detect Gujarati text and return appropriate font
       const getFontForText = (text: string): string => {
-        if (!text) return "Arial";
+        if (!text || text.trim() === '') return "Arial";
         
-        // Check if text contains Gujarati Unicode characters (U+0A80-U+0AFF)
-        const gujaratiRegex = /[\u0A80-\u0AFF]/;
+        // Comprehensive Gujarati Unicode detection
+        // U+0A80-U+0AFF: Gujarati block
+        // U+0964-U+0965: Devanagari/Gujarati punctuation (।॥)  
+        // U+0AE6-U+0AEF: Gujarati digits
+        const gujaratiRegex = /[\u0A80-\u0AFF\u0964-\u0965]/;
+        
         if (gujaratiRegex.test(text)) {
-          return "Shruti"; // Primary Gujarati font, fallback would be Nirmala UI
+          console.log(`[Word Generation] Detected Gujarati text: "${text.substring(0, 50)}..." - applying Gujarati font`);
+          return "Shruti"; // Primary Gujarati Unicode font (fallback: Nirmala UI)
         }
         
         return "Arial"; // Default for English and other text
