@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 import AgreementWizard from "@/components/AgreementWizard";
 import { useAgreements } from "@/hooks/useAgreements";
 import {
@@ -36,6 +41,9 @@ export default function Agreements() {
   const [customerFilter, setCustomerFilter] = useState("all");
   const [tenantFilter, setTenantFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [customStartDate, setCustomStartDate] = useState<Date>();
+  const [customEndDate, setCustomEndDate] = useState<Date>();
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadingNotarized, setUploadingNotarized] = useState(false);
   const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
@@ -76,7 +84,64 @@ export default function Agreements() {
     return owners;
   }, [agreementsData?.agreements]);
 
-  // Client-side filtering for customer, tenant, and owner
+  // Date range calculation helper function
+  const getDateRange = (filterType: string) => {
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    switch (filterType) {
+      case "today":
+        return { 
+          start: startOfToday, 
+          end: new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000 - 1) 
+        };
+      case "tomorrow":
+        const tomorrow = new Date(startOfToday);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return { 
+          start: tomorrow, 
+          end: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000 - 1) 
+        };
+      case "thisWeek":
+        const startOfWeek = new Date(startOfToday);
+        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+        return { start: startOfWeek, end: endOfWeek };
+      case "thisMonth":
+        const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
+        const endOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth() + 1, 0);
+        endOfMonth.setHours(23, 59, 59, 999);
+        return { start: startOfMonth, end: endOfMonth };
+      case "next3Months":
+        const next3MonthsEnd = new Date(startOfToday);
+        next3MonthsEnd.setMonth(next3MonthsEnd.getMonth() + 3);
+        next3MonthsEnd.setHours(23, 59, 59, 999);
+        return { start: startOfToday, end: next3MonthsEnd };
+      case "next6Months":
+        const next6MonthsEnd = new Date(startOfToday);
+        next6MonthsEnd.setMonth(next6MonthsEnd.getMonth() + 6);
+        next6MonthsEnd.setHours(23, 59, 59, 999);
+        return { start: startOfToday, end: next6MonthsEnd };
+      case "thisYear":
+        const startOfYear = new Date(startOfToday.getFullYear(), 0, 1);
+        const endOfYear = new Date(startOfToday.getFullYear(), 11, 31);
+        endOfYear.setHours(23, 59, 59, 999);
+        return { start: startOfYear, end: endOfYear };
+      case "custom":
+        if (customStartDate && customEndDate) {
+          const customEnd = new Date(customEndDate);
+          customEnd.setHours(23, 59, 59, 999);
+          return { start: customStartDate, end: customEnd };
+        }
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  // Client-side filtering for customer, tenant, owner, and date
   const filteredAgreements = agreementsData?.agreements?.filter((agreement: any) => {
     // Filter by customer name
     if (customerFilter && customerFilter !== "all") {
@@ -99,6 +164,17 @@ export default function Agreements() {
       const ownerName = agreement.ownerDetails?.name || '';
       if (ownerName !== ownerFilter) {
         return false;
+      }
+    }
+
+    // Filter by date
+    if (dateFilter && dateFilter !== "all") {
+      const dateRange = getDateRange(dateFilter);
+      if (dateRange && agreement.agreementDate) {
+        const agreementDate = new Date(agreement.agreementDate);
+        if (agreementDate < dateRange.start || agreementDate > dateRange.end) {
+          return false;
+        }
       }
     }
 
@@ -661,9 +737,80 @@ export default function Agreements() {
                 ))}
               </SelectContent>
             </Select>
+            
+            {/* Date Filter */}
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Filter by Date" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Dates</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                <SelectItem value="thisWeek">This Week</SelectItem>
+                <SelectItem value="thisMonth">This Month</SelectItem>
+                <SelectItem value="next3Months">Next 3 Months</SelectItem>
+                <SelectItem value="next6Months">Next 6 Months</SelectItem>
+                <SelectItem value="thisYear">This Year</SelectItem>
+                <SelectItem value="custom">Custom Date Range</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          
+          {/* Custom Date Range Picker */}
+          {dateFilter === "custom" && (
+            <div className="flex gap-4 items-center p-4 bg-gray-50 rounded-lg">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="start-date" className="text-sm font-medium">Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="start-date"
+                      variant="outline"
+                      className="w-[240px] justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {customStartDate ? format(customStartDate, "PPP") : "Select start date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={customStartDate}
+                      onSelect={setCustomStartDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="end-date" className="text-sm font-medium">End Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="end-date"
+                      variant="outline"
+                      className="w-[240px] justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {customEndDate ? format(customEndDate, "PPP") : "Select end date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={customEndDate}
+                      onSelect={setCustomEndDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          )}
           <div className="flex justify-between items-center w-full">
-            {(customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || searchTerm || (statusFilter && statusFilter !== "all")) && (
+            {(customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || searchTerm || (statusFilter && statusFilter !== "all")) && (
               <Button
                 variant="outline"
                 onClick={() => {
@@ -672,6 +819,9 @@ export default function Agreements() {
                   setCustomerFilter("all");
                   setTenantFilter("all");
                   setOwnerFilter("all");
+                  setDateFilter("all");
+                  setCustomStartDate(undefined);
+                  setCustomEndDate(undefined);
                 }}
                 className="text-gray-600 hover:text-gray-900"
               >
@@ -693,7 +843,7 @@ export default function Agreements() {
               <div className="p-6 text-center text-gray-500">Loading agreements...</div>
             ) : filteredAgreements?.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
-                {searchTerm || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
+                {searchTerm || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
                   <>
                     No agreements found matching your criteria.
                     <Button
@@ -704,6 +854,9 @@ export default function Agreements() {
                         setCustomerFilter("all");
                         setTenantFilter("all");
                         setOwnerFilter("all");
+                        setDateFilter("all");
+                        setCustomStartDate(undefined);
+                        setCustomEndDate(undefined);
                       }}
                       className="ml-2 text-blue-600 hover:text-blue-700"
                     >
