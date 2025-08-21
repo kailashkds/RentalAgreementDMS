@@ -21,12 +21,18 @@ export function useAgreements(options: UseAgreementsOptions = {}) {
   const { customerId, status, search, dateFilter, startDate, endDate, limit = 50, offset = 0 } = options;
   
   const params = new URLSearchParams();
-  if (customerId) params.append('customerId', customerId);
-  if (status) params.append('status', status);
-  if (search) params.append('search', search);
-  if (dateFilter && dateFilter !== "" && dateFilter !== "all") params.append('dateFilter', dateFilter);
-  if (startDate && startDate !== "" && startDate !== undefined) params.append('startDate', startDate);
-  if (endDate && endDate !== "" && endDate !== undefined) params.append('endDate', endDate);
+  if (customerId && customerId.trim() !== "") params.append('customerId', customerId);
+  if (status && status.trim() !== "") params.append('status', status);
+  if (search && search.trim() !== "") params.append('search', search);
+  if (dateFilter && dateFilter.trim() !== "" && dateFilter !== "all") {
+    params.append('dateFilter', dateFilter);
+  }
+  if (startDate && startDate.trim() !== "") {
+    params.append('startDate', startDate);
+  }
+  if (endDate && endDate.trim() !== "") {
+    params.append('endDate', endDate);
+  }
   params.append('limit', limit.toString());
   params.append('offset', offset.toString());
 

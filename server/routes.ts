@@ -499,22 +499,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId, status, search, dateFilter, startDate, endDate, limit, offset } = req.query;
       
-      // Validate and clean date parameters - be very strict
-      const cleanStartDate = startDate && typeof startDate === 'string' && startDate.trim() !== "" && startDate !== "undefined" && startDate !== "null" ? startDate.trim() : undefined;
-      const cleanEndDate = endDate && typeof endDate === 'string' && endDate.trim() !== "" && endDate !== "undefined" && endDate !== "null" ? endDate.trim() : undefined;
-      const cleanDateFilter = dateFilter && typeof dateFilter === 'string' && dateFilter.trim() !== "" && dateFilter !== "all" && dateFilter !== "undefined" && dateFilter !== "null" ? dateFilter.trim() : undefined;
-      
-      console.log(`[API Debug] Raw params:`, { dateFilter, startDate, endDate });
-      console.log(`[API Debug] Clean params:`, { cleanDateFilter, cleanStartDate, cleanEndDate });
-      
+      console.log(`[API Debug] Received params:`, { dateFilter, startDate, endDate });
       
       const result = await storage.getAgreements({
         customerId: customerId as string,
         status: status as string,
         search: search as string,
-        dateFilter: cleanDateFilter,
-        startDate: cleanStartDate,
-        endDate: cleanEndDate,
+        dateFilter: dateFilter as string,
+        startDate: startDate as string,
+        endDate: endDate as string,
         limit: limit ? parseInt(limit as string) : undefined,
         offset: offset ? parseInt(offset as string) : undefined,
       });

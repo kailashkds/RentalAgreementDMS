@@ -109,13 +109,39 @@ export default function Agreements() {
     }
   };
 
+  // Calculate actual date ranges for predefined filters
+  const calculateDateRange = () => {
+    if (dateFilter === "all" || dateFilter === "") {
+      return { dateFilter: undefined, startDate: undefined, endDate: undefined };
+    }
+    
+    if (dateFilter === "custom") {
+      return {
+        dateFilter: "custom",
+        startDate: customStartDate ? customStartDate.toISOString().split('T')[0] : undefined,
+        endDate: customEndDate ? customEndDate.toISOString().split('T')[0] : undefined,
+      };
+    }
+    
+    // For predefined filters, calculate the actual date range
+    const range = getDateRange(dateFilter);
+    if (range) {
+      return {
+        dateFilter: "range",
+        startDate: range.start.toISOString().split('T')[0],
+        endDate: range.end.toISOString().split('T')[0],
+      };
+    }
+    
+    return { dateFilter: undefined, startDate: undefined, endDate: undefined };
+  };
+
+  const dateParams = calculateDateRange();
+  
   const { data: agreementsData, isLoading } = useAgreements({
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
-    dateFilter: dateFilter === "all" ? "" : (dateFilter === "custom" ? "" : dateFilter),
-    // Only send custom start/end dates when using custom filter
-    startDate: dateFilter === "custom" && customStartDate ? customStartDate.toISOString().split('T')[0] : undefined,
-    endDate: dateFilter === "custom" && customEndDate ? customEndDate.toISOString().split('T')[0] : undefined,
+    ...dateParams,
     limit: 20,
     offset: (currentPage - 1) * 20,
   });

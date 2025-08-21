@@ -449,116 +449,38 @@ export class DatabaseStorage implements IStorage {
   }): Promise<{ agreements: Agreement[]; total: number }> {
     const { customerId, propertyId, status, search, dateFilter, startDate, endDate, limit = 50, offset = 0 } = filters || {};
     
-    // Build date condition for agreement end date filtering
+    console.log(`[Date Filter Debug] Received parameters:`, { dateFilter, startDate, endDate });
+    
+    // Build date condition for agreement end date filtering based on expiry dates
     let dateCondition;
     
-    // Priority: If dateFilter is provided, use it and ignore startDate/endDate from frontend
-    if (dateFilter && dateFilter.trim() && 
-        ['today', 'tomorrow', 'thisWeek', 'thisMonth', 'next3Months', 'next6Months', 'thisYear'].includes(dateFilter.trim())) {
-      // Calculate date range for predefined filters
-      const today = new Date();
-      let startDateStr: string | undefined;
-      let endDateStr: string | undefined;
-
-      switch (dateFilter) {
-        case 'today':
-          // Today: end_date == today
-          const todayStr = today.toISOString().split('T')[0];
-          startDateStr = todayStr;
-          endDateStr = todayStr;
-          break;
-        case 'tomorrow':
-          // Tomorrow: end_date == (today + 1)
-          const tomorrow = new Date(today);
-          tomorrow.setDate(today.getDate() + 1);
-          const tomorrowStr = tomorrow.toISOString().split('T')[0];
-          startDateStr = tomorrowStr;
-          endDateStr = tomorrowStr;
-          break;
-        case 'thisWeek':
-          // This Week: end_date between Monday and Sunday of current week
-          const currentDay = today.getDay();
-          const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
-          const monday = new Date(today);
-          monday.setDate(today.getDate() + mondayOffset);
-          const sunday = new Date(monday);
-          sunday.setDate(monday.getDate() + 6);
-          startDateStr = monday.toISOString().split('T')[0];
-          endDateStr = sunday.toISOString().split('T')[0];
-          break;
-        case 'thisMonth':
-          // This Month: end_date between first and last day of current month
-          const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-          const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-          startDateStr = firstDay.toISOString().split('T')[0];
-          endDateStr = lastDay.toISOString().split('T')[0];
-          break;
-        case 'next3Months':
-          // Next 3 Months: end_date between today and (today + 3 months)
-          const threeMonthsLater = new Date(today);
-          threeMonthsLater.setMonth(today.getMonth() + 3);
-          startDateStr = today.toISOString().split('T')[0];
-          endDateStr = threeMonthsLater.toISOString().split('T')[0];
-          break;
-        case 'next6Months':
-          // Next 6 Months: end_date between today and (today + 6 months)
-          const sixMonthsLater = new Date(today);
-          sixMonthsLater.setMonth(today.getMonth() + 6);
-          startDateStr = today.toISOString().split('T')[0];
-          endDateStr = sixMonthsLater.toISOString().split('T')[0];
-          break;
-        case 'thisYear':
-          // This Year: end_date between January 1st and December 31st of current year
-          const yearStart = new Date(today.getFullYear(), 0, 1);
-          const yearEnd = new Date(today.getFullYear(), 11, 31);
-          startDateStr = yearStart.toISOString().split('T')[0];
-          endDateStr = yearEnd.toISOString().split('T')[0];
-          break;
-        default:
-          // For unknown filters, don't apply date filtering
-          break;
-      }
-      
-      // Only create date condition if we have valid date strings
-      if (startDateStr && endDateStr && startDateStr.trim() && endDateStr.trim()) {
-        try {
-          // Validate the calculated dates before using them
-          const parsedStart = new Date(startDateStr.trim());
-          const parsedEnd = new Date(endDateStr.trim());
-          
-          if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
-            dateCondition = and(
-              gte(agreements.endDate, startDateStr.trim()),
-              lte(agreements.endDate, endDateStr.trim())
-            );
-            console.log(`[Date Filter] Applied ${dateFilter} filter: ${startDateStr.trim()} to ${endDateStr.trim()}`);
-          } else {
-            console.error('Invalid calculated dates:', startDateStr, endDateStr);
-          }
-        } catch (e) {
-          console.error('Error creating date condition:', e);
-        }
-      } else {
-        console.log(`[Date Filter] No valid date range calculated for filter: ${dateFilter}`);
-      }
-    } else if (startDate && endDate && startDate.trim() && endDate.trim()) {
+    // Apply date filtering only when we have start and end dates (from calculated ranges or custom)
+    if (startDate && endDate && startDate.trim() && endDate.trim()) {
       try {
-        // Custom date range filtering - only when no predefined dateFilter
-        const parsedStart = new Date(startDate.trim());
-        const parsedEnd = new Date(endDate.trim());
+        const cleanStartDate = startDate.trim();
+        const cleanEndDate = endDate.trim();
+        
+        // Validate the dates
+        const parsedStart = new Date(cleanStartDate);
+        const parsedEnd = new Date(cleanEndDate);
         
         if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
+          // Filter by agreement expiry date (endDate field)
           dateCondition = and(
-            gte(agreements.endDate, startDate.trim()),
-            lte(agreements.endDate, endDate.trim())
+            gte(agreements.endDate, cleanStartDate),
+            lte(agreements.endDate, cleanEndDate)
           );
-          console.log(`[Date Filter] Applied custom range: ${startDate.trim()} to ${endDate.trim()}`);
+          console.log(`[Date Filter] Applied expiry date filter: ${cleanStartDate} to ${cleanEndDate}`);
+        } else {
+          console.error('[Date Filter] Invalid date format:', { startDate, endDate });
         }
       } catch (e) {
-        console.error('Invalid custom date range:', startDate, endDate);
+        console.error('[Date Filter] Error parsing dates:', e);
       }
+    } else {
+      console.log('[Date Filter] No date filtering applied - missing start or end date');
     }
-    // For 'all' filter or no filter, dateCondition remains undefined (no date filtering)
+    // For no date filter or 'all' filter, dateCondition remains undefined (no date filtering)
     
     const whereConditions = and(
       customerId ? eq(agreements.customerId, customerId) : undefined,
