@@ -27,7 +27,8 @@ import {
   X,
   Upload,
   File,
-  CheckCircle
+  CheckCircle,
+  Award
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -976,11 +977,11 @@ export default function Agreements() {
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                className="text-green-600 hover:text-green-900"
+                                className="text-amber-600 hover:text-amber-900"
                                 onClick={() => handleDownloadNotarizedFromTable(agreement)}
                                 title="Download Notarized Document"
                               >
-                                <Download className="h-4 w-4" />
+                                <Award className="h-4 w-4" />
                               </Button>
                             ) : (
                               <Button 
