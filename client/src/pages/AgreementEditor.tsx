@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, FileText, Search, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { ArrowLeft, FileText, Search, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Save, Clock } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AgreementEditor() {
   const [location, navigate] = useLocation();
@@ -14,6 +15,9 @@ export default function AgreementEditor() {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Find & Replace functionality
   const [showFindReplace, setShowFindReplace] = useState(false);
@@ -22,25 +26,122 @@ export default function AgreementEditor() {
   
   // Get data from URL params or local storage
   const urlParams = new URLSearchParams(window.location.search);
+  const agreementId = urlParams.get('agreementId') || '';
   const agreementNumber = urlParams.get('agreementNumber') || 'Unknown';
   const language = urlParams.get('language') || 'english';
   
-  // Load HTML content from session storage (set by the wizard)
-  const [htmlContent, setHtmlContent] = useState(() => {
-    return sessionStorage.getItem('editorHtmlContent') || '<p>Loading content...</p>';
-  });
+  // HTML content state - load from database or session storage
+  const [htmlContent, setHtmlContent] = useState('<p>Loading content...</p>');
 
+  // Load content from database on mount
   useEffect(() => {
-    // Load content into editor when component mounts
-    if (editorRef.current && htmlContent) {
+    const loadContent = async () => {
+      if (!agreementId) {
+        // Fallback to session storage for new documents
+        const sessionContent = sessionStorage.getItem('editorHtmlContent');
+        if (sessionContent) {
+          setHtmlContent(sessionContent);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Try to load edited content from database first
+        const response = await fetch(`/api/agreements/${agreementId}/edited-content`);
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.editedContent) {
+            // Load previously edited content
+            setHtmlContent(data.editedContent);
+            if (data.editedAt) {
+              setLastSaved(new Date(data.editedAt));
+            }
+          } else {
+            // No edited content, use session storage as fallback
+            const sessionContent = sessionStorage.getItem('editorHtmlContent');
+            if (sessionContent) {
+              setHtmlContent(sessionContent);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading edited content:', error);
+        // Fallback to session storage
+        const sessionContent = sessionStorage.getItem('editorHtmlContent');
+        if (sessionContent) {
+          setHtmlContent(sessionContent);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadContent();
+  }, [agreementId]);
+
+  // Load content into editor when it changes
+  useEffect(() => {
+    if (editorRef.current && htmlContent && !isLoading) {
       editorRef.current.innerHTML = htmlContent;
     }
-  }, [htmlContent]);
+  }, [htmlContent, isLoading]);
+
+  // Auto-save functionality
+  const autoSave = useCallback(async (content: string) => {
+    if (!agreementId || isSaving) return;
+
+    try {
+      setIsSaving(true);
+      await apiRequest('POST', `/api/agreements/${agreementId}/save-content`, {
+        editedContent: content
+      });
+      
+      setLastSaved(new Date());
+      setIsDirty(false);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [agreementId, isSaving]);
+
+  // Manual save
+  const handleSave = async () => {
+    if (!editorRef.current || !agreementId) return;
+
+    const content = editorRef.current.innerHTML;
+    await autoSave(content);
+    
+    toast({
+      title: "Document Saved",
+      description: "Your changes have been saved successfully.",
+    });
+  };
+
+  // Ref to store the timeout ID for auto-save
+  const autoSaveTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const handleContentChange = () => {
     if (editorRef.current) {
       setIsDirty(true);
-      sessionStorage.setItem('editorHtmlContent', editorRef.current.innerHTML);
+      const content = editorRef.current.innerHTML;
+      
+      // Save to session storage as backup
+      sessionStorage.setItem('editorHtmlContent', content);
+      
+      // Clear existing timeout
+      if (autoSaveTimeout.current) {
+        clearTimeout(autoSaveTimeout.current);
+      }
+      
+      // Auto-save after 2 seconds of inactivity
+      if (agreementId) {
+        autoSaveTimeout.current = setTimeout(() => {
+          autoSave(content);
+        }, 2000);
+      }
     }
   };
 
@@ -296,6 +397,19 @@ export default function AgreementEditor() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <Clock className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-lg">Loading document content...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6">
       <div className="mb-6 flex items-center justify-between">
@@ -312,14 +426,44 @@ export default function AgreementEditor() {
           <div>
             <h1 className="text-2xl font-bold">Agreement Editor</h1>
             <p className="text-muted-foreground">Agreement #{agreementNumber}</p>
+            {lastSaved && (
+              <p className="text-xs text-green-600 flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Last saved: {lastSaved.toLocaleString()}
+              </p>
+            )}
           </div>
         </div>
         
-        {isDirty && (
-          <div className="text-sm text-orange-600 font-medium">
-            • Unsaved changes
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {isSaving && (
+            <div className="text-sm text-blue-600 font-medium flex items-center gap-1">
+              <Clock className="h-4 w-4 animate-spin" />
+              Auto-saving...
+            </div>
+          )}
+          {isDirty && !isSaving && (
+            <div className="text-sm text-orange-600 font-medium">
+              • Unsaved changes
+            </div>
+          )}
+          {!isDirty && lastSaved && !isSaving && (
+            <div className="text-sm text-green-600 font-medium">
+              ✓ All changes saved
+            </div>
+          )}
+          
+          <Button 
+            onClick={handleSave}
+            disabled={isSaving || !isDirty}
+            className="flex items-center gap-2"
+            variant="outline"
+            data-testid="save-continue"
+          >
+            <Save className="h-4 w-4" />
+            Save & Continue Later
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-6">

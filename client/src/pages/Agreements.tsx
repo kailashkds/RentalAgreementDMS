@@ -936,6 +936,15 @@ export default function Agreements() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
+                            className="text-blue-600 hover:text-blue-900"
+                            onClick={() => navigate(`/agreement-editor?agreementId=${agreement.id}&agreementNumber=${agreement.agreementNumber}&language=${agreement.language || 'english'}`)}
+                            title="Edit Document"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
                             className="text-amber-600 hover:text-amber-900"
                             onClick={() => setEditingAgreement(agreement)}
                             title="Edit Agreement"

@@ -351,17 +351,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Agreement not found" });
       }
 
-      // Find template for this agreement
-      const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
-      const template = templates.find(t => t.isActive) || templates[0];
-      
-      if (!template) {
-        return res.status(404).json({ message: "No PDF template found" });
-      }
+      // Use edited content if available, otherwise generate from template
+      let processedHtml;
+      if (agreement.editedContent) {
+        // Use the saved edited content directly
+        processedHtml = agreement.editedContent;
+      } else {
+        // Find template for this agreement and generate HTML
+        const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
+        const template = templates.find(t => t.isActive) || templates[0];
+        
+        if (!template) {
+          return res.status(404).json({ message: "No PDF template found" });
+        }
 
-      // Generate PDF HTML content
-      const { generatePdfHtml } = await import("./fieldMapping");
-      const processedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
+        // Generate PDF HTML content from template
+        const { generatePdfHtml } = await import("./fieldMapping");
+        processedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
+      }
       
       // Return the HTML for client-side PDF generation
       res.json({
@@ -515,6 +522,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching agreement:", error);
       res.status(500).json({ message: "Failed to fetch agreement" });
+    }
+  });
+
+  // Save edited content for an agreement
+  app.post("/api/agreements/:id/save-content", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { editedContent } = req.body;
+
+      if (!editedContent) {
+        return res.status(400).json({ message: "Edited content is required" });
+      }
+
+      const agreement = await storage.getAgreement(id);
+      if (!agreement) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+
+      await storage.saveEditedContent(id, editedContent);
+      
+      res.json({ 
+        success: true, 
+        message: "Content saved successfully",
+        savedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error saving edited content:", error);
+      res.status(500).json({ message: "Failed to save edited content" });
+    }
+  });
+
+  // Get edited content for an agreement
+  app.get("/api/agreements/:id/edited-content", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const agreement = await storage.getAgreement(id);
+      if (!agreement) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+
+      res.json({
+        success: true,
+        editedContent: agreement.editedContent || null,
+        editedAt: agreement.editedAt || null,
+        hasEdits: !!agreement.editedContent
+      });
+    } catch (error) {
+      console.error("Error fetching edited content:", error);
+      res.status(500).json({ message: "Failed to fetch edited content" });
     }
   });
 
