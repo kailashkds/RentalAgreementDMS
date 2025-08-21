@@ -345,35 +345,21 @@ export default function AgreementEditor() {
         <table id="${tableId}" class="agreement-table" style="width: 100%; border-collapse: collapse; position: relative;" contenteditable="false">
           <tr>
             <td style="border: 1px solid #000; padding: 12px; position: relative; background: #f8f9fa;" 
-                contenteditable="true" 
-                oncontextmenu="showCellMenu(event, this)"
-                onclick="selectCell(this)">
+                contenteditable="true">
               <strong>Clause</strong>
-              <div class="cell-menu" style="display: none; position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 4px; z-index: 1000; font-size: 12px;">
-                <div onclick="mergeCells(this)" style="padding: 4px 8px; cursor: pointer; hover:background-color: #f0f0f0;">Merge Right</div>
-                <div onclick="splitCell(this)" style="padding: 4px 8px; cursor: pointer; hover:background-color: #f0f0f0;">Split Cell</div>
-                <div onclick="setBorder(this, 'solid')" style="padding: 4px 8px; cursor: pointer; hover:background-color: #f0f0f0;">Solid Border</div>
-                <div onclick="setBorder(this, 'dashed')" style="padding: 4px 8px; cursor: pointer; hover:background-color: #f0f0f0;">Dashed Border</div>
-              </div>
             </td>
             <td style="border: 1px solid #000; padding: 12px; position: relative; background: #f8f9fa;" 
-                contenteditable="true" 
-                oncontextmenu="showCellMenu(event, this)"
-                onclick="selectCell(this)">
+                contenteditable="true">
               <strong>Description</strong>
             </td>
           </tr>
           <tr>
             <td style="border: 1px solid #000; padding: 12px; position: relative;" 
-                contenteditable="true" 
-                oncontextmenu="showCellMenu(event, this)"
-                onclick="selectCell(this)">
+                contenteditable="true">
               1.
             </td>
             <td style="border: 1px solid #000; padding: 12px; position: relative;" 
-                contenteditable="true" 
-                oncontextmenu="showCellMenu(event, this)"
-                onclick="selectCell(this)">
+                contenteditable="true">
               Enter clause details here...
             </td>
           </tr>
