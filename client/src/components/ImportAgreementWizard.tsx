@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +27,30 @@ interface ImportAgreementData {
   ownerDetails: {
     name: string;
     mobile: string;
+    address?: {
+      flatNo?: string;
+      society?: string;
+      area?: string;
+      city?: string;
+      state?: string;
+      pincode?: string;
+      district?: string;
+      landmark?: string;
+    };
   };
   tenantDetails: {
     name: string;
     mobile: string;
+    address?: {
+      flatNo?: string;
+      society?: string;
+      area?: string;
+      city?: string;
+      state?: string;
+      pincode?: string;
+      district?: string;
+      landmark?: string;
+    };
   };
   agreementPeriod: {
     startDate: string;
@@ -52,6 +72,19 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Autofill and autocomplete state
+  const mobileTimeout = useRef<NodeJS.Timeout | null>(null);
+  const addressTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [societySuggestions, setSocietySuggestions] = useState<Array<{
+    id: string;
+    societyName: string;
+    area: string;
+    city: string;
+    pincode: string;
+    state: string;
+  }>>([]);
+  const [showSocietySuggestions, setShowSocietySuggestions] = useState(false);
 
   const [formData, setFormData] = useState<ImportAgreementData>({
     customer: { id: "", name: "", mobile: "" },
@@ -240,6 +273,207 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
     }));
   };
 
+  // Address autocomplete from societies database
+  const fetchSocietyAddresses = async (searchValue: string) => {
+    if (searchValue.length < 2) {
+      setSocietySuggestions([]);
+      setShowSocietySuggestions(false);
+      return;
+    }
+
+    // Clear previous timeout
+    if (addressTimeout.current) {
+      clearTimeout(addressTimeout.current);
+    }
+
+    addressTimeout.current = setTimeout(async () => {
+      try {
+        console.log(`Fetching societies for: ${searchValue}`);
+        const response = await fetch(`/api/societies?search=${encodeURIComponent(searchValue)}&limit=10`);
+        const societies = await response.json() as any[];
+        console.log(`Found ${societies.length} societies:`, societies);
+        
+        setSocietySuggestions(societies.map(society => ({
+          id: society.id,
+          societyName: society.societyName,
+          area: society.area,
+          city: society.city,
+          pincode: society.pincode,
+          state: society.state || "Gujarat"
+        })));
+        setShowSocietySuggestions(societies.length > 0);
+      } catch (error) {
+        console.error("Error fetching society addresses:", error);
+        setSocietySuggestions([]);
+        setShowSocietySuggestions(false);
+      }
+    }, 300);
+  };
+
+  const handleSocietySelect = (society: any, fieldType: 'property') => {
+    setFormData(prev => ({
+      ...prev,
+      propertyAddress: {
+        ...prev.propertyAddress,
+        society: society.societyName,
+        area: society.area,
+        city: society.city,
+        pincode: society.pincode,
+        state: society.state
+      }
+    }));
+    
+    setShowSocietySuggestions(false);
+    
+    toast({
+      title: "Address Auto-filled",
+      description: `Auto-filled from ${society.societyName}`,
+    });
+  };
+
+  // Enhanced customer lookup for mobile numbers
+  const fetchCustomerInfo = async (searchTerm: string, searchType: 'mobile' | 'name', userType: 'owner' | 'tenant') => {
+    if (!searchTerm || searchTerm.trim().length < 3) return;
+    
+    try {
+      let customer = null;
+      
+      if (searchType === 'mobile' && searchTerm.replace(/\D/g, '').length === 10) {
+        console.log(`Looking up customer by mobile: ${searchTerm}`);
+        const response = await apiRequest("GET", `/api/customers/by-mobile?mobile=${encodeURIComponent(searchTerm)}`);
+        customer = await response.json();
+      } else if (searchType === 'name' && searchTerm.trim().length >= 3) {
+        console.log(`Looking up customer by name: ${searchTerm}`);
+        const response = await apiRequest("GET", `/api/customers?search=${encodeURIComponent(searchTerm)}`);
+        const data = await response.json();
+        // Find exact or close match
+        const customers = data.customers || [];
+        customer = customers.find((c: any) => 
+          c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          searchTerm.toLowerCase().includes(c.name.toLowerCase())
+        );
+      }
+      
+      if (customer) {
+        console.log(`Found customer:`, customer);
+        fillCustomerDetails(customer, userType);
+        
+        toast({
+          title: "Customer Found ✓",
+          description: `Auto-filled details for ${customer.name}`,
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.log("Customer lookup error:", error);
+      if (error instanceof Error && error.message.includes('404')) {
+        console.log(`No existing customer found for ${searchType}: ${searchTerm}`);
+      } else {
+        console.error("Customer lookup error:", error);
+        toast({
+          title: "Lookup Failed",
+          description: "Could not check for existing customer details",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  // Fill customer details including any associated address
+  const fillCustomerDetails = (customer: any, userType: 'owner' | 'tenant') => {
+    if (userType === 'owner') {
+      setFormData(prev => ({
+        ...prev,
+        ownerDetails: {
+          ...prev.ownerDetails,
+          name: customer.name,
+          mobile: customer.mobile
+        }
+      }));
+      
+      // Fill address if available (from most recent agreement)
+      fillAssociatedAddress(customer.id, userType);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        tenantDetails: {
+          ...prev.tenantDetails,
+          name: customer.name,
+          mobile: customer.mobile
+        }
+      }));
+      
+      // Fill address if available (from most recent agreement)
+      fillAssociatedAddress(customer.id, userType);
+    }
+  };
+
+  // Fill associated address from customer's previous agreements
+  const fillAssociatedAddress = async (customerId: string, userType: 'owner' | 'tenant') => {
+    try {
+      const response = await apiRequest("GET", `/api/agreements?customerId=${customerId}&limit=1`);
+      const data = await response.json();
+      const agreements = data.agreements || [];
+      
+      if (agreements.length > 0) {
+        const lastAgreement = agreements[0];
+        let addressData = null;
+        
+        // Get address from owner or tenant details based on user type
+        if (userType === 'owner' && lastAgreement.ownerDetails?.address) {
+          addressData = lastAgreement.ownerDetails.address;
+        } else if (userType === 'tenant' && lastAgreement.tenantDetails?.address) {
+          addressData = lastAgreement.tenantDetails.address;
+        }
+        
+        if (addressData) {
+          if (userType === 'owner') {
+            setFormData(prev => ({
+              ...prev,
+              ownerDetails: {
+                ...prev.ownerDetails,
+                address: {
+                  flatNo: addressData.flatNo || "",
+                  society: addressData.society || "",
+                  area: addressData.area || "",
+                  city: addressData.city || "",
+                  state: addressData.state || "",
+                  pincode: addressData.pincode || "",
+                  district: addressData.district || "",
+                  landmark: addressData.landmark || ""
+                }
+              }
+            }));
+          } else {
+            setFormData(prev => ({
+              ...prev,
+              tenantDetails: {
+                ...prev.tenantDetails,
+                address: {
+                  flatNo: addressData.flatNo || "",
+                  society: addressData.society || "",
+                  area: addressData.area || "",
+                  city: addressData.city || "",
+                  state: addressData.state || "",
+                  pincode: addressData.pincode || "",
+                  district: addressData.district || "",
+                  landmark: addressData.landmark || ""
+                }
+              }
+            }));
+          }
+          
+          toast({
+            title: "Address Auto-filled ✓",
+            description: "Filled address from previous agreement",
+          });
+        }
+      }
+    } catch (error) {
+      console.log("Could not fetch associated address:", error);
+    }
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -330,12 +564,30 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                 <Input
                   id="owner-mobile"
                   value={formData.ownerDetails.mobile}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    ownerDetails: { ...prev.ownerDetails, mobile: e.target.value }
-                  }))}
+                  onChange={(e) => {
+                    const mobile = e.target.value;
+                    setFormData(prev => ({
+                      ...prev,
+                      ownerDetails: { ...prev.ownerDetails, mobile }
+                    }));
+                    
+                    // Clear previous timeout
+                    if (mobileTimeout.current) {
+                      clearTimeout(mobileTimeout.current);
+                    }
+                    // Auto-lookup when user finishes typing 10 digits
+                    if (mobile.replace(/\D/g, '').length === 10) {
+                      mobileTimeout.current = setTimeout(() => {
+                        fetchCustomerInfo(mobile, 'mobile', 'owner');
+                      }, 500);
+                    }
+                  }}
+                  onBlur={(e) => fetchCustomerInfo(e.target.value, 'mobile', 'owner')}
                   placeholder="Enter owner's mobile number"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter mobile number to auto-fill name and details
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -366,12 +618,30 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                 <Input
                   id="tenant-mobile"
                   value={formData.tenantDetails.mobile}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    tenantDetails: { ...prev.tenantDetails, mobile: e.target.value }
-                  }))}
+                  onChange={(e) => {
+                    const mobile = e.target.value;
+                    setFormData(prev => ({
+                      ...prev,
+                      tenantDetails: { ...prev.tenantDetails, mobile }
+                    }));
+                    
+                    // Clear previous timeout
+                    if (mobileTimeout.current) {
+                      clearTimeout(mobileTimeout.current);
+                    }
+                    // Auto-lookup when user finishes typing 10 digits
+                    if (mobile.replace(/\D/g, '').length === 10) {
+                      mobileTimeout.current = setTimeout(() => {
+                        fetchCustomerInfo(mobile, 'mobile', 'tenant');
+                      }, 500);
+                    }
+                  }}
+                  onBlur={(e) => fetchCustomerInfo(e.target.value, 'mobile', 'tenant')}
                   placeholder="Enter tenant's mobile number"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter mobile number to auto-fill name and details
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -429,17 +699,38 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                       placeholder="e.g., A-101"
                     />
                   </div>
-                  <div>
+                  <div className="relative">
                     <Label htmlFor="society">Society/Building *</Label>
                     <Input
                       id="society"
                       value={formData.propertyAddress.society}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        propertyAddress: { ...prev.propertyAddress, society: e.target.value }
-                      }))}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          propertyAddress: { ...prev.propertyAddress, society: value }
+                        }));
+                        fetchSocietyAddresses(value);
+                      }}
                       placeholder="e.g., ABC Apartments"
                     />
+                    {showSocietySuggestions && societySuggestions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                        {societySuggestions.map((society) => (
+                          <div
+                            key={society.id}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                            onClick={() => handleSocietySelect(society, 'property')}
+                          >
+                            <div className="font-medium">{society.societyName}</div>
+                            <div className="text-gray-600">{society.area}, {society.city} - {society.pincode}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Start typing to search for existing societies
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="area">Area *</Label>
