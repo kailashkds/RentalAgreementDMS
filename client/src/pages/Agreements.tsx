@@ -2148,16 +2148,12 @@ export default function Agreements() {
                         <p className="text-slate-900">₹{viewingImportedAgreement.rentalTerms.securityDeposit}</p>
                       </div>
                     )}
-                    {viewingImportedAgreement.startDate && (
-                      <div>
-                        <span className="text-sm font-medium text-slate-600">Start Date:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.startDate}</p>
-                      </div>
-                    )}
-                    {viewingImportedAgreement.endDate && (
-                      <div>
-                        <span className="text-sm font-medium text-slate-600">End Date:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.endDate}</p>
+                    {(viewingImportedAgreement.startDate || viewingImportedAgreement.endDate) && (
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-slate-600">Agreement Period:</span>
+                        <p className="text-slate-900">
+                          {viewingImportedAgreement.startDate || 'N/A'} to {viewingImportedAgreement.endDate || 'N/A'}
+                        </p>
                       </div>
                     )}
                     {viewingImportedAgreement.agreementNumber && (
