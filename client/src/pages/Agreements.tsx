@@ -1796,14 +1796,104 @@ export default function Agreements() {
           
           {viewingAgreement && (
             <div className="space-y-6 pt-6">
-              {/* Owner Details */}
+              {/* Agreement Details - Moved to top and renamed */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center">
+                    <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-xs font-bold text-white">📋</span>
+                    </div>
+                    Agreement Details
+                  </h3>
+                </div>
+                <div className="bg-slate-50 p-6">
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Agreement Number</label>
+                      <p className="mt-1 text-sm text-gray-900 font-mono font-bold">{viewingAgreement.agreementNumber || 'Not assigned'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Agreement Date</label>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.agreementDate ? new Date(viewingAgreement.agreementDate).toLocaleDateString() : 'Not set'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Language</label>
+                      <p className="mt-1 text-sm text-gray-900 capitalize">{viewingAgreement.language || 'English'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Status</label>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(viewingAgreement.status)}`}>
+                          {viewingAgreement.status ? viewingAgreement.status.charAt(0).toUpperCase() + viewingAgreement.status.slice(1) : 'Unknown'}
+                        </span>
+                        {isImportedAgreement(viewingAgreement) && (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700">
+                            Imported
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Created At</label>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.createdAt ? new Date(viewingAgreement.createdAt).toLocaleString() : 'Not available'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Last Updated</label>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.updatedAt ? new Date(viewingAgreement.updatedAt).toLocaleString() : 'Not available'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Details */}
               <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                 <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
                       <span className="text-xs font-bold text-white">1</span>
                     </div>
-                    Owner Details
+                    Customer Details
+                  </h3>
+                </div>
+                <div className="bg-slate-50 p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Customer Name</label>
+                      <p className="mt-1 text-sm text-gray-900 font-medium">{viewingAgreement.customer?.name || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Email</label>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.customer?.email || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Mobile</label>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.customer?.mobile || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">Status</label>
+                      <p className="mt-1">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          viewingAgreement.customer?.status === 'active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {viewingAgreement.customer?.status === 'active' ? 'Active' : 'Inactive'}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Landlord Details */}
+              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center">
+                    <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                      <span className="text-xs font-bold text-white">2</span>
+                    </div>
+                    Landlord Details
                   </h3>
                 </div>
                 <div className="bg-slate-50 p-6">
@@ -1857,7 +1947,7 @@ export default function Agreements() {
                 <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-xs font-bold text-white">2</span>
+                      <span className="text-xs font-bold text-white">3</span>
                     </div>
                     Tenant Details
                   </h3>
@@ -1913,7 +2003,7 @@ export default function Agreements() {
                 <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-xs font-bold text-white">3</span>
+                      <span className="text-xs font-bold text-white">4</span>
                     </div>
                     Property Details
                   </h3>
@@ -1961,7 +2051,7 @@ export default function Agreements() {
                 <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-xs font-bold text-white">4</span>
+                      <span className="text-xs font-bold text-white">5</span>
                     </div>
                     Rental Terms
                   </h3>
@@ -2013,7 +2103,7 @@ export default function Agreements() {
                 <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
                     <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <span className="text-xs font-bold text-white">5</span>
+                      <span className="text-xs font-bold text-white">6</span>
                     </div>
                     Additional Clauses
                   </h3>
@@ -2035,53 +2125,6 @@ export default function Agreements() {
                 </div>
               </div>
 
-              {/* Agreement Information & Actions */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-                <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center">
-                    <Download className="h-5 w-5 mr-3 text-white" />
-                    Agreement Actions
-                  </h3>
-                </div>
-                <div className="bg-slate-50 p-6">
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Agreement Number</label>
-                      <p className="mt-1 text-sm text-gray-900 font-mono font-bold">{viewingAgreement.agreementNumber || 'Not assigned'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Agreement Date</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.agreementDate ? new Date(viewingAgreement.agreementDate).toLocaleDateString() : 'Not set'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Language</label>
-                      <p className="mt-1 text-sm text-gray-900 capitalize">{viewingAgreement.language || 'English'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Status</label>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(viewingAgreement.status)}`}>
-                          {viewingAgreement.status ? viewingAgreement.status.charAt(0).toUpperCase() + viewingAgreement.status.slice(1) : 'Unknown'}
-                        </span>
-                        {isImportedAgreement(viewingAgreement) && (
-                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700">
-                            Imported
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Created At</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.createdAt ? new Date(viewingAgreement.createdAt).toLocaleString() : 'Not available'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Last Updated</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.updatedAt ? new Date(viewingAgreement.updatedAt).toLocaleString() : 'Not available'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Imported Documents Section - Only show for imported agreements */}
               {isImportedAgreement(viewingAgreement) && (
