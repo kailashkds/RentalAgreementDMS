@@ -343,6 +343,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // View agreement PDF as HTML in browser
+  app.get("/api/agreements/:id/view", async (req, res) => {
+    try {
+      const agreement = await storage.getAgreement(req.params.id);
+      if (!agreement) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+
+      // Always prioritize edited_html when it exists and is not empty
+      let processedHtml;
+      let htmlSource = 'template'; // Track which source we're using
+      
+      console.log(`[PDF View] Agreement ${req.params.id} - editedHtml exists: ${!!agreement.editedHtml}, length: ${agreement.editedHtml?.length || 0}, trimmed length: ${agreement.editedHtml?.trim()?.length || 0}`);
+      
+      if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
+        htmlSource = 'edited_html';
+        console.log(`[PDF View] ✓ USING EDITED HTML for agreement ${req.params.id} (${agreement.editedHtml.length} chars)`);
+        // Resolve placeholders in saved edited HTML with current DB values
+        const { resolvePlaceholders } = await import("./fieldMapping");
+        processedHtml = await resolvePlaceholders(agreement.editedHtml, agreement);
+      } else {
+        console.log(`[PDF View] ✓ USING TEMPLATE FALLBACK for agreement ${req.params.id} (no edited HTML found)`);
+        // Find template for this agreement and generate HTML
+        const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
+        const template = templates.find(t => t.isActive) || templates[0];
+        
+        if (!template) {
+          return res.status(404).json({ message: "No PDF template found" });
+        }
+
+        // Generate PDF HTML content from template and save it to edited_html
+        const { generatePdfHtml } = await import("./fieldMapping");
+        processedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
+        
+        // Save the generated HTML as edited_html for future use
+        try {
+          await storage.saveEditedHtml(req.params.id, processedHtml);
+          console.log(`[PDF View] ✓ SAVED generated HTML to edited_html for agreement ${req.params.id}`);
+        } catch (saveError) {
+          console.error(`[PDF View] Failed to save HTML to edited_html:`, saveError);
+        }
+      }
+      
+      console.log(`[PDF View] Final HTML source: ${htmlSource}, processed length: ${processedHtml.length} chars`);
+      
+      // Serve the HTML content directly for viewing in browser
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(processedHtml);
+    } catch (error) {
+      console.error("Error generating agreement PDF view:", error);
+      res.status(500).send(`<html><body><h1>Error</h1><p>Failed to generate PDF view: ${error instanceof Error ? error.message : 'Unknown error'}</p></body></html>`);
+    }
+  });
+
   // Download agreement PDF
   app.get("/api/agreements/:id/pdf", async (req, res) => {
     try {

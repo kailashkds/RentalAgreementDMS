@@ -2219,7 +2219,7 @@ export default function Agreements() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => window.open(`/api/agreements/${viewingAgreement.id}/pdf`, '_blank')}
+                            onClick={() => window.open(`/api/agreements/${viewingAgreement.id}/view`, '_blank')}
                             className="border-green-300 hover:bg-green-50"
                           >
                             <Eye className="h-4 w-4 mr-2" />
