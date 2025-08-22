@@ -465,12 +465,13 @@ export class DatabaseStorage implements IStorage {
         const parsedEnd = new Date(cleanEndDate);
         
         if (!isNaN(parsedStart.getTime()) && !isNaN(parsedEnd.getTime())) {
-          // Filter by agreement expiry date (endDate field)
+          // Filter by agreement start date (startDate field) - this makes sense for users
+          // Use string dates for date fields (not timestamps)
           dateCondition = and(
-            gte(agreements.endDate, cleanStartDate),
-            lte(agreements.endDate, cleanEndDate)
+            gte(agreements.startDate, cleanStartDate),
+            lte(agreements.startDate, cleanEndDate)
           );
-          console.log(`[Date Filter] Applied expiry date filter: ${cleanStartDate} to ${cleanEndDate}`);
+          console.log(`[Date Filter] Applied start date filter: ${cleanStartDate} to ${cleanEndDate}`);
         } else {
           console.error('[Date Filter] Invalid date format:', { startDate, endDate });
         }
