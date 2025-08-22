@@ -718,11 +718,20 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   };
 
   const handleSocietySelect = (society: any, fieldPrefix: string) => {
-    setValue(`${fieldPrefix}.address.society`, society.societyName);
-    setValue(`${fieldPrefix}.address.area`, society.area);
-    setValue(`${fieldPrefix}.address.city`, society.city);
-    setValue(`${fieldPrefix}.address.pincode`, society.pincode);
-    setValue(`${fieldPrefix}.address.state`, society.state);
+    setValue(`${fieldPrefix}.address.society`, society.societyName, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.address.area`, society.area, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.address.city`, society.city, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.address.pincode`, society.pincode, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.address.state`, society.state, { shouldValidate: true, shouldDirty: true });
+    
+    // Force form to re-render by triggering validation
+    trigger([
+      `${fieldPrefix}.address.society`,
+      `${fieldPrefix}.address.area`, 
+      `${fieldPrefix}.address.city`,
+      `${fieldPrefix}.address.pincode`,
+      `${fieldPrefix}.address.state`
+    ]);
     
     setShowSocietySuggestions(false);
     
@@ -783,16 +792,22 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   // Fill customer details including any associated address
   const fillCustomerDetails = (customer: any, userType: 'owner' | 'tenant') => {
     if (userType === 'owner') {
-      setValue("ownerDetails.name", customer.name);
-      setValue("ownerDetails.mobile", customer.mobile);
-      setValue("ownerDetails.email", customer.email || "");
+      setValue("ownerDetails.name", customer.name, { shouldValidate: true, shouldDirty: true });
+      setValue("ownerDetails.mobile", customer.mobile, { shouldValidate: true, shouldDirty: true });
+      setValue("ownerDetails.email", customer.email || "", { shouldValidate: true, shouldDirty: true });
+      
+      // Trigger re-render for filled fields
+      trigger(["ownerDetails.name", "ownerDetails.mobile", "ownerDetails.email"]);
       
       // Fill address if available (from most recent agreement)
       fillAssociatedAddress(customer.id, userType);
     } else {
-      setValue("tenantDetails.name", customer.name);
-      setValue("tenantDetails.mobile", customer.mobile);
-      setValue("tenantDetails.email", customer.email || "");
+      setValue("tenantDetails.name", customer.name, { shouldValidate: true, shouldDirty: true });
+      setValue("tenantDetails.mobile", customer.mobile, { shouldValidate: true, shouldDirty: true });
+      setValue("tenantDetails.email", customer.email || "", { shouldValidate: true, shouldDirty: true });
+      
+      // Trigger re-render for filled fields
+      trigger(["tenantDetails.name", "tenantDetails.mobile", "tenantDetails.email"]);
       
       // Fill address if available (from most recent agreement)
       fillAssociatedAddress(customer.id, userType);
@@ -819,14 +834,26 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
         
         if (addressData) {
           const prefix = userType === 'owner' ? 'ownerDetails' : 'tenantDetails';
-          setValue(`${prefix}.address.flatNo`, addressData.flatNo || "");
-          setValue(`${prefix}.address.society`, addressData.society || "");
-          setValue(`${prefix}.address.area`, addressData.area || "");
-          setValue(`${prefix}.address.city`, addressData.city || "");
-          setValue(`${prefix}.address.state`, addressData.state || "");
-          setValue(`${prefix}.address.pincode`, addressData.pincode || "");
-          setValue(`${prefix}.address.district`, addressData.district || "");
-          setValue(`${prefix}.address.landmark`, addressData.landmark || "");
+          setValue(`${prefix}.address.flatNo`, addressData.flatNo || "", { shouldValidate: true, shouldDirty: true });
+          setValue(`${prefix}.address.society`, addressData.society || "", { shouldValidate: true, shouldDirty: true });
+          setValue(`${prefix}.address.area`, addressData.area || "", { shouldValidate: true, shouldDirty: true });
+          setValue(`${prefix}.address.city`, addressData.city || "", { shouldValidate: true, shouldDirty: true });
+          setValue(`${prefix}.address.state`, addressData.state || "", { shouldValidate: true, shouldDirty: true });
+          setValue(`${prefix}.address.pincode`, addressData.pincode || "", { shouldValidate: true, shouldDirty: true });
+          setValue(`${prefix}.address.district`, addressData.district || "", { shouldValidate: true, shouldDirty: true });
+          setValue(`${prefix}.address.landmark`, addressData.landmark || "", { shouldValidate: true, shouldDirty: true });
+          
+          // Force form to re-render by triggering validation
+          trigger([
+            `${prefix}.address.flatNo`,
+            `${prefix}.address.society`,
+            `${prefix}.address.area`,
+            `${prefix}.address.city`,
+            `${prefix}.address.state`,
+            `${prefix}.address.pincode`,
+            `${prefix}.address.district`,
+            `${prefix}.address.landmark`
+          ]);
           
           toast({
             title: "Address Auto-filled ✓",
