@@ -77,7 +77,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   const customers = (customersData as any)?.customers || [];
 
   const handleNext = () => {
-    if (validateStep(currentStep)) {
+    if (validateStepWithToast(currentStep)) {
       setCurrentStep(prev => Math.min(prev + 1, 5));
     }
   };
@@ -87,6 +87,24 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   };
 
   const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(formData.customer.name && formData.language);
+      case 2:
+        return !!(formData.ownerDetails.name && formData.ownerDetails.mobile);
+      case 3:
+        return !!(formData.tenantDetails.name && formData.tenantDetails.mobile);
+      case 4:
+        return !!(formData.agreementPeriod.startDate && formData.agreementPeriod.endDate && 
+                 formData.propertyAddress.flatNo && formData.propertyAddress.society &&
+                 formData.propertyAddress.area && formData.propertyAddress.city &&
+                 formData.propertyAddress.state && formData.propertyAddress.pincode);
+      default:
+        return true;
+    }
+  };
+
+  const validateStepWithToast = (step: number): boolean => {
     switch (step) {
       case 1:
         if (!formData.customer.name || !formData.language) {
