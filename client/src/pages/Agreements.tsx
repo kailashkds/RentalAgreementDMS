@@ -971,11 +971,11 @@ export default function Agreements() {
             ) : (
               <div className="space-y-4">
                 {filteredAgreements?.map((agreement: any, index: number) => (
-                  <div key={agreement.id || index} className="border border-gray-200 rounded-lg p-6 bg-white hover:bg-gray-50 transition-colors group">
-                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-                      {/* Main Content */}
-                      <div className="flex-1">
-                        {/* Header with Agreement Number and Status Badges */}
+                  <div key={agreement.id || index} className="border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors group">
+                    <div className="flex flex-col lg:flex-row">
+                      {/* Details Section */}
+                      <div className="flex-1 p-6 border-r border-gray-100">
+                        {/* Header with Agreement Number and Status */}
                         <div className="flex flex-wrap items-center gap-3 mb-4">
                           <h3 className="text-xl font-bold font-mono text-gray-900">
                             {agreement.agreementNumber}
@@ -988,31 +988,10 @@ export default function Agreements() {
                           >
                             {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
                           </span>
-                          
-                          <span
-                            className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                              agreement.status === "draft"
-                                ? "bg-gray-100 text-gray-800"
-                                : agreement.status === "active"
-                                ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-amber-100 text-amber-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            Notary Status: {agreement.status === "draft"
-                              ? "Draft"
-                              : agreement.status === "active"
-                              ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                ? "✓ Done"
-                                : "⏳ Pending"
-                              : "N/A"
-                            }
-                          </span>
                         </div>
                         
-                        {/* Information Grid - Compact Layout */}
-                        <div className="space-y-3 text-sm">
+                        {/* Information Grid - Reorganized Layout */}
+                        <div className="space-y-4 text-sm">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                               <span className="font-medium text-gray-600">Customer:</span>
@@ -1021,34 +1000,36 @@ export default function Agreements() {
                             <div>
                               <span className="font-medium text-gray-600">Landlord:</span>
                               <p className="text-gray-900">{agreement.ownerDetails?.name || 'Not provided'}</p>
+                              <div className="mt-1">
+                                <span
+                                  className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                    agreement.status === "draft"
+                                      ? "bg-gray-100 text-gray-800"
+                                      : agreement.status === "active"
+                                      ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-amber-100 text-amber-800"
+                                      : "bg-gray-100 text-gray-800"
+                                  }`}
+                                >
+                                  Notary: {agreement.status === "draft"
+                                    ? "Draft"
+                                    : agreement.status === "active"
+                                    ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                      ? "✓ Done"
+                                      : "⏳ Pending"
+                                    : "N/A"
+                                  }
+                                </span>
+                              </div>
                             </div>
                             <div>
                               <span className="font-medium text-gray-600">Tenant:</span>
                               <p className="text-gray-900">{agreement.tenantDetails?.name || 'Not provided'}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <span className="font-medium text-gray-600">Agreement Period:</span>
-                              <p className="text-gray-900">
-                                {(() => {
-                                  const startDate = agreement.rentalTerms?.startDate || agreement.startDate;
-                                  const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-                                  
-                                  if (startDate && endDate) {
-                                    return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
-                                  }
-                                  return 'Not available';
-                                })()}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600">Expiry Status:</span>
                               <div className="mt-1">
                                 {(() => {
                                   const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-                                  if (!endDate) return <span className="text-gray-900">No expiry date</span>;
+                                  if (!endDate) return <span className="text-xs text-gray-500">No expiry date</span>;
                                   
                                   const today = new Date();
                                   const expiry = new Date(endDate);
@@ -1081,13 +1062,28 @@ export default function Agreements() {
                                   }
                                   
                                   return (
-                                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${bgColor} ${textColor}`}>
+                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${bgColor} ${textColor}`}>
                                       {text}
                                     </span>
                                   );
                                 })()}
                               </div>
                             </div>
+                          </div>
+                          
+                          <div>
+                            <span className="font-medium text-gray-600">Agreement Period:</span>
+                            <p className="text-gray-900">
+                              {(() => {
+                                const startDate = agreement.rentalTerms?.startDate || agreement.startDate;
+                                const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+                                
+                                if (startDate && endDate) {
+                                  return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+                                }
+                                return 'Not available';
+                              })()}
+                            </p>
                           </div>
                           
                           <div>
@@ -1111,13 +1107,12 @@ export default function Agreements() {
                       </div>
                       
                       {/* Actions Section */}
-                      <div className="flex-shrink-0 lg:w-48">
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <div className="text-center mb-3">
-                            <span className="text-sm font-medium text-gray-700">Actions</span>
-                          </div>
-                          {/* Action Buttons Grid - Circular buttons like in screenshot */}
-                          <div className="grid grid-cols-3 gap-2">
+                      <div className="flex-shrink-0 lg:w-48 bg-gray-50 p-4 rounded-r-lg">
+                        <div className="text-center mb-3">
+                          <span className="text-sm font-medium text-gray-700">Actions</span>
+                        </div>
+                        {/* Action Buttons Grid - Circular buttons like in screenshot */}
+                        <div className="grid grid-cols-3 gap-2">
                             {/* View Button */}
                           <Button 
                             variant="ghost" 
@@ -1238,7 +1233,6 @@ export default function Agreements() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
-                          </div>
                         </div>
                       </div>
                     </div>
