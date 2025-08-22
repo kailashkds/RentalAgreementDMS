@@ -122,39 +122,80 @@ export default function CreateAgreement() {
         return;
       }
 
-      // Create agreement
+      // Create agreement with proper data structure
       const newAgreement = {
         customerId,
         propertyId,
-        language: agreementData.language,
+        language: agreementData.language || 'english',
         agreementDate: agreementData.agreementDate,
         startDate: agreementData.startDate,
         endDate: agreementData.endDate,
+        status: 'active',
         ownerDetails: {
-          name: agreementData.ownerName,
-          mobile: agreementData.ownerMobile,
-          email: agreementData.ownerEmail,
+          name: agreementData.ownerName || '',
+          mobile: agreementData.ownerMobile || '',
+          email: agreementData.ownerEmail || '',
+          age: 25, // Default value
+          occupation: '', // Default value
+          aadhar: '', // Default value
+          pan: '', // Default value
+          address: {
+            flatNo: property?.flatNumber || '',
+            society: property?.society || '',
+            area: property?.area || '',
+            city: property?.city || '',
+            state: property?.state || 'Gujarat',
+            pincode: property?.pincode || '',
+          }
         },
         tenantDetails: {
-          name: agreementData.tenantName,
-          mobile: agreementData.tenantMobile,
-          email: agreementData.tenantEmail,
+          name: agreementData.tenantName || '',
+          mobile: agreementData.tenantMobile || '',
+          email: agreementData.tenantEmail || '',
+          age: 25, // Default value
+          occupation: '', // Default value
+          aadhar: '', // Default value
+          pan: '', // Default value
+          address: {
+            flatNo: '',
+            society: '',
+            area: '',
+            city: '',
+            state: 'Gujarat',
+            pincode: '',
+          }
         },
-        propertyDetails: property ? {
-          flatNumber: property.flatNumber,
-          society: property.society,
-          area: property.area,
-          city: property.city,
-          state: property.state,
-          pincode: property.pincode,
-          purpose: property.purpose,
-        } : {},
+        propertyDetails: {
+          type: property?.purpose || 'residential',
+          flatNumber: property?.flatNumber || '',
+          society: property?.society || '',
+          area: property?.area || '',
+          city: property?.city || '',
+          state: property?.state || 'Gujarat',
+          pincode: property?.pincode || '',
+          purpose: property?.purpose || 'residential',
+          areaInSqFt: 0, // Default value
+          furnishedStatus: 'unfurnished', // Default value
+          additionalItems: '',
+          place: property?.city || '',
+          address: {
+            flatNo: property?.flatNumber || '',
+            society: property?.society || '',
+            area: property?.area || '',
+            city: property?.city || '',
+            state: property?.state || 'Gujarat',
+            pincode: property?.pincode || '',
+          }
+        },
         rentalTerms: {
-          monthlyRent: parseInt(agreementData.monthlyRent),
-          securityDeposit: parseInt(agreementData.securityDeposit),
-          noticeperiod: parseInt(agreementData.noticeperiod),
-          maintenance: agreementData.maintenance,
+          monthlyRent: parseInt(agreementData.monthlyRent) || 0,
+          securityDeposit: parseInt(agreementData.securityDeposit) || 0,
+          noticeperiod: parseInt(agreementData.noticeperiod) || 1,
+          maintenance: agreementData.maintenance || 'included',
+          dueDate: 5, // Default value
+          tenure: '11_months', // Default value
         },
+        additionalClauses: [],
       };
 
       const response = await apiRequest('/api/agreements', 'POST', newAgreement);
