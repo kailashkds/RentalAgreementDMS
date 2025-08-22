@@ -1224,7 +1224,7 @@ export default function Agreements() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl || isImportedAgreement(agreement)) ? (
+                          {agreement.status !== "draft" && (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl || isImportedAgreement(agreement)) ? (
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button 
@@ -1286,7 +1286,7 @@ export default function Agreements() {
                                 </div>
                               </PopoverContent>
                             </Popover>
-                          ) : (
+                          ) : agreement.status !== "draft" ? (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -1296,7 +1296,7 @@ export default function Agreements() {
                             >
                               <Download className="h-4 w-4" />
                             </Button>
-                          )}
+                          ) : null}
                           {!(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
                             <Button 
                               variant="ghost" 
@@ -1320,24 +1320,28 @@ export default function Agreements() {
                               <Upload className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            disabled={true}
-                            className="h-10 w-10 p-0 text-gray-400 bg-gray-100 rounded-full border border-gray-200 cursor-not-allowed opacity-50"
-                            title="Renew Agreement (Coming Soon)"
-                          >
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-10 w-10 p-0 text-orange-600 hover:text-orange-900 hover:bg-orange-100 rounded-full border border-gray-200"
-                            onClick={() => handleSendWhatsApp(agreement)}
-                            title="Send WhatsApp"
-                          >
-                            <Send className="h-4 w-4" />
-                          </Button>
+                          {agreement.status !== "draft" && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                disabled={true}
+                                className="h-10 w-10 p-0 text-gray-400 bg-gray-100 rounded-full border border-gray-200 cursor-not-allowed opacity-50"
+                                title="Renew Agreement (Coming Soon)"
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-10 w-10 p-0 text-orange-600 hover:text-orange-900 hover:bg-orange-100 rounded-full border border-gray-200"
+                                onClick={() => handleSendWhatsApp(agreement)}
+                                title="Send WhatsApp"
+                              >
+                                <Send className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                           
                           {agreement.status === "draft" && (
                             <Button 
