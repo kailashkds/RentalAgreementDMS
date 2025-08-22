@@ -2350,46 +2350,6 @@ export default function Agreements() {
                       Edit Agreement
                     </Button>
                   )}
-                  {isImportedAgreement(viewingAgreement) ? (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button className="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 shadow-sm">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download Options
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-56 p-2">
-                        <div className="space-y-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
-                            onClick={() => handleDownloadNotarizedFromTable(viewingAgreement)}
-                          >
-                            <Award className="h-4 w-4 mr-2" />
-                            Notarized Agreement PDF
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            onClick={() => handleDownloadPoliceVerification(viewingAgreement)}
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Police Verification
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  ) : (
-                    <Button
-                      onClick={() => handleDownloadAgreement(viewingAgreement)}
-                      className="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 shadow-sm"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
-                    </Button>
-                  )}
                   <Button
                     variant="outline"
                     onClick={() => setViewingAgreement(null)}
