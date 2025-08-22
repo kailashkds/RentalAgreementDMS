@@ -136,7 +136,7 @@ export default function AgreementEditor() {
       setIsSaving(true);
       console.log(`[Editor] Auto-saving content (${content.length} characters)`);
       await apiRequest('POST', `/api/agreements/${agreementId}/save-content`, {
-        editedContent: content
+        editedHtml: content
       });
       
       console.log('[Editor] Auto-save successful');

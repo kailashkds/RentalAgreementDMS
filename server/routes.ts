@@ -354,8 +354,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use edited content if available, otherwise generate from template
       let processedHtml;
       if (agreement.editedContent) {
-        // Use the saved edited content directly
-        processedHtml = agreement.editedContent;
+        // Resolve placeholders in saved edited content with current DB values
+        const { resolvePlaceholders } = await import("./fieldMapping");
+        processedHtml = await resolvePlaceholders(agreement.editedContent, agreement);
       } else {
         // Find template for this agreement and generate HTML
         const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
@@ -535,11 +536,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/agreements/:id/save-content", async (req, res) => {
     try {
       const { id } = req.params;
-      const { editedContent } = req.body;
+      const { editedHtml, editedContent } = req.body;
+      
+      // Support both new (editedHtml) and legacy (editedContent) formats
+      const htmlContent = editedHtml || editedContent;
 
-      console.log(`[Backend] Saving edited content for agreement ${id} (${editedContent?.length || 0} characters)`);
+      console.log(`[Backend] Saving edited content for agreement ${id} (${htmlContent?.length || 0} characters)`);
 
-      if (!editedContent || editedContent.trim() === '') {
+      if (!htmlContent || htmlContent.trim() === '') {
         console.log(`[Backend] No content provided for agreement ${id}`);
         return res.status(400).json({ message: "Edited content is required" });
       }
@@ -550,8 +554,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Agreement not found" });
       }
 
-      await storage.saveEditedContent(id, editedContent);
-      console.log(`[Backend] Successfully saved edited content for agreement ${id}`);
+      // Convert resolved values back to placeholders before saving
+      const { convertToPlaceholders } = await import("./fieldMapping");
+      const placeholderHtml = await convertToPlaceholders(htmlContent, agreement);
+      
+      console.log(`[Backend] Converted to placeholder format (${placeholderHtml.length} characters)`);
+
+      await storage.saveEditedContent(id, placeholderHtml);
+      console.log(`[Backend] Successfully saved edited content with placeholders for agreement ${id}`);
       
       res.json({ 
         success: true, 
@@ -580,9 +590,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hasEditedContent = !!(agreement.editedContent && agreement.editedContent.trim());
       console.log(`[Backend] Agreement ${id} has edited content: ${hasEditedContent} (${agreement.editedContent?.length || 0} characters)`);
 
+      let resolvedContent = null;
+      if (hasEditedContent) {
+        // Resolve placeholders with current DB values
+        const { resolvePlaceholders } = await import("./fieldMapping");
+        resolvedContent = await resolvePlaceholders(agreement.editedContent, agreement);
+        console.log(`[Backend] Resolved placeholders for agreement ${id} (${resolvedContent.length} characters)`);
+      }
+
       res.json({
         success: true,
-        editedContent: agreement.editedContent || null,
+        editedContent: resolvedContent,
         editedAt: agreement.editedAt || null,
         hasEdits: hasEditedContent
       });

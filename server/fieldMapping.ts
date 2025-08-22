@@ -842,6 +842,81 @@ export function processTemplate(htmlTemplate: string, fieldValues: Record<string
 }
 
 /**
+ * Convert resolved values back to placeholders for storage
+ * This preserves manual edits while allowing dynamic fields to be updated
+ */
+export async function convertToPlaceholders(htmlContent: string, agreement: any): Promise<string> {
+  try {
+    // Get current field mappings for this agreement
+    const fieldValues = mapFormDataToTemplateFields(agreement, agreement.language || 'english');
+    
+    let placeholderHtml = htmlContent;
+    
+    // Convert resolved values back to placeholders
+    // Sort by length descending to avoid partial replacements
+    const sortedEntries = Object.entries(fieldValues).sort((a, b) => b[1].length - a[1].length);
+    
+    for (const [fieldName, value] of sortedEntries) {
+      if (value && value.trim()) {
+        // Create a regex that matches the value but avoids replacing it inside HTML attributes
+        const valueRegex = new RegExp(
+          value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 
+          'g'
+        );
+        
+        // Replace with placeholder format
+        placeholderHtml = placeholderHtml.replace(valueRegex, `{{${fieldName}}}`);
+      }
+    }
+    
+    console.log(`[Placeholder Conversion] Converted ${Object.keys(fieldValues).length} fields to placeholders`);
+    return placeholderHtml;
+    
+  } catch (error) {
+    console.error('[Placeholder Conversion] Error converting to placeholders:', error);
+    // Return original content if conversion fails
+    return htmlContent;
+  }
+}
+
+/**
+ * Resolve placeholders with current database values
+ * This ensures dynamic fields are always up-to-date while preserving manual edits
+ */
+export async function resolvePlaceholders(htmlContent: string, agreement: any): Promise<string> {
+  try {
+    // Get current field mappings for this agreement
+    const fieldValues = mapFormDataToTemplateFields(agreement, agreement.language || 'english');
+    
+    // Process the HTML with current database values
+    let resolvedHtml = htmlContent;
+    
+    // First, process conditional statements {{#if FIELD_NAME}} ... {{/if}}
+    resolvedHtml = processConditionalLogic(resolvedHtml, fieldValues);
+    
+    // Replace all placeholders with current values
+    for (const [fieldName, value] of Object.entries(fieldValues)) {
+      const placeholder = `{{${fieldName}}}`;
+      resolvedHtml = resolvedHtml.replace(
+        new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), 
+        value || ''
+      );
+    }
+    
+    // Clean up any remaining unresolve placeholders
+    resolvedHtml = resolvedHtml.replace(/\{\{[^}]*\}\}/g, '');
+    
+    console.log(`[Placeholder Resolution] Resolved ${Object.keys(fieldValues).length} placeholders`);
+    return resolvedHtml;
+    
+  } catch (error) {
+    console.error('[Placeholder Resolution] Error resolving placeholders:', error);
+    // Return original content if resolution fails
+    return htmlContent;
+  }
+}
+
+/**
  * Process conditional logic in templates {{#if FIELD_NAME}} content {{/if}}
  */
 function processConditionalLogic(template: string, fieldValues: Record<string, string>): string {

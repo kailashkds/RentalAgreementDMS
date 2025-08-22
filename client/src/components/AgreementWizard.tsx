@@ -1004,7 +1004,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                editedContent: result.html
+                editedHtml: result.html
               })
             });
             
