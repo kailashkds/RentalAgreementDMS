@@ -2442,16 +2442,10 @@ export default function Agreements() {
                         <p className="text-slate-900">{viewingImportedAgreement.customer.name}</p>
                       </div>
                     )}
-                    {viewingImportedAgreement.customer.email && (
+                    {viewingImportedAgreement.customer.mobile && (
                       <div>
-                        <span className="text-sm font-medium text-slate-600">Email:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.customer.email}</p>
-                      </div>
-                    )}
-                    {viewingImportedAgreement.customer.phoneNumber && (
-                      <div>
-                        <span className="text-sm font-medium text-slate-600">Phone:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.customer.phoneNumber}</p>
+                        <span className="text-sm font-medium text-slate-600">Mobile:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.customer.mobile}</p>
                       </div>
                     )}
                   </div>
@@ -2471,29 +2465,10 @@ export default function Agreements() {
                         <p className="text-slate-900">{viewingImportedAgreement.ownerDetails.name}</p>
                       </div>
                     )}
-                    {viewingImportedAgreement.ownerDetails.phoneNumber && (
+                    {viewingImportedAgreement.ownerDetails.mobile && (
                       <div>
-                        <span className="text-sm font-medium text-slate-600">Phone:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.ownerDetails.phoneNumber}</p>
-                      </div>
-                    )}
-                    {viewingImportedAgreement.ownerDetails.email && (
-                      <div>
-                        <span className="text-sm font-medium text-slate-600">Email:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.ownerDetails.email}</p>
-                      </div>
-                    )}
-                    {viewingImportedAgreement.ownerDetails.address && (
-                      <div className="md:col-span-2">
-                        <span className="text-sm font-medium text-slate-600">Address:</span>
-                        <p className="text-slate-900">
-                          {[
-                            viewingImportedAgreement.ownerDetails.address.flatNo,
-                            viewingImportedAgreement.ownerDetails.address.society,
-                            viewingImportedAgreement.ownerDetails.address.area,
-                            viewingImportedAgreement.ownerDetails.address.city
-                          ].filter(Boolean).join(', ')}
-                        </p>
+                        <span className="text-sm font-medium text-slate-600">Mobile:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.ownerDetails.mobile}</p>
                       </div>
                     )}
                   </div>
@@ -2513,29 +2488,10 @@ export default function Agreements() {
                         <p className="text-slate-900">{viewingImportedAgreement.tenantDetails.name}</p>
                       </div>
                     )}
-                    {viewingImportedAgreement.tenantDetails.phoneNumber && (
+                    {viewingImportedAgreement.tenantDetails.mobile && (
                       <div>
-                        <span className="text-sm font-medium text-slate-600">Phone:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.tenantDetails.phoneNumber}</p>
-                      </div>
-                    )}
-                    {viewingImportedAgreement.tenantDetails.email && (
-                      <div>
-                        <span className="text-sm font-medium text-slate-600">Email:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.tenantDetails.email}</p>
-                      </div>
-                    )}
-                    {viewingImportedAgreement.tenantDetails.address && (
-                      <div className="md:col-span-2">
-                        <span className="text-sm font-medium text-slate-600">Address:</span>
-                        <p className="text-slate-900">
-                          {[
-                            viewingImportedAgreement.tenantDetails.address.flatNo,
-                            viewingImportedAgreement.tenantDetails.address.society,
-                            viewingImportedAgreement.tenantDetails.address.area,
-                            viewingImportedAgreement.tenantDetails.address.city
-                          ].filter(Boolean).join(', ')}
-                        </p>
+                        <span className="text-sm font-medium text-slate-600">Mobile:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.tenantDetails.mobile}</p>
                       </div>
                     )}
                   </div>
