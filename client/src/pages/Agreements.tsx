@@ -1870,18 +1870,6 @@ export default function Agreements() {
                       <label className="text-sm font-medium text-slate-700">Mobile</label>
                       <p className="mt-1 text-sm text-gray-900">{viewingAgreement.customer?.mobile || 'Not provided'}</p>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-slate-700">Status</label>
-                      <p className="mt-1">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          viewingAgreement.customer?.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {viewingAgreement.customer?.status === 'active' ? 'Active' : 'Inactive'}
-                        </span>
-                      </p>
-                    </div>
                   </div>
                 </div>
               </div>
