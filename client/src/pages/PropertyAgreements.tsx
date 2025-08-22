@@ -90,16 +90,41 @@ export default function PropertyAgreements() {
     try {
       const response = await fetch(`/api/agreements/${agreementId}/pdf`);
       if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `agreement-${agreementId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        const data = await response.json();
+        if (data.html) {
+          // Import html2pdf dynamically
+          const html2pdf = (await import('html2pdf.js' as any)).default;
+          
+          // Create a temporary container for the HTML content
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = data.html;
+          tempDiv.style.width = '210mm'; // A4 width
+          tempDiv.style.fontFamily = 'Arial, sans-serif';
+          document.body.appendChild(tempDiv);
+          
+          // Configure pdf options
+          const options = {
+            margin: [15, 10, 15, 10], // mm
+            filename: data.filename || `agreement-${agreementId}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+              scale: 2, 
+              useCORS: true,
+              letterRendering: true 
+            },
+            jsPDF: { 
+              unit: 'mm', 
+              format: 'a4', 
+              orientation: 'portrait' 
+            }
+          };
+          
+          // Generate and download PDF
+          await html2pdf().set(options).from(tempDiv).save();
+          
+          // Clean up
+          document.body.removeChild(tempDiv);
+        }
       }
     } catch (error) {
       console.error('Error downloading PDF:', error);
