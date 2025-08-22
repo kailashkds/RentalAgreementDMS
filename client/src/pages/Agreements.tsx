@@ -1331,17 +1331,15 @@ export default function Agreements() {
                               <RotateCcw className="h-4 w-4" />
                             </Button>
                           )}
-                          {agreement.status === 'draft' && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-10 w-10 p-0 text-orange-600 hover:text-orange-900 hover:bg-orange-100 rounded-full border border-gray-200"
-                              onClick={() => handleSendWhatsApp(agreement)}
-                              title="Send WhatsApp"
-                            >
-                              <Send className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-10 w-10 p-0 text-orange-600 hover:text-orange-900 hover:bg-orange-100 rounded-full border border-gray-200"
+                            onClick={() => handleSendWhatsApp(agreement)}
+                            title="Send WhatsApp"
+                          >
+                            <Send className="h-4 w-4" />
+                          </Button>
                           
                           {agreement.status === "draft" && (
                             <Button 
