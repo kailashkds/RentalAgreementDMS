@@ -1000,90 +1000,67 @@ export default function Agreements() {
                             <div>
                               <span className="font-medium text-gray-600">Landlord:</span>
                               <p className="text-gray-900">{agreement.ownerDetails?.name || 'Not provided'}</p>
-                              <div className="mt-1">
-                                <span
-                                  className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                    agreement.status === "draft"
-                                      ? "bg-gray-100 text-gray-800"
-                                      : agreement.status === "active"
-                                      ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                        ? "bg-green-100 text-green-800"
-                                        : "bg-amber-100 text-amber-800"
-                                      : "bg-gray-100 text-gray-800"
-                                  }`}
-                                >
-                                  Notary: {agreement.status === "draft"
-                                    ? "Draft"
-                                    : agreement.status === "active"
-                                    ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                      ? "✓ Done"
-                                      : "⏳ Pending"
-                                    : "N/A"
-                                  }
-                                </span>
-                              </div>
                             </div>
                             <div>
                               <span className="font-medium text-gray-600">Tenant:</span>
                               <p className="text-gray-900">{agreement.tenantDetails?.name || 'Not provided'}</p>
-                              <div className="mt-1">
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <span className="font-medium text-gray-600">Agreement Period:</span>
+                              <p className="text-gray-900">
+                                {(() => {
+                                  const startDate = agreement.rentalTerms?.startDate || agreement.startDate;
+                                  const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+                                  
+                                  if (startDate && endDate) {
+                                    return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+                                  }
+                                  return 'Not available';
+                                })()}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600">Notary Status:</span>
+                              <p className="text-gray-900">
+                                {agreement.status === "draft"
+                                  ? "Draft"
+                                  : agreement.status === "active"
+                                  ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                    ? "Complete"
+                                    : "Pending"
+                                  : "Active"
+                                }
+                              </p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600">Expiry Status:</span>
+                              <p className="text-gray-900">
                                 {(() => {
                                   const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-                                  if (!endDate) return <span className="text-xs text-gray-500">No expiry date</span>;
+                                  if (!endDate) return 'No expiry date';
                                   
                                   const today = new Date();
                                   const expiry = new Date(endDate);
                                   const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                                   
-                                  let bgColor = 'bg-green-100';
-                                  let textColor = 'text-green-800';
-                                  let text = `${daysUntilExpiry} days remaining`;
-                                  
                                   if (daysUntilExpiry < 0) {
-                                    bgColor = 'bg-red-100';
-                                    textColor = 'text-red-800';
-                                    text = `Expired ${Math.abs(daysUntilExpiry)} days ago`;
+                                    return `Expired ${Math.abs(daysUntilExpiry)} days ago`;
                                   } else if (daysUntilExpiry === 0) {
-                                    bgColor = 'bg-red-100';
-                                    textColor = 'text-red-800';
-                                    text = 'Expires today';
+                                    return 'Expires today';
                                   } else if (daysUntilExpiry === 1) {
-                                    bgColor = 'bg-orange-100';
-                                    textColor = 'text-orange-800';
-                                    text = 'Expires tomorrow';
+                                    return 'Expires tomorrow';
                                   } else if (daysUntilExpiry <= 30) {
-                                    bgColor = 'bg-orange-100';
-                                    textColor = 'text-orange-800';
-                                    text = `Expires in ${daysUntilExpiry} days`;
+                                    return `Expires in ${daysUntilExpiry} days`;
                                   } else if (daysUntilExpiry <= 90) {
-                                    bgColor = 'bg-yellow-100';
-                                    textColor = 'text-yellow-800';
-                                    text = `Expires in ${daysUntilExpiry} days`;
+                                    return `Expires in ${daysUntilExpiry} days`;
                                   }
-                                  
-                                  return (
-                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${bgColor} ${textColor}`}>
-                                      {text}
-                                    </span>
-                                  );
+                                  return `${daysUntilExpiry} days remaining`;
                                 })()}
-                              </div>
+                              </p>
                             </div>
-                          </div>
-                          
-                          <div>
-                            <span className="font-medium text-gray-600">Agreement Period:</span>
-                            <p className="text-gray-900">
-                              {(() => {
-                                const startDate = agreement.rentalTerms?.startDate || agreement.startDate;
-                                const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-                                
-                                if (startDate && endDate) {
-                                  return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
-                                }
-                                return 'Not available';
-                              })()}
-                            </p>
                           </div>
                           
                           <div>
