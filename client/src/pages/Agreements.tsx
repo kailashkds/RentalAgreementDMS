@@ -1320,17 +1320,15 @@ export default function Agreements() {
                               <Upload className="h-4 w-4" />
                             </Button>
                           )}
-                          {agreement.status === "active" && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-10 w-10 p-0 text-green-600 hover:text-green-900 hover:bg-green-100 rounded-full border border-gray-200"
-                              onClick={() => handleRenewAgreement(agreement.id)}
-                              title="Renew Agreement"
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            disabled={true}
+                            className="h-10 w-10 p-0 text-gray-400 bg-gray-100 rounded-full border border-gray-200 cursor-not-allowed opacity-50"
+                            title="Renew Agreement (Coming Soon)"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
