@@ -688,6 +688,11 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
                           <Badge variant="outline">
                             {agreement?.status || "unknown"}
                           </Badge>
+                          {(agreement?.notarizedDocumentUrl || agreement?.policeVerificationDocumentUrl) && (
+                            <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700">
+                              Imported
+                            </Badge>
+                          )}
                           <Badge variant="outline" className="text-xs">
                             {agreement?.language || "N/A"}
                           </Badge>

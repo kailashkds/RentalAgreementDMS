@@ -738,6 +738,11 @@ export default function Agreements() {
     }
   };
 
+  // Helper function to check if agreement is imported
+  const isImportedAgreement = (agreement: any) => {
+    return agreement?.notarizedDocumentUrl || agreement?.policeVerificationDocumentUrl;
+  };
+
   const getStatusBadge = (status: string | undefined) => {
     if (!status) return "bg-gray-100 text-gray-800";
     const statusConfig = {
@@ -993,13 +998,20 @@ export default function Agreements() {
                             {agreement.agreementNumber}
                           </h3>
                           
-                          <span
-                            className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                              agreement.status
-                            )}`}
-                          >
-                            {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                                agreement.status
+                              )}`}
+                            >
+                              {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
+                            </span>
+                            {isImportedAgreement(agreement) && (
+                              <span className="inline-flex px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700">
+                                Imported
+                              </span>
+                            )}
+                          </div>
                         </div>
                         
                         {/* Information Grid - Reorganized Layout */}
@@ -1635,11 +1647,16 @@ export default function Agreements() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Status</label>
-                      <p className="mt-1">
+                      <div className="mt-1 flex items-center gap-2">
                         <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(viewingAgreement.status)}`}>
                           {viewingAgreement.status ? viewingAgreement.status.charAt(0).toUpperCase() + viewingAgreement.status.slice(1) : 'Unknown'}
                         </span>
-                      </p>
+                        {isImportedAgreement(viewingAgreement) && (
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700">
+                            Imported
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Created At</label>
@@ -1652,6 +1669,115 @@ export default function Agreements() {
                   </div>
                 </div>
               </div>
+
+              {/* Imported Documents Section - Only show for imported agreements */}
+              {isImportedAgreement(viewingAgreement) && (
+                <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+                  <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center">
+                      <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-xs font-bold text-white">📄</span>
+                      </div>
+                      Imported Documents
+                    </h3>
+                  </div>
+                  <div className="bg-blue-50 p-6">
+                    <div className="space-y-4">
+                      {/* Notarized Document Preview */}
+                      {viewingAgreement.notarizedDocumentUrl && (
+                        <div className="bg-white rounded-lg border border-blue-200 shadow-sm">
+                          <div className="p-4 border-b border-blue-100">
+                            <h4 className="text-sm font-medium text-blue-900">Notarized Agreement Document</h4>
+                          </div>
+                          <div className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className="p-2 bg-blue-100 rounded-lg">
+                                  <FileText className="h-5 w-5 text-blue-600" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">Uploaded Document</p>
+                                  <p className="text-xs text-gray-500">PDF Document</p>
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(viewingAgreement.notarizedDocumentUrl, '_blank')}
+                                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = viewingAgreement.notarizedDocumentUrl;
+                                    link.download = 'notarized-document.pdf';
+                                    link.click();
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Police Verification Document Preview */}
+                      {viewingAgreement.policeVerificationDocumentUrl && (
+                        <div className="bg-white rounded-lg border border-blue-200 shadow-sm">
+                          <div className="p-4 border-b border-blue-100">
+                            <h4 className="text-sm font-medium text-blue-900">Police Verification Document</h4>
+                          </div>
+                          <div className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className="p-2 bg-blue-100 rounded-lg">
+                                  <FileText className="h-5 w-5 text-blue-600" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">Uploaded Document</p>
+                                  <p className="text-xs text-gray-500">PDF Document</p>
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(viewingAgreement.policeVerificationDocumentUrl, '_blank')}
+                                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = viewingAgreement.policeVerificationDocumentUrl;
+                                    link.download = 'police-verification-document.pdf';
+                                    link.click();
+                                  }}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Notarized Document Section */}
               <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
