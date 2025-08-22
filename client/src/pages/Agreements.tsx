@@ -4,6 +4,7 @@ import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ export default function Agreements() {
   const [editingAgreement, setEditingAgreement] = useState<any>(null);
   const [viewingAgreement, setViewingAgreement] = useState<any>(null);
   const [viewingImportedAgreement, setViewingImportedAgreement] = useState<any>(null);
+  const [editingImportedAgreement, setEditingImportedAgreement] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [notaryFilter, setNotaryFilter] = useState("all");
@@ -394,6 +396,61 @@ export default function Agreements() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    }
+  };
+
+  const handleUpdateImportedAgreement = async () => {
+    try {
+      // Get form data
+      const formData = new FormData(document.querySelector('form')!);
+      const updateData = {
+        customer: {
+          name: (document.getElementById('edit-customer-name') as HTMLInputElement)?.value,
+          phoneNumber: (document.getElementById('edit-customer-mobile') as HTMLInputElement)?.value,
+        },
+        ownerDetails: {
+          name: (document.getElementById('edit-owner-name') as HTMLInputElement)?.value,
+          phoneNumber: (document.getElementById('edit-owner-mobile') as HTMLInputElement)?.value,
+          address: (document.getElementById('edit-owner-address') as HTMLTextAreaElement)?.value,
+        },
+        tenantDetails: {
+          name: (document.getElementById('edit-tenant-name') as HTMLInputElement)?.value,
+          phoneNumber: (document.getElementById('edit-tenant-mobile') as HTMLInputElement)?.value,
+          address: (document.getElementById('edit-tenant-address') as HTMLTextAreaElement)?.value,
+        },
+        propertyDetails: {
+          address: (document.getElementById('edit-property-address') as HTMLTextAreaElement)?.value,
+        },
+        startDate: (document.getElementById('edit-start-date') as HTMLInputElement)?.value,
+        endDate: (document.getElementById('edit-end-date') as HTMLInputElement)?.value,
+        rentalTerms: {
+          monthlyRent: (document.getElementById('edit-monthly-rent') as HTMLInputElement)?.value,
+          securityDeposit: (document.getElementById('edit-security-deposit') as HTMLInputElement)?.value,
+        },
+      };
+
+      await apiRequest(`/api/agreements/${editingImportedAgreement.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      toast({
+        title: "Success",
+        description: "Imported agreement updated successfully",
+      });
+
+      setEditingImportedAgreement(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/agreements'] });
+    } catch (error) {
+      console.error('Error updating imported agreement:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update imported agreement",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1256,7 +1313,7 @@ export default function Agreements() {
                             variant="ghost" 
                             size="sm" 
                             className="h-10 w-10 p-0 text-amber-600 hover:text-amber-900 hover:bg-amber-100 rounded-full border border-gray-200"
-                            onClick={() => setEditingAgreement(agreement)}
+                            onClick={() => isImportedAgreement(agreement) ? setEditingImportedAgreement(agreement) : setEditingAgreement(agreement)}
                             title="Edit Agreement"
                           >
                             <Edit className="h-4 w-4" />
@@ -1369,6 +1426,219 @@ export default function Agreements() {
           onClose={() => setEditingAgreement(null)}
           editingAgreement={editingAgreement}
         />
+      )}
+
+      {/* Simplified Edit Wizard for Imported Agreements */}
+      {editingImportedAgreement && (
+        <Dialog open={!!editingImportedAgreement} onOpenChange={() => setEditingImportedAgreement(null)}>
+          <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0 bg-gradient-to-r from-blue-50 to-slate-50 p-4 rounded-t-lg border-b border-blue-100">
+              <DialogTitle className="text-xl font-semibold text-slate-800 flex items-center gap-2">
+                <Edit className="h-5 w-5 text-blue-600" />
+                Edit Imported Agreement
+                <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 ml-2">
+                  Imported
+                </Badge>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              <form className="space-y-6" onSubmit={(e) => {
+                e.preventDefault();
+                // Handle form submission
+                handleUpdateImportedAgreement();
+              }}>
+                {/* Customer Information */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-medium text-slate-800">Customer Information</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-customer-name">Customer Name</Label>
+                      <Input 
+                        id="edit-customer-name"
+                        defaultValue={editingImportedAgreement.customer?.name || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-customer-mobile">Mobile</Label>
+                      <Input 
+                        id="edit-customer-mobile"
+                        defaultValue={editingImportedAgreement.customer?.phoneNumber || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Landlord Information */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-medium text-slate-800">Landlord Details</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-owner-name">Name</Label>
+                      <Input 
+                        id="edit-owner-name"
+                        defaultValue={editingImportedAgreement.ownerDetails?.name || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-owner-mobile">Mobile</Label>
+                      <Input 
+                        id="edit-owner-mobile"
+                        defaultValue={editingImportedAgreement.ownerDetails?.phoneNumber || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="edit-owner-address">Address</Label>
+                      <Textarea 
+                        id="edit-owner-address"
+                        defaultValue={editingImportedAgreement.ownerDetails?.address ? 
+                          [
+                            editingImportedAgreement.ownerDetails.address.flatNo,
+                            editingImportedAgreement.ownerDetails.address.society,
+                            editingImportedAgreement.ownerDetails.address.area,
+                            editingImportedAgreement.ownerDetails.address.city
+                          ].filter(Boolean).join(', ') : ''
+                        }
+                        className="mt-1"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tenant Information */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-medium text-slate-800">Tenant Details</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-tenant-name">Name</Label>
+                      <Input 
+                        id="edit-tenant-name"
+                        defaultValue={editingImportedAgreement.tenantDetails?.name || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-tenant-mobile">Mobile</Label>
+                      <Input 
+                        id="edit-tenant-mobile"
+                        defaultValue={editingImportedAgreement.tenantDetails?.phoneNumber || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="edit-tenant-address">Address</Label>
+                      <Textarea 
+                        id="edit-tenant-address"
+                        defaultValue={editingImportedAgreement.tenantDetails?.address ? 
+                          [
+                            editingImportedAgreement.tenantDetails.address.flatNo,
+                            editingImportedAgreement.tenantDetails.address.society,
+                            editingImportedAgreement.tenantDetails.address.area,
+                            editingImportedAgreement.tenantDetails.address.city
+                          ].filter(Boolean).join(', ') : ''
+                        }
+                        className="mt-1"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Property & Agreement Details */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-medium text-slate-800">Property & Agreement Details</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Label htmlFor="edit-property-address">Property Address</Label>
+                      <Textarea 
+                        id="edit-property-address"
+                        defaultValue={editingImportedAgreement.propertyDetails?.address ? 
+                          [
+                            editingImportedAgreement.propertyDetails.address.flatNo,
+                            editingImportedAgreement.propertyDetails.address.society,
+                            editingImportedAgreement.propertyDetails.address.area,
+                            editingImportedAgreement.propertyDetails.address.city
+                          ].filter(Boolean).join(', ') : ''
+                        }
+                        className="mt-1"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-start-date">Start Date</Label>
+                      <Input 
+                        id="edit-start-date"
+                        type="date"
+                        defaultValue={editingImportedAgreement.startDate || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-end-date">End Date</Label>
+                      <Input 
+                        id="edit-end-date"
+                        type="date"
+                        defaultValue={editingImportedAgreement.endDate || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-monthly-rent">Monthly Rent</Label>
+                      <Input 
+                        id="edit-monthly-rent"
+                        type="number"
+                        defaultValue={editingImportedAgreement.rentalTerms?.monthlyRent || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-security-deposit">Security Deposit</Label>
+                      <Input 
+                        id="edit-security-deposit"
+                        type="number"
+                        defaultValue={editingImportedAgreement.rentalTerms?.securityDeposit || ''}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-lg border border-slate-200 shadow-sm">
+                  <div className="flex justify-center gap-3">
+                    <Button
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-sm"
+                    >
+                      Save Changes
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setEditingImportedAgreement(null)}
+                      className="border-slate-300 hover:bg-slate-50 px-6 py-2 shadow-sm"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Read-only Agreement Viewer */}
@@ -1919,8 +2189,13 @@ export default function Agreements() {
                 <div className="flex flex-wrap justify-center gap-3">
                   <Button
                     onClick={() => {
-                      setEditingAgreement(viewingAgreement);
-                      setViewingAgreement(null);
+                      if (isImportedAgreement(viewingAgreement)) {
+                        setEditingImportedAgreement(viewingAgreement);
+                        setViewingAgreement(null);
+                      } else {
+                        setEditingAgreement(viewingAgreement);
+                        setViewingAgreement(null);
+                      }
                     }}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-sm"
                   >
