@@ -1356,7 +1356,256 @@ export default function Agreements() {
           
           {viewingAgreement && (
             <div className="space-y-6 pt-6">
-              {/* Owner Details */}
+              {isImportedAgreement(viewingAgreement) ? (
+                // Simplified view for imported agreements
+                <>
+                  {/* Customer & Language Selection */}
+                  <div className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center">
+                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-xs font-bold text-white">1</span>
+                        </div>
+                        Customer & Language Selection
+                      </h3>
+                    </div>
+                    <div className="bg-blue-50 p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Customer</label>
+                          <p className="mt-1 text-sm text-gray-900 font-medium">{viewingAgreement.customer?.name || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Mobile</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.customer?.mobile || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Language</label>
+                          <p className="mt-1 text-sm text-gray-900 capitalize">{viewingAgreement.language || 'English'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Owner Details */}
+                  <div className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center">
+                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-xs font-bold text-white">2</span>
+                        </div>
+                        Owner Details
+                      </h3>
+                    </div>
+                    <div className="bg-blue-50 p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Name</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.name || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Mobile</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.mobile || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Email</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.email || 'Not provided'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tenant Details */}
+                  <div className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center">
+                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-xs font-bold text-white">3</span>
+                        </div>
+                        Tenant Details
+                      </h3>
+                    </div>
+                    <div className="bg-blue-50 p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Name</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.name || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Mobile</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.mobile || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Email</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.email || 'Not provided'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Agreement Duration */}
+                  <div className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center">
+                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-xs font-bold text-white">4</span>
+                        </div>
+                        Agreement Duration
+                      </h3>
+                    </div>
+                    <div className="bg-blue-50 p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Start Date</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.startDate ? new Date(viewingAgreement.startDate).toLocaleDateString() : 'Not set'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">End Date</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.endDate ? new Date(viewingAgreement.endDate).toLocaleDateString() : 'Not set'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Tenure</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.tenure || 'Not specified'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Property Address */}
+                  <div className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center">
+                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-xs font-bold text-white">5</span>
+                        </div>
+                        Property Address
+                      </h3>
+                    </div>
+                    <div className="bg-blue-50 p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Flat Number</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.address?.flatNo || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Society</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.address?.society || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Area</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.address?.area || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">City</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.address?.city || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">State</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.address?.state || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Pincode</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.propertyDetails?.address?.pincode || 'Not provided'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Agreement Information */}
+                  <div className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center">
+                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-xs font-bold text-white">ℹ️</span>
+                        </div>
+                        Agreement Information
+                      </h3>
+                    </div>
+                    <div className="bg-blue-50 p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Agreement Number</label>
+                          <p className="mt-1 text-sm text-gray-900 font-mono font-bold">{viewingAgreement.agreementNumber || 'Not assigned'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Status</label>
+                          <div className="mt-1 flex items-center gap-2">
+                            <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(viewingAgreement.status)}`}>
+                              {viewingAgreement.status ? viewingAgreement.status.charAt(0).toUpperCase() + viewingAgreement.status.slice(1) : 'Unknown'}
+                            </span>
+                            <span className="inline-flex px-2 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700">
+                              Imported
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-blue-700">Created At</label>
+                          <p className="mt-1 text-sm text-gray-900">{viewingAgreement.createdAt ? new Date(viewingAgreement.createdAt).toLocaleString() : 'Not available'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Documents Section */}
+                  <div className="border border-blue-200 rounded-lg overflow-hidden shadow-sm">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center">
+                        <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-xs font-bold text-white">📄</span>
+                        </div>
+                        Uploaded Documents
+                      </h3>
+                    </div>
+                    <div className="bg-blue-50 p-6">
+                      <div className="space-y-4">
+                        {viewingAgreement.notarizedDocument?.url && (
+                          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-blue-200">
+                            <div className="flex items-center space-x-3">
+                              <FileText className="h-5 w-5 text-blue-600" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">Notarized Agreement</p>
+                                <p className="text-xs text-gray-500">{viewingAgreement.notarizedDocument.originalName}</p>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => window.open(viewingAgreement.notarizedDocument?.url, '_blank')}
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </div>
+                        )}
+                        {viewingAgreement.documents?.policeVerificationDocument?.url && (
+                          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-blue-200">
+                            <div className="flex items-center space-x-3">
+                              <FileText className="h-5 w-5 text-blue-600" />
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">Police Verification Document</p>
+                                <p className="text-xs text-gray-500">{viewingAgreement.documents.policeVerificationDocument.originalName}</p>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => window.open(viewingAgreement.documents?.policeVerificationDocument?.url, '_blank')}
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // Full view for created agreements  
+                <>
+                  {/* Owner Details */}
               <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                 <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-4">
                   <h3 className="text-lg font-semibold text-white flex items-center">
