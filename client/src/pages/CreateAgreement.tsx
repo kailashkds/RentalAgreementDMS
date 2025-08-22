@@ -293,49 +293,144 @@ export default function CreateAgreement() {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Basic Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="language">Language</Label>
-                      <Select
-                        value={agreementData.language}
-                        onValueChange={(value) => setAgreementData(prev => ({ ...prev, language: value }))}
-                      >
-                        <SelectTrigger data-testid="select-language">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="english">English</SelectItem>
-                          <SelectItem value="gujarati">Gujarati</SelectItem>
-                          <SelectItem value="hindi">Hindi</SelectItem>
-                          <SelectItem value="tamil">Tamil</SelectItem>
-                          <SelectItem value="marathi">Marathi</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="language">Select Language</Label>
+                        <Select
+                          value={agreementData.language}
+                          onValueChange={(value) => setAgreementData(prev => ({ ...prev, language: value }))}
+                        >
+                          <SelectTrigger data-testid="select-language">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="english">English</SelectItem>
+                            <SelectItem value="gujarati">Gujarati</SelectItem>
+                            <SelectItem value="hindi">Hindi</SelectItem>
+                            <SelectItem value="tamil">Tamil</SelectItem>
+                            <SelectItem value="marathi">Marathi</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="agreementDate">Agreement Date</Label>
-                      <Input
-                        id="agreementDate"
-                        type="date"
-                        value={agreementData.agreementDate}
-                        onChange={(e) => setAgreementData(prev => ({ ...prev, agreementDate: e.target.value }))}
-                        data-testid="input-agreement-date"
-                        required
-                      />
+                      <div>
+                        <Label htmlFor="agreementDate">Agreement Date</Label>
+                        <Input
+                          id="agreementDate"
+                          type="date"
+                          value={agreementData.agreementDate}
+                          onChange={(e) => setAgreementData(prev => ({ ...prev, agreementDate: e.target.value }))}
+                          data-testid="input-agreement-date"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Owner Details */}
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-800">Owner Details</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="ownerName">Owner Name</Label>
+                        <Input
+                          id="ownerName"
+                          value={agreementData.ownerName}
+                          onChange={(e) => setAgreementData(prev => ({ ...prev, ownerName: e.target.value }))}
+                          placeholder="Owner Name"
+                          data-testid="input-owner-name"
+                          required
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter name to auto-fill mobile and address
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="ownerMobile">Owner Mobile</Label>
+                        <Input
+                          id="ownerMobile"
+                          value={agreementData.ownerMobile}
+                          onChange={(e) => setAgreementData(prev => ({ ...prev, ownerMobile: e.target.value }))}
+                          placeholder="Enter mobile number"
+                          data-testid="input-owner-mobile"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter mobile number to auto-fill name and email
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="ownerEmail">Owner Email</Label>
+                        <Input
+                          id="ownerEmail"
+                          type="email"
+                          value={agreementData.ownerEmail}
+                          onChange={(e) => setAgreementData(prev => ({ ...prev, ownerEmail: e.target.value }))}
+                          placeholder="Enter email address"
+                          data-testid="input-owner-email"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tenant Details */}
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-800">Tenant Details</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="tenantName">Full Name</Label>
+                        <Input
+                          id="tenantName"
+                          value={agreementData.tenantName}
+                          onChange={(e) => setAgreementData(prev => ({ ...prev, tenantName: e.target.value }))}
+                          placeholder="Enter tenant full name"
+                          data-testid="input-tenant-name"
+                          required
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter name to auto-fill mobile and address
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="tenantMobile">Mobile Number</Label>
+                        <Input
+                          id="tenantMobile"
+                          value={agreementData.tenantMobile}
+                          onChange={(e) => setAgreementData(prev => ({ ...prev, tenantMobile: e.target.value }))}
+                          placeholder="Enter mobile number"
+                          data-testid="input-tenant-mobile"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter mobile number to auto-fill name and email
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="tenantEmail">Email Address</Label>
+                        <Input
+                          id="tenantEmail"
+                          type="email"
+                          value={agreementData.tenantEmail}
+                          onChange={(e) => setAgreementData(prev => ({ ...prev, tenantEmail: e.target.value }))}
+                          placeholder="Enter email address"
+                          data-testid="input-tenant-email"
+                        />
+                      </div>
                     </div>
                   </div>
 
                   {/* Rental Terms */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <DollarSign className="h-5 w-5" />
-                      Rental Terms
-                    </h3>
+                  <div className="space-y-6">
+                    <h4 className="text-md font-semibold text-gray-800 mb-4">Agreement Duration</h4>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="startDate">Start Date</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="startDate">Agreement Start Date</Label>
                         <Input
                           id="startDate"
                           type="date"
@@ -346,8 +441,8 @@ export default function CreateAgreement() {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="endDate">End Date</Label>
+                      <div>
+                        <Label htmlFor="endDate">Agreement End Date</Label>
                         <Input
                           id="endDate"
                           type="date"
@@ -358,138 +453,72 @@ export default function CreateAgreement() {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="monthlyRent">Monthly Rent (₹)</Label>
+                      <div>
+                        <Label htmlFor="noticeperiod">Notice Period (Months)</Label>
+                        <Input
+                          id="noticeperiod"
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={agreementData.noticeperiod}
+                          onChange={(e) => setAgreementData(prev => ({ ...prev, noticeperiod: e.target.value }))}
+                          placeholder="e.g., 1"
+                          data-testid="input-notice-period"
+                          onWheel={(e) => e.currentTarget.blur()}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <h4 className="text-md font-semibold text-gray-800 mb-4">Rental Terms</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="monthlyRent">Monthly Rent Amount (₹)</Label>
                         <Input
                           id="monthlyRent"
                           type="number"
+                          min="1"
+                          step="1"
                           value={agreementData.monthlyRent}
                           onChange={(e) => setAgreementData(prev => ({ ...prev, monthlyRent: e.target.value }))}
+                          placeholder="e.g., 15000"
                           data-testid="input-monthly-rent"
+                          onWheel={(e) => e.currentTarget.blur()}
                           required
                         />
                       </div>
 
-                      <div className="space-y-2">
+                      <div>
                         <Label htmlFor="securityDeposit">Security Deposit (₹)</Label>
                         <Input
                           id="securityDeposit"
                           type="number"
+                          min="0"
+                          step="1"
                           value={agreementData.securityDeposit}
                           onChange={(e) => setAgreementData(prev => ({ ...prev, securityDeposit: e.target.value }))}
+                          placeholder="e.g., 30000"
                           data-testid="input-security-deposit"
+                          onWheel={(e) => e.currentTarget.blur()}
                           required
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="noticeperiod">Notice Period (months)</Label>
-                        <Input
-                          id="noticeperiod"
-                          type="number"
-                          value={agreementData.noticeperiod}
-                          onChange={(e) => setAgreementData(prev => ({ ...prev, noticeperiod: e.target.value }))}
-                          data-testid="input-notice-period"
-                          min="1"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="maintenance">Maintenance</Label>
+                      <div>
+                        <Label htmlFor="maintenance">Maintenance Charge</Label>
                         <Select
                           value={agreementData.maintenance}
                           onValueChange={(value) => setAgreementData(prev => ({ ...prev, maintenance: value }))}
                         >
                           <SelectTrigger data-testid="select-maintenance">
-                            <SelectValue />
+                            <SelectValue placeholder="Select maintenance" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="included">Included</SelectItem>
                             <SelectItem value="excluded">Excluded</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Owner Details */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Owner Details
-                    </h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="ownerName">Name</Label>
-                        <Input
-                          id="ownerName"
-                          value={agreementData.ownerName}
-                          onChange={(e) => setAgreementData(prev => ({ ...prev, ownerName: e.target.value }))}
-                          data-testid="input-owner-name"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="ownerMobile">Mobile</Label>
-                        <Input
-                          id="ownerMobile"
-                          value={agreementData.ownerMobile}
-                          onChange={(e) => setAgreementData(prev => ({ ...prev, ownerMobile: e.target.value }))}
-                          data-testid="input-owner-mobile"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="ownerEmail">Email</Label>
-                        <Input
-                          id="ownerEmail"
-                          type="email"
-                          value={agreementData.ownerEmail}
-                          onChange={(e) => setAgreementData(prev => ({ ...prev, ownerEmail: e.target.value }))}
-                          data-testid="input-owner-email"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Tenant Details */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Tenant Details</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="tenantName">Name</Label>
-                        <Input
-                          id="tenantName"
-                          value={agreementData.tenantName}
-                          onChange={(e) => setAgreementData(prev => ({ ...prev, tenantName: e.target.value }))}
-                          data-testid="input-tenant-name"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="tenantMobile">Mobile</Label>
-                        <Input
-                          id="tenantMobile"
-                          value={agreementData.tenantMobile}
-                          onChange={(e) => setAgreementData(prev => ({ ...prev, tenantMobile: e.target.value }))}
-                          data-testid="input-tenant-mobile"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="tenantEmail">Email</Label>
-                        <Input
-                          id="tenantEmail"
-                          type="email"
-                          value={agreementData.tenantEmail}
-                          onChange={(e) => setAgreementData(prev => ({ ...prev, tenantEmail: e.target.value }))}
-                          data-testid="input-tenant-email"
-                        />
                       </div>
                     </div>
                   </div>
