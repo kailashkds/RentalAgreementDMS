@@ -2217,6 +2217,15 @@ export default function Agreements() {
                         </div>
                         <div className="flex space-x-2">
                           <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`/api/agreements/${viewingAgreement.id}/pdf`, '_blank')}
+                            className="border-green-300 hover:bg-green-50"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
                             size="sm"
                             onClick={() => downloadAgreementPdf(viewingAgreement)}
                             className="bg-green-600 hover:bg-green-700 text-white"
