@@ -55,18 +55,18 @@ export default function AgreementEditor() {
           const data = await response.json();
           console.log(`[Editor] API Response:`, data);
           
-          console.log(`[Editor] Edited content check - hasEdits: ${data.hasEdits}, content length: ${data.editedContent?.length || 0}`);
+          console.log(`[Editor] Content check - hasEdits: ${data.hasEdits}, contentSource: ${data.contentSource}, content length: ${data.editedContent?.length || 0}`);
           
-          if (data.hasEdits && data.editedContent && data.editedContent.trim() !== '') {
-            // Load previously edited content
-            console.log(`[Editor] Found saved edited content (${data.editedContent.length} characters)`);
+          // NORMALIZED: Check for actual content, not just hasEdits flag
+          if (data.editedContent && data.editedContent.trim() !== '') {
+            console.log(`[Editor] ✓ LOADING CONTENT from ${data.contentSource || 'unknown source'} (${data.editedContent.length} characters)`);
             setHtmlContent(data.editedContent);
             if (data.editedAt) {
               setLastSaved(new Date(data.editedAt));
             }
           } else {
-            // No edited content yet, generate it from the agreement data
-            console.log('[Editor] No edited content found, generating from agreement data');
+            // This should rarely happen now since the API generates content from template
+            console.log('[Editor] No content returned from API, generating fallback content');
             await generateInitialContent();
           }
         } else {

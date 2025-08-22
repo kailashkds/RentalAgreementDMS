@@ -351,18 +351,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Agreement not found" });
       }
 
-      // Use edited content if available, otherwise generate from template
+      // NORMALIZED: Always prioritize edited_content when it exists and is not empty
       let processedHtml;
-      const hasEditedContent = !!(agreement.editedContent && agreement.editedContent.trim());
-      console.log(`[PDF Download] Agreement ${req.params.id} has edited content: ${hasEditedContent} (${agreement.editedContent?.length || 0} chars)`);
+      let htmlSource = 'template'; // Track which source we're using
       
-      if (hasEditedContent) {
-        console.log(`[PDF Download] Using edited content for agreement ${req.params.id}`);
+      console.log(`[PDF Download] Agreement ${req.params.id} - editedContent exists: ${!!agreement.editedContent}, length: ${agreement.editedContent?.length || 0}, trimmed length: ${agreement.editedContent?.trim()?.length || 0}`);
+      
+      if (agreement.editedContent && agreement.editedContent.trim() !== '') {
+        htmlSource = 'edited_content';
+        console.log(`[PDF Download] ✓ USING EDITED CONTENT for agreement ${req.params.id} (${agreement.editedContent.length} chars)`);
         // Resolve placeholders in saved edited content with current DB values
         const { resolvePlaceholders } = await import("./fieldMapping");
         processedHtml = await resolvePlaceholders(agreement.editedContent, agreement);
       } else {
-        console.log(`[PDF Download] No edited content found, generating from template for agreement ${req.params.id}`);
+        console.log(`[PDF Download] ✓ USING TEMPLATE FALLBACK for agreement ${req.params.id} (no edited content)`);
         // Find template for this agreement and generate HTML
         const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
         const template = templates.find(t => t.isActive) || templates[0];
@@ -375,6 +377,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { generatePdfHtml } = await import("./fieldMapping");
         processedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
       }
+      
+      console.log(`[PDF Download] Final HTML source: ${htmlSource}, processed length: ${processedHtml.length} chars`);
       
       // Return the HTML for client-side PDF generation
       res.json({
@@ -546,16 +550,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Support both new (editedHtml) and legacy (editedContent) formats
       const htmlContent = editedHtml || editedContent;
 
-      console.log(`[Backend] Saving edited content for agreement ${id} (${htmlContent?.length || 0} characters)`);
+      console.log(`[Save Content API] Saving content for agreement ${id} (${htmlContent?.length || 0} characters)`);
 
       if (!htmlContent || htmlContent.trim() === '') {
-        console.log(`[Backend] No content provided for agreement ${id}`);
+        console.log(`[Save Content API] No content provided for agreement ${id}`);
         return res.status(400).json({ message: "Edited content is required" });
       }
 
       const agreement = await storage.getAgreement(id);
       if (!agreement) {
-        console.log(`[Backend] Agreement ${id} not found`);
+        console.log(`[Save Content API] Agreement ${id} not found`);
         return res.status(404).json({ message: "Agreement not found" });
       }
 
@@ -563,15 +567,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { convertToPlaceholders } = await import("./fieldMapping");
       const placeholderHtml = await convertToPlaceholders(htmlContent, agreement);
       
-      console.log(`[Backend] Converted to placeholder format (${placeholderHtml.length} characters)`);
+      console.log(`[Save Content API] ✓ CONVERTED TO PLACEHOLDER FORMAT (${placeholderHtml.length} characters)`);
+      console.log(`[Save Content API] Sample placeholders: ${placeholderHtml.substring(0, 200)}...`);
 
       await storage.saveEditedContent(id, placeholderHtml);
-      console.log(`[Backend] Successfully saved edited content with placeholders for agreement ${id}`);
+      console.log(`[Save Content API] ✓ SUCCESSFULLY SAVED with placeholders for agreement ${id}`);
       
       res.json({ 
         success: true, 
         message: "Content saved successfully",
-        savedAt: new Date().toISOString()
+        savedAt: new Date().toISOString(),
+        savedLength: placeholderHtml.length
       });
     } catch (error) {
       console.error(`[Backend] Error saving edited content for agreement ${req.params.id}:`, error);
@@ -584,33 +590,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       
-      console.log(`[Backend] Fetching edited content for agreement ${id}`);
+      console.log(`[Edited Content API] Fetching content for agreement ${id}`);
       
       const agreement = await storage.getAgreement(id);
       if (!agreement) {
-        console.log(`[Backend] Agreement ${id} not found`);
+        console.log(`[Edited Content API] Agreement ${id} not found`);
         return res.status(404).json({ message: "Agreement not found" });
       }
 
-      const hasEditedContent = !!(agreement.editedContent && agreement.editedContent.trim());
-      console.log(`[Backend] Agreement ${id} has edited content: ${hasEditedContent} (${agreement.editedContent?.length || 0} characters)`);
-
       let resolvedContent = null;
-      if (hasEditedContent) {
+      let contentSource = 'template'; // Track which source we're using
+      
+      console.log(`[Edited Content API] Agreement ${id} - editedContent exists: ${!!agreement.editedContent}, length: ${agreement.editedContent?.length || 0}, trimmed length: ${agreement.editedContent?.trim()?.length || 0}`);
+
+      // NORMALIZED: Always prioritize edited_content when it exists and is not empty
+      if (agreement.editedContent && agreement.editedContent.trim() !== '') {
+        contentSource = 'edited_content';
+        console.log(`[Edited Content API] ✓ USING EDITED CONTENT for agreement ${id} (${agreement.editedContent.length} chars)`);
         // Resolve placeholders with current DB values
         const { resolvePlaceholders } = await import("./fieldMapping");
         resolvedContent = await resolvePlaceholders(agreement.editedContent, agreement);
-        console.log(`[Backend] Resolved placeholders for agreement ${id} (${resolvedContent.length} characters)`);
+      } else {
+        console.log(`[Edited Content API] ✓ GENERATING FROM TEMPLATE for agreement ${id} (no edited content)`);
+        // Generate fresh HTML from template for the editor
+        const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
+        const template = templates.find(t => t.isActive) || templates[0];
+        
+        if (!template) {
+          return res.status(404).json({ message: "No PDF template found" });
+        }
+
+        // Generate HTML content from template with current DB values
+        const { generatePdfHtml } = await import("./fieldMapping");
+        resolvedContent = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
       }
+
+      console.log(`[Edited Content API] Final content source: ${contentSource}, resolved length: ${resolvedContent.length} chars`);
 
       res.json({
         success: true,
         editedContent: resolvedContent,
         editedAt: agreement.editedAt || null,
-        hasEdits: hasEditedContent
+        hasEdits: (agreement.editedContent && agreement.editedContent.trim() !== ''),
+        contentSource: contentSource // For debugging
       });
     } catch (error) {
-      console.error(`[Backend] Error fetching edited content for agreement ${req.params.id}:`, error);
+      console.error(`[Edited Content API] Error fetching content for agreement ${req.params.id}:`, error);
       res.status(500).json({ message: "Failed to fetch edited content" });
     }
   });
