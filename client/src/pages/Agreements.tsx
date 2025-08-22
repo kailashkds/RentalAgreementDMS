@@ -1997,53 +1997,186 @@ export default function Agreements() {
           
           {viewingImportedAgreement && (
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Basic Agreement Information */}
-              <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-                <div className="p-4 border-b border-slate-100 bg-slate-50">
-                  <h3 className="text-lg font-medium text-slate-800">Agreement Information</h3>
-                </div>
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-sm font-medium text-slate-600">Agreement Number:</span>
-                    <p className="text-slate-900 font-mono">{viewingImportedAgreement.agreementNumber || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-slate-600">Status:</span>
-                    <Badge variant="outline" className={getStatusBadge(viewingImportedAgreement.status)}>
-                      {viewingImportedAgreement.status || 'N/A'}
-                    </Badge>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-slate-600">Start Date:</span>
-                    <p className="text-slate-900">{viewingImportedAgreement.startDate || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-slate-600">End Date:</span>
-                    <p className="text-slate-900">{viewingImportedAgreement.endDate || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-slate-600">Monthly Rent:</span>
-                    <p className="text-slate-900">₹{viewingImportedAgreement.rentalTerms?.monthlyRent || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-slate-600">Security Deposit:</span>
-                    <p className="text-slate-900">₹{viewingImportedAgreement.rentalTerms?.securityDeposit || 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
-
               {/* Customer Information */}
-              <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-                <div className="p-4 border-b border-slate-100 bg-slate-50">
-                  <h3 className="text-lg font-medium text-slate-800">Customer Information</h3>
-                </div>
-                <div className="p-4">
-                  <div>
-                    <span className="text-sm font-medium text-slate-600">Customer:</span>
-                    <p className="text-slate-900">{viewingImportedAgreement.customer?.name || 'N/A'}</p>
+              {viewingImportedAgreement.customer && (
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-medium text-slate-800">Customer Information</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {viewingImportedAgreement.customer.name && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Customer Name:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.customer.name}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.customer.email && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Email:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.customer.email}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.customer.phoneNumber && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Phone:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.customer.phoneNumber}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Landlord Information */}
+              {viewingImportedAgreement.ownerDetails && (
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-medium text-slate-800">Landlord Details</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {viewingImportedAgreement.ownerDetails.name && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Name:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.ownerDetails.name}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.ownerDetails.phoneNumber && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Phone:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.ownerDetails.phoneNumber}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.ownerDetails.email && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Email:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.ownerDetails.email}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.ownerDetails.address && (
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-slate-600">Address:</span>
+                        <p className="text-slate-900">
+                          {[
+                            viewingImportedAgreement.ownerDetails.address.flatNo,
+                            viewingImportedAgreement.ownerDetails.address.society,
+                            viewingImportedAgreement.ownerDetails.address.area,
+                            viewingImportedAgreement.ownerDetails.address.city
+                          ].filter(Boolean).join(', ')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Tenant Information */}
+              {viewingImportedAgreement.tenantDetails && (
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-medium text-slate-800">Tenant Details</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {viewingImportedAgreement.tenantDetails.name && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Name:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.tenantDetails.name}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.tenantDetails.phoneNumber && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Phone:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.tenantDetails.phoneNumber}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.tenantDetails.email && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Email:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.tenantDetails.email}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.tenantDetails.address && (
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-slate-600">Address:</span>
+                        <p className="text-slate-900">
+                          {[
+                            viewingImportedAgreement.tenantDetails.address.flatNo,
+                            viewingImportedAgreement.tenantDetails.address.society,
+                            viewingImportedAgreement.tenantDetails.address.area,
+                            viewingImportedAgreement.tenantDetails.address.city
+                          ].filter(Boolean).join(', ')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Property Details */}
+              {viewingImportedAgreement.propertyDetails && (
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-medium text-slate-800">Property Details</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {viewingImportedAgreement.propertyDetails.address && (
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-slate-600">Property Address:</span>
+                        <p className="text-slate-900">
+                          {[
+                            viewingImportedAgreement.propertyDetails.address.flatNo,
+                            viewingImportedAgreement.propertyDetails.address.society,
+                            viewingImportedAgreement.propertyDetails.address.area,
+                            viewingImportedAgreement.propertyDetails.address.city
+                          ].filter(Boolean).join(', ')}
+                        </p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.propertyDetails.purpose && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Purpose:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.propertyDetails.purpose}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.rentalTerms?.monthlyRent && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Monthly Rent:</span>
+                        <p className="text-slate-900">₹{viewingImportedAgreement.rentalTerms.monthlyRent}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.rentalTerms?.securityDeposit && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Security Deposit:</span>
+                        <p className="text-slate-900">₹{viewingImportedAgreement.rentalTerms.securityDeposit}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.startDate && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Start Date:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.startDate}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.endDate && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">End Date:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.endDate}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.agreementNumber && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Agreement Number:</span>
+                        <p className="text-slate-900 font-mono">{viewingImportedAgreement.agreementNumber}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.status && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Status:</span>
+                        <Badge variant="outline" className={getStatusBadge(viewingImportedAgreement.status)}>
+                          {viewingImportedAgreement.status}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Uploaded Documents */}
               <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
