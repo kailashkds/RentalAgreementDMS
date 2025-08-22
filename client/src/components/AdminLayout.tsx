@@ -18,7 +18,6 @@ import {
   Building,
   LogOut,
   Shield,
-  FileCheck
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -30,7 +29,6 @@ interface AdminLayoutProps {
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Agreements", href: "/agreements", icon: FileSignature },
-  { name: "Notarized Documents", href: "/notarized-documents", icon: FileCheck },
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Properties", href: "/properties", icon: MapPin },
   { name: "Documents", href: "/documents", icon: FolderOpen },
