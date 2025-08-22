@@ -31,11 +31,14 @@ import {
   Upload,
   File,
   CheckCircle,
-  Award
+  Award,
+  FileCheck
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { LocalFileUploader } from "@/components/LocalFileUploader";
+import { FilePreview } from "@/components/FilePreview";
 
 export default function Agreements() {
   const [, navigate] = useLocation();
@@ -437,19 +440,9 @@ export default function Agreements() {
         },
         startDate: (document.getElementById('edit-start-date') as HTMLInputElement)?.value,
         endDate: (document.getElementById('edit-end-date') as HTMLInputElement)?.value,
-        rentalTerms: {
-          monthlyRent: Number((document.getElementById('edit-monthly-rent') as HTMLInputElement)?.value) || 0,
-          securityDeposit: Number((document.getElementById('edit-security-deposit') as HTMLInputElement)?.value) || 0,
-        },
       };
 
-      await apiRequest(`/api/agreements/${editingImportedAgreement.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
-      });
+      await apiRequest(`/api/agreements/${editingImportedAgreement.id}`, "PUT", updateData);
 
       toast({
         title: "Success",
@@ -1686,31 +1679,96 @@ export default function Agreements() {
                   </div>
                 </div>
 
-                {/* Rental Terms */}
+                {/* Upload Documents */}
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
                   <div className="p-4 border-b border-slate-100 bg-slate-50">
-                    <h3 className="text-lg font-medium text-slate-800">Rental Terms</h3>
+                    <h3 className="text-lg font-medium text-slate-800">Upload Documents</h3>
                   </div>
-                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="edit-monthly-rent">Monthly Rent</Label>
-                      <Input 
-                        id="edit-monthly-rent"
-                        type="number"
-                        defaultValue={editingImportedAgreement.rentalTerms?.monthlyRent || ''}
-                        className="mt-1"
-                        placeholder="Enter amount"
-                      />
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                        <Label className="text-sm font-medium text-gray-700">Notarized Rent Agreement <span className="text-red-500">*</span></Label>
+                      </div>
+                      {editingImportedAgreement.notarizedDocument?.url ? (
+                        <FilePreview
+                          fileUrl={editingImportedAgreement.notarizedDocument.url}
+                          fileName={editingImportedAgreement.notarizedDocument.originalName || "Notarized Rent Agreement"}
+                          fileType="pdf"
+                          onRemove={() => {
+                            // Handle document removal - set state to manage document updates
+                          }}
+                          className="w-full"
+                        />
+                      ) : (
+                        <LocalFileUploader
+                          maxSize={5242880} // 5MB
+                          onUploadComplete={(result: any) => {
+                            // Handle document upload - set state to manage document updates
+                          }}
+                          className="w-full"
+                        >
+                          <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                            <div className="flex flex-col items-center space-y-2">
+                              <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                                <FileText className="w-6 h-6 text-gray-500" />
+                              </div>
+                              <p className="text-sm text-gray-600">Click to upload notarized agreement</p>
+                              <p className="text-xs text-gray-500">PDF only (Max 5MB)</p>
+                            </div>
+                          </div>
+                        </LocalFileUploader>
+                      )}
                     </div>
-                    <div>
-                      <Label htmlFor="edit-security-deposit">Security Deposit</Label>
-                      <Input 
-                        id="edit-security-deposit"
-                        type="number"
-                        defaultValue={editingImportedAgreement.rentalTerms?.securityDeposit || ''}
-                        className="mt-1"
-                        placeholder="Enter amount"
-                      />
+
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <Label className="text-sm font-medium text-gray-700">Police Verification Certificate <span className="text-red-500">*</span></Label>
+                      </div>
+                      {editingImportedAgreement.documents?.policeVerificationDocument?.url ? (
+                        <FilePreview
+                          fileUrl={editingImportedAgreement.documents.policeVerificationDocument.url}
+                          fileName={editingImportedAgreement.documents.policeVerificationDocument.originalName || "Police Verification Certificate"}
+                          fileType="pdf"
+                          onRemove={() => {
+                            // Handle document removal - set state to manage document updates
+                          }}
+                          className="w-full"
+                        />
+                      ) : (
+                        <LocalFileUploader
+                          maxSize={5242880} // 5MB
+                          onUploadComplete={(result: any) => {
+                            // Handle document upload - set state to manage document updates
+                          }}
+                          className="w-full"
+                        >
+                          <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                            <div className="flex flex-col items-center space-y-2">
+                              <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                                <CheckCircle className="w-6 h-6 text-gray-500" />
+                              </div>
+                              <p className="text-sm text-gray-600">Click to upload police verification</p>
+                              <p className="text-xs text-gray-500">PDF only (Max 5MB)</p>
+                            </div>
+                          </div>
+                        </LocalFileUploader>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg mx-4 mb-4">
+                    <div className="flex items-start space-x-2">
+                      <FileCheck className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div className="text-sm text-blue-800">
+                        <p className="font-medium">Document Requirements:</p>
+                        <ul className="mt-1 space-y-1 text-blue-700">
+                          <li>• Both documents are required and must be in PDF format</li>
+                          <li>• Maximum file size: 5MB per document</li>
+                          <li>• Documents should be clear and legible</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
