@@ -408,18 +408,18 @@ export default function Agreements() {
       const updateData = {
         customer: {
           name: (document.getElementById('edit-customer-name') as HTMLInputElement)?.value,
-          phoneNumber: (document.getElementById('edit-customer-mobile') as HTMLInputElement)?.value,
+          mobile: (document.getElementById('edit-customer-mobile') as HTMLInputElement)?.value,
         },
         language: (document.querySelector('[name="edit-language"]') as HTMLSelectElement)?.value || 
                  editingImportedAgreement.language || "english",
         ownerDetails: {
           name: (document.getElementById('edit-owner-name') as HTMLInputElement)?.value,
-          phoneNumber: (document.getElementById('edit-owner-mobile') as HTMLInputElement)?.value,
+          mobile: (document.getElementById('edit-owner-mobile') as HTMLInputElement)?.value,
           address: (document.getElementById('edit-owner-address') as HTMLTextAreaElement)?.value,
         },
         tenantDetails: {
           name: (document.getElementById('edit-tenant-name') as HTMLInputElement)?.value,
-          phoneNumber: (document.getElementById('edit-tenant-mobile') as HTMLInputElement)?.value,
+          mobile: (document.getElementById('edit-tenant-mobile') as HTMLInputElement)?.value,
           address: (document.getElementById('edit-tenant-address') as HTMLTextAreaElement)?.value,
         },
         agreementPeriod: {
@@ -1473,7 +1473,7 @@ export default function Agreements() {
                       <Label htmlFor="edit-customer-mobile">Mobile</Label>
                       <Input 
                         id="edit-customer-mobile"
-                        defaultValue={editingImportedAgreement.customer?.phoneNumber || ''}
+                        defaultValue={editingImportedAgreement.customer?.mobile || ''}
                         className="mt-1"
                       />
                     </div>
@@ -1513,7 +1513,7 @@ export default function Agreements() {
                       <Label htmlFor="edit-owner-mobile">Mobile</Label>
                       <Input 
                         id="edit-owner-mobile"
-                        defaultValue={editingImportedAgreement.ownerDetails?.phoneNumber || ''}
+                        defaultValue={editingImportedAgreement.ownerDetails?.mobile || ''}
                         className="mt-1"
                       />
                     </div>
@@ -1554,7 +1554,7 @@ export default function Agreements() {
                       <Label htmlFor="edit-tenant-mobile">Mobile</Label>
                       <Input 
                         id="edit-tenant-mobile"
-                        defaultValue={editingImportedAgreement.tenantDetails?.phoneNumber || ''}
+                        defaultValue={editingImportedAgreement.tenantDetails?.mobile || ''}
                         className="mt-1"
                       />
                     </div>
