@@ -58,12 +58,6 @@ interface ImportAgreementData {
     startDate: string;
     endDate: string;
     tenure: "11_months" | "custom";
-    monthlyRent: number;
-    deposit: number;
-    dueDate: number;
-    maintenance: "included" | "excluded";
-    noticePeriod: number;
-    minimumStay: number;
   };
   propertyAddress: {
     flatNo: string;
@@ -102,13 +96,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
     agreementPeriod: { 
       startDate: "", 
       endDate: "",
-      tenure: "11_months",
-      monthlyRent: 0,
-      deposit: 0,
-      dueDate: 1,
-      maintenance: "included",
-      noticePeriod: 1,
-      minimumStay: 1
+      tenure: "11_months"
     },
     propertyAddress: {
       flatNo: "",
@@ -146,8 +134,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
       case 3:
         return !!(formData.tenantDetails.name && formData.tenantDetails.mobile);
       case 4:
-        return !!(formData.agreementPeriod.startDate && formData.agreementPeriod.endDate && 
-                 formData.agreementPeriod.monthlyRent && formData.agreementPeriod.deposit &&
+        return !!(formData.agreementPeriod.startDate && formData.agreementPeriod.endDate &&
                  formData.propertyAddress.flatNo && formData.propertyAddress.society &&
                  formData.propertyAddress.area && formData.propertyAddress.city &&
                  formData.propertyAddress.state && formData.propertyAddress.pincode);
@@ -189,14 +176,13 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         }
         return true;
       case 4:
-        if (!formData.agreementPeriod.startDate || !formData.agreementPeriod.endDate || 
-            !formData.agreementPeriod.monthlyRent || !formData.agreementPeriod.deposit ||
+        if (!formData.agreementPeriod.startDate || !formData.agreementPeriod.endDate ||
             !formData.propertyAddress.flatNo || !formData.propertyAddress.society ||
             !formData.propertyAddress.area || !formData.propertyAddress.city ||
             !formData.propertyAddress.state || !formData.propertyAddress.pincode) {
           toast({
             title: "Required fields missing",
-            description: "Please fill in all agreement period, rental terms, and property address fields",
+            description: "Please fill in all agreement period and property address fields",
             variant: "destructive",
           });
           return false;
@@ -275,13 +261,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
       agreementPeriod: { 
       startDate: "", 
       endDate: "",
-      tenure: "11_months",
-      monthlyRent: 0,
-      deposit: 0,
-      dueDate: 1,
-      maintenance: "included",
-      noticePeriod: 1,
-      minimumStay: 1
+      tenure: "11_months"
     },
       propertyAddress: {
         flatNo: "",
@@ -547,7 +527,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                       <SelectValue placeholder="Select a customer" />
                     </SelectTrigger>
                     <SelectContent>
-                      {customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer: any) => (
+                      {customers.filter((customer: any) => customer.id && customer.id.trim() !== '').map((customer: any) => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.name} - {customer.mobile}
                         </SelectItem>
@@ -812,125 +792,6 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                 </div>
               </div>
 
-              {/* Rental Terms Section */}
-              <div className="space-y-4">
-                <h4 className="text-md font-semibold text-gray-800">Rental Terms</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="deposit">Security Deposit (₹) *</Label>
-                    <Input
-                      id="deposit"
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={formData.agreementPeriod.deposit || ""}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        agreementPeriod: { ...prev.agreementPeriod, deposit: parseInt(e.target.value) || 0 }
-                      }))}
-                      placeholder="Enter amount"
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="monthly-rent">Monthly Rent (₹) *</Label>
-                    <Input
-                      id="monthly-rent"
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={formData.agreementPeriod.monthlyRent || ""}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        agreementPeriod: { ...prev.agreementPeriod, monthlyRent: parseInt(e.target.value) || 0 }
-                      }))}
-                      placeholder="Enter amount"
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="due-date">Rent Due Date *</Label>
-                    <Input
-                      id="due-date"
-                      type="number"
-                      min="1"
-                      max="31"
-                      step="1"
-                      value={formData.agreementPeriod.dueDate || ""}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        agreementPeriod: { ...prev.agreementPeriod, dueDate: parseInt(e.target.value) || 1 }
-                      }))}
-                      placeholder="e.g., 5"
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Terms Section */}
-              <div className="space-y-4">
-                <h4 className="text-md font-semibold text-gray-800">Additional Terms</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="maintenance">Maintenance Charge</Label>
-                    <Select 
-                      value={formData.agreementPeriod.maintenance} 
-                      onValueChange={(value: "included" | "excluded") => setFormData(prev => ({
-                        ...prev,
-                        agreementPeriod: { ...prev.agreementPeriod, maintenance: value }
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select option" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="included">Included</SelectItem>
-                        <SelectItem value="excluded">Excluded</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="notice-period">Notice Period (months) *</Label>
-                    <Input
-                      id="notice-period"
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={formData.agreementPeriod.noticePeriod || ""}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        agreementPeriod: { ...prev.agreementPeriod, noticePeriod: parseInt(e.target.value) || 1 }
-                      }))}
-                      placeholder="e.g., 1"
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter notice period in months
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor="minimum-stay">Minimum Stay (months) *</Label>
-                    <Input
-                      id="minimum-stay"
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={formData.agreementPeriod.minimumStay || ""}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        agreementPeriod: { ...prev.agreementPeriod, minimumStay: parseInt(e.target.value) || 1 }
-                      }))}
-                      placeholder="e.g., 11"
-                      onWheel={(e) => e.currentTarget.blur()}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Enter minimum stay period in months
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* Property Address Section */}
               <div className="space-y-4">
                 <h4 className="text-md font-semibold text-gray-800">Property Address</h4>
@@ -1049,9 +910,9 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                   </div>
                   {documents.notarizedDocument ? (
                     <FilePreview
-                      fileUrl={documents.notarizedDocument}
-                      fileName={documents.notarizedDocument_metadata?.filename || "Notarized Rent Agreement"}
-                      fileType={documents.notarizedDocument_metadata?.fileType}
+                      fileUrl={documents.notarizedDocument as string}
+                      fileName={(documents.notarizedDocument_metadata as any)?.filename || "Notarized Rent Agreement"}
+                      fileType={(documents.notarizedDocument_metadata as any)?.fileType}
                       onRemove={() => setDocuments(prev => ({ ...prev, notarizedDocument: "", notarizedDocument_metadata: undefined }))}
                       className="w-full"
                     />
@@ -1081,9 +942,9 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                   </div>
                   {documents.policeVerificationDocument ? (
                     <FilePreview
-                      fileUrl={documents.policeVerificationDocument}
-                      fileName={documents.policeVerificationDocument_metadata?.filename || "Police Verification Certificate"}
-                      fileType={documents.policeVerificationDocument_metadata?.fileType}
+                      fileUrl={documents.policeVerificationDocument as string}
+                      fileName={(documents.policeVerificationDocument_metadata as any)?.filename || "Police Verification Certificate"}
+                      fileType={(documents.policeVerificationDocument_metadata as any)?.fileType}
                       onRemove={() => setDocuments(prev => ({ ...prev, policeVerificationDocument: "", policeVerificationDocument_metadata: undefined }))}
                       className="w-full"
                     />
