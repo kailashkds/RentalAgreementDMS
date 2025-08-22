@@ -1920,8 +1920,7 @@ export default function Agreements() {
                 </div>
               </div>
 
-              {/* Imported Documents Section - Only show for imported agreements */}
-              {isImportedAgreement(viewingAgreement) && (
+                  {/* Action Buttons */}
                 <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                   <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
                     <h3 className="text-lg font-semibold text-white flex items-center">
@@ -2152,6 +2151,8 @@ export default function Agreements() {
                   </Button>
                 </div>
               </div>
+                </>
+              )}
             </div>
           )}
         </DialogContent>
