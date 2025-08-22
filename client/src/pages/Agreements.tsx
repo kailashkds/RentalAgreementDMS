@@ -1297,15 +1297,17 @@ export default function Agreements() {
                               <Download className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-10 w-10 p-0 text-amber-600 hover:text-amber-900 hover:bg-amber-100 rounded-full border border-gray-200"
-                            onClick={() => isImportedAgreement(agreement) ? setEditingImportedAgreement(agreement) : setEditingAgreement(agreement)}
-                            title="Edit Agreement"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          {!(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-10 w-10 p-0 text-amber-600 hover:text-amber-900 hover:bg-amber-100 rounded-full border border-gray-200"
+                              onClick={() => isImportedAgreement(agreement) ? setEditingImportedAgreement(agreement) : setEditingAgreement(agreement)}
+                              title="Edit Agreement"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
                           {agreement.status === "active" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
                             <Button 
                               variant="ghost" 
@@ -2316,21 +2318,23 @@ export default function Agreements() {
               {/* Action Buttons */}
               <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-lg border border-slate-200 shadow-sm">
                 <div className="flex flex-wrap justify-center gap-3">
-                  <Button
-                    onClick={() => {
-                      if (isImportedAgreement(viewingAgreement)) {
-                        setEditingImportedAgreement(viewingAgreement);
-                        setViewingAgreement(null);
-                      } else {
-                        setEditingAgreement(viewingAgreement);
-                        setViewingAgreement(null);
-                      }
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-sm"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Agreement
-                  </Button>
+                  {!(viewingAgreement.notarizedDocument?.url || viewingAgreement.notarizedDocumentUrl) && (
+                    <Button
+                      onClick={() => {
+                        if (isImportedAgreement(viewingAgreement)) {
+                          setEditingImportedAgreement(viewingAgreement);
+                          setViewingAgreement(null);
+                        } else {
+                          setEditingAgreement(viewingAgreement);
+                          setViewingAgreement(null);
+                        }
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-sm"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Agreement
+                    </Button>
+                  )}
                   {isImportedAgreement(viewingAgreement) ? (
                     <Popover>
                       <PopoverTrigger asChild>
