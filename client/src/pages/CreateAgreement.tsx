@@ -113,7 +113,12 @@ export default function CreateAgreement() {
   // Load customer and property data
   useEffect(() => {
     const loadData = async () => {
+      console.log("CreateAgreement: Current location:", location);
+      console.log("CreateAgreement: Parsed customerId:", customerId);
+      console.log("CreateAgreement: Parsed propertyId:", propertyId);
+      
       if (!customerId || !propertyId) {
+        console.error("CreateAgreement: Missing required parameters - customerId:", customerId, "propertyId:", propertyId);
         toast({
           title: "Error",
           description: "Customer ID and Property ID are required.",
@@ -192,20 +197,19 @@ export default function CreateAgreement() {
   };
 
   const handleSocietySelect = (society: any, fieldPrefix: string) => {
-    setValue(`${fieldPrefix}.society`, society.societyName, { shouldValidate: true, shouldDirty: true });
-    setValue(`${fieldPrefix}.area`, society.area, { shouldValidate: true, shouldDirty: true });
-    setValue(`${fieldPrefix}.city`, society.city, { shouldValidate: true, shouldDirty: true });
-    setValue(`${fieldPrefix}.pincode`, society.pincode, { shouldValidate: true, shouldDirty: true });
-    setValue(`${fieldPrefix}.state`, society.state, { shouldValidate: true, shouldDirty: true });
-    
-    // Force form to re-render by triggering validation
-    trigger([
-      `${fieldPrefix}.society`,
-      `${fieldPrefix}.area`, 
-      `${fieldPrefix}.city`,
-      `${fieldPrefix}.pincode`,
-      `${fieldPrefix}.state`
-    ]);
+    if (fieldPrefix === 'ownerDetails.address') {
+      setValue('ownerDetails.address.society', society.societyName, { shouldValidate: true, shouldDirty: true });
+      setValue('ownerDetails.address.area', society.area, { shouldValidate: true, shouldDirty: true });
+      setValue('ownerDetails.address.city', society.city, { shouldValidate: true, shouldDirty: true });
+      setValue('ownerDetails.address.pincode', society.pincode, { shouldValidate: true, shouldDirty: true });
+      setValue('ownerDetails.address.state', society.state, { shouldValidate: true, shouldDirty: true });
+    } else if (fieldPrefix === 'tenantDetails.address') {
+      setValue('tenantDetails.address.society', society.societyName, { shouldValidate: true, shouldDirty: true });
+      setValue('tenantDetails.address.area', society.area, { shouldValidate: true, shouldDirty: true });
+      setValue('tenantDetails.address.city', society.city, { shouldValidate: true, shouldDirty: true });
+      setValue('tenantDetails.address.pincode', society.pincode, { shouldValidate: true, shouldDirty: true });
+      setValue('tenantDetails.address.state', society.state, { shouldValidate: true, shouldDirty: true });
+    }
     
     setShowSocietySuggestions(false);
     
