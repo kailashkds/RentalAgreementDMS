@@ -722,17 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Agreement duplication
-  app.post("/api/agreements/:id/duplicate", requireAuth, async (req, res) => {
-    try {
-      const { customerId } = req.body;
-      const duplicatedAgreement = await storage.duplicateAgreement(req.params.id, customerId);
-      res.status(201).json(duplicatedAgreement);
-    } catch (error) {
-      console.error("Error duplicating agreement:", error);
-      res.status(500).json({ message: "Failed to duplicate agreement" });
-    }
-  });
+
 
   // Address search for intelligent autocomplete - requires authentication
   app.get("/api/addresses", requireAuth, async (req, res) => {
@@ -764,17 +754,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Agreement duplication
-  app.post("/api/agreements/:id/duplicate", requireAuth, async (req, res) => {
-    try {
-      const { customerId } = req.body;
-      const duplicatedAgreement = await storage.duplicateAgreement(req.params.id, customerId);
-      res.status(201).json(duplicatedAgreement);
-    } catch (error) {
-      console.error("Error duplicating agreement:", error);
-      res.status(500).json({ message: "Failed to duplicate agreement" });
-    }
-  });
+
 
   // Object storage routes for document uploads
   app.get("/objects/:objectPath(*)", async (req, res) => {

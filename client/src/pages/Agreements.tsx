@@ -21,7 +21,6 @@ import {
   Search,
   Eye,
   RotateCcw,
-  Copy,
   Edit,
   Trash2,
   Download,
@@ -252,24 +251,6 @@ export default function Agreements() {
     }
   };
 
-  const handleDuplicateAgreement = async (agreementId: string) => {
-    try {
-      await apiRequest("POST", `/api/agreements/${agreementId}/duplicate`);
-
-      queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
-
-      toast({
-        title: "Agreement duplicated",
-        description: "Agreement has been duplicated successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to duplicate agreement.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleDeleteAgreement = async (agreementId: string) => {
     if (!window.confirm("Are you sure you want to delete this agreement?")) {
@@ -1346,17 +1327,6 @@ export default function Agreements() {
                               title="Renew Agreement"
                             >
                               <RotateCcw className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {!isImportedAgreement(agreement) && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-10 w-10 p-0 text-purple-600 hover:text-purple-900 hover:bg-purple-100 rounded-full border border-gray-200"
-                              onClick={() => handleDuplicateAgreement(agreement.id)}
-                              title="Duplicate Agreement"
-                            >
-                              <Copy className="h-4 w-4" />
                             </Button>
                           )}
                           {agreement.status === 'draft' && (

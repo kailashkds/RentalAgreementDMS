@@ -102,7 +102,6 @@ export interface IStorage {
   updateAgreement(id: string, agreement: Partial<InsertAgreement>): Promise<Agreement>;
   deleteAgreement(id: string): Promise<void>;
   renewAgreement(id: string, newStartDate: Date, newEndDate: Date): Promise<Agreement>;
-  duplicateAgreement(id: string, customerId?: string): Promise<Agreement>;
   updateAgreementNotarizedDocument(id: string, notarizedDocData: any): Promise<Agreement>;
   
   // Dashboard statistics
@@ -744,28 +743,6 @@ export class DatabaseStorage implements IStorage {
     return renewedAgreement;
   }
 
-  async duplicateAgreement(id: string, customerId?: string): Promise<Agreement> {
-    const originalAgreement = await this.getAgreement(id);
-    if (!originalAgreement) {
-      throw new Error("Agreement not found");
-    }
-
-    const duplicatedAgreement = await this.createAgreement({
-      ...originalAgreement,
-      id: undefined as any,
-      agreementNumber: undefined as any,
-      customerId: customerId || originalAgreement.customerId,
-      status: "draft",
-      parentAgreementId: id,
-      renewedFromId: null,
-      agreementDate: new Date().toISOString().split('T')[0] as any,
-      documents: {}, // Reset documents for new agreement
-      createdAt: undefined as any,
-      updatedAt: undefined as any,
-    });
-
-    return duplicatedAgreement;
-  }
 
   async updateAgreementNotarizedDocument(id: string, notarizedDocData: any): Promise<Agreement> {
     const [updatedAgreement] = await db
