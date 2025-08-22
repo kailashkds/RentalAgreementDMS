@@ -740,7 +740,7 @@ export default function Agreements() {
 
   // Helper function to check if agreement is imported
   const isImportedAgreement = (agreement: any) => {
-    return agreement?.notarizedDocumentUrl || agreement?.policeVerificationDocumentUrl;
+    return agreement?.notarizedDocument?.url || agreement?.documents?.policeVerificationDocument?.url;
   };
 
   const getStatusBadge = (status: string | undefined) => {
@@ -1684,7 +1684,7 @@ export default function Agreements() {
                   <div className="bg-blue-50 p-6">
                     <div className="space-y-4">
                       {/* Notarized Document Preview */}
-                      {viewingAgreement.notarizedDocumentUrl && (
+                      {viewingAgreement.notarizedDocument?.url && (
                         <div className="bg-white rounded-lg border border-blue-200 shadow-sm">
                           <div className="p-4 border-b border-blue-100">
                             <h4 className="text-sm font-medium text-blue-900">Notarized Agreement Document</h4>
@@ -1704,7 +1704,7 @@ export default function Agreements() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(viewingAgreement.notarizedDocumentUrl, '_blank')}
+                                  onClick={() => window.open(viewingAgreement.notarizedDocument.url, '_blank')}
                                   className="text-blue-600 border-blue-300 hover:bg-blue-50"
                                 >
                                   <Eye className="h-4 w-4 mr-2" />
@@ -1714,7 +1714,7 @@ export default function Agreements() {
                                   size="sm"
                                   onClick={() => {
                                     const link = document.createElement('a');
-                                    link.href = viewingAgreement.notarizedDocumentUrl;
+                                    link.href = viewingAgreement.notarizedDocument.url;
                                     link.download = 'notarized-document.pdf';
                                     link.click();
                                   }}
@@ -1730,7 +1730,7 @@ export default function Agreements() {
                       )}
 
                       {/* Police Verification Document Preview */}
-                      {viewingAgreement.policeVerificationDocumentUrl && (
+                      {viewingAgreement.documents?.policeVerificationDocument?.url && (
                         <div className="bg-white rounded-lg border border-blue-200 shadow-sm">
                           <div className="p-4 border-b border-blue-100">
                             <h4 className="text-sm font-medium text-blue-900">Police Verification Document</h4>
@@ -1750,7 +1750,7 @@ export default function Agreements() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => window.open(viewingAgreement.policeVerificationDocumentUrl, '_blank')}
+                                  onClick={() => window.open(viewingAgreement.documents.policeVerificationDocument.url, '_blank')}
                                   className="text-blue-600 border-blue-300 hover:bg-blue-50"
                                 >
                                   <Eye className="h-4 w-4 mr-2" />
@@ -1760,7 +1760,7 @@ export default function Agreements() {
                                   size="sm"
                                   onClick={() => {
                                     const link = document.createElement('a');
-                                    link.href = viewingAgreement.policeVerificationDocumentUrl;
+                                    link.href = viewingAgreement.documents.policeVerificationDocument.url;
                                     link.download = 'police-verification-document.pdf';
                                     link.click();
                                   }}
