@@ -401,13 +401,14 @@ export default function Agreements() {
 
   const handleUpdateImportedAgreement = async () => {
     try {
-      // Get form data
-      const formData = new FormData(document.querySelector('form')!);
+      // Get all form data from the new detailed fields
       const updateData = {
         customer: {
           name: (document.getElementById('edit-customer-name') as HTMLInputElement)?.value,
           phoneNumber: (document.getElementById('edit-customer-mobile') as HTMLInputElement)?.value,
         },
+        language: (document.querySelector('[name="edit-language"]') as HTMLSelectElement)?.value || 
+                 editingImportedAgreement.language || "english",
         ownerDetails: {
           name: (document.getElementById('edit-owner-name') as HTMLInputElement)?.value,
           phoneNumber: (document.getElementById('edit-owner-mobile') as HTMLInputElement)?.value,
@@ -418,14 +419,27 @@ export default function Agreements() {
           phoneNumber: (document.getElementById('edit-tenant-mobile') as HTMLInputElement)?.value,
           address: (document.getElementById('edit-tenant-address') as HTMLTextAreaElement)?.value,
         },
+        agreementPeriod: {
+          startDate: (document.getElementById('edit-start-date') as HTMLInputElement)?.value,
+          endDate: (document.getElementById('edit-end-date') as HTMLInputElement)?.value,
+          tenure: (document.querySelector('[name="edit-tenure"]') as HTMLSelectElement)?.value || 
+                  editingImportedAgreement.agreementPeriod?.tenure || "11_months",
+        },
         propertyDetails: {
-          address: (document.getElementById('edit-property-address') as HTMLTextAreaElement)?.value,
+          address: {
+            flatNo: (document.getElementById('edit-flat-no') as HTMLInputElement)?.value,
+            society: (document.getElementById('edit-society') as HTMLInputElement)?.value,
+            area: (document.getElementById('edit-area') as HTMLInputElement)?.value,
+            city: (document.getElementById('edit-city') as HTMLInputElement)?.value,
+            state: (document.getElementById('edit-state') as HTMLInputElement)?.value,
+            pincode: (document.getElementById('edit-pincode') as HTMLInputElement)?.value,
+          }
         },
         startDate: (document.getElementById('edit-start-date') as HTMLInputElement)?.value,
         endDate: (document.getElementById('edit-end-date') as HTMLInputElement)?.value,
         rentalTerms: {
-          monthlyRent: (document.getElementById('edit-monthly-rent') as HTMLInputElement)?.value,
-          securityDeposit: (document.getElementById('edit-security-deposit') as HTMLInputElement)?.value,
+          monthlyRent: Number((document.getElementById('edit-monthly-rent') as HTMLInputElement)?.value) || 0,
+          securityDeposit: Number((document.getElementById('edit-security-deposit') as HTMLInputElement)?.value) || 0,
         },
       };
 
@@ -1451,9 +1465,9 @@ export default function Agreements() {
                 {/* Customer Information */}
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
                   <div className="p-4 border-b border-slate-100 bg-slate-50">
-                    <h3 className="text-lg font-medium text-slate-800">Customer Information</h3>
+                    <h3 className="text-lg font-medium text-slate-800">Customer & Language</h3>
                   </div>
-                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="edit-customer-name">Customer Name</Label>
                       <Input 
@@ -1469,6 +1483,21 @@ export default function Agreements() {
                         defaultValue={editingImportedAgreement.customer?.phoneNumber || ''}
                         className="mt-1"
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-language">Language <span className="text-red-500">*</span></Label>
+                      <Select defaultValue={editingImportedAgreement.language || "english"}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="english">English</SelectItem>
+                          <SelectItem value="hindi">Hindi</SelectItem>
+                          <SelectItem value="gujarati">Gujarati</SelectItem>
+                          <SelectItem value="tamil">Tamil</SelectItem>
+                          <SelectItem value="marathi">Marathi</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
@@ -1555,30 +1584,14 @@ export default function Agreements() {
                   </div>
                 </div>
 
-                {/* Property & Agreement Details */}
+                {/* Agreement Period */}
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
                   <div className="p-4 border-b border-slate-100 bg-slate-50">
-                    <h3 className="text-lg font-medium text-slate-800">Property & Agreement Details</h3>
+                    <h3 className="text-lg font-medium text-slate-800">Agreement Period</h3>
                   </div>
-                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <Label htmlFor="edit-property-address">Property Address</Label>
-                      <Textarea 
-                        id="edit-property-address"
-                        defaultValue={editingImportedAgreement.propertyDetails?.address ? 
-                          [
-                            editingImportedAgreement.propertyDetails.address.flatNo,
-                            editingImportedAgreement.propertyDetails.address.society,
-                            editingImportedAgreement.propertyDetails.address.area,
-                            editingImportedAgreement.propertyDetails.address.city
-                          ].filter(Boolean).join(', ') : ''
-                        }
-                        className="mt-1"
-                        rows={2}
-                      />
-                    </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="edit-start-date">Start Date</Label>
+                      <Label htmlFor="edit-start-date">Start Date <span className="text-red-500">*</span></Label>
                       <Input 
                         id="edit-start-date"
                         type="date"
@@ -1587,7 +1600,19 @@ export default function Agreements() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="edit-end-date">End Date</Label>
+                      <Label htmlFor="edit-tenure">Agreement Tenure <span className="text-red-500">*</span></Label>
+                      <Select defaultValue={editingImportedAgreement.agreementPeriod?.tenure || "11_months"}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select tenure" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="11_months">11 Months</SelectItem>
+                          <SelectItem value="custom">Custom Duration</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-end-date">End Date <span className="text-red-500">*</span></Label>
                       <Input 
                         id="edit-end-date"
                         type="date"
@@ -1595,6 +1620,78 @@ export default function Agreements() {
                         className="mt-1"
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Property Address */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-medium text-slate-800">Property Address</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="edit-flat-no">Flat/House No <span className="text-red-500">*</span></Label>
+                      <Input 
+                        id="edit-flat-no"
+                        defaultValue={editingImportedAgreement.propertyDetails?.address?.flatNo || ''}
+                        className="mt-1"
+                        placeholder="e.g., A-101"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-society">Society/Building <span className="text-red-500">*</span></Label>
+                      <Input 
+                        id="edit-society"
+                        defaultValue={editingImportedAgreement.propertyDetails?.address?.society || ''}
+                        className="mt-1"
+                        placeholder="e.g., ABC Apartments"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-area">Area <span className="text-red-500">*</span></Label>
+                      <Input 
+                        id="edit-area"
+                        defaultValue={editingImportedAgreement.propertyDetails?.address?.area || ''}
+                        className="mt-1"
+                        placeholder="e.g., Satellite"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-city">City <span className="text-red-500">*</span></Label>
+                      <Input 
+                        id="edit-city"
+                        defaultValue={editingImportedAgreement.propertyDetails?.address?.city || ''}
+                        className="mt-1"
+                        placeholder="e.g., Ahmedabad"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-state">State <span className="text-red-500">*</span></Label>
+                      <Input 
+                        id="edit-state"
+                        defaultValue={editingImportedAgreement.propertyDetails?.address?.state || ''}
+                        className="mt-1"
+                        placeholder="e.g., Gujarat"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-pincode">Pincode <span className="text-red-500">*</span></Label>
+                      <Input 
+                        id="edit-pincode"
+                        defaultValue={editingImportedAgreement.propertyDetails?.address?.pincode || ''}
+                        className="mt-1"
+                        placeholder="e.g., 380015"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rental Terms */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="text-lg font-medium text-slate-800">Rental Terms</h3>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="edit-monthly-rent">Monthly Rent</Label>
                       <Input 
@@ -1602,6 +1699,7 @@ export default function Agreements() {
                         type="number"
                         defaultValue={editingImportedAgreement.rentalTerms?.monthlyRent || ''}
                         className="mt-1"
+                        placeholder="Enter amount"
                       />
                     </div>
                     <div>
@@ -1611,6 +1709,7 @@ export default function Agreements() {
                         type="number"
                         defaultValue={editingImportedAgreement.rentalTerms?.securityDeposit || ''}
                         className="mt-1"
+                        placeholder="Enter amount"
                       />
                     </div>
                   </div>
