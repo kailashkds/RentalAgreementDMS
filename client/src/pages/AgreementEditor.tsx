@@ -153,16 +153,32 @@ export default function AgreementEditor() {
 
   // Manual save
   const handleSave = async () => {
-    if (!editorRef.current || !agreementId) return;
+    if (!editorRef.current || !agreementId) {
+      toast({
+        title: "Save Failed",
+        description: "Unable to save - editor not ready or agreement ID missing.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const content = editorRef.current.innerHTML;
-    console.log(`[Editor] Manual save triggered (${content.length} characters)`);
-    await autoSave(content);
-    
-    toast({
-      title: "Document Saved",
-      description: "Your changes have been saved successfully.",
-    });
+    try {
+      const content = editorRef.current.innerHTML;
+      console.log(`[Editor] Manual save triggered (${content.length} characters)`);
+      await autoSave(content);
+      
+      toast({
+        title: "Document Saved",
+        description: "Your changes have been saved successfully.",
+      });
+    } catch (error) {
+      console.error('[Editor] Manual save failed:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save your changes. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Ref to store the timeout ID for auto-save
@@ -528,13 +544,13 @@ export default function AgreementEditor() {
           
           <Button 
             onClick={handleSave}
-            disabled={isSaving || !isDirty}
+            disabled={isSaving}
             className="flex items-center gap-2"
             variant="outline"
             data-testid="save-continue"
           >
             <Save className="h-4 w-4" />
-            Save & Continue Later
+            {isSaving ? 'Saving...' : 'Save & Continue Later'}
           </Button>
         </div>
       </div>
