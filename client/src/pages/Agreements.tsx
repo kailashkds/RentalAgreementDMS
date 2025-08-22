@@ -355,7 +355,7 @@ export default function Agreements() {
     console.log('Send WhatsApp for agreement:', agreement.agreementNumber);
     toast({
       title: "WhatsApp Feature",
-      description: "WhatsApp integration will be implemented here",
+      description: "WhatsApp integration will be done soon",
     });
   };
 
