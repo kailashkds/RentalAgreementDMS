@@ -949,59 +949,49 @@ export default function Agreements() {
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                       {/* Main Content */}
                       <div className="flex-1">
-                        {/* Header with Agreement Number and Main Status */}
-                        <div className="flex flex-wrap items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold font-mono text-gray-900">
-                            {agreement.agreementNumber}
-                          </h3>
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                              agreement.status
-                            )}`}
-                          >
-                            {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
-                          </span>
-                        </div>
-                        
-                        {/* Notary Status with explanation */}
-                        <div className="mb-4">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-medium text-gray-600">Notary Status:</span>
+                        {/* Header with Agreement Number, Main Status and Notary Status */}
+                        <div className="flex flex-wrap items-center justify-between mb-4">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <h3 className="text-lg font-semibold font-mono text-gray-900">
+                              {agreement.agreementNumber}
+                            </h3>
                             <span
-                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                                agreement.status
+                              )}`}
+                            >
+                              {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
+                            </span>
+                          </div>
+                          
+                          {/* Prominent Notary Status */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-gray-600">Notary:</span>
+                            <span
+                              className={`inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full border-2 ${
                                 agreement.status === "draft"
-                                  ? "bg-gray-100 text-gray-800"
+                                  ? "bg-gray-50 text-gray-700 border-gray-300"
                                   : agreement.status === "active"
                                   ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-amber-100 text-amber-800"
-                                  : "bg-gray-100 text-gray-800"
+                                    ? "bg-green-50 text-green-700 border-green-300"
+                                    : "bg-amber-50 text-amber-700 border-amber-300"
+                                  : "bg-gray-50 text-gray-700 border-gray-300"
                               }`}
                             >
                               {agreement.status === "draft"
-                                ? "Complete First"
+                                ? "Draft"
                                 : agreement.status === "active"
                                 ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                  ? "Notarized"
-                                  : "Pending"
+                                  ? "✓ Done"
+                                  : "⏳ Pending"
                                 : "N/A"
                               }
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500">
-                            {agreement.status === "draft"
-                              ? "Complete the agreement creation first"
-                              : agreement.status === "active"
-                              ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                ? "Notarized document has been uploaded"
-                                : "Waiting for notarized document upload"
-                              : "Status not available"
-                            }
-                          </p>
                         </div>
                         
-                        {/* Data Grid - Clean and Symmetric */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                        {/* Data Grid - Reordered */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm mb-6">
                           <div>
                             <span className="font-medium text-gray-700">Customer:</span>
                             <p className="text-gray-900 font-medium">{agreement.customer?.name || "Unknown"}</p>
@@ -1013,23 +1003,6 @@ export default function Agreements() {
                           <div>
                             <span className="font-medium text-gray-700">Tenant:</span>
                             <p className="text-gray-900">{agreement.tenantDetails?.name || 'Not provided'}</p>
-                          </div>
-                          <div className="md:col-span-2 lg:col-span-3">
-                            <span className="font-medium text-gray-700">Property Address:</span>
-                            <p className="text-gray-900">
-                              {(() => {
-                                const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
-                                if (propertyAddr) {
-                                  return [
-                                    propertyAddr.flatNo,
-                                    propertyAddr.society,
-                                    propertyAddr.area,
-                                    propertyAddr.city
-                                  ].filter(Boolean).join(', ');
-                                }
-                                return 'Not available';
-                              })()}
-                            </p>
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">Agreement Period:</span>
@@ -1077,15 +1050,40 @@ export default function Agreements() {
                               })()}
                             </p>
                           </div>
+                          <div className="md:col-span-2 lg:col-span-3 mt-2">
+                            <span className="font-medium text-gray-700">Property Address:</span>
+                            <p className="text-gray-900">
+                              {(() => {
+                                const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
+                                if (propertyAddr) {
+                                  return [
+                                    propertyAddr.flatNo,
+                                    propertyAddr.society,
+                                    propertyAddr.area,
+                                    propertyAddr.city
+                                  ].filter(Boolean).join(', ');
+                                }
+                                return 'Not available';
+                              })()}
+                            </p>
+                          </div>
                         </div>
                       </div>
                       
-                      {/* Separator Line */}
-                      <div className="border-t border-gray-200 pt-4 mt-4">
-                        <p className="text-xs font-medium text-gray-500 mb-3">Actions</p>
+                      {/* Horizontal Separator with Accent Color and Actions */}
+                      <div className="flex-shrink-0">
+                        <div className="relative mb-4">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t-2 border-blue-100"></div>
+                          </div>
+                          <div className="relative flex justify-center">
+                            <span className="bg-white px-4 py-1 text-sm font-medium text-blue-600 border border-blue-200 rounded-full">
+                              Actions
+                            </span>
+                          </div>
+                        </div>
                         {/* Action Buttons Matrix - 3x3 with more spacing */}
-                        <div className="flex-shrink-0">
-                          <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-3">
                             {/* View Button */}
                           <Button 
                             variant="ghost" 
@@ -1206,7 +1204,6 @@ export default function Agreements() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
-                          </div>
                         </div>
                       </div>
                     </div>
