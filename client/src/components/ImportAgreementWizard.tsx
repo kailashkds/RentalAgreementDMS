@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, Upload, FileText, Shield } from "lucide-react";
+import { Upload, FileText, Shield, ArrowLeft, ArrowRight, X } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +21,7 @@ interface ImportAgreementData {
   customer: {
     id?: string;
     name: string;
+    mobile?: string;
   };
   language: string;
   ownerDetails: {
@@ -52,7 +54,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   const { toast } = useToast();
 
   const [formData, setFormData] = useState<ImportAgreementData>({
-    customer: { name: "" },
+    customer: { name: "", mobile: "" },
     language: "english",
     ownerDetails: { name: "", mobile: "" },
     tenantDetails: { name: "", mobile: "" },
@@ -196,7 +198,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   const handleClose = () => {
     setCurrentStep(1);
     setFormData({
-      customer: { name: "" },
+      customer: { name: "", mobile: "" },
       language: "english",
       ownerDetails: { name: "", mobile: "" },
       tenantDetails: { name: "", mobile: "" },
@@ -239,7 +241,8 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                       ...prev,
                       customer: {
                         id: value,
-                        name: selectedCustomer ? selectedCustomer.name : ""
+                        name: selectedCustomer ? selectedCustomer.name : "",
+                        mobile: selectedCustomer ? selectedCustomer.mobile : ""
                       }
                     }));
                   }}
@@ -262,7 +265,16 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                       value={formData.customer.name}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
-                        customer: { name: e.target.value }
+                        customer: { ...prev.customer, name: e.target.value }
+                      }))}
+                    />
+                    <Input
+                      placeholder="Customer mobile number"
+                      className="mt-2"
+                      value={formData.customer.mobile || ""}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        customer: { ...prev.customer, mobile: e.target.value }
                       }))}
                     />
                   </div>
@@ -575,63 +587,111 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
     }
   };
 
+  const progress = (currentStep / 5) * 100;
+
+  const STEPS = [
+    { id: 1, title: "Customer Info" },
+    { id: 2, title: "Owner Details" },
+    { id: 3, title: "Tenant Details" },
+    { id: 4, title: "Agreement & Property" },
+    { id: 5, title: "Documents" },
+  ];
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Upload className="h-5 w-5 text-green-600" />
-            <span>Import Existing Agreement</span>
-          </DialogTitle>
+      <DialogContent className="max-w-4xl max-h-screen overflow-y-auto">
+        <DialogHeader className="bg-gray-800 text-white p-6 -m-6 mb-6">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-bold">
+              Import Existing Agreement
+            </DialogTitle>
+            <div className="flex items-center space-x-3">
+              <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                Import Mode
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClose}
+                className="text-white hover:bg-white/20 border border-white/30"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="mt-6">
+            <Progress value={progress} className="mb-4" />
+            <div className="flex items-center justify-between text-sm">
+              {STEPS.map((step) => (
+                <div key={step.id} className="flex items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${
+                      step.id <= currentStep
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-600 text-gray-300"
+                    }`}
+                  >
+                    {step.id}
+                  </div>
+                  <span className="ml-2">{step.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Progress indicator */}
-          <div className="flex items-center justify-between">
-            {[1, 2, 3, 4, 5].map((step) => (
-              <div
-                key={step}
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                  step === currentStep
-                    ? "bg-green-600 text-white"
-                    : step < currentStep
-                    ? "bg-green-100 text-green-600"
-                    : "bg-gray-100 text-gray-400"
-                }`}
-              >
-                {step}
-              </div>
-            ))}
-          </div>
 
           {/* Step content */}
           {renderStep()}
 
           {/* Navigation buttons */}
-          <div className="flex justify-between">
+          <div className="flex items-center justify-between pt-6 border-t border-gray-200">
             <Button
+              type="button"
               variant="outline"
               onClick={handlePrevious}
               disabled={currentStep === 1}
             >
-              <ChevronLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Previous
             </Button>
-
-            {currentStep < 5 ? (
-              <Button onClick={handleNext}>
-                Next
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-            ) : (
+            <div className="flex space-x-3">
               <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="bg-green-600 hover:bg-green-700"
+                type="button"
+                variant="outline"
+                onClick={handleClose}
+                className="text-gray-600 hover:bg-gray-100"
               >
-                {isSubmitting ? "Importing..." : "Import Agreement"}
+                <X className="mr-2 h-4 w-4" />
+                Close
               </Button>
-            )}
+              {currentStep < 5 ? (
+                <Button 
+                  type="button" 
+                  onClick={handleNext} 
+                  disabled={!validateStep(currentStep)}
+                  className={`${
+                    validateStep(currentStep) 
+                      ? "bg-blue-600 hover:bg-blue-700" 
+                      : "bg-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  Next
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isSubmitting ? "Importing..." : "Import Agreement"}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>

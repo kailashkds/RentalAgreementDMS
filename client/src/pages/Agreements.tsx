@@ -1008,6 +1008,9 @@ export default function Agreements() {
                             <div>
                               <span className="font-medium text-gray-600">Customer:</span>
                               <p className="text-gray-900 font-medium">{agreement.customer?.name || "Unknown"}</p>
+                              {agreement.customer?.mobile && (
+                                <p className="text-xs text-gray-500 mt-1">{agreement.customer.mobile}</p>
+                              )}
                             </div>
                             <div>
                               <span className="font-medium text-gray-600">Landlord:</span>
