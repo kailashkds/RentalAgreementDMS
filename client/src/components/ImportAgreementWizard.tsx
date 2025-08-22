@@ -11,6 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
+import { LocalFileUploader } from "@/components/LocalFileUploader";
+import { FilePreview } from "@/components/FilePreview";
 
 interface ImportAgreementWizardProps {
   isOpen: boolean;
@@ -71,8 +73,6 @@ interface ImportAgreementData {
     state: string;
     pincode: string;
   };
-  notarizedDocument?: File;
-  policeVerificationDocument?: File;
 }
 
 export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreementWizardProps) {
@@ -92,6 +92,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
     state: string;
   }>>([]);
   const [showSocietySuggestions, setShowSocietySuggestions] = useState(false);
+  const [documents, setDocuments] = useState<Record<string, string | { filename: string; fileType: string; size: number } | undefined>>({});
 
   const [formData, setFormData] = useState<ImportAgreementData>({
     customer: { id: "", name: "", mobile: "" },
@@ -207,7 +208,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   };
 
   const handleSubmit = async () => {
-    if (!formData.notarizedDocument || !formData.policeVerificationDocument) {
+    if (!documents.notarizedDocument || !documents.policeVerificationDocument) {
       toast({
         title: "Required documents missing",
         description: "Please upload both notarized agreement and police verification certificate",
@@ -218,28 +219,26 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
 
     setIsSubmitting(true);
     try {
-      // Create form data for file upload
-      const uploadFormData = new FormData();
-      
-      // Upload notarized document
-      uploadFormData.append('notarizedDocument', formData.notarizedDocument);
-      uploadFormData.append('policeDocument', formData.policeVerificationDocument);
-      
-      // Add agreement data
-      uploadFormData.append('agreementData', JSON.stringify({
+      // Submit agreement data with document URLs
+      const agreementData = {
         customer: formData.customer,
         language: formData.language,
         ownerDetails: formData.ownerDetails,
         tenantDetails: formData.tenantDetails,
         agreementPeriod: formData.agreementPeriod,
         propertyAddress: formData.propertyAddress,
+        notarizedDocumentUrl: documents.notarizedDocument,
+        policeVerificationDocumentUrl: documents.policeVerificationDocument,
         status: 'active', // Imported agreements are active
         isImported: true
-      }));
+      };
 
       const response = await fetch('/api/agreements/import', {
         method: 'POST',
-        body: uploadFormData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(agreementData),
       });
 
       if (!response.ok) {
@@ -267,6 +266,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
 
   const handleClose = () => {
     setCurrentStep(1);
+    setDocuments({});
     setFormData({
       customer: { id: "", name: "", mobile: "" },
       language: "english",
@@ -295,11 +295,25 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
     onClose();
   };
 
-  const handleFileChange = (field: 'notarizedDocument' | 'policeVerificationDocument', file: File | null) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: file
-    }));
+
+  const handleDocumentUpload = (docType: string, result: any) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      setDocuments(prev => ({
+        ...prev,
+        [docType]: uploadedFile.uploadURL,
+        [`${docType}_metadata`]: {
+          filename: uploadedFile.name || "Uploaded Document",
+          fileType: uploadedFile.type || "application/pdf",
+          size: uploadedFile.size || 0
+        }
+      }));
+      
+      toast({
+        title: "Upload successful",
+        description: `${docType === 'notarizedDocument' ? 'Notarized document' : 'Police verification document'} uploaded successfully`,
+      });
+    }
   };
 
   // Address autocomplete from societies database
@@ -1031,71 +1045,65 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2">
                     <FileText className="h-5 w-5 text-blue-600" />
-                    <Label htmlFor="notarized-doc">Notarized Rent Agreement *</Label>
+                    <Label className="text-sm font-medium text-gray-700">Notarized Rent Agreement *</Label>
                   </div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <input
-                      id="notarized-doc"
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => handleFileChange('notarizedDocument', e.target.files?.[0] || null)}
-                      className="hidden"
+                  {documents.notarizedDocument ? (
+                    <FilePreview
+                      fileUrl={documents.notarizedDocument}
+                      fileName={documents.notarizedDocument_metadata?.filename || "Notarized Rent Agreement"}
+                      fileType={documents.notarizedDocument_metadata?.fileType}
+                      onRemove={() => setDocuments(prev => ({ ...prev, notarizedDocument: "", notarizedDocument_metadata: undefined }))}
+                      className="w-full"
                     />
-                    <div className="space-y-2">
-                      <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                      {formData.notarizedDocument ? (
-                        <p className="text-sm text-green-600">
-                          ✓ {formData.notarizedDocument.name}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-gray-500">
-                          Click to upload notarized agreement (PDF only)
-                        </p>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('notarized-doc')?.click()}
-                      >
-                        Choose File
-                      </Button>
-                    </div>
-                  </div>
+                  ) : (
+                    <LocalFileUploader
+                      maxSize={5242880} // 5MB
+                      onUploadComplete={(result) => handleDocumentUpload("notarizedDocument", result)}
+                      className="w-full"
+                    >
+                      <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <FileText className="w-6 h-6 text-gray-500" />
+                          </div>
+                          <p className="text-sm text-gray-600">Click to upload notarized agreement</p>
+                          <p className="text-xs text-gray-500">PDF only (Max 5MB)</p>
+                        </div>
+                      </div>
+                    </LocalFileUploader>
+                  )}
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2">
                     <Shield className="h-5 w-5 text-green-600" />
-                    <Label htmlFor="police-doc">Police Verification Certificate *</Label>
+                    <Label className="text-sm font-medium text-gray-700">Police Verification Certificate *</Label>
                   </div>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <input
-                      id="police-doc"
-                      type="file"
-                      accept=".pdf"
-                      onChange={(e) => handleFileChange('policeVerificationDocument', e.target.files?.[0] || null)}
-                      className="hidden"
+                  {documents.policeVerificationDocument ? (
+                    <FilePreview
+                      fileUrl={documents.policeVerificationDocument}
+                      fileName={documents.policeVerificationDocument_metadata?.filename || "Police Verification Certificate"}
+                      fileType={documents.policeVerificationDocument_metadata?.fileType}
+                      onRemove={() => setDocuments(prev => ({ ...prev, policeVerificationDocument: "", policeVerificationDocument_metadata: undefined }))}
+                      className="w-full"
                     />
-                    <div className="space-y-2">
-                      <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                      {formData.policeVerificationDocument ? (
-                        <p className="text-sm text-green-600">
-                          ✓ {formData.policeVerificationDocument.name}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-gray-500">
-                          Click to upload police verification (PDF only)
-                        </p>
-                      )}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('police-doc')?.click()}
-                      >
-                        Choose File
-                      </Button>
-                    </div>
-                  </div>
+                  ) : (
+                    <LocalFileUploader
+                      maxSize={5242880} // 5MB
+                      onUploadComplete={(result) => handleDocumentUpload("policeVerificationDocument", result)}
+                      className="w-full"
+                    >
+                      <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <Shield className="w-6 h-6 text-gray-500" />
+                          </div>
+                          <p className="text-sm text-gray-600">Click to upload police verification</p>
+                          <p className="text-xs text-gray-500">PDF only (Max 5MB)</p>
+                        </div>
+                      </div>
+                    </LocalFileUploader>
+                  )}
                 </div>
               </div>
 
