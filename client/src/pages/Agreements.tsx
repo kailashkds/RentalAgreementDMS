@@ -949,12 +949,14 @@ export default function Agreements() {
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                       {/* Main Content */}
                       <div className="flex-1">
-                        {/* Header with Agreement Number, Main Status and Notary Status */}
-                        <div className="flex flex-wrap items-center justify-between mb-4">
+                        {/* Header with Agreement Number and Status Indicators */}
+                        <div className="flex flex-wrap items-center gap-4 mb-4">
+                          <h3 className="text-lg font-semibold font-mono text-gray-900">
+                            {agreement.agreementNumber}
+                          </h3>
+                          
+                          {/* Status Indicators - Similar Styling */}
                           <div className="flex flex-wrap items-center gap-3">
-                            <h3 className="text-lg font-semibold font-mono text-gray-900">
-                              {agreement.agreementNumber}
-                            </h3>
                             <span
                               className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
                                 agreement.status
@@ -962,31 +964,30 @@ export default function Agreements() {
                             >
                               {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
                             </span>
-                          </div>
-                          
-                          {/* Prominent Notary Status */}
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-600">Notary:</span>
-                            <span
-                              className={`inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full border-2 ${
-                                agreement.status === "draft"
-                                  ? "bg-gray-50 text-gray-700 border-gray-300"
+                            
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-500">Notary Status:</span>
+                              <span
+                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  agreement.status === "draft"
+                                    ? "bg-gray-100 text-gray-800"
+                                    : agreement.status === "active"
+                                    ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-amber-100 text-amber-800"
+                                    : "bg-gray-100 text-gray-800"
+                                }`}
+                              >
+                                {agreement.status === "draft"
+                                  ? "Draft"
                                   : agreement.status === "active"
                                   ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                    ? "bg-green-50 text-green-700 border-green-300"
-                                    : "bg-amber-50 text-amber-700 border-amber-300"
-                                  : "bg-gray-50 text-gray-700 border-gray-300"
-                              }`}
-                            >
-                              {agreement.status === "draft"
-                                ? "Draft"
-                                : agreement.status === "active"
-                                ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                  ? "✓ Done"
-                                  : "⏳ Pending"
-                                : "N/A"
-                              }
-                            </span>
+                                    ? "✓ Done"
+                                    : "⏳ Pending"
+                                  : "N/A"
+                                }
+                              </span>
+                            </div>
                           </div>
                         </div>
                         
