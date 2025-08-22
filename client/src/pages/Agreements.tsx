@@ -1298,15 +1298,28 @@ export default function Agreements() {
                             </Button>
                           ) : null}
                           {!(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-10 w-10 p-0 text-amber-600 hover:text-amber-900 hover:bg-amber-100 rounded-full border border-gray-200"
-                              onClick={() => isImportedAgreement(agreement) ? setEditingImportedAgreement(agreement) : setEditingAgreement(agreement)}
-                              title="Edit Agreement"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-10 w-10 p-0 text-amber-600 hover:text-amber-900 hover:bg-amber-100 rounded-full border border-gray-200"
+                                onClick={() => isImportedAgreement(agreement) ? setEditingImportedAgreement(agreement) : setEditingAgreement(agreement)}
+                                title="Edit Agreement Details"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              {agreement.status === "draft" && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-10 w-10 p-0 text-purple-600 hover:text-purple-900 hover:bg-purple-100 rounded-full border border-gray-200"
+                                  onClick={() => navigate(`/agreement-editor?agreementId=${agreement.id}&agreementNumber=${agreement.agreementNumber}&language=${agreement.language || 'english'}`)}
+                                  title="Content Editor"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </>
                           )}
                           {agreement.status === "active" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
                             <Button 
@@ -2336,21 +2349,35 @@ export default function Agreements() {
               <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-lg border border-slate-200 shadow-sm">
                 <div className="flex flex-wrap justify-center gap-3">
                   {!(viewingAgreement.notarizedDocument?.url || viewingAgreement.notarizedDocumentUrl) && (
-                    <Button
-                      onClick={() => {
-                        if (isImportedAgreement(viewingAgreement)) {
-                          setEditingImportedAgreement(viewingAgreement);
-                          setViewingAgreement(null);
-                        } else {
-                          setEditingAgreement(viewingAgreement);
-                          setViewingAgreement(null);
-                        }
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-sm"
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Agreement
-                    </Button>
+                    <>
+                      <Button
+                        onClick={() => {
+                          if (isImportedAgreement(viewingAgreement)) {
+                            setEditingImportedAgreement(viewingAgreement);
+                            setViewingAgreement(null);
+                          } else {
+                            setEditingAgreement(viewingAgreement);
+                            setViewingAgreement(null);
+                          }
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-sm"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Details
+                      </Button>
+                      {viewingAgreement.status === "draft" && (
+                        <Button
+                          onClick={() => {
+                            navigate(`/agreement-editor?agreementId=${viewingAgreement.id}&agreementNumber=${viewingAgreement.agreementNumber}&language=${viewingAgreement.language || 'english'}`);
+                            setViewingAgreement(null);
+                          }}
+                          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 shadow-sm"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Content Editor
+                        </Button>
+                      )}
+                    </>
                   )}
                   <Button
                     variant="outline"
