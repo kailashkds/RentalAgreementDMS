@@ -551,12 +551,30 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                 <Input
                   id="owner-name"
                   value={formData.ownerDetails.name}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    ownerDetails: { ...prev.ownerDetails, name: e.target.value }
-                  }))}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    setFormData(prev => ({
+                      ...prev,
+                      ownerDetails: { ...prev.ownerDetails, name }
+                    }));
+                    
+                    // Clear previous timeout
+                    if (mobileTimeout.current) {
+                      clearTimeout(mobileTimeout.current);
+                    }
+                    // Auto-lookup when user finishes typing name (3+ chars)
+                    if (name.trim().length >= 3) {
+                      mobileTimeout.current = setTimeout(() => {
+                        fetchCustomerInfo(name, 'name', 'owner');
+                      }, 500);
+                    }
+                  }}
+                  onBlur={(e) => fetchCustomerInfo(e.target.value, 'name', 'owner')}
                   placeholder="Enter owner's full name"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter name to auto-fill mobile and details
+                </p>
               </div>
 
               <div>
@@ -605,12 +623,30 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                 <Input
                   id="tenant-name"
                   value={formData.tenantDetails.name}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    tenantDetails: { ...prev.tenantDetails, name: e.target.value }
-                  }))}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    setFormData(prev => ({
+                      ...prev,
+                      tenantDetails: { ...prev.tenantDetails, name }
+                    }));
+                    
+                    // Clear previous timeout
+                    if (mobileTimeout.current) {
+                      clearTimeout(mobileTimeout.current);
+                    }
+                    // Auto-lookup when user finishes typing name (3+ chars)
+                    if (name.trim().length >= 3) {
+                      mobileTimeout.current = setTimeout(() => {
+                        fetchCustomerInfo(name, 'name', 'tenant');
+                      }, 500);
+                    }
+                  }}
+                  onBlur={(e) => fetchCustomerInfo(e.target.value, 'name', 'tenant')}
                   placeholder="Enter tenant's full name"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter name to auto-fill mobile and details
+                </p>
               </div>
 
               <div>
