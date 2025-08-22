@@ -351,20 +351,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Agreement not found" });
       }
 
-      // NORMALIZED: Always prioritize edited_content when it exists and is not empty
+      // Always prioritize edited_html when it exists and is not empty
       let processedHtml;
       let htmlSource = 'template'; // Track which source we're using
       
-      console.log(`[PDF Download] Agreement ${req.params.id} - editedContent exists: ${!!agreement.editedContent}, length: ${agreement.editedContent?.length || 0}, trimmed length: ${agreement.editedContent?.trim()?.length || 0}`);
+      console.log(`[PDF Download] Agreement ${req.params.id} - editedHtml exists: ${!!agreement.editedHtml}, length: ${agreement.editedHtml?.length || 0}, trimmed length: ${agreement.editedHtml?.trim()?.length || 0}`);
       
-      if (agreement.editedContent && agreement.editedContent.trim() !== '') {
-        htmlSource = 'edited_content';
-        console.log(`[PDF Download] ✓ USING EDITED CONTENT for agreement ${req.params.id} (${agreement.editedContent.length} chars)`);
-        // Resolve placeholders in saved edited content with current DB values
+      if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
+        htmlSource = 'edited_html';
+        console.log(`[PDF Download] ✓ USING EDITED HTML for agreement ${req.params.id} (${agreement.editedHtml.length} chars)`);
+        // Resolve placeholders in saved edited HTML with current DB values
         const { resolvePlaceholders } = await import("./fieldMapping");
-        processedHtml = await resolvePlaceholders(agreement.editedContent, agreement);
+        processedHtml = await resolvePlaceholders(agreement.editedHtml, agreement);
       } else {
-        console.log(`[PDF Download] ✓ USING TEMPLATE FALLBACK for agreement ${req.params.id} (no edited content)`);
+        console.log(`[PDF Download] ✓ USING TEMPLATE FALLBACK for agreement ${req.params.id} (no edited HTML found)`);
         // Find template for this agreement and generate HTML
         const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
         const template = templates.find(t => t.isActive) || templates[0];
@@ -373,9 +373,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "No PDF template found" });
         }
 
-        // Generate PDF HTML content from template
+        // Generate PDF HTML content from template and save it to edited_html
         const { generatePdfHtml } = await import("./fieldMapping");
         processedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
+        
+        // Save the generated HTML as edited_html for future use
+        try {
+          await storage.saveEditedHtml(req.params.id, processedHtml);
+          console.log(`[PDF Download] ✓ SAVED generated HTML to edited_html for agreement ${req.params.id}`);
+        } catch (saveError) {
+          console.error(`[PDF Download] Failed to save HTML to edited_html:`, saveError);
+        }
       }
       
       console.log(`[PDF Download] Final HTML source: ${htmlSource}, processed length: ${processedHtml.length} chars`);
@@ -570,7 +578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Save Content API] ✓ CONVERTED TO PLACEHOLDER FORMAT (${placeholderHtml.length} characters)`);
       console.log(`[Save Content API] Sample placeholders: ${placeholderHtml.substring(0, 200)}...`);
 
-      await storage.saveEditedContent(id, placeholderHtml);
+      await storage.saveEditedHtml(id, placeholderHtml);
       console.log(`[Save Content API] ✓ SUCCESSFULLY SAVED with placeholders for agreement ${id}`);
       
       res.json({ 

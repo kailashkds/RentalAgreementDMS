@@ -666,7 +666,7 @@ export class DatabaseStorage implements IStorage {
         propertyId = property.id;
       }
 
-      const result = await db
+      const [agreement] = await db
         .insert(agreements)
         .values({
           ...processedData,
@@ -674,8 +674,6 @@ export class DatabaseStorage implements IStorage {
           propertyId,
         })
         .returning();
-      
-      const agreement = result[0];
         
       if (!agreement) {
         throw new Error('Failed to create agreement - no data returned');
@@ -689,19 +687,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAgreement(id: string, agreementData: Partial<InsertAgreement>): Promise<Agreement> {
-    // Get the existing agreement to preserve editedContent if not explicitly provided
+    // Get the existing agreement to preserve editedHtml if not explicitly provided
     const existingAgreement = await this.getAgreement(id);
     if (!existingAgreement) {
       throw new Error("Agreement not found");
     }
 
-    // Preserve editedContent and editedAt if not explicitly provided in update data
+    // Preserve editedHtml and editedAt if not explicitly provided in update data
     const updateData = {
       ...agreementData,
       updatedAt: new Date(),
-      // Preserve existing editedContent if not being updated
-      ...(agreementData.editedContent === undefined && {
-        editedContent: existingAgreement.editedContent,
+      // Preserve existing editedHtml if not being updated
+      ...(agreementData.editedHtml === undefined && {
+        editedHtml: existingAgreement.editedHtml,
         editedAt: existingAgreement.editedAt
       })
     };
@@ -786,11 +784,11 @@ export class DatabaseStorage implements IStorage {
     return updatedAgreement;
   }
 
-  async saveEditedContent(agreementId: string, editedContent: string): Promise<void> {
+  async saveEditedHtml(agreementId: string, editedHtml: string): Promise<void> {
     await db
       .update(agreements)
       .set({
-        editedContent: editedContent,
+        editedHtml: editedHtml,
         editedAt: new Date(),
         updatedAt: new Date(),
       })
