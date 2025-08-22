@@ -972,113 +972,126 @@ export default function Agreements() {
               <div className="space-y-4">
                 {filteredAgreements?.map((agreement: any, index: number) => (
                   <div key={agreement.id || index} className="border border-gray-200 rounded-lg p-6 bg-white hover:bg-gray-50 transition-colors group">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
                       {/* Main Content */}
                       <div className="flex-1">
-                        {/* Header with Agreement Number and Status Indicators */}
-                        <div className="flex flex-wrap items-center gap-4 mb-4">
-                          <h3 className="text-lg font-semibold font-mono text-gray-900">
+                        {/* Header with Agreement Number and Status Badges */}
+                        <div className="flex flex-wrap items-center gap-3 mb-4">
+                          <h3 className="text-xl font-bold font-mono text-gray-900">
                             {agreement.agreementNumber}
                           </h3>
                           
-                          {/* Status Indicators - Similar Styling */}
-                          <div className="flex flex-wrap items-center gap-3">
-                            <span
-                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                                agreement.status
-                              )}`}
-                            >
-                              {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
-                            </span>
-                            
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-gray-500">Notary Status:</span>
-                              <span
-                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  agreement.status === "draft"
-                                    ? "bg-gray-100 text-gray-800"
-                                    : agreement.status === "active"
-                                    ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-amber-100 text-amber-800"
-                                    : "bg-gray-100 text-gray-800"
-                                }`}
-                              >
-                                {agreement.status === "draft"
-                                  ? "Draft"
-                                  : agreement.status === "active"
-                                  ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                    ? "✓ Done"
-                                    : "⏳ Pending"
-                                  : "N/A"
-                                }
-                              </span>
-                            </div>
-                          </div>
+                          <span
+                            className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                              agreement.status
+                            )}`}
+                          >
+                            {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
+                          </span>
+                          
+                          <span
+                            className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                              agreement.status === "draft"
+                                ? "bg-gray-100 text-gray-800"
+                                : agreement.status === "active"
+                                ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-amber-100 text-amber-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            Notary Status: {agreement.status === "draft"
+                              ? "Draft"
+                              : agreement.status === "active"
+                              ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                ? "✓ Done"
+                                : "⏳ Pending"
+                              : "N/A"
+                            }
+                          </span>
                         </div>
                         
-                        {/* Data Grid - Reordered */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm mb-6">
+                        {/* Information Grid - Compact Layout */}
+                        <div className="space-y-3 text-sm">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <span className="font-medium text-gray-600">Customer:</span>
+                              <p className="text-gray-900 font-medium">{agreement.customer?.name || "Unknown"}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600">Landlord:</span>
+                              <p className="text-gray-900">{agreement.ownerDetails?.name || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600">Tenant:</span>
+                              <p className="text-gray-900">{agreement.tenantDetails?.name || 'Not provided'}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <span className="font-medium text-gray-600">Agreement Period:</span>
+                              <p className="text-gray-900">
+                                {(() => {
+                                  const startDate = agreement.rentalTerms?.startDate || agreement.startDate;
+                                  const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+                                  
+                                  if (startDate && endDate) {
+                                    return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+                                  }
+                                  return 'Not available';
+                                })()}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-600">Expiry Status:</span>
+                              <div className="mt-1">
+                                {(() => {
+                                  const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+                                  if (!endDate) return <span className="text-gray-900">No expiry date</span>;
+                                  
+                                  const today = new Date();
+                                  const expiry = new Date(endDate);
+                                  const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                  
+                                  let bgColor = 'bg-green-100';
+                                  let textColor = 'text-green-800';
+                                  let text = `${daysUntilExpiry} days remaining`;
+                                  
+                                  if (daysUntilExpiry < 0) {
+                                    bgColor = 'bg-red-100';
+                                    textColor = 'text-red-800';
+                                    text = `Expired ${Math.abs(daysUntilExpiry)} days ago`;
+                                  } else if (daysUntilExpiry === 0) {
+                                    bgColor = 'bg-red-100';
+                                    textColor = 'text-red-800';
+                                    text = 'Expires today';
+                                  } else if (daysUntilExpiry === 1) {
+                                    bgColor = 'bg-orange-100';
+                                    textColor = 'text-orange-800';
+                                    text = 'Expires tomorrow';
+                                  } else if (daysUntilExpiry <= 30) {
+                                    bgColor = 'bg-orange-100';
+                                    textColor = 'text-orange-800';
+                                    text = `Expires in ${daysUntilExpiry} days`;
+                                  } else if (daysUntilExpiry <= 90) {
+                                    bgColor = 'bg-yellow-100';
+                                    textColor = 'text-yellow-800';
+                                    text = `Expires in ${daysUntilExpiry} days`;
+                                  }
+                                  
+                                  return (
+                                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${bgColor} ${textColor}`}>
+                                      {text}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                          
                           <div>
-                            <span className="font-medium text-gray-700">Customer:</span>
-                            <p className="text-gray-900 font-medium">{agreement.customer?.name || "Unknown"}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Landlord:</span>
-                            <p className="text-gray-900">{agreement.ownerDetails?.name || 'Not provided'}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Tenant:</span>
-                            <p className="text-gray-900">{agreement.tenantDetails?.name || 'Not provided'}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Agreement Period:</span>
-                            <p className="text-gray-900">
-                              {(() => {
-                                const startDate = agreement.rentalTerms?.startDate || agreement.startDate;
-                                const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-                                
-                                if (startDate && endDate) {
-                                  return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
-                                }
-                                return 'Not available';
-                              })()}
-                            </p>
-                          </div>
-                          <div className="md:col-span-2">
-                            <span className="font-medium text-gray-700">Expiry Status:</span>
-                            <p className={`font-medium ${(() => {
-                              const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-                              if (!endDate) return 'text-gray-900';
-                              
-                              const today = new Date();
-                              const expiry = new Date(endDate);
-                              const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                              
-                              if (daysUntilExpiry < 0) return 'text-red-600';
-                              if (daysUntilExpiry <= 30) return 'text-orange-600';
-                              if (daysUntilExpiry <= 90) return 'text-yellow-600';
-                              return 'text-green-600';
-                            })()}`}>
-                              {(() => {
-                                const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-                                if (!endDate) return 'No expiry date';
-                                
-                                const today = new Date();
-                                const expiry = new Date(endDate);
-                                const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                                
-                                if (daysUntilExpiry < 0) return `Expired ${Math.abs(daysUntilExpiry)} days ago`;
-                                if (daysUntilExpiry === 0) return 'Expires today';
-                                if (daysUntilExpiry === 1) return 'Expires tomorrow';
-                                if (daysUntilExpiry <= 30) return `Expires in ${daysUntilExpiry} days`;
-                                if (daysUntilExpiry <= 90) return `Expires in ${daysUntilExpiry} days`;
-                                return `${daysUntilExpiry} days remaining`;
-                              })()}
-                            </p>
-                          </div>
-                          <div className="md:col-span-2 lg:col-span-3 mt-2">
-                            <span className="font-medium text-gray-700">Property Address:</span>
+                            <span className="font-medium text-gray-600">Property Address:</span>
                             <p className="text-gray-900">
                               {(() => {
                                 const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
@@ -1097,25 +1110,19 @@ export default function Agreements() {
                         </div>
                       </div>
                       
-                      {/* Horizontal Separator with Accent Color and Actions */}
-                      <div className="flex-shrink-0">
-                        <div className="relative mb-4">
-                          <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t-2 border-blue-100"></div>
+                      {/* Actions Section */}
+                      <div className="flex-shrink-0 lg:w-48">
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <div className="text-center mb-3">
+                            <span className="text-sm font-medium text-gray-700">Actions</span>
                           </div>
-                          <div className="relative flex justify-center">
-                            <span className="bg-white px-4 py-1 text-sm font-medium text-blue-600 border border-blue-200 rounded-full">
-                              Actions
-                            </span>
-                          </div>
-                        </div>
-                        {/* Action Buttons Matrix - 3x3 with more spacing */}
-                        <div className="grid grid-cols-3 gap-3">
+                          {/* Action Buttons Grid - Circular buttons like in screenshot */}
+                          <div className="grid grid-cols-3 gap-2">
                             {/* View Button */}
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-900 hover:bg-blue-50"
+                            className="h-10 w-10 p-0 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-full border border-gray-200"
                             onClick={() => handleViewAgreement(agreement.id)}
                             title="View Agreement"
                           >
@@ -1127,7 +1134,7 @@ export default function Agreements() {
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="h-8 w-8 p-0 text-green-600 hover:text-green-900 hover:bg-green-50"
+                                  className="h-10 w-10 p-0 text-green-600 hover:text-green-900 hover:bg-green-100 rounded-full border border-gray-200"
                                   title="Download Options"
                                 >
                                   <Download className="h-4 w-4" />
@@ -1160,7 +1167,7 @@ export default function Agreements() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-8 w-8 p-0 text-green-600 hover:text-green-900 hover:bg-green-50"
+                              className="h-10 w-10 p-0 text-green-600 hover:text-green-900 hover:bg-green-100 rounded-full border border-gray-200"
                               onClick={() => handleDownloadAgreement(agreement)}
                               title="Download PDF"
                             >
@@ -1170,7 +1177,7 @@ export default function Agreements() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 w-8 p-0 text-amber-600 hover:text-amber-900 hover:bg-amber-50"
+                            className="h-10 w-10 p-0 text-amber-600 hover:text-amber-900 hover:bg-amber-100 rounded-full border border-gray-200"
                             onClick={() => setEditingAgreement(agreement)}
                             title="Edit Agreement"
                           >
@@ -1180,7 +1187,7 @@ export default function Agreements() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-8 w-8 p-0 text-purple-600 hover:text-purple-900 hover:bg-purple-50"
+                              className="h-10 w-10 p-0 text-purple-600 hover:text-purple-900 hover:bg-purple-100 rounded-full border border-gray-200"
                               onClick={() => handleNotarizedUploadFromTable(agreement.id)}
                               disabled={uploadingNotarized}
                               title="Upload Notarized Document"
@@ -1192,7 +1199,7 @@ export default function Agreements() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-8 w-8 p-0 text-green-600 hover:text-green-900 hover:bg-green-50"
+                              className="h-10 w-10 p-0 text-green-600 hover:text-green-900 hover:bg-green-100 rounded-full border border-gray-200"
                               onClick={() => handleRenewAgreement(agreement.id)}
                               title="Renew Agreement"
                             >
@@ -1202,7 +1209,7 @@ export default function Agreements() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 w-8 p-0 text-purple-600 hover:text-purple-900 hover:bg-purple-50"
+                            className="h-10 w-10 p-0 text-purple-600 hover:text-purple-900 hover:bg-purple-100 rounded-full border border-gray-200"
                             onClick={() => handleDuplicateAgreement(agreement.id)}
                             title="Duplicate Agreement"
                           >
@@ -1212,7 +1219,7 @@ export default function Agreements() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-8 w-8 p-0 text-orange-600 hover:text-orange-900 hover:bg-orange-50"
+                              className="h-10 w-10 p-0 text-orange-600 hover:text-orange-900 hover:bg-orange-100 rounded-full border border-gray-200"
                               onClick={() => handleSendWhatsApp(agreement)}
                               title="Send WhatsApp"
                             >
@@ -1224,13 +1231,14 @@ export default function Agreements() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-900 hover:bg-red-50"
+                              className="h-10 w-10 p-0 text-red-600 hover:text-red-900 hover:bg-red-100 rounded-full border border-gray-200"
                               onClick={() => handleDeleteAgreement(agreement.id)}
                               title="Delete Agreement"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
+                          </div>
                         </div>
                       </div>
                     </div>
