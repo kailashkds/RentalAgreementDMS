@@ -55,7 +55,9 @@ export default function AgreementEditor() {
           const data = await response.json();
           console.log(`[Editor] API Response:`, data);
           
-          if (data.editedContent && data.editedContent.trim() !== '') {
+          console.log(`[Editor] Edited content check - hasEdits: ${data.hasEdits}, content length: ${data.editedContent?.length || 0}`);
+          
+          if (data.hasEdits && data.editedContent && data.editedContent.trim() !== '') {
             // Load previously edited content
             console.log(`[Editor] Found saved edited content (${data.editedContent.length} characters)`);
             setHtmlContent(data.editedContent);

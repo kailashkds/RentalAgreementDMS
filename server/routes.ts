@@ -353,11 +353,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Use edited content if available, otherwise generate from template
       let processedHtml;
-      if (agreement.editedContent) {
+      const hasEditedContent = !!(agreement.editedContent && agreement.editedContent.trim());
+      console.log(`[PDF Download] Agreement ${req.params.id} has edited content: ${hasEditedContent} (${agreement.editedContent?.length || 0} chars)`);
+      
+      if (hasEditedContent) {
+        console.log(`[PDF Download] Using edited content for agreement ${req.params.id}`);
         // Resolve placeholders in saved edited content with current DB values
         const { resolvePlaceholders } = await import("./fieldMapping");
         processedHtml = await resolvePlaceholders(agreement.editedContent, agreement);
       } else {
+        console.log(`[PDF Download] No edited content found, generating from template for agreement ${req.params.id}`);
         // Find template for this agreement and generate HTML
         const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
         const template = templates.find(t => t.isActive) || templates[0];
