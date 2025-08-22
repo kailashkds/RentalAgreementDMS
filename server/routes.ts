@@ -663,15 +663,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let resolvedContent = null;
       let contentSource = 'template'; // Track which source we're using
       
-      console.log(`[Edited Content API] Agreement ${id} - editedContent exists: ${!!agreement.editedContent}, length: ${agreement.editedContent?.length || 0}, trimmed length: ${agreement.editedContent?.trim()?.length || 0}`);
+      console.log(`[Edited Content API] Agreement ${id} - editedHtml exists: ${!!agreement.editedHtml}, length: ${agreement.editedHtml?.length || 0}, trimmed length: ${agreement.editedHtml?.trim()?.length || 0}`);
 
-      // NORMALIZED: Always prioritize edited_content when it exists and is not empty
-      if (agreement.editedContent && agreement.editedContent.trim() !== '') {
+      // NORMALIZED: Always prioritize edited_html when it exists and is not empty
+      if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
         contentSource = 'edited_content';
-        console.log(`[Edited Content API] ✓ USING EDITED CONTENT for agreement ${id} (${agreement.editedContent.length} chars)`);
+        console.log(`[Edited Content API] ✓ USING EDITED CONTENT for agreement ${id} (${agreement.editedHtml.length} chars)`);
         // Resolve placeholders with current DB values
         const { resolvePlaceholders } = await import("./fieldMapping");
-        resolvedContent = await resolvePlaceholders(agreement.editedContent, agreement);
+        resolvedContent = await resolvePlaceholders(agreement.editedHtml, agreement);
       } else {
         console.log(`[Edited Content API] ✓ GENERATING FROM TEMPLATE for agreement ${id} (no edited content)`);
         // Generate fresh HTML from template for the editor
@@ -693,7 +693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         editedContent: resolvedContent,
         editedAt: agreement.editedAt || null,
-        hasEdits: (agreement.editedContent && agreement.editedContent.trim() !== ''),
+        hasEdits: (agreement.editedHtml && agreement.editedHtml.trim() !== ''),
         contentSource: contentSource // For debugging
       });
     } catch (error) {
