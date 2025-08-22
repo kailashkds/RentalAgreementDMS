@@ -934,132 +934,103 @@ export default function Agreements() {
                 )}
               </div>
             ) : (
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Agreement ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Property Address
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Landlord Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tenant Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Agreement Period
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Notary Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAgreements?.map((agreement: any, index: number) => (
-                    <tr key={agreement.id || index}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-mono font-medium text-gray-900">
-                          {agreement.agreementNumber}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {agreement.customer?.name || "Unknown"}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {agreement.customer?.mobile || ""}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {(() => {
-                            // Try multiple possible property address sources
-                            const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
-                            if (propertyAddr) {
-                              return [
-                                propertyAddr.flatNo,
-                                propertyAddr.society,
-                                propertyAddr.area,
-                                propertyAddr.city
-                              ].filter(Boolean).join(', ');
-                            }
-                            return 'Property address not available';
-                          })()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {agreement.ownerDetails?.name || 'Landlord name not available'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {agreement.tenantDetails?.name || 'Tenant name not available'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {(() => {
-                            // Try rental terms or fallback to top-level dates
-                            const startDate = agreement.rentalTerms?.startDate || agreement.startDate;
-                            const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-                            
-                            if (startDate && endDate) {
-                              return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
-                            }
-                            return 'Period not available';
-                          })()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
-                            agreement.status
-                          )}`}
-                        >
-                          {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            agreement.status === "draft"
-                              ? "bg-gray-100 text-gray-800"
+              <div className="space-y-4">
+                {filteredAgreements?.map((agreement: any, index: number) => (
+                  <div key={agreement.id || index} className="border border-gray-200 rounded-lg p-6 bg-white hover:bg-gray-50 transition-colors group">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                      {/* Main Content */}
+                      <div className="flex-1">
+                        {/* Header with Agreement Number and Status Badges */}
+                        <div className="flex flex-wrap items-center gap-3 mb-4">
+                          <h3 className="text-lg font-semibold font-mono text-gray-900">
+                            {agreement.agreementNumber}
+                          </h3>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(
+                              agreement.status
+                            )}`}
+                          >
+                            {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
+                          </span>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              agreement.status === "draft"
+                                ? "bg-gray-100 text-gray-800"
+                                : agreement.status === "active"
+                                ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-amber-100 text-amber-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {agreement.status === "draft"
+                              ? "Complete First"
                               : agreement.status === "active"
                               ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                ? "bg-green-100 text-green-800"
-                                : "bg-amber-100 text-amber-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {agreement.status === "draft"
-                            ? "Complete First"
-                            : agreement.status === "active"
-                            ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                              ? "Notarized"
-                              : "Pending"
-                            : "N/A"
-                          }
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
+                                ? "Notarized"
+                                : "Pending"
+                              : "N/A"
+                            }
+                          </span>
+                        </div>
+                        
+                        {/* Data Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium text-gray-700">Customer:</span>
+                            <p className="text-gray-900 font-medium">{agreement.customer?.name || "Unknown"}</p>
+                            <p className="text-gray-500 text-xs">{agreement.customer?.mobile || ""}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Landlord:</span>
+                            <p className="text-gray-900">{agreement.ownerDetails?.name || 'Not provided'}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Tenant:</span>
+                            <p className="text-gray-900">{agreement.tenantDetails?.name || 'Not provided'}</p>
+                          </div>
+                          <div className="md:col-span-2">
+                            <span className="font-medium text-gray-700">Property Address:</span>
+                            <p className="text-gray-900">
+                              {(() => {
+                                const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
+                                if (propertyAddr) {
+                                  return [
+                                    propertyAddr.flatNo,
+                                    propertyAddr.society,
+                                    propertyAddr.area,
+                                    propertyAddr.city
+                                  ].filter(Boolean).join(', ');
+                                }
+                                return 'Not available';
+                              })()}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Agreement Period:</span>
+                            <p className="text-gray-900">
+                              {(() => {
+                                const startDate = agreement.rentalTerms?.startDate || agreement.startDate;
+                                const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+                                
+                                if (startDate && endDate) {
+                                  return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+                                }
+                                return 'Not available';
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Action Buttons Matrix */}
+                      <div className="flex-shrink-0">
+                        <div className="grid grid-cols-2 gap-2 lg:grid-cols-1 lg:gap-1">
+                          {/* View Button */}
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-blue-600 hover:text-blue-900"
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-900 hover:bg-blue-50"
                             onClick={() => handleViewAgreement(agreement.id)}
                             title="View Agreement"
                           >
@@ -1071,7 +1042,7 @@ export default function Agreements() {
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="text-green-600 hover:text-green-900"
+                                  className="h-8 w-8 p-0 text-green-600 hover:text-green-900 hover:bg-green-50"
                                   title="Download Options"
                                 >
                                   <Download className="h-4 w-4" />
@@ -1104,7 +1075,7 @@ export default function Agreements() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="text-green-600 hover:text-green-900"
+                              className="h-8 w-8 p-0 text-green-600 hover:text-green-900 hover:bg-green-50"
                               onClick={() => handleDownloadAgreement(agreement)}
                               title="Download PDF"
                             >
@@ -1114,7 +1085,7 @@ export default function Agreements() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-amber-600 hover:text-amber-900"
+                            className="h-8 w-8 p-0 text-amber-600 hover:text-amber-900 hover:bg-amber-50"
                             onClick={() => setEditingAgreement(agreement)}
                             title="Edit Agreement"
                           >
@@ -1124,7 +1095,7 @@ export default function Agreements() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="text-purple-600 hover:text-purple-900"
+                              className="h-8 w-8 p-0 text-purple-600 hover:text-purple-900 hover:bg-purple-50"
                               onClick={() => handleNotarizedUploadFromTable(agreement.id)}
                               disabled={uploadingNotarized}
                               title="Upload Notarized Document"
@@ -1136,8 +1107,9 @@ export default function Agreements() {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="text-green-600 hover:text-green-900"
+                              className="h-8 w-8 p-0 text-green-600 hover:text-green-900 hover:bg-green-50"
                               onClick={() => handleRenewAgreement(agreement.id)}
+                              title="Renew Agreement"
                             >
                               <RotateCcw className="h-4 w-4" />
                             </Button>
@@ -1145,16 +1117,29 @@ export default function Agreements() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-purple-600 hover:text-purple-900"
+                            className="h-8 w-8 p-0 text-purple-600 hover:text-purple-900 hover:bg-purple-50"
                             onClick={() => handleDuplicateAgreement(agreement.id)}
+                            title="Duplicate Agreement"
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
+                          {agreement.status === 'draft' && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 w-8 p-0 text-orange-600 hover:text-orange-900 hover:bg-orange-50"
+                              onClick={() => handleSendWhatsApp(agreement)}
+                              title="Send WhatsApp"
+                            >
+                              <Send className="h-4 w-4" />
+                            </Button>
+                          )}
+                          
                           {agreement.status === "draft" && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="text-red-600 hover:text-red-900"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-900 hover:bg-red-50"
                               onClick={() => handleDeleteAgreement(agreement.id)}
                               title="Delete Agreement"
                             >
@@ -1162,11 +1147,11 @@ export default function Agreements() {
                             </Button>
                           )}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </Card>
