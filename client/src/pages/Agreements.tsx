@@ -974,8 +974,8 @@ export default function Agreements() {
                           </span>
                         </div>
                         
-                        {/* Data Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                        {/* Data Grid - Enhanced with more details */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                           <div>
                             <span className="font-medium text-gray-700">Customer:</span>
                             <p className="text-gray-900 font-medium">{agreement.customer?.name || "Unknown"}</p>
@@ -984,25 +984,37 @@ export default function Agreements() {
                           <div>
                             <span className="font-medium text-gray-700">Landlord:</span>
                             <p className="text-gray-900">{agreement.ownerDetails?.name || 'Not provided'}</p>
+                            <p className="text-gray-500 text-xs">{agreement.ownerDetails?.mobile || ''}</p>
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">Tenant:</span>
                             <p className="text-gray-900">{agreement.tenantDetails?.name || 'Not provided'}</p>
+                            <p className="text-gray-500 text-xs">{agreement.tenantDetails?.mobile || ''}</p>
                           </div>
-                          <div className="md:col-span-2">
-                            <span className="font-medium text-gray-700">Property Address:</span>
+                          <div>
+                            <span className="font-medium text-gray-700">Monthly Rent:</span>
+                            <p className="text-gray-900 font-semibold text-green-600">
+                              ₹{(() => {
+                                const rent = agreement.rentalTerms?.monthlyRent || agreement.monthlyRent;
+                                return rent ? rent.toLocaleString('en-IN') : 'Not specified';
+                              })()}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Security Deposit:</span>
+                            <p className="text-gray-900 font-semibold text-blue-600">
+                              ₹{(() => {
+                                const deposit = agreement.rentalTerms?.securityDeposit || agreement.securityDeposit;
+                                return deposit ? deposit.toLocaleString('en-IN') : 'Not specified';
+                              })()}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Property Purpose:</span>
                             <p className="text-gray-900">
                               {(() => {
-                                const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
-                                if (propertyAddr) {
-                                  return [
-                                    propertyAddr.flatNo,
-                                    propertyAddr.society,
-                                    propertyAddr.area,
-                                    propertyAddr.city
-                                  ].filter(Boolean).join(', ');
-                                }
-                                return 'Not available';
+                                const purpose = agreement.propertyDetails?.propertyPurpose || agreement.propertyPurpose;
+                                return purpose ? purpose.charAt(0).toUpperCase() + purpose.slice(1) : 'Not specified';
                               })()}
                             </p>
                           </div>
@@ -1020,12 +1032,75 @@ export default function Agreements() {
                               })()}
                             </p>
                           </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Expiry Status:</span>
+                            <p className={`font-medium ${(() => {
+                              const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+                              if (!endDate) return 'text-gray-900';
+                              
+                              const today = new Date();
+                              const expiry = new Date(endDate);
+                              const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                              
+                              if (daysUntilExpiry < 0) return 'text-red-600';
+                              if (daysUntilExpiry <= 30) return 'text-orange-600';
+                              if (daysUntilExpiry <= 90) return 'text-yellow-600';
+                              return 'text-green-600';
+                            })()}`}>
+                              {(() => {
+                                const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+                                if (!endDate) return 'No expiry date';
+                                
+                                const today = new Date();
+                                const expiry = new Date(endDate);
+                                const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                
+                                if (daysUntilExpiry < 0) return `Expired ${Math.abs(daysUntilExpiry)} days ago`;
+                                if (daysUntilExpiry === 0) return 'Expires today';
+                                if (daysUntilExpiry === 1) return 'Expires tomorrow';
+                                if (daysUntilExpiry <= 30) return `Expires in ${daysUntilExpiry} days`;
+                                if (daysUntilExpiry <= 90) return `Expires in ${daysUntilExpiry} days`;
+                                return `${daysUntilExpiry} days remaining`;
+                              })()}
+                            </p>
+                          </div>
+                          <div className="md:col-span-2 lg:col-span-4">
+                            <span className="font-medium text-gray-700">Property Address:</span>
+                            <p className="text-gray-900">
+                              {(() => {
+                                const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
+                                if (propertyAddr) {
+                                  return [
+                                    propertyAddr.flatNo,
+                                    propertyAddr.society,
+                                    propertyAddr.area,
+                                    propertyAddr.city,
+                                    propertyAddr.state,
+                                    propertyAddr.pincode
+                                  ].filter(Boolean).join(', ');
+                                }
+                                return 'Not available';
+                              })()}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Created:</span>
+                            <p className="text-gray-900 text-xs">
+                              {agreement.createdAt ? new Date(agreement.createdAt).toLocaleDateString() : 'Not available'}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Language:</span>
+                            <p className="text-gray-900 text-xs">
+                              {agreement.language ? agreement.language.charAt(0).toUpperCase() + agreement.language.slice(1) : 'English'}
+                            </p>
+                          </div>
                         </div>
                       </div>
                       
-                      {/* Action Buttons Matrix */}
+                      {/* Action Buttons Matrix - 3x3 */}
                       <div className="flex-shrink-0">
-                        <div className="grid grid-cols-2 gap-2 lg:grid-cols-1 lg:gap-1">
+                        <div className="grid grid-cols-3 gap-1">
                           {/* View Button */}
                           <Button 
                             variant="ghost" 
