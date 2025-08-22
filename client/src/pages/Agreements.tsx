@@ -740,7 +740,8 @@ export default function Agreements() {
 
   // Helper function to check if agreement is imported
   const isImportedAgreement = (agreement: any) => {
-    return agreement?.notarizedDocument?.url || agreement?.documents?.policeVerificationDocument?.url;
+    // Only imported agreements have police verification documents
+    return agreement?.documents?.policeVerificationDocument?.url;
   };
 
   const getStatusBadge = (status: string | undefined) => {
