@@ -1348,15 +1348,17 @@ export default function Agreements() {
                               <RotateCcw className="h-4 w-4" />
                             </Button>
                           )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-10 w-10 p-0 text-purple-600 hover:text-purple-900 hover:bg-purple-100 rounded-full border border-gray-200"
-                            onClick={() => handleDuplicateAgreement(agreement.id)}
-                            title="Duplicate Agreement"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
+                          {!isImportedAgreement(agreement) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-10 w-10 p-0 text-purple-600 hover:text-purple-900 hover:bg-purple-100 rounded-full border border-gray-200"
+                              onClick={() => handleDuplicateAgreement(agreement.id)}
+                              title="Duplicate Agreement"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          )}
                           {agreement.status === 'draft' && (
                             <Button 
                               variant="ghost" 
