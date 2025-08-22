@@ -969,13 +969,45 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           // Update existing agreement
           agreement = await updateAgreement(formData, editingAgreement.id);
           console.log('Updated existing agreement:', agreement.agreementNumber);
+          
+          // Check if there's already saved edited content before regenerating
+          console.log(`[Wizard] Checking for existing edited content for agreement ${agreement.id}`);
+          
+          try {
+            const existingContentResponse = await fetch(`/api/agreements/${agreement.id}/edited-content`);
+            
+            if (existingContentResponse.ok) {
+              const existingData = await existingContentResponse.json();
+              
+              // If there's already saved edited content, use that instead of regenerating
+              if (existingData.hasEdits && existingData.editedContent && existingData.editedContent.trim() !== '') {
+                console.log(`[Wizard] Found existing edited content (${existingData.editedContent.length} characters), loading that instead of regenerating`);
+                
+                // Store existing content in session storage for the editor
+                sessionStorage.setItem('editorHtmlContent', existingData.editedContent);
+                
+                // Redirect to editor with existing content
+                const selectedLanguage = formData.language || 'english';
+                const editorUrl = `/agreement-editor?agreementId=${agreement.id}&agreementNumber=${agreement.agreementNumber}&language=${selectedLanguage}`;
+                window.location.href = editorUrl;
+                
+                toast({
+                  title: "Agreement opened for editing",
+                  description: `Agreement ${agreement.agreementNumber} loaded with your previous edits.`,
+                });
+                return; // Exit early to avoid regenerating
+              }
+            }
+          } catch (checkError) {
+            console.log(`[Wizard] Could not check for existing content, will regenerate: ${checkError}`);
+          }
         } else {
           // Create new agreement
           agreement = await finalizeAgreement(formData);
           console.log('Created new agreement:', agreement.agreementNumber);
         }
         
-        // Then generate the PDF
+        // Generate new content from template (only if no existing content found)
         const selectedLanguage = formData.language || 'english';
         console.log('Generating PDF for agreement:', agreement.agreementNumber);
         
