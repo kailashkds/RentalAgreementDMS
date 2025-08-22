@@ -1045,7 +1045,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           }
           
           // Redirect to editor instead of generating PDF directly
-          const editorUrl = `/agreement-editor?agreementNumber=${agreement.agreementNumber}&language=${selectedLanguage}`;
+          const editorUrl = `/agreement-editor?agreementId=${agreement.id}&agreementNumber=${agreement.agreementNumber}&language=${selectedLanguage}`;
           window.location.href = editorUrl;
           
           toast({
