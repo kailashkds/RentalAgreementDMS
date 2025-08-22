@@ -383,6 +383,18 @@ export default function Agreements() {
     }
   };
 
+  const handleDownloadPoliceVerification = (agreement: any) => {
+    const policeVerificationUrl = agreement.documents?.policeVerificationDocument?.url;
+    if (policeVerificationUrl) {
+      const link = document.createElement('a');
+      link.href = policeVerificationUrl;
+      link.download = agreement.documents?.policeVerificationDocument?.originalName || `${agreement.agreementNumber}-police-verification.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   const downloadAgreementPdf = async (agreement: any) => {
     try {
       const response = await fetch(`/api/agreements/${agreement.id}/pdf`);
@@ -1165,7 +1177,7 @@ export default function Agreements() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) ? (
+                          {(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl || isImportedAgreement(agreement)) ? (
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button 
@@ -1179,24 +1191,51 @@ export default function Agreements() {
                               </PopoverTrigger>
                               <PopoverContent className="w-56 p-2">
                                 <div className="space-y-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
-                                    onClick={() => handleDownloadAgreement(agreement)}
-                                  >
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Agreement PDF
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full justify-start text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                    onClick={() => handleDownloadNotarizedFromTable(agreement)}
-                                  >
-                                    <Award className="h-4 w-4 mr-2" />
-                                    Notarized Document
-                                  </Button>
+                                  {isImportedAgreement(agreement) ? (
+                                    <>
+                                      {/* For imported agreements, show notarized PDF and police verification */}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        onClick={() => handleDownloadNotarizedFromTable(agreement)}
+                                      >
+                                        <Award className="h-4 w-4 mr-2" />
+                                        Notarized Agreement PDF
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                        onClick={() => handleDownloadPoliceVerification(agreement)}
+                                      >
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        Police Verification
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {/* For regular agreements, show agreement PDF and notarized document */}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
+                                        onClick={() => handleDownloadAgreement(agreement)}
+                                      >
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Agreement PDF
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                        onClick={() => handleDownloadNotarizedFromTable(agreement)}
+                                      >
+                                        <Award className="h-4 w-4 mr-2" />
+                                        Notarized Document
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </PopoverContent>
                             </Popover>
@@ -1886,13 +1925,46 @@ export default function Agreements() {
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Agreement
                   </Button>
-                  <Button
-                    onClick={() => handleDownloadAgreement(viewingAgreement)}
-                    className="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 shadow-sm"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </Button>
+                  {isImportedAgreement(viewingAgreement) ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button className="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 shadow-sm">
+                          <Download className="h-4 w-4 mr-2" />
+                          Download Options
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56 p-2">
+                        <div className="space-y-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() => handleDownloadNotarizedFromTable(viewingAgreement)}
+                          >
+                            <Award className="h-4 w-4 mr-2" />
+                            Notarized Agreement PDF
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => handleDownloadPoliceVerification(viewingAgreement)}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Police Verification
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    <Button
+                      onClick={() => handleDownloadAgreement(viewingAgreement)}
+                      className="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 shadow-sm"
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download PDF
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => setViewingAgreement(null)}
