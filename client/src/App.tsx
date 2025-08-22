@@ -16,6 +16,7 @@ import SystemSettings from "@/pages/SystemSettings";
 import Profile from "@/pages/Profile";
 import PdfTemplates from "@/pages/PdfTemplates";
 import AgreementEditor from "@/pages/AgreementEditor";
+import AgreementDetail from "@/pages/AgreementDetail";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 
@@ -51,6 +52,7 @@ function AuthenticatedRouter() {
       <Route path="/profile" component={Profile} />
       <Route path="/pdf-templates" component={PdfTemplates} />
       <Route path="/agreement-editor" component={AgreementEditor} />
+      <Route path="/agreements/:id" component={AgreementDetail} />
       <Route component={NotFound} />
     </Switch>
   );

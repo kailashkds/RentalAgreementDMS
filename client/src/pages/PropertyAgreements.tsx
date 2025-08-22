@@ -88,7 +88,7 @@ export default function PropertyAgreements() {
 
   const handleDownloadPdf = async (agreementId: string) => {
     try {
-      const response = await fetch(`/api/agreements/${agreementId}/download-pdf`);
+      const response = await fetch(`/api/agreements/${agreementId}/pdf`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
