@@ -1012,10 +1012,16 @@ export default function Agreements() {
                             <div>
                               <span className="font-medium text-gray-600">Landlord:</span>
                               <p className="text-gray-900">{agreement.ownerDetails?.name || 'Not provided'}</p>
+                              {agreement.ownerDetails?.mobile && (
+                                <p className="text-xs text-gray-500 mt-1">{agreement.ownerDetails.mobile}</p>
+                              )}
                             </div>
                             <div>
                               <span className="font-medium text-gray-600">Tenant:</span>
                               <p className="text-gray-900">{agreement.tenantDetails?.name || 'Not provided'}</p>
+                              {agreement.tenantDetails?.mobile && (
+                                <p className="text-xs text-gray-500 mt-1">{agreement.tenantDetails.mobile}</p>
+                              )}
                             </div>
                           </div>
                           
