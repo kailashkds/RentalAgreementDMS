@@ -360,6 +360,15 @@ export default function Agreements() {
     input.click();
   };
 
+  const handleSendWhatsApp = (agreement: any) => {
+    // WhatsApp functionality placeholder
+    console.log('Send WhatsApp for agreement:', agreement.agreementNumber);
+    toast({
+      title: "WhatsApp Feature",
+      description: "WhatsApp integration will be implemented here",
+    });
+  };
+
   const handleDownloadNotarizedFromTable = (agreement: any) => {
     const notarizedUrl = agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl;
     if (notarizedUrl) {
@@ -940,8 +949,8 @@ export default function Agreements() {
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                       {/* Main Content */}
                       <div className="flex-1">
-                        {/* Header with Agreement Number and Status Badges */}
-                        <div className="flex flex-wrap items-center gap-3 mb-4">
+                        {/* Header with Agreement Number and Main Status */}
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
                           <h3 className="text-lg font-semibold font-mono text-gray-900">
                             {agreement.agreementNumber}
                           </h3>
@@ -952,69 +961,73 @@ export default function Agreements() {
                           >
                             {agreement.status ? agreement.status.charAt(0).toUpperCase() + agreement.status.slice(1) : 'Unknown'}
                           </span>
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              agreement.status === "draft"
-                                ? "bg-gray-100 text-gray-800"
-                                : agreement.status === "active"
-                                ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-amber-100 text-amber-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {agreement.status === "draft"
-                              ? "Complete First"
-                              : agreement.status === "active"
-                              ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                ? "Notarized"
-                                : "Pending"
-                              : "N/A"
-                            }
-                          </span>
                         </div>
                         
-                        {/* Data Grid - Enhanced with more details */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        {/* Notary Status with explanation */}
+                        <div className="mb-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-medium text-gray-600">Notary Status:</span>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                agreement.status === "draft"
+                                  ? "bg-gray-100 text-gray-800"
+                                  : agreement.status === "active"
+                                  ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-amber-100 text-amber-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {agreement.status === "draft"
+                                ? "Complete First"
+                                : agreement.status === "active"
+                                ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                  ? "Notarized"
+                                  : "Pending"
+                                : "N/A"
+                              }
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {agreement.status === "draft"
+                              ? "Complete the agreement creation first"
+                              : agreement.status === "active"
+                              ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                ? "Notarized document has been uploaded"
+                                : "Waiting for notarized document upload"
+                              : "Status not available"
+                            }
+                          </p>
+                        </div>
+                        
+                        {/* Data Grid - Clean and Symmetric */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                           <div>
                             <span className="font-medium text-gray-700">Customer:</span>
                             <p className="text-gray-900 font-medium">{agreement.customer?.name || "Unknown"}</p>
-                            <p className="text-gray-500 text-xs">{agreement.customer?.mobile || ""}</p>
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">Landlord:</span>
                             <p className="text-gray-900">{agreement.ownerDetails?.name || 'Not provided'}</p>
-                            <p className="text-gray-500 text-xs">{agreement.ownerDetails?.mobile || ''}</p>
                           </div>
                           <div>
                             <span className="font-medium text-gray-700">Tenant:</span>
                             <p className="text-gray-900">{agreement.tenantDetails?.name || 'Not provided'}</p>
-                            <p className="text-gray-500 text-xs">{agreement.tenantDetails?.mobile || ''}</p>
                           </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Monthly Rent:</span>
-                            <p className="text-gray-900 font-semibold text-green-600">
-                              ₹{(() => {
-                                const rent = agreement.rentalTerms?.monthlyRent || agreement.monthlyRent;
-                                return rent ? rent.toLocaleString('en-IN') : 'Not specified';
-                              })()}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Security Deposit:</span>
-                            <p className="text-gray-900 font-semibold text-blue-600">
-                              ₹{(() => {
-                                const deposit = agreement.rentalTerms?.securityDeposit || agreement.securityDeposit;
-                                return deposit ? deposit.toLocaleString('en-IN') : 'Not specified';
-                              })()}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Property Purpose:</span>
+                          <div className="md:col-span-2 lg:col-span-3">
+                            <span className="font-medium text-gray-700">Property Address:</span>
                             <p className="text-gray-900">
                               {(() => {
-                                const purpose = agreement.propertyDetails?.propertyPurpose || agreement.propertyPurpose;
-                                return purpose ? purpose.charAt(0).toUpperCase() + purpose.slice(1) : 'Not specified';
+                                const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
+                                if (propertyAddr) {
+                                  return [
+                                    propertyAddr.flatNo,
+                                    propertyAddr.society,
+                                    propertyAddr.area,
+                                    propertyAddr.city
+                                  ].filter(Boolean).join(', ');
+                                }
+                                return 'Not available';
                               })()}
                             </p>
                           </div>
@@ -1032,7 +1045,7 @@ export default function Agreements() {
                               })()}
                             </p>
                           </div>
-                          <div>
+                          <div className="md:col-span-2">
                             <span className="font-medium text-gray-700">Expiry Status:</span>
                             <p className={`font-medium ${(() => {
                               const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
@@ -1064,44 +1077,16 @@ export default function Agreements() {
                               })()}
                             </p>
                           </div>
-                          <div className="md:col-span-2 lg:col-span-4">
-                            <span className="font-medium text-gray-700">Property Address:</span>
-                            <p className="text-gray-900">
-                              {(() => {
-                                const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
-                                if (propertyAddr) {
-                                  return [
-                                    propertyAddr.flatNo,
-                                    propertyAddr.society,
-                                    propertyAddr.area,
-                                    propertyAddr.city,
-                                    propertyAddr.state,
-                                    propertyAddr.pincode
-                                  ].filter(Boolean).join(', ');
-                                }
-                                return 'Not available';
-                              })()}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Created:</span>
-                            <p className="text-gray-900 text-xs">
-                              {agreement.createdAt ? new Date(agreement.createdAt).toLocaleDateString() : 'Not available'}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-700">Language:</span>
-                            <p className="text-gray-900 text-xs">
-                              {agreement.language ? agreement.language.charAt(0).toUpperCase() + agreement.language.slice(1) : 'English'}
-                            </p>
-                          </div>
                         </div>
                       </div>
                       
-                      {/* Action Buttons Matrix - 3x3 */}
-                      <div className="flex-shrink-0">
-                        <div className="grid grid-cols-3 gap-1">
-                          {/* View Button */}
+                      {/* Separator Line */}
+                      <div className="border-t border-gray-200 pt-4 mt-4">
+                        <p className="text-xs font-medium text-gray-500 mb-3">Actions</p>
+                        {/* Action Buttons Matrix - 3x3 with more spacing */}
+                        <div className="flex-shrink-0">
+                          <div className="grid grid-cols-3 gap-3">
+                            {/* View Button */}
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -1221,6 +1206,7 @@ export default function Agreements() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
+                          </div>
                         </div>
                       </div>
                     </div>
