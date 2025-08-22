@@ -54,7 +54,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   const { toast } = useToast();
 
   const [formData, setFormData] = useState<ImportAgreementData>({
-    customer: { name: "", mobile: "" },
+    customer: { id: "", name: "", mobile: "" },
     language: "english",
     ownerDetails: { name: "", mobile: "" },
     tenantDetails: { name: "", mobile: "" },
@@ -89,7 +89,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        return !!(formData.customer.name && formData.language);
+        return !!(formData.customer.id && formData.language);
       case 2:
         return !!(formData.ownerDetails.name && formData.ownerDetails.mobile);
       case 3:
@@ -107,10 +107,10 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   const validateStepWithToast = (step: number): boolean => {
     switch (step) {
       case 1:
-        if (!formData.customer.name || !formData.language) {
+        if (!formData.customer.id || !formData.language) {
           toast({
             title: "Required fields missing",
-            description: "Please fill in customer name and select language",
+            description: "Please select a customer and language",
             variant: "destructive",
           });
           return false;
@@ -216,7 +216,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   const handleClose = () => {
     setCurrentStep(1);
     setFormData({
-      customer: { name: "", mobile: "" },
+      customer: { id: "", name: "", mobile: "" },
       language: "english",
       ownerDetails: { name: "", mobile: "" },
       tenantDetails: { name: "", mobile: "" },
@@ -248,74 +248,58 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
             <CardHeader>
               <CardTitle>Step 1: Customer Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="customer-name">Customer Name *</Label>
-                <Select
-                  value={formData.customer.id || ""}
-                  onValueChange={(value) => {
-                    const selectedCustomer = customers.find((c: any) => c.id === value);
-                    setFormData(prev => ({
-                      ...prev,
-                      customer: {
-                        id: value,
-                        name: selectedCustomer ? selectedCustomer.name : "",
-                        mobile: selectedCustomer ? selectedCustomer.mobile : ""
-                      }
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((customer: any) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!formData.customer.id && (
-                  <div className="mt-2">
-                    <Input
-                      placeholder="Or enter customer name manually"
-                      value={formData.customer.name}
-                      onChange={(e) => setFormData(prev => ({
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="customerId">Select Customer <span className="text-red-500">*</span></Label>
+                  <Select
+                    value={formData.customer.id || ""}
+                    onValueChange={(value) => {
+                      const selectedCustomer = customers.find((c: any) => c.id === value);
+                      setFormData(prev => ({
                         ...prev,
-                        customer: { ...prev.customer, name: e.target.value }
-                      }))}
-                    />
-                    <Input
-                      placeholder="Customer mobile number"
-                      className="mt-2"
-                      value={formData.customer.mobile || ""}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        customer: { ...prev.customer, mobile: e.target.value }
-                      }))}
-                    />
-                  </div>
-                )}
-              </div>
+                        customer: {
+                          id: value,
+                          name: selectedCustomer ? selectedCustomer.name : "",
+                          mobile: selectedCustomer ? selectedCustomer.mobile : ""
+                        }
+                      }));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer: any) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name} - {customer.mobile}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select an existing customer to import agreement for
+                  </p>
+                </div>
 
-              <div>
-                <Label htmlFor="language">Language *</Label>
-                <Select
-                  value={formData.language}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="english">English</SelectItem>
-                    <SelectItem value="hindi">Hindi</SelectItem>
-                    <SelectItem value="gujarati">Gujarati</SelectItem>
-                    <SelectItem value="tamil">Tamil</SelectItem>
-                    <SelectItem value="marathi">Marathi</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Label htmlFor="language">Language <span className="text-red-500">*</span></Label>
+                  <Select
+                    value={formData.language}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, language: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="english">English</SelectItem>
+                      <SelectItem value="hindi">Hindi (हिंदी)</SelectItem>
+                      <SelectItem value="gujarati">Gujarati (ગુજરાતી)</SelectItem>
+                      <SelectItem value="tamil">Tamil (தமிழ்)</SelectItem>
+                      <SelectItem value="marathi">Marathi (मराठी)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </CardContent>
           </Card>
