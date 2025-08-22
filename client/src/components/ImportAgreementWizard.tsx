@@ -277,15 +277,15 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
 
 
   const handleDocumentUpload = (docType: string, result: any) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadedFile = result.successful[0];
+    // LocalFileUploader returns { url, filename, originalName, size } format
+    if (result.url) {
       setDocuments(prev => ({
         ...prev,
-        [docType]: uploadedFile.uploadURL,
+        [docType]: result.url,
         [`${docType}_metadata`]: {
-          filename: uploadedFile.name || "Uploaded Document",
-          fileType: uploadedFile.type || "application/pdf",
-          size: uploadedFile.size || 0
+          filename: result.originalName || result.filename || "Uploaded Document",
+          fileType: "application/pdf",
+          size: result.size || 0
         }
       }));
       
