@@ -1024,42 +1024,73 @@ export default function Agreements() {
                             </div>
                             <div>
                               <span className="font-medium text-gray-600">Notary Status:</span>
-                              <p className="text-gray-900">
-                                {agreement.status === "draft"
-                                  ? "Draft"
-                                  : agreement.status === "active"
-                                  ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                    ? "Complete"
-                                    : "Pending"
-                                  : "Active"
-                                }
-                              </p>
+                              <div className="mt-1">
+                                <span
+                                  className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                                    agreement.status === "draft"
+                                      ? "bg-gray-100 text-gray-800"
+                                      : agreement.status === "active"
+                                      ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-amber-100 text-amber-800"
+                                      : "bg-blue-100 text-blue-800"
+                                  }`}
+                                >
+                                  {agreement.status === "draft"
+                                    ? "Draft"
+                                    : agreement.status === "active"
+                                    ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                      ? "Complete"
+                                      : "Pending"
+                                    : "Active"
+                                  }
+                                </span>
+                              </div>
                             </div>
                             <div>
                               <span className="font-medium text-gray-600">Expiry Status:</span>
-                              <p className="text-gray-900">
+                              <div className="mt-1">
                                 {(() => {
                                   const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-                                  if (!endDate) return 'No expiry date';
+                                  if (!endDate) return <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">No expiry date</span>;
                                   
                                   const today = new Date();
                                   const expiry = new Date(endDate);
                                   const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                                   
+                                  let bgColor = 'bg-green-100';
+                                  let textColor = 'text-green-800';
+                                  let text = `${daysUntilExpiry} days remaining`;
+                                  
                                   if (daysUntilExpiry < 0) {
-                                    return `Expired ${Math.abs(daysUntilExpiry)} days ago`;
+                                    bgColor = 'bg-red-100';
+                                    textColor = 'text-red-800';
+                                    text = `Expired ${Math.abs(daysUntilExpiry)} days ago`;
                                   } else if (daysUntilExpiry === 0) {
-                                    return 'Expires today';
+                                    bgColor = 'bg-red-100';
+                                    textColor = 'text-red-800';
+                                    text = 'Expires today';
                                   } else if (daysUntilExpiry === 1) {
-                                    return 'Expires tomorrow';
+                                    bgColor = 'bg-orange-100';
+                                    textColor = 'text-orange-800';
+                                    text = 'Expires tomorrow';
                                   } else if (daysUntilExpiry <= 30) {
-                                    return `Expires in ${daysUntilExpiry} days`;
+                                    bgColor = 'bg-orange-100';
+                                    textColor = 'text-orange-800';
+                                    text = `Expires in ${daysUntilExpiry} days`;
                                   } else if (daysUntilExpiry <= 90) {
-                                    return `Expires in ${daysUntilExpiry} days`;
+                                    bgColor = 'bg-yellow-100';
+                                    textColor = 'text-yellow-800';
+                                    text = `Expires in ${daysUntilExpiry} days`;
                                   }
-                                  return `${daysUntilExpiry} days remaining`;
+                                  
+                                  return (
+                                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${bgColor} ${textColor}`}>
+                                      {text}
+                                    </span>
+                                  );
                                 })()}
-                              </p>
+                              </div>
                             </div>
                           </div>
                           
