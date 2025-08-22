@@ -12,6 +12,7 @@ import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import AgreementWizard from "@/components/AgreementWizard";
+import ImportAgreementWizard from "@/components/ImportAgreementWizard";
 import { useAgreements } from "@/hooks/useAgreements";
 import {
   Plus,
@@ -37,6 +38,7 @@ import { useLocation } from "wouter";
 export default function Agreements() {
   const [, navigate] = useLocation();
   const [showWizard, setShowWizard] = useState(false);
+  const [showImportWizard, setShowImportWizard] = useState(false);
   const [editingAgreement, setEditingAgreement] = useState<any>(null);
   const [viewingAgreement, setViewingAgreement] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -921,10 +923,20 @@ export default function Agreements() {
                 Clear all filters
               </Button>
             )}
-            <Button onClick={() => setShowWizard(true)} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Agreement
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowWizard(true)} className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="mr-2 h-4 w-4" />
+                Create Agreement
+              </Button>
+              <Button 
+                onClick={() => setShowImportWizard(true)}
+                variant="outline"
+                className="border-green-600 text-green-600 hover:bg-green-50"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import Existing Agreement
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -1281,6 +1293,11 @@ export default function Agreements() {
       <AgreementWizard
         isOpen={showWizard}
         onClose={() => setShowWizard(false)}
+      />
+
+      <ImportAgreementWizard
+        isOpen={showImportWizard}
+        onClose={() => setShowImportWizard(false)}
       />
 
       {editingAgreement && (

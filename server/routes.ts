@@ -913,6 +913,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import existing agreement endpoint
+  app.post('/api/agreements/import', upload.fields([
+    { name: 'notarizedDocument', maxCount: 1 },
+    { name: 'policeDocument', maxCount: 1 }
+  ]), async (req, res) => {
+    try {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const notarizedFile = files.notarizedDocument?.[0];
+      const policeFile = files.policeDocument?.[0];
+
+      if (!notarizedFile || !policeFile) {
+        return res.status(400).json({ error: 'Both notarized agreement and police verification documents are required' });
+      }
+
+      // Validate file types
+      if (notarizedFile.mimetype !== 'application/pdf' || policeFile.mimetype !== 'application/pdf') {
+        return res.status(400).json({ error: 'Only PDF files are allowed' });
+      }
+
+      // Parse agreement data
+      const agreementDataStr = req.body.agreementData;
+      if (!agreementDataStr) {
+        return res.status(400).json({ error: 'Agreement data is required' });
+      }
+
+      let agreementData;
+      try {
+        agreementData = JSON.parse(agreementDataStr);
+      } catch (error) {
+        return res.status(400).json({ error: 'Invalid agreement data format' });
+      }
+
+      console.log('[Import Agreement] Processing import:', {
+        customer: agreementData.customer.name,
+        language: agreementData.language,
+        notarizedFile: notarizedFile.originalname,
+        policeFile: policeFile.originalname
+      });
+
+      // Create the agreement in the database
+      const newAgreementData = {
+        customerId: agreementData.customer.id || null,
+        customerName: agreementData.customer.name,
+        language: agreementData.language,
+        status: 'active',
+        isImported: true,
+        ownerDetails: agreementData.ownerDetails,
+        tenantDetails: agreementData.tenantDetails,
+        propertyDetails: {
+          address: {
+            flatNo: agreementData.propertyAddress.flatNo,
+            society: agreementData.propertyAddress.society,
+            area: agreementData.propertyAddress.area,
+            city: agreementData.propertyAddress.city,
+            state: agreementData.propertyAddress.state,
+            pincode: agreementData.propertyAddress.pincode
+          }
+        },
+        rentalTerms: {
+          startDate: agreementData.agreementPeriod.startDate,
+          endDate: agreementData.agreementPeriod.endDate,
+          tenure: "custom",
+          monthlyRent: 0,
+          deposit: 0,
+          dueDate: 1,
+          maintenance: "included",
+          noticePeriod: 1,
+          furniture: ""
+        },
+        additionalClauses: [],
+        notarizedDocument: {
+          filename: notarizedFile.filename,
+          originalName: notarizedFile.originalname,
+          fileType: notarizedFile.mimetype,
+          size: notarizedFile.size,
+          uploadDate: new Date().toISOString(),
+          url: `/uploads/${notarizedFile.filename}`
+        },
+        policeVerificationDocument: {
+          filename: policeFile.filename,
+          originalName: policeFile.originalname,
+          fileType: policeFile.mimetype,
+          size: policeFile.size,
+          uploadDate: new Date().toISOString(),
+          url: `/uploads/${policeFile.filename}`
+        }
+      };
+
+      const agreement = await storage.createAgreement(newAgreementData);
+
+      console.log(`[Import Agreement] Successfully imported agreement ${agreement.agreementNumber}`);
+
+      res.json({
+        success: true,
+        message: 'Agreement imported successfully',
+        agreement: {
+          id: agreement.id,
+          agreementNumber: agreement.agreementNumber,
+          status: agreement.status,
+          customerName: agreement.customerName,
+          notarizedDocument: agreement.notarizedDocument,
+          policeVerificationDocument: agreement.policeVerificationDocument
+        }
+      });
+    } catch (error) {
+      console.error("Error importing agreement:", error);
+      res.status(500).json({ error: 'Failed to import agreement' });
+    }
+  });
+
   // Upload notarized document for a specific agreement
   app.post('/api/agreements/:agreementId/upload-notarized', upload.single('notarizedDocument'), async (req, res) => {
     try {
