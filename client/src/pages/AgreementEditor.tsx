@@ -37,11 +37,16 @@ export default function AgreementEditor() {
   useEffect(() => {
     const loadContent = async () => {
       if (!agreementId) {
-        // Fallback to session storage for new documents
-        const sessionContent = sessionStorage.getItem('editorHtmlContent');
-        if (sessionContent) {
-          setHtmlContent(sessionContent);
-        }
+        // Show error and redirect back to agreements page
+        console.log('[Editor] No agreement ID found, redirecting to agreements page');
+        toast({
+          title: "Missing Agreement ID",
+          description: "Please access the Content Editor through the purple button in the agreements list.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          navigate('/agreements');
+        }, 3000);
         setIsLoading(false);
         return;
       }
