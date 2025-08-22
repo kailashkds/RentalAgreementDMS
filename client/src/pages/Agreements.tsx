@@ -41,6 +41,7 @@ export default function Agreements() {
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [editingAgreement, setEditingAgreement] = useState<any>(null);
   const [viewingAgreement, setViewingAgreement] = useState<any>(null);
+  const [viewingImportedAgreement, setViewingImportedAgreement] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [notaryFilter, setNotaryFilter] = useState("all");
@@ -1172,7 +1173,7 @@ export default function Agreements() {
                             variant="ghost" 
                             size="sm" 
                             className="h-10 w-10 p-0 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-full border border-gray-200"
-                            onClick={() => handleViewAgreement(agreement.id)}
+                            onClick={() => isImportedAgreement(agreement) ? setViewingImportedAgreement(agreement) : handleViewAgreement(agreement.id)}
                             title="View Agreement"
                           >
                             <Eye className="h-4 w-4" />
@@ -1189,7 +1190,7 @@ export default function Agreements() {
                                   <Download className="h-4 w-4" />
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-56 p-2">
+                              <PopoverContent className={isImportedAgreement(agreement) ? "w-64 p-2" : "w-56 p-2"}>
                                 <div className="space-y-2">
                                   {isImportedAgreement(agreement) ? (
                                     <>
@@ -1968,6 +1969,181 @@ export default function Agreements() {
                   <Button
                     variant="outline"
                     onClick={() => setViewingAgreement(null)}
+                    className="border-slate-300 hover:bg-slate-50 px-6 py-2 shadow-sm"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Imported Agreement View Modal - Simplified View */}
+      <Dialog open={!!viewingImportedAgreement} onOpenChange={() => setViewingImportedAgreement(null)}>
+        <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0 bg-gradient-to-r from-blue-50 to-slate-50 p-4 rounded-t-lg border-b border-blue-100">
+            <DialogTitle className="text-xl font-semibold text-slate-800 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              Imported Agreement Details
+              <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700 ml-2">
+                Imported
+              </Badge>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {viewingImportedAgreement && (
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Basic Agreement Information */}
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                <div className="p-4 border-b border-slate-100 bg-slate-50">
+                  <h3 className="text-lg font-medium text-slate-800">Agreement Information</h3>
+                </div>
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-slate-600">Agreement Number:</span>
+                    <p className="text-slate-900 font-mono">{viewingImportedAgreement.agreementNumber || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-slate-600">Status:</span>
+                    <Badge variant="outline" className={getStatusBadge(viewingImportedAgreement.status)}>
+                      {viewingImportedAgreement.status || 'N/A'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-slate-600">Start Date:</span>
+                    <p className="text-slate-900">{viewingImportedAgreement.startDate || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-slate-600">End Date:</span>
+                    <p className="text-slate-900">{viewingImportedAgreement.endDate || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-slate-600">Monthly Rent:</span>
+                    <p className="text-slate-900">₹{viewingImportedAgreement.rentalTerms?.monthlyRent || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-slate-600">Security Deposit:</span>
+                    <p className="text-slate-900">₹{viewingImportedAgreement.rentalTerms?.securityDeposit || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Information */}
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                <div className="p-4 border-b border-slate-100 bg-slate-50">
+                  <h3 className="text-lg font-medium text-slate-800">Customer Information</h3>
+                </div>
+                <div className="p-4">
+                  <div>
+                    <span className="text-sm font-medium text-slate-600">Customer:</span>
+                    <p className="text-slate-900">{viewingImportedAgreement.customer?.name || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Uploaded Documents */}
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
+                <div className="p-4 border-b border-slate-100 bg-slate-50">
+                  <h3 className="text-lg font-medium text-slate-800">Uploaded Documents</h3>
+                </div>
+                <div className="p-4 space-y-4">
+                  {/* Notarized Document */}
+                  {viewingImportedAgreement.notarizedDocument?.url && (
+                    <div className="border border-green-200 rounded-lg bg-green-50">
+                      <div className="p-4 border-b border-green-100">
+                        <h4 className="text-sm font-medium text-green-900">Notarized Agreement Document</h4>
+                      </div>
+                      <div className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-green-100 rounded-lg">
+                            <Award className="h-5 w-5 text-green-600" />
+                          </div>
+                          <span className="text-sm text-green-800">
+                            {viewingImportedAgreement.notarizedDocument.originalName || 'Notarized Document'}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.open(viewingImportedAgreement.notarizedDocument.url, '_blank')}
+                            className="border-green-300 hover:bg-green-50"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = viewingImportedAgreement.notarizedDocument.url;
+                              link.download = viewingImportedAgreement.notarizedDocument.originalName;
+                              link.click();
+                            }}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Police Verification Document */}
+                  {viewingImportedAgreement.documents?.policeVerificationDocument?.url && (
+                    <div className="border border-blue-200 rounded-lg bg-blue-50">
+                      <div className="p-4 border-b border-blue-100">
+                        <h4 className="text-sm font-medium text-blue-900">Police Verification Document</h4>
+                      </div>
+                      <div className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <FileText className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <span className="text-sm text-blue-800">
+                            {viewingImportedAgreement.documents.policeVerificationDocument.originalName || 'Police Verification Document'}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.open(viewingImportedAgreement.documents.policeVerificationDocument.url, '_blank')}
+                            className="border-blue-300 hover:bg-blue-50"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = viewingImportedAgreement.documents.policeVerificationDocument.url;
+                              link.download = viewingImportedAgreement.documents.policeVerificationDocument.originalName;
+                              link.click();
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-lg border border-slate-200 shadow-sm">
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => setViewingImportedAgreement(null)}
                     className="border-slate-300 hover:bg-slate-50 px-6 py-2 shadow-sm"
                   >
                     <X className="h-4 w-4 mr-2" />
