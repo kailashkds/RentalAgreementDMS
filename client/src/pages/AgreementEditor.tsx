@@ -153,10 +153,24 @@ export default function AgreementEditor() {
 
   // Manual save
   const handleSave = async () => {
-    if (!editorRef.current || !agreementId) {
+    console.log('[Editor] Save button clicked - checking conditions:');
+    console.log('- Editor ready:', !!editorRef.current);
+    console.log('- Agreement ID:', agreementId);
+    console.log('- URL params:', window.location.search);
+    
+    if (!editorRef.current) {
       toast({
         title: "Save Failed",
-        description: "Unable to save - editor not ready or agreement ID missing.",
+        description: "Editor is not ready yet. Please wait for the editor to load.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!agreementId) {
+      toast({
+        title: "Save Failed", 
+        description: "Agreement ID is missing. Please make sure you accessed this page with the correct link.",
         variant: "destructive",
       });
       return;
