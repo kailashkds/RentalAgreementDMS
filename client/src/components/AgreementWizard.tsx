@@ -995,6 +995,28 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           // Store HTML content in session storage for the editor
           sessionStorage.setItem('editorHtmlContent', result.html);
           
+          // CRITICAL: Save the generated HTML content to the database as editedContent
+          try {
+            console.log(`[Wizard] Saving generated HTML content to database for agreement ${agreement.id}`);
+            const saveResponse = await fetch(`/api/agreements/${agreement.id}/save-content`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                editedContent: result.html
+              })
+            });
+            
+            if (saveResponse.ok) {
+              console.log(`[Wizard] Successfully saved generated content to database`);
+            } else {
+              console.error(`[Wizard] Failed to save generated content to database`);
+            }
+          } catch (saveError) {
+            console.error(`[Wizard] Error saving generated content to database:`, saveError);
+          }
+          
           // Redirect to editor instead of generating PDF directly
           const editorUrl = `/agreement-editor?agreementNumber=${agreement.agreementNumber}&language=${selectedLanguage}`;
           window.location.href = editorUrl;

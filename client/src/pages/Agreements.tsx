@@ -459,37 +459,18 @@ export default function Agreements() {
 
   const handleDownloadAgreement = async (agreement: any) => {
     try {
-      console.log('Starting PDF generation for agreement:', agreement.id);
+      console.log('Starting PDF download for agreement:', agreement.id);
       console.log('Agreement data:', {
         hasOwnerDetails: !!agreement.ownerDetails,
         hasTenantDetails: !!agreement.tenantDetails,
         hasPropertyDetails: !!agreement.propertyDetails,
         hasRentalTerms: !!agreement.rentalTerms,
-        agreementNumber: agreement.agreementNumber
+        agreementNumber: agreement.agreementNumber,
+        hasEditedContent: !!agreement.editedContent
       });
 
-      const response = await fetch('/api/agreements/generate-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ownerDetails: agreement.ownerDetails || {},
-          tenantDetails: agreement.tenantDetails || {},
-          propertyDetails: agreement.propertyDetails || {},
-          rentalTerms: agreement.rentalTerms || {},
-          agreementDate: agreement.agreementDate,
-          createdAt: agreement.createdAt,
-          language: agreement.language || 'english',
-          additionalClauses: agreement.additionalClauses || [],
-          agreementNumber: agreement.agreementNumber,
-          // Include document data for embedding
-          documents: agreement.documents || {},
-          ownerDocuments: agreement.ownerDocuments || {},
-          tenantDocuments: agreement.tenantDocuments || {},
-          propertyDocuments: agreement.propertyDocuments || {}
-        }),
-      });
+      // Use the dedicated PDF endpoint that checks for edited content first
+      const response = await fetch(`/api/agreements/${agreement.id}/pdf`);
 
       console.log('PDF generation response status:', response.status);
 
