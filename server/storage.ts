@@ -7,6 +7,11 @@ import {
   agreements,
   agreementTemplates,
   pdfTemplates,
+  permissions,
+  roles,
+  rolePermissions,
+  userRoles,
+  customerRoles,
 
   adminUsers,
   type User,
@@ -25,6 +30,19 @@ import {
   type InsertAgreementTemplate,
   type PdfTemplate,
   type InsertPdfTemplate,
+  type Permission,
+  type InsertPermission,
+  type Role,
+  type InsertRole,
+  type RolePermission,
+  type InsertRolePermission,
+  type UserRole,
+  type InsertUserRole,
+  type CustomerRole,
+  type InsertCustomerRole,
+  type RoleWithPermissions,
+  type UserWithRoles,
+  type CustomerWithRoles,
 
   type AdminUser,
   type InsertAdminUser,
@@ -115,6 +133,46 @@ export interface IStorage {
   // Agreement templates
   getAgreementTemplates(language?: string): Promise<AgreementTemplate[]>;
   createAgreementTemplate(template: InsertAgreementTemplate): Promise<AgreementTemplate>;
+  
+  // RBAC operations
+  // Permission operations
+  getPermissions(): Promise<Permission[]>;
+  getPermission(id: string): Promise<Permission | undefined>;
+  getPermissionByCode(code: string): Promise<Permission | undefined>;
+  createPermission(permission: InsertPermission): Promise<Permission>;
+  updatePermission(id: string, permission: Partial<InsertPermission>): Promise<Permission>;
+  deletePermission(id: string): Promise<void>;
+  
+  // Role operations
+  getRoles(): Promise<RoleWithPermissions[]>;
+  getRole(id: string): Promise<RoleWithPermissions | undefined>;
+  getRoleByName(name: string): Promise<RoleWithPermissions | undefined>;
+  createRole(role: InsertRole): Promise<Role>;
+  updateRole(id: string, role: Partial<InsertRole>): Promise<Role>;
+  deleteRole(id: string): Promise<void>;
+  
+  // Role-Permission operations
+  assignPermissionToRole(roleId: string, permissionId: string): Promise<RolePermission>;
+  removePermissionFromRole(roleId: string, permissionId: string): Promise<void>;
+  getRolePermissions(roleId: string): Promise<Permission[]>;
+  
+  // User-Role operations
+  assignRoleToUser(userId: string, roleId: string): Promise<UserRole>;
+  removeRoleFromUser(userId: string, roleId: string): Promise<void>;
+  getUserRoles(userId: string): Promise<RoleWithPermissions[]>;
+  getUserWithRoles(userId: string): Promise<UserWithRoles | undefined>;
+  
+  // Customer-Role operations
+  assignRoleToCustomer(customerId: string, roleId: string): Promise<CustomerRole>;
+  removeRoleFromCustomer(customerId: string, roleId: string): Promise<void>;
+  getCustomerRoles(customerId: string): Promise<RoleWithPermissions[]>;
+  getCustomerWithRoles(customerId: string): Promise<CustomerWithRoles | undefined>;
+  
+  // Permission checking
+  userHasPermission(userId: string, permissionCode: string): Promise<boolean>;
+  customerHasPermission(customerId: string, permissionCode: string): Promise<boolean>;
+  getUserPermissions(userId: string): Promise<string[]>;
+  getCustomerPermissions(customerId: string): Promise<string[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -969,6 +1027,324 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(addresses.id, addressId));
+  }
+
+  // RBAC operations implementation
+  // Permission operations
+  async getPermissions(): Promise<Permission[]> {
+    return db.select().from(permissions).orderBy(permissions.code);
+  }
+
+  async getPermission(id: string): Promise<Permission | undefined> {
+    const [permission] = await db.select().from(permissions).where(eq(permissions.id, id));
+    return permission;
+  }
+
+  async getPermissionByCode(code: string): Promise<Permission | undefined> {
+    const [permission] = await db.select().from(permissions).where(eq(permissions.code, code));
+    return permission;
+  }
+
+  async createPermission(permissionData: InsertPermission): Promise<Permission> {
+    const [permission] = await db.insert(permissions).values(permissionData).returning();
+    return permission;
+  }
+
+  async updatePermission(id: string, permissionData: Partial<InsertPermission>): Promise<Permission> {
+    const [permission] = await db
+      .update(permissions)
+      .set(permissionData)
+      .where(eq(permissions.id, id))
+      .returning();
+    return permission;
+  }
+
+  async deletePermission(id: string): Promise<void> {
+    await db.delete(rolePermissions).where(eq(rolePermissions.permissionId, id));
+    await db.delete(permissions).where(eq(permissions.id, id));
+  }
+
+  // Role operations
+  async getRoles(): Promise<RoleWithPermissions[]> {
+    const rolesResult = await db
+      .select({
+        role: roles,
+        permission: permissions,
+      })
+      .from(roles)
+      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
+      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .orderBy(roles.name);
+
+    const rolesMap = new Map<string, RoleWithPermissions>();
+    
+    for (const row of rolesResult) {
+      if (!rolesMap.has(row.role.id)) {
+        rolesMap.set(row.role.id, {
+          ...row.role,
+          permissions: [],
+        });
+      }
+      
+      if (row.permission) {
+        rolesMap.get(row.role.id)!.permissions.push(row.permission);
+      }
+    }
+
+    return Array.from(rolesMap.values());
+  }
+
+  async getRole(id: string): Promise<RoleWithPermissions | undefined> {
+    const result = await db
+      .select({
+        role: roles,
+        permission: permissions,
+      })
+      .from(roles)
+      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
+      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(roles.id, id));
+
+    if (result.length === 0) return undefined;
+
+    const role = result[0].role;
+    const rolePermissionsList = result
+      .filter(row => row.permission)
+      .map(row => row.permission!);
+
+    return {
+      ...role,
+      permissions: rolePermissionsList,
+    };
+  }
+
+  async getRoleByName(name: string): Promise<RoleWithPermissions | undefined> {
+    const result = await db
+      .select({
+        role: roles,
+        permission: permissions,
+      })
+      .from(roles)
+      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
+      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(roles.name, name));
+
+    if (result.length === 0) return undefined;
+
+    const role = result[0].role;
+    const rolePermissionsList = result
+      .filter(row => row.permission)
+      .map(row => row.permission!);
+
+    return {
+      ...role,
+      permissions: rolePermissionsList,
+    };
+  }
+
+  async createRole(roleData: InsertRole): Promise<Role> {
+    const [role] = await db.insert(roles).values(roleData).returning();
+    return role;
+  }
+
+  async updateRole(id: string, roleData: Partial<InsertRole>): Promise<Role> {
+    const [role] = await db
+      .update(roles)
+      .set({ ...roleData, updatedAt: new Date() })
+      .where(eq(roles.id, id))
+      .returning();
+    return role;
+  }
+
+  async deleteRole(id: string): Promise<void> {
+    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, id));
+    await db.delete(userRoles).where(eq(userRoles.roleId, id));
+    await db.delete(customerRoles).where(eq(customerRoles.roleId, id));
+    await db.delete(roles).where(eq(roles.id, id));
+  }
+
+  // Role-Permission operations
+  async assignPermissionToRole(roleId: string, permissionId: string): Promise<RolePermission> {
+    const [rolePermission] = await db
+      .insert(rolePermissions)
+      .values({ roleId, permissionId })
+      .returning();
+    return rolePermission;
+  }
+
+  async removePermissionFromRole(roleId: string, permissionId: string): Promise<void> {
+    await db
+      .delete(rolePermissions)
+      .where(and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permissionId)));
+  }
+
+  async getRolePermissions(roleId: string): Promise<Permission[]> {
+    const result = await db
+      .select({ permission: permissions })
+      .from(rolePermissions)
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(rolePermissions.roleId, roleId));
+
+    return result.map(row => row.permission);
+  }
+
+  // User-Role operations
+  async assignRoleToUser(userId: string, roleId: string): Promise<UserRole> {
+    const [userRole] = await db
+      .insert(userRoles)
+      .values({ userId, roleId })
+      .returning();
+    return userRole;
+  }
+
+  async removeRoleFromUser(userId: string, roleId: string): Promise<void> {
+    await db
+      .delete(userRoles)
+      .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)));
+  }
+
+  async getUserRoles(userId: string): Promise<RoleWithPermissions[]> {
+    const result = await db
+      .select({
+        role: roles,
+        permission: permissions,
+      })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
+      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(userRoles.userId, userId));
+
+    const rolesMap = new Map<string, RoleWithPermissions>();
+    
+    for (const row of result) {
+      if (!rolesMap.has(row.role.id)) {
+        rolesMap.set(row.role.id, {
+          ...row.role,
+          permissions: [],
+        });
+      }
+      
+      if (row.permission) {
+        rolesMap.get(row.role.id)!.permissions.push(row.permission);
+      }
+    }
+
+    return Array.from(rolesMap.values());
+  }
+
+  async getUserWithRoles(userId: string): Promise<UserWithRoles | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+
+    const userRolesList = await this.getUserRoles(userId);
+    
+    return {
+      ...user,
+      roles: userRolesList,
+    };
+  }
+
+  // Customer-Role operations
+  async assignRoleToCustomer(customerId: string, roleId: string): Promise<CustomerRole> {
+    const [customerRole] = await db
+      .insert(customerRoles)
+      .values({ customerId, roleId })
+      .returning();
+    return customerRole;
+  }
+
+  async removeRoleFromCustomer(customerId: string, roleId: string): Promise<void> {
+    await db
+      .delete(customerRoles)
+      .where(and(eq(customerRoles.customerId, customerId), eq(customerRoles.roleId, roleId)));
+  }
+
+  async getCustomerRoles(customerId: string): Promise<RoleWithPermissions[]> {
+    const result = await db
+      .select({
+        role: roles,
+        permission: permissions,
+      })
+      .from(customerRoles)
+      .innerJoin(roles, eq(customerRoles.roleId, roles.id))
+      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
+      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(customerRoles.customerId, customerId));
+
+    const rolesMap = new Map<string, RoleWithPermissions>();
+    
+    for (const row of result) {
+      if (!rolesMap.has(row.role.id)) {
+        rolesMap.set(row.role.id, {
+          ...row.role,
+          permissions: [],
+        });
+      }
+      
+      if (row.permission) {
+        rolesMap.get(row.role.id)!.permissions.push(row.permission);
+      }
+    }
+
+    return Array.from(rolesMap.values());
+  }
+
+  async getCustomerWithRoles(customerId: string): Promise<CustomerWithRoles | undefined> {
+    const customer = await this.getCustomer(customerId);
+    if (!customer) return undefined;
+
+    const customerRolesList = await this.getCustomerRoles(customerId);
+    
+    return {
+      ...customer,
+      roles: customerRolesList,
+    };
+  }
+
+  // Permission checking
+  async userHasPermission(userId: string, permissionCode: string): Promise<boolean> {
+    const result = await db
+      .select({ count: count() })
+      .from(userRoles)
+      .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(and(eq(userRoles.userId, userId), eq(permissions.code, permissionCode)));
+
+    return result[0].count > 0;
+  }
+
+  async customerHasPermission(customerId: string, permissionCode: string): Promise<boolean> {
+    const result = await db
+      .select({ count: count() })
+      .from(customerRoles)
+      .innerJoin(rolePermissions, eq(customerRoles.roleId, rolePermissions.roleId))
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(and(eq(customerRoles.customerId, customerId), eq(permissions.code, permissionCode)));
+
+    return result[0].count > 0;
+  }
+
+  async getUserPermissions(userId: string): Promise<string[]> {
+    const result = await db
+      .select({ code: permissions.code })
+      .from(userRoles)
+      .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(userRoles.userId, userId));
+
+    return result.map(row => row.code);
+  }
+
+  async getCustomerPermissions(customerId: string): Promise<string[]> {
+    const result = await db
+      .select({ code: permissions.code })
+      .from(customerRoles)
+      .innerJoin(rolePermissions, eq(customerRoles.roleId, rolePermissions.roleId))
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(customerRoles.customerId, customerId));
+
+    return result.map(row => row.code);
   }
 }
 

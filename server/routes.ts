@@ -9,6 +9,7 @@ import { setupAuth, requireAuth, optionalAuth } from "./auth";
 import { insertCustomerSchema, insertSocietySchema, insertPropertySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
 import { directFileUpload } from "./directFileUpload";
 import { upload, getFileInfo, deleteFile, readFileAsBase64 } from "./localFileUpload";
+import { seedRBAC, assignDefaultRoleToUser, assignDefaultRoleToCustomer } from "./rbacSeed";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import path from "path";
@@ -70,6 +71,274 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // RBAC initialization endpoint
+  app.post("/api/rbac/seed", async (req, res) => {
+    try {
+      await seedRBAC();
+      res.json({ message: "RBAC system seeded successfully" });
+    } catch (error) {
+      console.error("Error seeding RBAC:", error);
+      res.status(500).json({ message: "Failed to seed RBAC system", error: String(error) });
+    }
+  });
+
+  // RBAC API endpoints
+  // Permissions
+  app.get("/api/permissions", requireAuth, async (req, res) => {
+    try {
+      const permissions = await storage.getPermissions();
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      res.status(500).json({ message: "Failed to fetch permissions" });
+    }
+  });
+
+  app.post("/api/permissions", requireAuth, async (req, res) => {
+    try {
+      const permissionData = z.object({
+        code: z.string(),
+        name: z.string(),
+        description: z.string().optional(),
+      }).parse(req.body);
+
+      const permission = await storage.createPermission(permissionData);
+      res.json(permission);
+    } catch (error) {
+      console.error("Error creating permission:", error);
+      res.status(500).json({ message: "Failed to create permission" });
+    }
+  });
+
+  app.put("/api/permissions/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const permissionData = z.object({
+        code: z.string().optional(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+      }).parse(req.body);
+
+      const permission = await storage.updatePermission(id, permissionData);
+      res.json(permission);
+    } catch (error) {
+      console.error("Error updating permission:", error);
+      res.status(500).json({ message: "Failed to update permission" });
+    }
+  });
+
+  app.delete("/api/permissions/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePermission(id);
+      res.json({ message: "Permission deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting permission:", error);
+      res.status(500).json({ message: "Failed to delete permission" });
+    }
+  });
+
+  // Roles
+  app.get("/api/roles", requireAuth, async (req, res) => {
+    try {
+      const roles = await storage.getRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      res.status(500).json({ message: "Failed to fetch roles" });
+    }
+  });
+
+  app.get("/api/roles/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const role = await storage.getRole(id);
+      if (!role) {
+        return res.status(404).json({ message: "Role not found" });
+      }
+      res.json(role);
+    } catch (error) {
+      console.error("Error fetching role:", error);
+      res.status(500).json({ message: "Failed to fetch role" });
+    }
+  });
+
+  app.post("/api/roles", requireAuth, async (req, res) => {
+    try {
+      const roleData = z.object({
+        name: z.string(),
+        description: z.string().optional(),
+      }).parse(req.body);
+
+      const role = await storage.createRole(roleData);
+      res.json(role);
+    } catch (error) {
+      console.error("Error creating role:", error);
+      res.status(500).json({ message: "Failed to create role" });
+    }
+  });
+
+  app.put("/api/roles/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const roleData = z.object({
+        name: z.string().optional(),
+        description: z.string().optional(),
+      }).parse(req.body);
+
+      const role = await storage.updateRole(id, roleData);
+      res.json(role);
+    } catch (error) {
+      console.error("Error updating role:", error);
+      res.status(500).json({ message: "Failed to update role" });
+    }
+  });
+
+  app.delete("/api/roles/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteRole(id);
+      res.json({ message: "Role deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting role:", error);
+      res.status(500).json({ message: "Failed to delete role" });
+    }
+  });
+
+  // Role-Permission assignments
+  app.post("/api/roles/:roleId/permissions/:permissionId", requireAuth, async (req, res) => {
+    try {
+      const { roleId, permissionId } = req.params;
+      await storage.assignPermissionToRole(roleId, permissionId);
+      res.json({ message: "Permission assigned to role successfully" });
+    } catch (error) {
+      console.error("Error assigning permission to role:", error);
+      res.status(500).json({ message: "Failed to assign permission to role" });
+    }
+  });
+
+  app.delete("/api/roles/:roleId/permissions/:permissionId", requireAuth, async (req, res) => {
+    try {
+      const { roleId, permissionId } = req.params;
+      await storage.removePermissionFromRole(roleId, permissionId);
+      res.json({ message: "Permission removed from role successfully" });
+    } catch (error) {
+      console.error("Error removing permission from role:", error);
+      res.status(500).json({ message: "Failed to remove permission from role" });
+    }
+  });
+
+  // User-Role assignments
+  app.post("/api/users/:userId/roles/:roleId", requireAuth, async (req, res) => {
+    try {
+      const { userId, roleId } = req.params;
+      await storage.assignRoleToUser(userId, roleId);
+      res.json({ message: "Role assigned to user successfully" });
+    } catch (error) {
+      console.error("Error assigning role to user:", error);
+      res.status(500).json({ message: "Failed to assign role to user" });
+    }
+  });
+
+  app.delete("/api/users/:userId/roles/:roleId", requireAuth, async (req, res) => {
+    try {
+      const { userId, roleId } = req.params;
+      await storage.removeRoleFromUser(userId, roleId);
+      res.json({ message: "Role removed from user successfully" });
+    } catch (error) {
+      console.error("Error removing role from user:", error);
+      res.status(500).json({ message: "Failed to remove role from user" });
+    }
+  });
+
+  app.get("/api/users/:userId/roles", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const roles = await storage.getUserRoles(userId);
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching user roles:", error);
+      res.status(500).json({ message: "Failed to fetch user roles" });
+    }
+  });
+
+  app.get("/api/users/:userId/permissions", requireAuth, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const permissions = await storage.getUserPermissions(userId);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching user permissions:", error);
+      res.status(500).json({ message: "Failed to fetch user permissions" });
+    }
+  });
+
+  // Customer-Role assignments
+  app.post("/api/customers/:customerId/roles/:roleId", requireAuth, async (req, res) => {
+    try {
+      const { customerId, roleId } = req.params;
+      await storage.assignRoleToCustomer(customerId, roleId);
+      res.json({ message: "Role assigned to customer successfully" });
+    } catch (error) {
+      console.error("Error assigning role to customer:", error);
+      res.status(500).json({ message: "Failed to assign role to customer" });
+    }
+  });
+
+  app.delete("/api/customers/:customerId/roles/:roleId", requireAuth, async (req, res) => {
+    try {
+      const { customerId, roleId } = req.params;
+      await storage.removeRoleFromCustomer(customerId, roleId);
+      res.json({ message: "Role removed from customer successfully" });
+    } catch (error) {
+      console.error("Error removing role from customer:", error);
+      res.status(500).json({ message: "Failed to remove role from customer" });
+    }
+  });
+
+  app.get("/api/customers/:customerId/roles", requireAuth, async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const roles = await storage.getCustomerRoles(customerId);
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching customer roles:", error);
+      res.status(500).json({ message: "Failed to fetch customer roles" });
+    }
+  });
+
+  app.get("/api/customers/:customerId/permissions", requireAuth, async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const permissions = await storage.getCustomerPermissions(customerId);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching customer permissions:", error);
+      res.status(500).json({ message: "Failed to fetch customer permissions" });
+    }
+  });
+
+  // Permission checking endpoint
+  app.get("/api/check-permission/:userType/:userId/:permission", requireAuth, async (req, res) => {
+    try {
+      const { userType, userId, permission } = req.params;
+      
+      let hasPermission = false;
+      if (userType === "user") {
+        hasPermission = await storage.userHasPermission(userId, permission);
+      } else if (userType === "customer") {
+        hasPermission = await storage.customerHasPermission(userId, permission);
+      } else {
+        return res.status(400).json({ message: "Invalid user type" });
+      }
+      
+      res.json({ hasPermission });
+    } catch (error) {
+      console.error("Error checking permission:", error);
+      res.status(500).json({ message: "Failed to check permission" });
     }
   });
 

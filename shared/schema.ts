@@ -36,6 +36,43 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// RBAC Tables
+export const permissions = pgTable("permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 100 }).notNull().unique(), // e.g., "agreement.create"
+  description: text("description").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const roles = pgTable("roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const rolePermissions = pgTable("role_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roleId: varchar("role_id").references(() => roles.id, { onDelete: 'cascade' }).notNull(),
+  permissionId: varchar("permission_id").references(() => permissions.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const userRoles = pgTable("user_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  roleId: varchar("role_id").references(() => roles.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const customerRoles = pgTable("customer_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id, { onDelete: 'cascade' }).notNull(),
+  roleId: varchar("role_id").references(() => roles.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Customers table
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -204,6 +241,55 @@ export const pdfTemplates = pgTable("pdf_templates", {
 export const customersRelations = relations(customers, ({ many }) => ({
   properties: many(properties),
   agreements: many(agreements),
+  customerRoles: many(customerRoles),
+}));
+
+// RBAC Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  userRoles: many(userRoles),
+}));
+
+export const permissionsRelations = relations(permissions, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+}));
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+  userRoles: many(userRoles),
+  customerRoles: many(customerRoles),
+}));
+
+export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
+  role: one(roles, {
+    fields: [rolePermissions.roleId],
+    references: [roles.id],
+  }),
+  permission: one(permissions, {
+    fields: [rolePermissions.permissionId],
+    references: [permissions.id],
+  }),
+}));
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+}));
+
+export const customerRolesRelations = relations(customerRoles, ({ one }) => ({
+  customer: one(customers, {
+    fields: [customerRoles.customerId],
+    references: [customers.id],
+  }),
+  role: one(roles, {
+    fields: [customerRoles.roleId],
+    references: [roles.id],
+  }),
 }));
 
 export const propertiesRelations = relations(properties, ({ one, many }) => ({
@@ -319,6 +405,58 @@ export type PdfTemplate = typeof pdfTemplates.$inferSelect;
 
 export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
 export type AdminUser = typeof adminUsers.$inferSelect;
+
+// RBAC Insert Schemas
+export const insertPermissionSchema = createInsertSchema(permissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserRoleSchema = createInsertSchema(userRoles).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCustomerRoleSchema = createInsertSchema(customerRoles).omit({
+  id: true,
+  createdAt: true,
+});
+
+// RBAC Types
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+export type Permission = typeof permissions.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+export type Role = typeof roles.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
+export type UserRole = typeof userRoles.$inferSelect;
+export type InsertCustomerRole = z.infer<typeof insertCustomerRoleSchema>;
+export type CustomerRole = typeof customerRoles.$inferSelect;
+
+// Extended RBAC types for API responses
+export interface RoleWithPermissions extends Role {
+  permissions: Permission[];
+}
+
+export interface UserWithRoles extends User {
+  roles: RoleWithPermissions[];
+}
+
+export interface CustomerWithRoles extends Customer {
+  roles: RoleWithPermissions[];
+}
 
 // Extended types for agreement data structures
 export interface OwnerDetails {

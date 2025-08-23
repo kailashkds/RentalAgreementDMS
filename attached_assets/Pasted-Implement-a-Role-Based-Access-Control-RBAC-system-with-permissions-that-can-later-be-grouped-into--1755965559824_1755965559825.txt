@@ -1,0 +1,120 @@
+Implement a Role-Based Access Control (RBAC) system with permissions that can later be grouped into roles.
+
+1. Create Permissions Catalog
+Agreement Permissions (agreement.*):
+
+agreement.sensitive_info → Access sensitive information inside an agreement
+
+agreement.create → Create a new agreement
+
+agreement.import → Import an existing agreement
+
+agreement.upload_notarized → Upload notarized agreement PDF
+
+agreement.edit → Edit agreements (only before notarization)
+
+agreement.view_info → View agreement details
+
+agreement.renew → Renew agreements
+
+agreement.view_all → View all agreements
+
+agreement.view_own → View only own-created agreements
+
+Additional Permissions:
+
+user.manage → Manage users (add, edit, assign roles)
+
+role.manage → Manage roles & permissions
+
+logs.view → View activity/audit logs
+
+download.agreement → Download agreements
+
+share.agreement → Share agreements externally
+
+agreement.archive → Archive/hide old agreements
+
+👉 Each permission must include:
+
+A unique code (dot notation as above)
+
+A human-readable description
+
+2. Database & Backend Changes
+
+Create permissions table → (id, code, description)
+
+Create roles table → (id, name, description)
+
+Create role_permissions table → (role_id, permission_id)
+
+Create user_roles table → (user_id, role_id)
+
+Middleware Rules:
+
+Every API call must check if the logged-in user has the required permission.
+
+Example:
+
+POST /agreements → requires agreement.create
+
+GET /agreements/:id → requires agreement.view_info + ownership check for customers
+
+3. Frontend Enforcement
+
+Fetch user’s role & permissions on login.
+
+Cache them in frontend state/session.
+
+Hide or disable UI actions if user lacks permission.
+
+Example:
+
+If user lacks agreement.edit, disable Edit button.
+
+If user lacks download.agreement, hide Download button.
+
+4. API Guidelines
+
+POST /permissions → Add new permission
+
+GET /permissions → List all permissions
+
+POST /roles → Create role with assigned permissions
+
+GET /roles → List roles with their permissions
+
+POST /assign-role → Assign role(s) to user
+
+5. Testing Requirements
+
+Log in as different roles and confirm permissions work as expected.
+
+Customers:
+
+Can create/import in their own name only.
+
+Cannot see/edit agreements of other customers.
+
+After notarization → agreement becomes read/download only.
+
+Staff:
+
+Can create/import/edit until notarization.
+
+After notarization → agreement is hidden from staff.
+
+Super Admin:
+
+Has full unrestricted access (bypasses all restrictions).
+
+✅ End Goal
+
+A flexible RBAC system where:
+
+Roles = bundles of permissions.
+
+Permissions = exact actions across the system.
+
+Easy to extend with new permissions in the future.

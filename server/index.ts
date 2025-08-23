@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
+import { seedRBAC, assignDefaultRoleToUser } from "./rbacSeed";
 import bcrypt from "bcrypt";
 
 const app = express();
@@ -84,9 +85,40 @@ async function initializeAdminUser() {
   }
 }
 
+// Initialize RBAC system
+async function initializeRBAC() {
+  try {
+    log("Initializing RBAC system...");
+    await seedRBAC();
+    
+    // Assign Super Admin role to the admin user
+    const adminUser = await storage.getAdminUserByUsername("admin");
+    if (adminUser) {
+      try {
+        await assignDefaultRoleToUser(adminUser.id, "Super Admin");
+        log("✓ Super Admin role assigned to admin user");
+      } catch (roleError) {
+        // Role might already be assigned
+        if (!String(roleError).includes('unique') && !String(roleError).includes('duplicate')) {
+          log("❌ Error assigning role to admin:", String(roleError));
+        } else {
+          log("✓ Super Admin role already assigned to admin user");
+        }
+      }
+    }
+    
+    log("✓ RBAC system initialized successfully");
+  } catch (error) {
+    log("❌ Error initializing RBAC:", String(error));
+  }
+}
+
 (async () => {
   // Initialize admin user before starting server
   await initializeAdminUser();
+  
+  // Initialize RBAC system
+  await initializeRBAC();
   
   const server = await registerRoutes(app);
 
