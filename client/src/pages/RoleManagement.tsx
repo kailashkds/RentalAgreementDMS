@@ -1,10 +1,10 @@
 import AdminLayout from "@/components/AdminLayout";
-import { RoleManagement as RoleManagementComponent } from "@/components/RoleManagement";
+import { UserManagement } from "@/components/UserManagement";
 
 export default function RoleManagement() {
   return (
-    <AdminLayout title="Role Management" subtitle="Manage user roles and permissions">
-      <RoleManagementComponent />
+    <AdminLayout title="User Management" subtitle="Manage users, roles, and permissions">
+      <UserManagement />
     </AdminLayout>
   );
 }

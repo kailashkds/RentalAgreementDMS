@@ -184,7 +184,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: z.string().optional(),
       }).parse(req.body);
 
-      const permission = await storage.createPermission(permissionData);
+      const permission = await storage.createPermission({
+        code: permissionData.code,
+        name: permissionData.name,
+        description: permissionData.description || permissionData.name,
+      });
       res.json(permission);
     } catch (error) {
       console.error("Error creating permission:", error);
