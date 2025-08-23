@@ -8,11 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "./PermissionGuard";
 import { PERMISSIONS } from "@/hooks/usePermissions";
 import { apiRequest } from "@/lib/queryClient";
-import { Users, UserPlus, Shield, Settings, Trash2, Edit, Plus } from "lucide-react";
+import { Users, UserPlus, Shield, Settings, Trash2, Edit, Plus, Save } from "lucide-react";
 
 interface Role {
   id: string;
@@ -52,13 +54,21 @@ export function UserManagement() {
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [userType, setUserType] = useState<"admin" | "customer">("admin");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showCreateRoleDialog, setShowCreateRoleDialog] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [newUserData, setNewUserData] = useState({
-    type: "customer",
+    type: "admin",
     username: "",
     email: "",
     name: "",
     phone: "",
     password: "",
+    roleId: "",
+  });
+  const [newRoleData, setNewRoleData] = useState({
+    name: "",
+    description: "",
+    permissions: [] as string[],
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -82,27 +92,122 @@ export function UserManagement() {
     queryKey: ['/api/rbac/permissions'],
   }) as { data: Permission[]; isLoading: boolean };
 
+  // Create new role mutation
+  const createRoleMutation = useMutation({
+    mutationFn: async (roleData: typeof newRoleData) => {
+      const role = await apiRequest('/api/rbac/roles', 'POST', {
+        name: roleData.name,
+        description: roleData.description,
+        isSystemRole: false,
+      }) as any;
+      
+      // Assign permissions to the role
+      for (const permissionId of roleData.permissions) {
+        await apiRequest('/api/rbac/assign-role-permission', 'POST', {
+          roleId: role.id,
+          permissionId,
+        });
+      }
+      
+      return role;
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Role created successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/rbac/roles'] });
+      setShowCreateRoleDialog(false);
+      setNewRoleData({ name: "", description: "", permissions: [] });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to create role",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Update role mutation
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ roleId, roleData }: { roleId: string; roleData: typeof newRoleData }) => {
+      await apiRequest(`/api/rbac/roles/${roleId}`, 'PUT', {
+        name: roleData.name,
+        description: roleData.description,
+      });
+      
+      // Get current permissions for this role
+      const currentPermissions = await apiRequest(`/api/rbac/roles/${roleId}/permissions`, 'GET') as unknown as any[];
+      
+      // Remove all current permissions
+      for (const permission of currentPermissions) {
+        await apiRequest('/api/rbac/remove-role-permission', 'DELETE', {
+          roleId,
+          permissionId: permission.id,
+        });
+      }
+      
+      // Add new permissions
+      for (const permissionId of roleData.permissions) {
+        await apiRequest('/api/rbac/assign-role-permission', 'POST', {
+          roleId,
+          permissionId,
+        });
+      }
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Role updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/rbac/roles'] });
+      setEditingRole(null);
+      setNewRoleData({ name: "", description: "", permissions: [] });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to update role",
+        variant: "destructive" 
+      });
+    },
+  });
+
   // Create new user mutation
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof newUserData) => {
+      let user;
       if (userData.type === "admin") {
-        return apiRequest('/api/admin/users', 'POST', {
+        user = await apiRequest('/api/admin/users', 'POST', {
           username: userData.username,
           email: userData.email,
           name: userData.name,
           password: userData.password,
           role: "staff",
           isActive: true,
-        });
+        }) as any;
+        
+        // Assign role if selected
+        if (userData.roleId) {
+          await apiRequest('/api/rbac/assign-user-role', 'POST', {
+            userId: user.id,
+            roleId: userData.roleId,
+          });
+        }
       } else {
-        return apiRequest('/api/customers', 'POST', {
+        user = await apiRequest('/api/customers', 'POST', {
           name: userData.name,
           email: userData.email,
           phone: userData.phone,
           password: userData.password,
           isActive: true,
-        });
+        }) as any;
+        
+        // Assign role if selected
+        if (userData.roleId) {
+          await apiRequest('/api/rbac/assign-customer-role', 'POST', {
+            userId: user.id,
+            roleId: userData.roleId,
+          });
+        }
       }
+      
+      return user;
     },
     onSuccess: () => {
       toast({ title: "Success", description: "User created successfully" });
@@ -110,12 +215,13 @@ export function UserManagement() {
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       setShowCreateDialog(false);
       setNewUserData({
-        type: "customer",
+        type: "admin",
         username: "",
         email: "",
         name: "",
         phone: "",
         password: "",
+        roleId: "",
       });
     },
     onError: (error: Error) => {
@@ -200,7 +306,53 @@ export function UserManagement() {
       return;
     }
 
+    if (newUserData.type === "admin" && !newUserData.username) {
+      toast({ 
+        title: "Error", 
+        description: "Username is required for admin users",
+        variant: "destructive" 
+      });
+      return;
+    }
+
     createUserMutation.mutate(newUserData);
+  };
+
+  const handleCreateRole = () => {
+    if (!newRoleData.name) {
+      toast({ 
+        title: "Error", 
+        description: "Role name is required",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    createRoleMutation.mutate(newRoleData);
+  };
+
+  const handleEditRole = (role: Role) => {
+    setEditingRole(role);
+    setNewRoleData({
+      name: role.name,
+      description: role.description,
+      permissions: [], // Will be loaded from API
+    });
+    setShowCreateRoleDialog(true);
+  };
+
+  const handlePermissionToggle = (permissionId: string, checked: boolean) => {
+    setNewRoleData(prev => ({
+      ...prev,
+      permissions: checked 
+        ? [...prev.permissions, permissionId]
+        : prev.permissions.filter(id => id !== permissionId)
+    }));
+  };
+
+  const resetRoleForm = () => {
+    setNewRoleData({ name: "", description: "", permissions: [] });
+    setEditingRole(null);
   };
 
   if (rolesLoading || adminUsersLoading || customersLoading || permissionsLoading) {
@@ -218,6 +370,98 @@ export function UserManagement() {
           </div>
           
           <div className="flex gap-2">
+            <Dialog open={showCreateRoleDialog} onOpenChange={(open) => {
+              setShowCreateRoleDialog(open);
+              if (!open) resetRoleForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-create-role">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Create Role
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" data-testid="dialog-create-role">
+                <DialogHeader>
+                  <DialogTitle>{editingRole ? "Edit Role" : "Create New Role"}</DialogTitle>
+                  <DialogDescription>
+                    {editingRole ? "Update role details and permissions" : "Create a new role and assign permissions"}
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label>Role Name</Label>
+                    <Input
+                      value={newRoleData.name}
+                      onChange={(e) => setNewRoleData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g., Editor, Manager"
+                      data-testid="input-role-name"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Description</Label>
+                    <Textarea
+                      value={newRoleData.description}
+                      onChange={(e) => setNewRoleData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Describe what this role can do"
+                      data-testid="input-role-description"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-base font-medium">Permissions</Label>
+                    <div className="mt-2 space-y-3 max-h-60 overflow-y-auto border rounded-lg p-3">
+                      {permissions.map((permission) => (
+                        <div key={permission.id} className="flex items-center space-x-3" data-testid={`permission-${permission.id}`}>
+                          <Checkbox
+                            id={permission.id}
+                            checked={newRoleData.permissions.includes(permission.id)}
+                            onCheckedChange={(checked) => handlePermissionToggle(permission.id, checked as boolean)}
+                            data-testid={`checkbox-permission-${permission.id}`}
+                          />
+                          <div className="flex-1">
+                            <Label htmlFor={permission.id} className="text-sm font-medium cursor-pointer">
+                              {permission.name}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">{permission.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button 
+                      onClick={editingRole ? 
+                        () => updateRoleMutation.mutate({ roleId: editingRole.id, roleData: newRoleData }) : 
+                        handleCreateRole
+                      }
+                      disabled={createRoleMutation.isPending || updateRoleMutation.isPending}
+                      className="flex-1"
+                      data-testid="button-save-role"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {createRoleMutation.isPending || updateRoleMutation.isPending ? 
+                        "Saving..." : 
+                        editingRole ? "Update Role" : "Create Role"
+                      }
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setShowCreateRoleDialog(false);
+                        resetRoleForm();
+                      }}
+                      data-testid="button-cancel-role"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
                 <Button data-testid="button-create-user">
@@ -229,7 +473,7 @@ export function UserManagement() {
                 <DialogHeader>
                   <DialogTitle>Create New User</DialogTitle>
                   <DialogDescription>
-                    Create a new admin user or customer
+                    Create a new admin user or customer with role assignment
                   </DialogDescription>
                 </DialogHeader>
                 
@@ -237,14 +481,14 @@ export function UserManagement() {
                   <div>
                     <Label>User Type</Label>
                     <Select value={newUserData.type} onValueChange={(value) => 
-                      setNewUserData(prev => ({ ...prev, type: value }))
+                      setNewUserData(prev => ({ ...prev, type: value, roleId: "" }))
                     }>
                       <SelectTrigger data-testid="select-new-user-type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="customer">Customer</SelectItem>
                         <SelectItem value="admin">Admin User</SelectItem>
+                        <SelectItem value="customer">Customer</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -298,6 +542,25 @@ export function UserManagement() {
                       onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
                       data-testid="input-new-user-password"
                     />
+                  </div>
+
+                  <div>
+                    <Label>Assign Role (Optional)</Label>
+                    <Select 
+                      value={newUserData.roleId} 
+                      onValueChange={(value) => setNewUserData(prev => ({ ...prev, roleId: value }))}
+                    >
+                      <SelectTrigger data-testid="select-new-user-role">
+                        <SelectValue placeholder="Choose a role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roles.map((role) => (
+                          <SelectItem key={role.id} value={role.id}>
+                            {role.name} - {role.description}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <Button 
@@ -422,11 +685,25 @@ export function UserManagement() {
                 <div key={role.id} className="p-4 border rounded-lg" data-testid={`role-card-${role.id}`}>
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium">{role.name}</h4>
-                    {role.isSystemRole && (
-                      <Badge variant="secondary" data-testid={`badge-system-role-${role.id}`}>
-                        System
-                      </Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {role.isSystemRole && (
+                        <Badge variant="secondary" data-testid={`badge-system-role-${role.id}`}>
+                          System
+                        </Badge>
+                      )}
+                      {!role.isSystemRole && (
+                        <PermissionGuard permission={PERMISSIONS.ROLE_MANAGE}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditRole(role)}
+                            data-testid={`button-edit-role-${role.id}`}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </PermissionGuard>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm text-muted-foreground">{role.description}</p>
                 </div>

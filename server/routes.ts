@@ -119,6 +119,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new role
+  app.post("/api/rbac/roles", requireAuth, async (req, res) => {
+    try {
+      const roleData = z.object({
+        name: z.string(),
+        description: z.string(),
+        isSystemRole: z.boolean().default(false),
+      }).parse(req.body);
+
+      const role = await storage.createRole(roleData);
+      res.json(role);
+    } catch (error) {
+      console.error("Error creating role:", error);
+      res.status(500).json({ message: "Failed to create role" });
+    }
+  });
+
+  // Update role
+  app.put("/api/rbac/roles/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const roleData = z.object({
+        name: z.string().optional(),
+        description: z.string().optional(),
+      }).parse(req.body);
+
+      const role = await storage.updateRole(id, roleData);
+      res.json(role);
+    } catch (error) {
+      console.error("Error updating role:", error);
+      res.status(500).json({ message: "Failed to update role" });
+    }
+  });
+
+  // Get role permissions
+  app.get("/api/rbac/roles/:id/permissions", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const permissions = await storage.getRolePermissions(id);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching role permissions:", error);
+      res.status(500).json({ message: "Failed to fetch role permissions" });
+    }
+  });
+
+  // Assign permission to role
+  app.post("/api/rbac/assign-role-permission", requireAuth, async (req, res) => {
+    try {
+      const { roleId, permissionId } = req.body;
+      await storage.assignPermissionToRole(roleId, permissionId);
+      res.json({ message: "Permission assigned to role successfully" });
+    } catch (error) {
+      console.error("Error assigning permission to role:", error);
+      res.status(500).json({ message: "Failed to assign permission to role" });
+    }
+  });
+
+  // Remove permission from role
+  app.delete("/api/rbac/remove-role-permission", requireAuth, async (req, res) => {
+    try {
+      const { roleId, permissionId } = req.body;
+      await storage.removePermissionFromRole(roleId, permissionId);
+      res.json({ message: "Permission removed from role successfully" });
+    } catch (error) {
+      console.error("Error removing permission from role:", error);
+      res.status(500).json({ message: "Failed to remove permission from role" });
+    }
+  });
+
   // Role assignment endpoints
   app.post("/api/rbac/assign-user-role", requireAuth, async (req, res) => {
     try {
@@ -186,7 +256,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const permission = await storage.createPermission({
         code: permissionData.code,
-        name: permissionData.name,
         description: permissionData.description || permissionData.name,
       });
       res.json(permission);
