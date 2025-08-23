@@ -353,13 +353,27 @@ export function UserManagement() {
     createRoleMutation.mutate(newRoleData);
   };
 
-  const handleEditRole = (role: Role) => {
+  const handleEditRole = async (role: Role) => {
     setEditingRole(role);
-    setNewRoleData({
-      name: role.name,
-      description: role.description,
-      permissions: [], // Will be loaded from API
-    });
+    
+    try {
+      // Load current permissions for this role
+      const currentPermissions = await apiRequest(`/api/rbac/roles/${role.id}/permissions`, 'GET') as any[];
+      
+      setNewRoleData({
+        name: role.name,
+        description: role.description,
+        permissions: currentPermissions.map(p => p.id),
+      });
+    } catch (error) {
+      console.error('Failed to load role permissions:', error);
+      setNewRoleData({
+        name: role.name,
+        description: role.description,
+        permissions: [],
+      });
+    }
+    
     setShowCreateRoleDialog(true);
   };
 
@@ -378,31 +392,22 @@ export function UserManagement() {
       title: "Agreements",
       icon: "📄",
       permissions: [
-        { code: "agreement.create", name: "Create Agreements", defaultFor: [] },
-        { code: "agreement.notarize", name: "Upload Notarized Agreements", defaultFor: [] },
-        {
-          code: "agreement.view",
-          name: "View Agreements",
-          subPermissions: [
-            { code: "agreement.view.own", name: "View Own Agreements", isDefault: true },
-            { code: "agreement.view.all", name: "View All Agreements" }
-          ]
+        { code: "agreement.create", name: "Create Agreements" },
+        { code: "agreement.notarize", name: "Upload Notarized Agreements" },
+        { 
+          code: "agreement.view.all", 
+          name: "View All Agreements", 
+          defaultFor: ["agreement.view.own"]
         },
-        {
-          code: "agreement.edit",
-          name: "Edit Agreements",
-          subPermissions: [
-            { code: "agreement.edit.own", name: "Edit Own Agreements", isDefault: true },
-            { code: "agreement.edit.all", name: "Edit All Agreements" }
-          ]
+        { 
+          code: "agreement.edit.all", 
+          name: "Edit All Agreements", 
+          defaultFor: ["agreement.edit.own"]
         },
-        {
-          code: "agreement.delete",
-          name: "Delete Agreements",
-          subPermissions: [
-            { code: "agreement.delete.own", name: "Delete Own Agreements", isDefault: true },
-            { code: "agreement.delete.all", name: "Delete All Agreements" }
-          ]
+        { 
+          code: "agreement.delete.all", 
+          name: "Delete All Agreements", 
+          defaultFor: ["agreement.delete.own"]
         }
       ]
     },
@@ -410,21 +415,15 @@ export function UserManagement() {
       title: "Downloads & Sharing",
       icon: "⬇️",
       permissions: [
-        {
-          code: "download.agreement",
-          name: "Download Agreements",
-          subPermissions: [
-            { code: "download.agreement.own", name: "Own", isDefault: true },
-            { code: "download.agreement.all", name: "All" }
-          ]
+        { 
+          code: "download.agreement.all", 
+          name: "Download All Agreements", 
+          defaultFor: ["download.agreement.own"]
         },
-        {
-          code: "share.agreement",
-          name: "Share Agreements",
-          subPermissions: [
-            { code: "share.agreement.own", name: "Own", isDefault: true },
-            { code: "share.agreement.all", name: "All" }
-          ]
+        { 
+          code: "share.agreement.all", 
+          name: "Share All Agreements", 
+          defaultFor: ["share.agreement.own"]
         }
       ]
     },
@@ -491,14 +490,15 @@ export function UserManagement() {
     const allPermissionsInCategory: string[] = [];
     
     category.permissions.forEach(permission => {
-      if (permission.subPermissions) {
-        permission.subPermissions.forEach(subPerm => {
-          const actualPermission = permissions.find(p => p.code === subPerm.code);
-          if (actualPermission) allPermissionsInCategory.push(actualPermission.id);
+      const actualPermission = permissions.find(p => p.code === permission.code);
+      if (actualPermission) allPermissionsInCategory.push(actualPermission.id);
+      
+      // If this permission has defaults, also include them when unchecking
+      if (!checked && permission.defaultFor) {
+        permission.defaultFor.forEach(defaultCode => {
+          const defaultPermission = permissions.find(p => p.code === defaultCode);
+          if (defaultPermission) allPermissionsInCategory.push(defaultPermission.id);
         });
-      } else {
-        const actualPermission = permissions.find(p => p.code === permission.code);
-        if (actualPermission) allPermissionsInCategory.push(actualPermission.id);
       }
     });
     
@@ -523,57 +523,39 @@ export function UserManagement() {
     if (!searchTerm) return true;
     return category.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
            category.permissions.some(perm => 
-             perm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-             (perm.subPermissions?.some(sub => sub.name.toLowerCase().includes(searchTerm.toLowerCase())))
+             perm.name.toLowerCase().includes(searchTerm.toLowerCase())
            );
   });
 
-  const handleDefaultPermissionLogic = (mainCode: string, subPermissions: any[]) => {
-    const allSelected = subPermissions.filter(sub => isPermissionSelected(sub.code));
-    const allPermission = subPermissions.find(sub => sub.code.includes('.all'));
-    const ownPermission = subPermissions.find(sub => sub.code.includes('.own'));
-    
-    // If nothing is selected and user selects "all", just select "all"
-    // If nothing is selected and user selects "own", just select "own"
-    // If "own" is selected and user selects "all", replace "own" with "all"
-    // If "all" is selected and user deselects it, auto-select "own"
-    return { allSelected, allPermission, ownPermission };
-  };
+  const handleSmartPermissionToggle = (permissionCode: string, checked: boolean) => {
+    const permission = permissions.find(p => p.code === permissionCode);
+    if (!permission) return;
 
-  const handleSubPermissionToggle = (mainCode: string, subPermissions: any[], targetCode: string, checked: boolean) => {
-    const { allPermission, ownPermission } = handleDefaultPermissionLogic(mainCode, subPermissions);
-    
+    const permissionConfig = Object.values(permissionCategories)
+      .flatMap(cat => cat.permissions)
+      .find(p => p.code === permissionCode);
+
     if (checked) {
-      if (targetCode.includes('.all')) {
-        // Selecting "all" - remove "own" if present and add "all"
-        const ownPerm = getPermissionById(ownPermission?.code);
-        setNewRoleData(prev => ({
-          ...prev,
-          permissions: [
-            ...prev.permissions.filter(id => id !== ownPerm?.id),
-            getPermissionById(targetCode)?.id
-          ].filter(Boolean) as string[]
-        }));
-      } else {
-        // Selecting "own" - just add it
-        handlePermissionToggle(getPermissionById(targetCode)?.id || '', true);
-      }
+      // User selected this permission - give them the "all" version
+      handlePermissionToggle(permission.id, true);
     } else {
-      if (targetCode.includes('.all')) {
-        // Deselecting "all" - remove it and auto-select "own"
-        const allPerm = getPermissionById(targetCode);
-        const ownPerm = getPermissionById(ownPermission?.code);
-        setNewRoleData(prev => ({
-          ...prev,
-          permissions: [
-            ...prev.permissions.filter(id => id !== allPerm?.id),
-            ownPerm?.id
-          ].filter(Boolean) as string[]
-        }));
-      } else {
-        // Deselecting "own" - just remove it
-        handlePermissionToggle(getPermissionById(targetCode)?.id || '', false);
-      }
+      // User deselected this permission
+      // Remove the "all" permission and add the default "own" permissions
+      setNewRoleData(prev => {
+        let newPermissions = prev.permissions.filter(id => id !== permission.id);
+        
+        // Add default "own" permissions if they exist
+        if (permissionConfig?.defaultFor) {
+          permissionConfig.defaultFor.forEach(defaultCode => {
+            const defaultPermission = permissions.find(p => p.code === defaultCode);
+            if (defaultPermission && !newPermissions.includes(defaultPermission.id)) {
+              newPermissions.push(defaultPermission.id);
+            }
+          });
+        }
+        
+        return { ...prev, permissions: newPermissions };
+      });
     }
   };
 
@@ -659,11 +641,9 @@ export function UserManagement() {
                       {filteredCategories.map(([categoryKey, category]) => {
                         const isExpanded = expandedCategories.includes(categoryKey);
                         const categoryPermissionIds = category.permissions.flatMap(perm => {
-                          if (perm.subPermissions) {
-                            return perm.subPermissions.map(sub => getPermissionById(sub.code)?.id).filter(Boolean);
-                          } else {
-                            return [getPermissionById(perm.code!)?.id].filter(Boolean);
-                          }
+                          const mainPerm = getPermissionById(perm.code!)?.id;
+                          const defaultPerms = perm.defaultFor?.map(code => getPermissionById(code)?.id).filter(Boolean) || [];
+                          return [mainPerm, ...defaultPerms].filter(Boolean);
                         }) as string[];
                         const selectedInCategory = categoryPermissionIds.filter(id => newRoleData.permissions.includes(id)).length;
                         const allInCategory = categoryPermissionIds.length;
@@ -695,62 +675,36 @@ export function UserManagement() {
                             
                             <CollapsibleContent className="ml-4 mt-2 space-y-2">
                               {category.permissions.map((permission, permIndex) => {
-                                if (permission.subPermissions) {
-                                  // Handle grouped permissions (own vs all)
-                                  return (
-                                    <div key={`${categoryKey}-${permIndex}`} className="border-l-2 border-muted pl-4 space-y-2">
-                                      <div className="font-medium text-sm text-muted-foreground">{permission.name}:</div>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        {permission.subPermissions.map((subPerm) => {
-                                          const actualPermission = getPermissionById(subPerm.code);
-                                          if (!actualPermission) return null;
-                                          
-                                          return (
-                                            <div key={subPerm.code} className="flex items-center space-x-2" 
-                                                 title={`Permission Code: ${subPerm.code}`}
-                                                 data-testid={`permission-${subPerm.code}`}>
-                                              <Checkbox
-                                                id={actualPermission.id}
-                                                checked={isPermissionSelected(subPerm.code)}
-                                                onCheckedChange={(checked) => 
-                                                  handleSubPermissionToggle(permission.code!, permission.subPermissions!, subPerm.code, checked as boolean)
-                                                }
-                                                data-testid={`checkbox-permission-${subPerm.code}`}
-                                              />
-                                              <Label htmlFor={actualPermission.id} className="text-sm cursor-pointer flex items-center gap-1">
-                                                {subPerm.name}
-                                                {subPerm.isDefault && <Badge variant="outline" className="text-xs">default</Badge>}
-                                              </Label>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  );
-                                } else {
-                                  // Handle single permissions
-                                  const actualPermission = getPermissionById(permission.code!);
-                                  if (!actualPermission) return null;
-                                  
-                                  return (
-                                    <div key={permission.code} className="flex items-center space-x-3 p-2 hover:bg-muted/30 rounded" 
-                                         title={`Permission Code: ${permission.code}`}
-                                         data-testid={`permission-${permission.code}`}>
-                                      <Checkbox
-                                        id={actualPermission.id}
-                                        checked={newRoleData.permissions.includes(actualPermission.id)}
-                                        onCheckedChange={(checked) => handlePermissionToggle(actualPermission.id, checked as boolean)}
-                                        data-testid={`checkbox-permission-${permission.code}`}
-                                      />
-                                      <div className="flex-1">
-                                        <Label htmlFor={actualPermission.id} className="text-sm font-medium cursor-pointer">
-                                          {permission.name}
-                                        </Label>
+                                const actualPermission = getPermissionById(permission.code!);
+                                if (!actualPermission) return null;
+                                
+                                const isSelected = newRoleData.permissions.includes(actualPermission.id);
+                                
+                                return (
+                                  <div key={permission.code} className="flex items-center space-x-3 p-2 hover:bg-muted/30 rounded" 
+                                       title={`Permission Code: ${permission.code}`}
+                                       data-testid={`permission-${permission.code}`}>
+                                    <Checkbox
+                                      id={actualPermission.id}
+                                      checked={isSelected}
+                                      onCheckedChange={(checked) => handleSmartPermissionToggle(permission.code!, checked as boolean)}
+                                      data-testid={`checkbox-permission-${permission.code}`}
+                                    />
+                                    <div className="flex-1">
+                                      <Label htmlFor={actualPermission.id} className="text-sm font-medium cursor-pointer">
+                                        {permission.name}
+                                      </Label>
+                                      <div className="flex items-center gap-2">
                                         <p className="text-xs text-muted-foreground">{actualPermission.description}</p>
+                                        {permission.defaultFor && (
+                                          <Badge variant="outline" className="text-xs">
+                                            {isSelected ? "All Access" : `Own Access (${permission.defaultFor.map(code => code.split('.').pop()).join(', ')})`}
+                                          </Badge>
+                                        )}
                                       </div>
                                     </div>
-                                  );
-                                }
+                                  </div>
+                                );
                               })}
                             </CollapsibleContent>
                           </Collapsible>
