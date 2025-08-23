@@ -59,9 +59,11 @@ export function RoleManagement() {
   }) as { data: User[]; isLoading: boolean };
 
   // Fetch customers
-  const { data: customers = [], isLoading: customersLoading } = useQuery({
+  const { data: customersData, isLoading: customersLoading } = useQuery({
     queryKey: ['/api/customers'],
-  }) as { data: Customer[]; isLoading: boolean };
+  }) as { data: { customers: Customer[] } | undefined; isLoading: boolean };
+  
+  const customers = customersData?.customers || [];
 
   // Fetch permissions
   const { data: permissions = [], isLoading: permissionsLoading } = useQuery({
