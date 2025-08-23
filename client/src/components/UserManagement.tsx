@@ -69,6 +69,30 @@ interface PermissionCategory {
   permissions: PermissionGroup[];
 }
 
+interface AuditLog {
+  id: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  changedBy: string;
+  timestamp: string;
+  diff: any;
+  metadata: any;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+interface RoleTemplate {
+  id: string;
+  name: string;
+  description: string;
+  permissions: string[] | "all";
+}
+
 export function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<string>("");
@@ -92,6 +116,16 @@ export function UserManagement() {
   });
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<string[]>(["agreements", "customers", "users", "roles", "templates", "downloads", "system"]);
+  
+  // Enterprise features state
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [showCloneDialog, setShowCloneDialog] = useState(false);
+  const [cloneSourceRole, setCloneSourceRole] = useState<Role | null>(null);
+  const [showAuditDialog, setShowAuditDialog] = useState(false);
+  const [selectedRoleForAudit, setSelectedRoleForAudit] = useState<string>("");
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -113,6 +147,17 @@ export function UserManagement() {
   const { data: permissions = [], isLoading: permissionsLoading } = useQuery({
     queryKey: ['/api/rbac/permissions'],
   }) as { data: Permission[]; isLoading: boolean };
+
+  // Enterprise features queries
+  const { data: auditLogs = [], isLoading: auditLogsLoading } = useQuery({
+    queryKey: ['/api/rbac/audit-logs'],
+    enabled: showAuditDialog,
+  }) as { data: { logs: AuditLog[]; total: number }; isLoading: boolean };
+
+  const { data: roleTemplates = [], isLoading: templatesLoading } = useQuery({
+    queryKey: ['/api/rbac/role-templates'],
+    enabled: showTemplateDialog,
+  }) as { data: RoleTemplate[]; isLoading: boolean };
 
   // Create new role mutation
   const createRoleMutation = useMutation({
@@ -250,6 +295,64 @@ export function UserManagement() {
       toast({ 
         title: "Error", 
         description: error.message || "Failed to create user",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Role cloning mutation
+  const cloneRoleMutation = useMutation({
+    mutationFn: async ({ sourceRoleId, name, description }: { sourceRoleId: string; name: string; description?: string }) => {
+      return await apiRequest(`/api/rbac/roles/${sourceRoleId}/clone`, 'POST', {
+        name,
+        description,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Role cloned successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/rbac/roles'] });
+      setShowCloneDialog(false);
+      setCloneSourceRole(null);
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to clone role",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Create role from template mutation
+  const createFromTemplateMutation = useMutation({
+    mutationFn: async ({ template, name, description }: { template: RoleTemplate; name: string; description?: string }) => {
+      let permissionIds: string[] = [];
+      
+      if (template.permissions === "all") {
+        permissionIds = permissions.map(p => p.id);
+      } else {
+        // Map permission codes to IDs
+        permissionIds = permissions
+          .filter(p => (template.permissions as string[]).includes(p.code))
+          .map(p => p.id);
+      }
+
+      return await apiRequest('/api/rbac/roles', 'POST', {
+        name,
+        description: description || template.description,
+        permissions: permissionIds,
+        isSystemRole: false,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Role created from template successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/rbac/roles'] });
+      setShowTemplateDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to create role from template",
         variant: "destructive" 
       });
     },
@@ -581,6 +684,15 @@ export function UserManagement() {
           </div>
           
           <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setShowTemplateDialog(true)}
+              data-testid="button-create-from-template"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              From Template
+            </Button>
+            
             <Dialog open={showCreateRoleDialog} onOpenChange={(open) => {
               setShowCreateRoleDialog(open);
               if (!open) resetRoleForm();
@@ -979,18 +1091,47 @@ export function UserManagement() {
                           System
                         </Badge>
                       )}
-                      {!role.isSystemRole && (
-                        <PermissionGuard permission={PERMISSIONS.ROLE_MANAGE}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditRole(role)}
-                            data-testid={`button-edit-role-${role.id}`}
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </PermissionGuard>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRoleForAudit(role.id);
+                            setShowAuditDialog(true);
+                          }}
+                          title="View Audit History"
+                          data-testid={`button-audit-role-${role.id}`}
+                        >
+                          <Clock className="h-3 w-3" />
+                        </Button>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setCloneSourceRole(role);
+                            setShowCloneDialog(true);
+                          }}
+                          title="Clone Role"
+                          data-testid={`button-clone-role-${role.id}`}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+
+                        {!role.isSystemRole && (
+                          <PermissionGuard permission={PERMISSIONS.ROLE_MANAGE}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditRole(role)}
+                              title="Edit Role"
+                              data-testid={`button-edit-role-${role.id}`}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </PermissionGuard>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">{role.description}</p>
@@ -1128,6 +1269,178 @@ export function UserManagement() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Enterprise Feature Dialogs */}
+        
+        {/* Audit Logs Dialog */}
+        <Dialog open={showAuditDialog} onOpenChange={setShowAuditDialog}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" data-testid="dialog-audit-logs">
+            <DialogHeader>
+              <DialogTitle>Audit History</DialogTitle>
+              <DialogDescription>
+                Track all changes made to roles and permissions
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {auditLogsLoading ? (
+                <div className="text-center py-4">Loading audit logs...</div>
+              ) : auditLogs?.logs?.length > 0 ? (
+                <div className="space-y-2">
+                  {auditLogs.logs.map((log) => (
+                    <div key={log.id} className="p-4 border rounded-lg" data-testid={`audit-log-${log.id}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={log.action.includes('created') ? 'default' : log.action.includes('deleted') ? 'destructive' : 'secondary'}>
+                            {log.action}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">
+                            {format(new Date(log.timestamp), 'MMM dd, yyyy HH:mm:ss')}
+                          </span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          by {log.user?.email || 'Unknown User'}
+                        </span>
+                      </div>
+                      
+                      {log.diff && (
+                        <div className="text-xs bg-muted p-2 rounded font-mono">
+                          <pre>{JSON.stringify(log.diff, null, 2)}</pre>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  No audit logs found
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Role Cloning Dialog */}
+        <Dialog open={showCloneDialog} onOpenChange={setShowCloneDialog}>
+          <DialogContent data-testid="dialog-clone-role">
+            <DialogHeader>
+              <DialogTitle>Clone Role</DialogTitle>
+              <DialogDescription>
+                Create a new role based on {cloneSourceRole?.name}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div>
+                <Label>Role Name</Label>
+                <Input
+                  placeholder="Enter new role name"
+                  value={newRoleData.name}
+                  onChange={(e) => setNewRoleData(prev => ({ ...prev, name: e.target.value }))}
+                  data-testid="input-clone-role-name"
+                />
+              </div>
+              
+              <div>
+                <Label>Description (Optional)</Label>
+                <Textarea
+                  placeholder="Enter role description"
+                  value={newRoleData.description}
+                  onChange={(e) => setNewRoleData(prev => ({ ...prev, description: e.target.value }))}
+                  data-testid="input-clone-role-description"
+                />
+              </div>
+              
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  onClick={() => {
+                    if (cloneSourceRole && newRoleData.name) {
+                      cloneRoleMutation.mutate({
+                        sourceRoleId: cloneSourceRole.id,
+                        name: newRoleData.name,
+                        description: newRoleData.description
+                      });
+                    }
+                  }}
+                  disabled={!newRoleData.name || cloneRoleMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-confirm-clone"
+                >
+                  {cloneRoleMutation.isPending ? "Cloning..." : "Clone Role"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowCloneDialog(false);
+                    setNewRoleData({ name: "", description: "", permissions: [] });
+                  }}
+                  data-testid="button-cancel-clone"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Role Templates Dialog */}
+        <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+          <DialogContent className="max-w-4xl" data-testid="dialog-role-templates">
+            <DialogHeader>
+              <DialogTitle>Create Role from Template</DialogTitle>
+              <DialogDescription>
+                Choose a pre-configured role template to get started quickly
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {templatesLoading ? (
+                <div className="text-center py-4">Loading templates...</div>
+              ) : (
+                <div className="grid gap-4">
+                  {roleTemplates.map((template) => (
+                    <div key={template.id} className="p-4 border rounded-lg hover:bg-muted/50" data-testid={`template-${template.id}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium">{template.name}</h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const roleName = prompt(`Enter name for new role based on "${template.name}":`);
+                            if (roleName) {
+                              createFromTemplateMutation.mutate({
+                                template,
+                                name: roleName,
+                                description: template.description
+                              });
+                            }
+                          }}
+                          disabled={createFromTemplateMutation.isPending}
+                          data-testid={`button-use-template-${template.id}`}
+                        >
+                          Use Template
+                        </Button>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
+                      
+                      <div className="text-xs">
+                        <span className="font-medium">Permissions: </span>
+                        {template.permissions === "all" ? (
+                          <Badge variant="default">All Permissions</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {Array.isArray(template.permissions) ? template.permissions.length : 0} permissions
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </PermissionGuard>
   );

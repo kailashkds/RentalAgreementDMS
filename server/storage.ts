@@ -12,6 +12,7 @@ import {
   rolePermissions,
   userRoles,
   customerRoles,
+  auditLogs,
 
   adminUsers,
   type User,
@@ -43,6 +44,8 @@ import {
   type RoleWithPermissions,
   type UserWithRoles,
   type CustomerWithRoles,
+  type AuditLog,
+  type InsertAuditLog,
 
   type AdminUser,
   type InsertAdminUser,
@@ -173,6 +176,17 @@ export interface IStorage {
   customerHasPermission(customerId: string, permissionCode: string): Promise<boolean>;
   getUserPermissions(userId: string): Promise<string[]>;
   getCustomerPermissions(customerId: string): Promise<string[]>;
+
+  // Audit logging operations
+  createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog>;
+  getAuditLogs(filters?: { 
+    action?: string; 
+    resourceId?: string; 
+    changedBy?: string; 
+    limit?: number; 
+    offset?: number; 
+  }): Promise<{ logs: AuditLog[]; total: number; }>;
+  getAuditLogsForRole(roleId: string): Promise<AuditLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -723,7 +737,7 @@ export class DatabaseStorage implements IStorage {
         propertyId = property.id;
       }
 
-      const [agreement] = await db
+      const result = await db
         .insert(agreements)
         .values({
           ...processedData,
@@ -731,6 +745,8 @@ export class DatabaseStorage implements IStorage {
           propertyId,
         })
         .returning();
+      
+      const agreement = Array.isArray(result) ? result[0] : result;
         
       if (!agreement) {
         throw new Error('Failed to create agreement - no data returned');
@@ -1345,6 +1361,90 @@ export class DatabaseStorage implements IStorage {
       .where(eq(customerRoles.customerId, customerId));
 
     return result.map(row => row.code);
+  }
+
+  // Audit logging operations implementation
+  async createAuditLog(auditLogData: InsertAuditLog): Promise<AuditLog> {
+    const [auditLog] = await db.insert(auditLogs).values(auditLogData).returning();
+    return auditLog;
+  }
+
+  async getAuditLogs(filters?: { 
+    action?: string; 
+    resourceId?: string; 
+    changedBy?: string; 
+    limit?: number; 
+    offset?: number; 
+  }): Promise<{ logs: AuditLog[]; total: number; }> {
+    const { action, resourceId, changedBy, limit = 50, offset = 0 } = filters || {};
+    
+    let query = db
+      .select({
+        auditLog: auditLogs,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+        },
+      })
+      .from(auditLogs)
+      .leftJoin(users, eq(auditLogs.changedBy, users.id));
+
+    const conditions = [];
+    if (action) conditions.push(eq(auditLogs.action, action));
+    if (resourceId) conditions.push(eq(auditLogs.resourceId, resourceId));
+    if (changedBy) conditions.push(eq(auditLogs.changedBy, changedBy));
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    // Get total count
+    let countQuery = db
+      .select({ total: count() })
+      .from(auditLogs);
+    
+    if (conditions.length > 0) {
+      countQuery = countQuery.where(and(...conditions));
+    }
+
+    const [{ total }] = await countQuery;
+
+    // Get paginated results
+    const results = await query
+      .orderBy(desc(auditLogs.timestamp))
+      .limit(limit)
+      .offset(offset);
+
+    const logs = results.map(row => ({
+      ...row.auditLog,
+      user: row.user,
+    })) as AuditLog[];
+
+    return { logs, total };
+  }
+
+  async getAuditLogsForRole(roleId: string): Promise<AuditLog[]> {
+    const results = await db
+      .select({
+        auditLog: auditLogs,
+        user: {
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+        },
+      })
+      .from(auditLogs)
+      .leftJoin(users, eq(auditLogs.changedBy, users.id))
+      .where(eq(auditLogs.resourceId, roleId))
+      .orderBy(desc(auditLogs.timestamp));
+
+    return results.map(row => ({
+      ...row.auditLog,
+      user: row.user,
+    })) as AuditLog[];
   }
 }
 

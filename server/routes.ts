@@ -120,15 +120,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new role
-  app.post("/api/rbac/roles", requireAuth, async (req, res) => {
+  app.post("/api/rbac/roles", requireAuth, async (req: any, res) => {
     try {
-      const roleData = z.object({
-        name: z.string(),
-        description: z.string(),
-        isSystemRole: z.boolean().default(false),
-      }).parse(req.body);
+      const { name, description, permissions: permissionIds = [], isSystemRole = false } = req.body;
 
-      const role = await storage.createRole(roleData);
+      // Create the role
+      const role = await storage.createRole({ name, description, isSystemRole });
+      
+      // Assign permissions to the role
+      for (const permissionId of permissionIds) {
+        await storage.assignPermissionToRole(role.id, permissionId);
+      }
+
+      // Create audit log
+      await storage.createAuditLog({
+        action: "role.created",
+        resourceType: "role",
+        resourceId: role.id,
+        changedBy: req.user.claims.sub,
+        diff: {
+          created: {
+            name,
+            description,
+            permissions: permissionIds,
+            isSystemRole
+          }
+        },
+        metadata: {
+          userAgent: req.headers['user-agent'],
+          ip: req.ip
+        }
+      });
+
       res.json(role);
     } catch (error) {
       console.error("Error creating role:", error);
@@ -231,6 +254,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error removing role from customer:", error);
       res.status(500).json({ message: "Failed to remove role from customer" });
+    }
+  });
+
+  // Audit Logs API
+  app.get("/api/rbac/audit-logs", requireAuth, async (req: any, res) => {
+    try {
+      const { action, resourceId, changedBy, limit = 50, offset = 0 } = req.query;
+      
+      const result = await storage.getAuditLogs({
+        action: action as string,
+        resourceId: resourceId as string,
+        changedBy: changedBy as string,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string)
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+      res.status(500).json({ message: "Failed to fetch audit logs" });
+    }
+  });
+
+  app.get("/api/rbac/roles/:id/audit-logs", requireAuth, async (req, res) => {
+    try {
+      const logs = await storage.getAuditLogsForRole(req.params.id);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching role audit logs:", error);
+      res.status(500).json({ message: "Failed to fetch role audit logs" });
+    }
+  });
+
+  // Role Cloning API
+  app.post("/api/rbac/roles/:id/clone", requireAuth, async (req: any, res) => {
+    try {
+      const { name, description } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Name is required for cloned role" });
+      }
+
+      // Get source role with permissions
+      const sourceRole = await storage.getRole(req.params.id);
+      if (!sourceRole) {
+        return res.status(404).json({ error: "Source role not found" });
+      }
+
+      // Get permissions of source role
+      const sourcePermissions = await storage.getRolePermissions(req.params.id);
+      const permissionIds = sourcePermissions.map(p => p.id);
+
+      // Create new role
+      const newRole = await storage.createRole({
+        name,
+        description: description || `Cloned from ${sourceRole.name}`,
+        isSystemRole: false
+      });
+
+      // Assign same permissions
+      for (const permissionId of permissionIds) {
+        await storage.assignPermissionToRole(newRole.id, permissionId);
+      }
+
+      // Create audit log
+      await storage.createAuditLog({
+        action: "role.created",
+        resourceType: "role",
+        resourceId: newRole.id,
+        changedBy: req.user.claims.sub,
+        diff: {
+          created: {
+            name,
+            description,
+            permissions: permissionIds,
+            clonedFrom: sourceRole.id
+          }
+        },
+        metadata: {
+          userAgent: req.headers['user-agent'],
+          ip: req.ip
+        }
+      });
+
+      res.json({ role: newRole, permissions: sourcePermissions });
+    } catch (error) {
+      console.error("Error cloning role:", error);
+      res.status(500).json({ error: "Failed to clone role" });
+    }
+  });
+
+  // Role Templates API
+  app.get("/api/rbac/role-templates", requireAuth, async (req, res) => {
+    try {
+      // Return predefined role templates
+      const templates = [
+        {
+          id: "customer-template",
+          name: "Customer Template",
+          description: "Basic customer access with own-only permissions",
+          permissions: ["agreement.view.own", "download.agreement.own", "dashboard.view"]
+        },
+        {
+          id: "staff-template", 
+          name: "Staff Template",
+          description: "Staff access with agreement management and customer view",
+          permissions: [
+            "agreement.view.all", "agreement.create", "agreement.edit.own", "agreement.notarize",
+            "download.agreement.all", "share.agreement.all", "customer.view.all",
+            "template.create", "template.edit", "dashboard.view"
+          ]
+        },
+        {
+          id: "admin-template",
+          name: "Admin Template", 
+          description: "Full administrative access to all resources",
+          permissions: "all"
+        }
+      ];
+      
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching role templates:", error);
+      res.status(500).json({ message: "Failed to fetch role templates" });
     }
   });
 

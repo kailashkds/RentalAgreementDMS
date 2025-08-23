@@ -59,6 +59,24 @@ export const rolePermissions = pgTable("role_permissions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Audit logging table
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  action: varchar("action").notNull(), // "role.created", "role.updated", "role.deleted"
+  resourceType: varchar("resource_type").notNull().default("role"),
+  resourceId: varchar("resource_id").notNull(), // roleId
+  changedBy: varchar("changed_by").notNull().references(() => users.id),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  diff: jsonb("diff"), // JSON snapshot of changes
+  metadata: jsonb("metadata"), // Additional context
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_audit_logs_action").on(table.action),
+  index("idx_audit_logs_resource").on(table.resourceType, table.resourceId),
+  index("idx_audit_logs_changed_by").on(table.changedBy),
+  index("idx_audit_logs_timestamp").on(table.timestamp),
+]);
+
 export const userRoles = pgTable("user_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => adminUsers.id, { onDelete: 'cascade' }).notNull(),
@@ -565,3 +583,7 @@ export interface AgreementDocuments {
   tenantPan?: string;
   signedAgreement?: string;
 }
+
+// Audit Log types
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
