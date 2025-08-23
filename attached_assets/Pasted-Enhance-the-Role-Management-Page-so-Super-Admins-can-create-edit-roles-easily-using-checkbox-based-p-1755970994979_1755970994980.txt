@@ -1,0 +1,131 @@
+Enhance the Role Management Page so Super Admins can create/edit roles easily using checkbox-based permission selection.
+
+1. Page Layout
+
+Add a form for Creating / Editing Roles:
+
+Input: Role Name (text field)
+
+Input: Role Description (textarea)
+
+Section: Permission Groups (organized by category)
+
+2. Permission Categories with Checkboxes
+
+Organize permissions like this (each group collapsible):
+
+Agreements
+
+ Create Agreements → agreement.create
+
+ Upload Notarized Agreements → agreement.upload_notarized
+
+View Agreements:
+
+ View Own Agreements (default if nothing selected) → agreement.view.own
+
+ View All Agreements → agreement.view.all
+
+Edit Agreements:
+
+ Edit Own Agreements (default if nothing selected) → agreement.edit.own
+
+ Edit All Agreements → agreement.edit.all
+
+Delete Agreements:
+
+ Delete Own Agreements (default if nothing selected) → agreement.delete.own
+
+ Delete All Agreements → agreement.delete.all
+
+Downloads & Sharing
+
+Download Agreements:
+
+ Own → download.agreement.own
+
+ All → download.agreement.all
+
+Share Agreements:
+
+ Own → share.agreement.own
+
+ All → share.agreement.all
+
+Customers
+
+ Create Customers → customer.create
+
+ View All Customers → customer.view.all
+
+ Edit All Customers → customer.edit.all
+
+ Delete All Customers → customer.delete.all
+
+Users
+
+ Create Users → user.create
+
+ View All Users → user.view.all
+
+ Edit All Users → user.edit.all
+
+ Delete All Users → user.delete.all
+
+ Manage Users (assign/remove roles, reset passwords) → user.manage
+
+Roles & Permissions
+
+ Manage Roles & Permissions → role.manage
+
+ Assign Roles to Users → role.assign
+
+Templates
+
+ Create Templates → template.create
+
+ Edit Templates → template.edit
+
+ Delete Templates → template.delete
+
+ Manage Templates (import/export/advanced ops) → template.manage
+
+System
+
+ Dashboard Access → dashboard.view
+
+ Super Admin (bypass all checks) → system.admin
+
+3. Default Behavior
+
+If “View All Agreements” is NOT selected → role only gets agreement.view.own.
+
+If “Edit All Agreements” is NOT selected → role only gets agreement.edit.own.
+
+Same applies for Delete, Download, Share (defaults to own).
+
+For Users & Customers → no "own" vs "all", only all/global access checkboxes.
+
+4. Role Creation Workflow
+
+Admin enters Role Name + Description.
+
+Selects checkboxes for desired permissions.
+
+Clicks Save Role.
+
+Role is stored in DB with the selected permission codes.
+
+5. UI/UX Enhancements
+
+Add Select All toggle per category.
+
+Add Search Permissions box at the top (filter checkboxes live).
+
+Show permission codes in tooltip when hovering over labels (so devs know the exact code).
+
+👉 This makes it simple & safe:
+
+Super Admin can create a new role in minutes.
+
+Defaults prevent “blind spots” (e.g. always at least "own" access if "all" is not selected).

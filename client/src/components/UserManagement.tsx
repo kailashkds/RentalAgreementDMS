@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "./PermissionGuard";
 import { PERMISSIONS } from "@/hooks/usePermissions";
 import { apiRequest } from "@/lib/queryClient";
-import { Users, UserPlus, Shield, Settings, Trash2, Edit, Plus, Save } from "lucide-react";
+import { Users, UserPlus, Shield, Settings, Trash2, Edit, Plus, Save, ChevronDown, ChevronRight, Search, CheckSquare, Square } from "lucide-react";
 
 interface Role {
   id: string;
@@ -49,6 +50,25 @@ interface Permission {
   description: string;
 }
 
+interface SubPermission {
+  code: string;
+  name: string;
+  isDefault?: boolean;
+}
+
+interface PermissionGroup {
+  code?: string;
+  name: string;
+  defaultFor?: string[];
+  subPermissions?: SubPermission[];
+}
+
+interface PermissionCategory {
+  title: string;
+  icon: string;
+  permissions: PermissionGroup[];
+}
+
 export function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<string>("");
@@ -70,6 +90,8 @@ export function UserManagement() {
     description: "",
     permissions: [] as string[],
   });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(["agreements", "customers", "users", "roles", "templates", "downloads", "system"]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -350,9 +372,216 @@ export function UserManagement() {
     }));
   };
 
+  // Permission categories and organization
+  const permissionCategories: Record<string, PermissionCategory> = {
+    agreements: {
+      title: "Agreements",
+      icon: "📄",
+      permissions: [
+        { code: "agreement.create", name: "Create Agreements", defaultFor: [] },
+        { code: "agreement.notarize", name: "Upload Notarized Agreements", defaultFor: [] },
+        {
+          code: "agreement.view",
+          name: "View Agreements",
+          subPermissions: [
+            { code: "agreement.view.own", name: "View Own Agreements", isDefault: true },
+            { code: "agreement.view.all", name: "View All Agreements" }
+          ]
+        },
+        {
+          code: "agreement.edit",
+          name: "Edit Agreements",
+          subPermissions: [
+            { code: "agreement.edit.own", name: "Edit Own Agreements", isDefault: true },
+            { code: "agreement.edit.all", name: "Edit All Agreements" }
+          ]
+        },
+        {
+          code: "agreement.delete",
+          name: "Delete Agreements",
+          subPermissions: [
+            { code: "agreement.delete.own", name: "Delete Own Agreements", isDefault: true },
+            { code: "agreement.delete.all", name: "Delete All Agreements" }
+          ]
+        }
+      ]
+    },
+    downloads: {
+      title: "Downloads & Sharing",
+      icon: "⬇️",
+      permissions: [
+        {
+          code: "download.agreement",
+          name: "Download Agreements",
+          subPermissions: [
+            { code: "download.agreement.own", name: "Own", isDefault: true },
+            { code: "download.agreement.all", name: "All" }
+          ]
+        },
+        {
+          code: "share.agreement",
+          name: "Share Agreements",
+          subPermissions: [
+            { code: "share.agreement.own", name: "Own", isDefault: true },
+            { code: "share.agreement.all", name: "All" }
+          ]
+        }
+      ]
+    },
+    customers: {
+      title: "Customers",
+      icon: "👥",
+      permissions: [
+        { code: "customer.create", name: "Create Customers" },
+        { code: "customer.view.all", name: "View All Customers" },
+        { code: "customer.edit.all", name: "Edit All Customers" },
+        { code: "customer.delete.all", name: "Delete All Customers" },
+        { code: "customer.manage", name: "Manage Customers" }
+      ]
+    },
+    users: {
+      title: "Users",
+      icon: "👤",
+      permissions: [
+        { code: "user.create", name: "Create Users" },
+        { code: "user.view.all", name: "View All Users" },
+        { code: "user.edit.all", name: "Edit All Users" },
+        { code: "user.delete.all", name: "Delete All Users" },
+        { code: "user.manage", name: "Manage Users (assign/remove roles, reset passwords)" }
+      ]
+    },
+    roles: {
+      title: "Roles & Permissions",
+      icon: "🛡️",
+      permissions: [
+        { code: "role.manage", name: "Manage Roles & Permissions" },
+        { code: "role.assign", name: "Assign Roles to Users" }
+      ]
+    },
+    templates: {
+      title: "Templates",
+      icon: "📋",
+      permissions: [
+        { code: "template.create", name: "Create Templates" },
+        { code: "template.edit", name: "Edit Templates" },
+        { code: "template.delete", name: "Delete Templates" },
+        { code: "template.manage", name: "Manage Templates (import/export/advanced ops)" }
+      ]
+    },
+    system: {
+      title: "System",
+      icon: "⚙️",
+      permissions: [
+        { code: "dashboard.view", name: "Dashboard Access" },
+        { code: "system.admin", name: "Super Admin (bypass all checks)" }
+      ]
+    }
+  };
+
+  const toggleCategory = (categoryKey: string) => {
+    setExpandedCategories(prev => 
+      prev.includes(categoryKey) 
+        ? prev.filter(k => k !== categoryKey)
+        : [...prev, categoryKey]
+    );
+  };
+
+  const toggleCategoryPermissions = (categoryKey: string, checked: boolean) => {
+    const category = permissionCategories[categoryKey as keyof typeof permissionCategories];
+    const allPermissionsInCategory: string[] = [];
+    
+    category.permissions.forEach(permission => {
+      if (permission.subPermissions) {
+        permission.subPermissions.forEach(subPerm => {
+          const actualPermission = permissions.find(p => p.code === subPerm.code);
+          if (actualPermission) allPermissionsInCategory.push(actualPermission.id);
+        });
+      } else {
+        const actualPermission = permissions.find(p => p.code === permission.code);
+        if (actualPermission) allPermissionsInCategory.push(actualPermission.id);
+      }
+    });
+    
+    setNewRoleData(prev => ({
+      ...prev,
+      permissions: checked 
+        ? Array.from(new Set([...prev.permissions, ...allPermissionsInCategory]))
+        : prev.permissions.filter(id => !allPermissionsInCategory.includes(id))
+    }));
+  };
+
+  const getPermissionById = (code: string) => {
+    return permissions.find(p => p.code === code);
+  };
+
+  const isPermissionSelected = (permissionCode: string) => {
+    const permission = getPermissionById(permissionCode);
+    return permission ? newRoleData.permissions.includes(permission.id) : false;
+  };
+
+  const filteredCategories = Object.entries(permissionCategories).filter(([key, category]) => {
+    if (!searchTerm) return true;
+    return category.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           category.permissions.some(perm => 
+             perm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             (perm.subPermissions?.some(sub => sub.name.toLowerCase().includes(searchTerm.toLowerCase())))
+           );
+  });
+
+  const handleDefaultPermissionLogic = (mainCode: string, subPermissions: any[]) => {
+    const allSelected = subPermissions.filter(sub => isPermissionSelected(sub.code));
+    const allPermission = subPermissions.find(sub => sub.code.includes('.all'));
+    const ownPermission = subPermissions.find(sub => sub.code.includes('.own'));
+    
+    // If nothing is selected and user selects "all", just select "all"
+    // If nothing is selected and user selects "own", just select "own"
+    // If "own" is selected and user selects "all", replace "own" with "all"
+    // If "all" is selected and user deselects it, auto-select "own"
+    return { allSelected, allPermission, ownPermission };
+  };
+
+  const handleSubPermissionToggle = (mainCode: string, subPermissions: any[], targetCode: string, checked: boolean) => {
+    const { allPermission, ownPermission } = handleDefaultPermissionLogic(mainCode, subPermissions);
+    
+    if (checked) {
+      if (targetCode.includes('.all')) {
+        // Selecting "all" - remove "own" if present and add "all"
+        const ownPerm = getPermissionById(ownPermission?.code);
+        setNewRoleData(prev => ({
+          ...prev,
+          permissions: [
+            ...prev.permissions.filter(id => id !== ownPerm?.id),
+            getPermissionById(targetCode)?.id
+          ].filter(Boolean) as string[]
+        }));
+      } else {
+        // Selecting "own" - just add it
+        handlePermissionToggle(getPermissionById(targetCode)?.id || '', true);
+      }
+    } else {
+      if (targetCode.includes('.all')) {
+        // Deselecting "all" - remove it and auto-select "own"
+        const allPerm = getPermissionById(targetCode);
+        const ownPerm = getPermissionById(ownPermission?.code);
+        setNewRoleData(prev => ({
+          ...prev,
+          permissions: [
+            ...prev.permissions.filter(id => id !== allPerm?.id),
+            ownPerm?.id
+          ].filter(Boolean) as string[]
+        }));
+      } else {
+        // Deselecting "own" - just remove it
+        handlePermissionToggle(getPermissionById(targetCode)?.id || '', false);
+      }
+    }
+  };
+
   const resetRoleForm = () => {
     setNewRoleData({ name: "", description: "", permissions: [] });
     setEditingRole(null);
+    setSearchTerm("");
+    setExpandedCategories(["agreements", "customers", "users", "roles", "templates", "downloads", "system"]);
   };
 
   if (rolesLoading || adminUsersLoading || customersLoading || permissionsLoading) {
@@ -380,7 +609,7 @@ export function UserManagement() {
                   Create Role
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" data-testid="dialog-create-role">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="dialog-create-role">
                 <DialogHeader>
                   <DialogTitle>{editingRole ? "Edit Role" : "Create New Role"}</DialogTitle>
                   <DialogDescription>
@@ -410,25 +639,130 @@ export function UserManagement() {
                   </div>
 
                   <div>
-                    <Label className="text-base font-medium">Permissions</Label>
-                    <div className="mt-2 space-y-3 max-h-60 overflow-y-auto border rounded-lg p-3">
-                      {permissions.map((permission) => (
-                        <div key={permission.id} className="flex items-center space-x-3" data-testid={`permission-${permission.id}`}>
-                          <Checkbox
-                            id={permission.id}
-                            checked={newRoleData.permissions.includes(permission.id)}
-                            onCheckedChange={(checked) => handlePermissionToggle(permission.id, checked as boolean)}
-                            data-testid={`checkbox-permission-${permission.id}`}
+                    <div className="flex items-center justify-between mb-4">
+                      <Label className="text-base font-medium">Permissions</Label>
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search permissions..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-8 w-64"
+                            data-testid="input-search-permissions"
                           />
-                          <div className="flex-1">
-                            <Label htmlFor={permission.id} className="text-sm font-medium cursor-pointer">
-                              {permission.name}
-                            </Label>
-                            <p className="text-xs text-muted-foreground">{permission.description}</p>
-                          </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
+                    
+                    <div className="space-y-4 max-h-96 overflow-y-auto border rounded-lg p-4">
+                      {filteredCategories.map(([categoryKey, category]) => {
+                        const isExpanded = expandedCategories.includes(categoryKey);
+                        const categoryPermissionIds = category.permissions.flatMap(perm => {
+                          if (perm.subPermissions) {
+                            return perm.subPermissions.map(sub => getPermissionById(sub.code)?.id).filter(Boolean);
+                          } else {
+                            return [getPermissionById(perm.code!)?.id].filter(Boolean);
+                          }
+                        }) as string[];
+                        const selectedInCategory = categoryPermissionIds.filter(id => newRoleData.permissions.includes(id)).length;
+                        const allInCategory = categoryPermissionIds.length;
+                        const isAllSelected = selectedInCategory === allInCategory && allInCategory > 0;
+                        const isPartiallySelected = selectedInCategory > 0 && selectedInCategory < allInCategory;
+                        
+                        return (
+                          <Collapsible key={categoryKey} open={isExpanded} onOpenChange={() => toggleCategory(categoryKey)}>
+                            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+                              <Checkbox
+                                checked={isAllSelected}
+                                ref={(el) => {
+                                  if (el && 'indeterminate' in el) {
+                                    (el as any).indeterminate = isPartiallySelected;
+                                  }
+                                }}
+                                onCheckedChange={(checked) => toggleCategoryPermissions(categoryKey, checked as boolean)}
+                                data-testid={`checkbox-category-${categoryKey}`}
+                              />
+                              <CollapsibleTrigger className="flex items-center gap-2 flex-1 text-left hover:bg-muted/50 rounded p-1 transition-colors">
+                                <span className="text-lg">{category.icon}</span>
+                                <span className="font-medium">{category.title}</span>
+                                <Badge variant="secondary" className="ml-auto">
+                                  {selectedInCategory}/{allInCategory}
+                                </Badge>
+                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                              </CollapsibleTrigger>
+                            </div>
+                            
+                            <CollapsibleContent className="ml-4 mt-2 space-y-2">
+                              {category.permissions.map((permission, permIndex) => {
+                                if (permission.subPermissions) {
+                                  // Handle grouped permissions (own vs all)
+                                  return (
+                                    <div key={`${categoryKey}-${permIndex}`} className="border-l-2 border-muted pl-4 space-y-2">
+                                      <div className="font-medium text-sm text-muted-foreground">{permission.name}:</div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {permission.subPermissions.map((subPerm) => {
+                                          const actualPermission = getPermissionById(subPerm.code);
+                                          if (!actualPermission) return null;
+                                          
+                                          return (
+                                            <div key={subPerm.code} className="flex items-center space-x-2" 
+                                                 title={`Permission Code: ${subPerm.code}`}
+                                                 data-testid={`permission-${subPerm.code}`}>
+                                              <Checkbox
+                                                id={actualPermission.id}
+                                                checked={isPermissionSelected(subPerm.code)}
+                                                onCheckedChange={(checked) => 
+                                                  handleSubPermissionToggle(permission.code!, permission.subPermissions!, subPerm.code, checked as boolean)
+                                                }
+                                                data-testid={`checkbox-permission-${subPerm.code}`}
+                                              />
+                                              <Label htmlFor={actualPermission.id} className="text-sm cursor-pointer flex items-center gap-1">
+                                                {subPerm.name}
+                                                {subPerm.isDefault && <Badge variant="outline" className="text-xs">default</Badge>}
+                                              </Label>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                  );
+                                } else {
+                                  // Handle single permissions
+                                  const actualPermission = getPermissionById(permission.code!);
+                                  if (!actualPermission) return null;
+                                  
+                                  return (
+                                    <div key={permission.code} className="flex items-center space-x-3 p-2 hover:bg-muted/30 rounded" 
+                                         title={`Permission Code: ${permission.code}`}
+                                         data-testid={`permission-${permission.code}`}>
+                                      <Checkbox
+                                        id={actualPermission.id}
+                                        checked={newRoleData.permissions.includes(actualPermission.id)}
+                                        onCheckedChange={(checked) => handlePermissionToggle(actualPermission.id, checked as boolean)}
+                                        data-testid={`checkbox-permission-${permission.code}`}
+                                      />
+                                      <div className="flex-1">
+                                        <Label htmlFor={actualPermission.id} className="text-sm font-medium cursor-pointer">
+                                          {permission.name}
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground">{actualPermission.description}</p>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                              })}
+                            </CollapsibleContent>
+                          </Collapsible>
+                        );
+                      })}
+                    </div>
+                    
+                    {searchTerm && filteredCategories.length === 0 && (
+                      <div className="text-center py-4 text-muted-foreground">
+                        No permissions found matching "{searchTerm}"
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 pt-4">
