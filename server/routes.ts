@@ -86,6 +86,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // RBAC API endpoints
+  // Get current user's permissions
+  app.get("/api/auth/permissions", requireAuth, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const permissions = await storage.getUserPermissions(userId);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching user permissions:", error);
+      res.status(500).json({ message: "Failed to fetch user permissions" });
+    }
+  });
+
+  // RBAC management endpoints
+  app.get("/api/rbac/permissions", requireAuth, async (req, res) => {
+    try {
+      const permissions = await storage.getPermissions();
+      res.json(permissions);
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      res.status(500).json({ message: "Failed to fetch permissions" });
+    }
+  });
+
+  app.get("/api/rbac/roles", requireAuth, async (req, res) => {
+    try {
+      const roles = await storage.getRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      res.status(500).json({ message: "Failed to fetch roles" });
+    }
+  });
+
+  // Role assignment endpoints
+  app.post("/api/rbac/assign-user-role", requireAuth, async (req, res) => {
+    try {
+      const { userId, roleId } = req.body;
+      await storage.assignRoleToUser(userId, roleId);
+      res.json({ message: "Role assigned to user successfully" });
+    } catch (error) {
+      console.error("Error assigning role to user:", error);
+      res.status(500).json({ message: "Failed to assign role to user" });
+    }
+  });
+
+  app.post("/api/rbac/assign-customer-role", requireAuth, async (req, res) => {
+    try {
+      const { userId, roleId } = req.body;
+      await storage.assignRoleToCustomer(userId, roleId);
+      res.json({ message: "Role assigned to customer successfully" });
+    } catch (error) {
+      console.error("Error assigning role to customer:", error);
+      res.status(500).json({ message: "Failed to assign role to customer" });
+    }
+  });
+
+  app.delete("/api/rbac/remove-user-role", requireAuth, async (req, res) => {
+    try {
+      const { userId, roleId } = req.body;
+      await storage.removeRoleFromUser(userId, roleId);
+      res.json({ message: "Role removed from user successfully" });
+    } catch (error) {
+      console.error("Error removing role from user:", error);
+      res.status(500).json({ message: "Failed to remove role from user" });
+    }
+  });
+
+  app.delete("/api/rbac/remove-customer-role", requireAuth, async (req, res) => {
+    try {
+      const { userId, roleId } = req.body;
+      await storage.removeRoleFromCustomer(userId, roleId);
+      res.json({ message: "Role removed from customer successfully" });
+    } catch (error) {
+      console.error("Error removing role from customer:", error);
+      res.status(500).json({ message: "Failed to remove role from customer" });
+    }
+  });
+
+  // Legacy endpoints (keeping for backwards compatibility)
   // Permissions
   app.get("/api/permissions", requireAuth, async (req, res) => {
     try {

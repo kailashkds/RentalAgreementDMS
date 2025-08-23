@@ -39,6 +39,7 @@ const navigation = [
 
 const settingsNavigation = [
   { name: "Admin Users", href: "/admin/users", icon: Shield },
+  { name: "Role Management", href: "/admin/roles", icon: Shield },
   { name: "System Settings", href: "/settings", icon: Settings },
   { name: "Profile", href: "/profile", icon: UserCircle },
 ];

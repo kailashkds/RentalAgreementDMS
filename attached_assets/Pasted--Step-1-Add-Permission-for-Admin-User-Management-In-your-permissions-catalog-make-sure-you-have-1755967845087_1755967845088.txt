@@ -1,0 +1,92 @@
+🔹 Step 1: Add Permission for Admin User Management
+
+In your permissions catalog, make sure you have:
+
+{
+  "code": "user.manage",
+  "description": "Manage users (add, edit, assign roles)"
+}
+
+
+This will allow access to the Admin Users page where new users are created and roles are assigned.
+Only roles like staff or super_admin should have this permission. Customers should not.
+
+🔹 Step 2: Update Admin Users Page
+
+When rendering the Admin Users page in frontend:
+
+Check for user.manage permission
+
+If missing → hide the entire page or show “Access Denied”
+
+If present → show full UI for creating users, assigning roles
+
+Example (pseudo-code):
+
+if (permissions.includes("user.manage")) {
+   showAdminUsersPage();
+} else {
+   showAccessDenied();
+}
+
+🔹 Step 3: Create Test Roles
+
+Insert roles + permissions into DB so you can test:
+
+Customer Role
+
+agreement.create, agreement.view.own, agreement.edit.own
+
+Staff Role
+
+agreement.view.all, agreement.edit.all, agreement.import, user.manage
+
+Super Admin Role
+
+(all permissions)
+
+🔹 Step 4: Testing Instructions
+
+Login as Customer
+
+Try accessing Admin Users page → ❌ should be denied (no user.manage).
+
+Try creating an agreement → ✅ should work.
+
+Try editing someone else’s agreement → ❌ denied.
+
+Login as Staff
+
+Access Admin Users page → ✅ should be allowed.
+
+Create a new user (assign Customer role).
+
+Verify that new user only sees their own agreements.
+
+Login as Super Admin
+
+Access Admin Users page → ✅ allowed.
+
+Assign staff role, customer role, etc.
+
+Verify unrestricted access to everything.
+
+🔹 Step 5: Auto-Check with Middleware
+
+Add test routes just for verification:
+
+// Only users with user.manage can hit this
+app.get('/api/admin/users', requirePermission('user.manage'), (req, res) => {
+  res.json({ msg: "You can manage users!" });
+});
+
+
+Try hitting it with different users:
+
+Customer → should get 403 Forbidden
+
+Staff → should get success
+
+Super Admin → should get success
+
+✅ With this, you’ll be able to test RBAC end-to-end by creating users on the Admin Users page, assigning them roles, and verifying permissions through both UI and API.

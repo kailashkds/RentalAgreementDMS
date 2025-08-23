@@ -18,6 +18,7 @@ import PdfTemplates from "@/pages/PdfTemplates";
 import AgreementEditor from "@/pages/AgreementEditor";
 import AgreementDetail from "@/pages/AgreementDetail";
 import CreateAgreement from "@/pages/CreateAgreement";
+import RoleManagement from "@/pages/RoleManagement";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 
@@ -49,6 +50,7 @@ function AuthenticatedRouter() {
       <Route path="/customers/:customerId/properties" component={CustomerProperties} />
       <Route path="/customers/:customerId/properties/:propertyId/agreements" component={PropertyAgreements} />
       <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/roles" component={RoleManagement} />
       <Route path="/settings" component={SystemSettings} />
       <Route path="/profile" component={Profile} />
       <Route path="/pdf-templates" component={PdfTemplates} />
