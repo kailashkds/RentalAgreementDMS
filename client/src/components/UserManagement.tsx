@@ -15,7 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { PermissionGuard } from "./PermissionGuard";
 import { PERMISSIONS } from "@/hooks/usePermissions";
 import { apiRequest } from "@/lib/queryClient";
-import { Users, UserPlus, Shield, Settings, Trash2, Edit, Plus, Save, ChevronDown, ChevronRight, Search, CheckSquare, Square } from "lucide-react";
+import { Users, UserPlus, Shield, Settings, Trash2, Edit, Plus, Save, ChevronDown, ChevronRight, Search, CheckSquare, Square, Clock, Copy, Eye, FileText } from "lucide-react";
+import { format } from "date-fns";
 
 interface Role {
   id: string;
@@ -149,10 +150,10 @@ export function UserManagement() {
   }) as { data: Permission[]; isLoading: boolean };
 
   // Enterprise features queries
-  const { data: auditLogs = [], isLoading: auditLogsLoading } = useQuery({
+  const { data: auditLogs, isLoading: auditLogsLoading } = useQuery({
     queryKey: ['/api/rbac/audit-logs'],
     enabled: showAuditDialog,
-  }) as { data: { logs: AuditLog[]; total: number }; isLoading: boolean };
+  }) as { data: { logs: AuditLog[]; total: number } | undefined; isLoading: boolean };
 
   const { data: roleTemplates = [], isLoading: templatesLoading } = useQuery({
     queryKey: ['/api/rbac/role-templates'],
@@ -202,7 +203,7 @@ export function UserManagement() {
       });
       
       // Get current permissions for this role
-      const currentPermissions = await apiRequest(`/api/rbac/roles/${roleId}/permissions`, 'GET') as unknown as any[];
+      const currentPermissions = await apiRequest(`/api/rbac/roles/${roleId}/permissions`, 'GET') as Permission[];
       
       // Remove all current permissions
       for (const permission of currentPermissions) {
@@ -461,7 +462,7 @@ export function UserManagement() {
     
     try {
       // Load current permissions for this role
-      const currentPermissions = await apiRequest(`/api/rbac/roles/${role.id}/permissions`, 'GET') as any[];
+      const currentPermissions = await apiRequest(`/api/rbac/roles/${role.id}/permissions`, 'GET') as Permission[];
       
       setNewRoleData({
         name: role.name,
@@ -1287,7 +1288,7 @@ export function UserManagement() {
                 <div className="text-center py-4">Loading audit logs...</div>
               ) : auditLogs?.logs?.length > 0 ? (
                 <div className="space-y-2">
-                  {auditLogs.logs.map((log) => (
+                  {auditLogs.logs.map((log: AuditLog) => (
                     <div key={log.id} className="p-4 border rounded-lg" data-testid={`audit-log-${log.id}`}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
