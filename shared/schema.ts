@@ -61,7 +61,7 @@ export const rolePermissions = pgTable("role_permissions", {
 
 export const userRoles = pgTable("user_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  userId: varchar("user_id").references(() => adminUsers.id, { onDelete: 'cascade' }).notNull(),
   roleId: varchar("role_id").references(() => roles.id, { onDelete: 'cascade' }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
