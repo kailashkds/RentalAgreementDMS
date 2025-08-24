@@ -306,68 +306,81 @@ export class DatabaseStorage implements IStorage {
 
   // Customer operations - use unified users table instead
   async getCustomers(search?: string, limit = 50, offset = 0, activeOnly = false): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }> {
-    const conditions = [];
-    
-    // Only get users with Customer role
-    conditions.push(eq(users.defaultRole, 'Customer'));
-    
-    if (search) {
-      conditions.push(
-        or(
-          ilike(users.firstName, `%${search}%`),
-          ilike(users.lastName, `%${search}%`),
-          ilike(users.mobile, `%${search}%`),
-          ilike(users.email, `%${search}%`)
-        )
-      );
-    }
-    
-    if (activeOnly) {
-      conditions.push(eq(users.status, 'active'));
-    }
-    
-    const whereConditions = and(...conditions);
+    // Simple query without complex conditions for now
+    const usersResult = await db
+      .select()
+      .from(users)
+      .where(eq(users.defaultRole, 'Customer'))
+      .orderBy(desc(users.createdAt))
+      .limit(limit)
+      .offset(offset);
 
-    const [customersResult, totalResult] = await Promise.all([
-      db
-        .select({
-          id: users.id,
-          name: sql<string>`CONCAT(COALESCE(${users.firstName}, ''), ' ', COALESCE(${users.lastName}, ''))`.as('name'),
-          mobile: users.mobile,
-          email: users.email,
-          password: users.password,
-          isActive: sql<boolean>`CASE WHEN ${users.status} = 'active' THEN true ELSE false END`.as('is_active'),
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
-          agreementCount: sql<number>`count(${agreements.id})::int`.as('agreement_count')
-        })
-        .from(users)
-        .leftJoin(agreements, eq(users.id, agreements.customerId))
-        .where(whereConditions)
-        .groupBy(users.id)
-        .orderBy(desc(users.createdAt))
-        .limit(limit)
-        .offset(offset),
-      db
-        .select({ count: count() })
-        .from(users)
-        .where(whereConditions),
-    ]);
+    const totalResult = await db
+      .select({ count: count() })
+      .from(users)
+      .where(eq(users.defaultRole, 'Customer'));
+
+    // For each user, get their agreement count  
+    const customersWithCounts = await Promise.all(
+      usersResult.map(async (user) => {
+        const agreementCountResult = await db
+          .select({ count: count() })
+          .from(agreements)
+          .where(eq(agreements.customerId, user.id));
+        const agreementCount = agreementCountResult[0];
+        
+        return {
+          id: user.id,
+          name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          mobile: user.mobile,
+          email: user.email,
+          password: user.password,
+          isActive: user.status === 'active',
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          agreementCount: agreementCount.count,
+        } as Customer & { agreementCount: number };
+      })
+    );
 
     return {
-      customers: customersResult as (Customer & { agreementCount: number })[],
+      customers: customersWithCounts,
       total: totalResult[0].count as number,
     };
   }
 
   async getCustomer(id: string): Promise<Customer | undefined> {
-    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
-    return customer;
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    if (!user) return undefined;
+    
+    // Convert unified user to customer format
+    return {
+      id: user.id,
+      name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      mobile: user.mobile!,
+      email: user.email,
+      password: user.password,
+      isActive: user.status === 'active',
+      createdAt: user.createdAt!,
+      updatedAt: user.updatedAt!,
+    } as Customer;
   }
 
   async getCustomerByUsername(username: string): Promise<Customer | undefined> {
-    const [customer] = await db.select().from(customers).where(eq(customers.username, username));
-    return customer;
+    const [user] = await db.select().from(users).where(and(eq(users.username, username), eq(users.defaultRole, 'Customer')));
+    if (!user) return undefined;
+    
+    // Convert unified user to customer format
+    return {
+      id: user.id,
+      name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      mobile: user.mobile!,
+      email: user.email,
+      password: user.password,
+      isActive: user.status === 'active',
+      createdAt: user.createdAt!,
+      updatedAt: user.updatedAt!,
+    } as Customer;
   }
 
   async getCustomerByMobile(mobile: string): Promise<Customer | undefined> {
@@ -671,19 +684,22 @@ export class DatabaseStorage implements IStorage {
     }
     // For no date filter or 'all' filter, dateCondition remains undefined (no date filtering)
     
-    const whereConditions = and(
-      customerId ? eq(agreements.customerId, customerId) : undefined,
-      propertyId ? eq(agreements.propertyId, propertyId) : undefined,
-      status ? eq(agreements.status, status) : undefined,
-      search ? ilike(agreements.agreementNumber, `%${search}%`) : undefined,
+    // Build conditions array, filtering out undefined values
+    const conditions = [
+      customerId ? eq(agreements.customerId, customerId) : null,
+      propertyId ? eq(agreements.propertyId, propertyId) : null,
+      status ? eq(agreements.status, status) : null,
+      search ? ilike(agreements.agreementNumber, `%${search}%`) : null,
       dateCondition
-    );
+    ].filter(Boolean);
+
+    const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [agreementsResult, totalResult] = await Promise.all([
       db
         .select()
         .from(agreements)
-        .leftJoin(customers, eq(agreements.customerId, customers.id))
+        .leftJoin(users, eq(agreements.customerId, users.id))
         .where(whereConditions)
         .orderBy(desc(agreements.createdAt))
         .limit(limit)
@@ -698,7 +714,7 @@ export class DatabaseStorage implements IStorage {
       agreements: agreementsResult.map(row => {
         const agreement = {
           ...row.agreements,
-          customer: row.customers
+          customer: row.users
         } as any;
         // Apply uppercase conversion to existing data when retrieving
         return this.convertToUpperCase(agreement);
@@ -711,14 +727,14 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db
       .select()
       .from(agreements)
-      .leftJoin(customers, eq(agreements.customerId, customers.id))
+      .leftJoin(users, eq(agreements.customerId, users.id))
       .where(eq(agreements.id, id));
     
     if (!result) return undefined;
     
     const agreement = {
       ...result.agreements,
-      customer: result.customers
+      customer: result.users
     } as any;
     
     // Apply uppercase conversion to existing data when retrieving
@@ -1009,7 +1025,7 @@ export class DatabaseStorage implements IStorage {
       // For customers, totalCustomers should be 1 (themselves); for admins, show all
       customerId 
         ? Promise.resolve([{ count: 1 }]) 
-        : db.select({ count: count() }).from(customers).where(eq(customers.isActive, true)),
+        : db.select({ count: count() }).from(users).where(eq(users.defaultRole, 'Customer')),
     ]);
 
     return {

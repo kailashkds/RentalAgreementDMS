@@ -44,6 +44,9 @@ export const users = pgTable("users", {
   
   // Status and metadata
   isActive: boolean("is_active").default(true),
+  status: varchar("status").default('active'), // active, inactive, suspended
+  defaultRole: varchar("default_role").default('Customer'), // Customer, super_admin, Staff
+  permissions: text("permissions").array(), // Legacy permissions array
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -199,7 +202,7 @@ export const addresses = pgTable("addresses", {
 export const agreements: any = pgTable("agreements", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   agreementNumber: varchar("agreement_number").unique().notNull(),
-  userId: varchar("user_id").references(() => users.id).notNull(), // Changed from customerId to userId
+  customerId: varchar("customer_id").references(() => users.id).notNull(), // Links to unified users table
   propertyId: varchar("property_id").references(() => properties.id),
   language: varchar("language", { length: 20 }).notNull().default("english"),
   
@@ -340,7 +343,7 @@ export const propertiesRelations = relations(properties, ({ one, many }) => ({
 
 export const agreementsRelations = relations(agreements, ({ one, many }) => ({
   user: one(users, {
-    fields: [agreements.userId],
+    fields: [agreements.customerId],
     references: [users.id],
   }),
   property: one(properties, {
