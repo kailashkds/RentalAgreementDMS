@@ -238,6 +238,57 @@ export class DatabaseStorage implements IStorage {
     await db.delete(users).where(eq(users.id, id));
   }
 
+  async getUsers(filters?: { 
+    search?: string; 
+    status?: string; 
+    defaultRole?: string; 
+    limit?: number; 
+    offset?: number; 
+  }): Promise<{ users: User[]; total: number }> {
+    const conditions = [];
+    
+    if (filters?.search) {
+      conditions.push(
+        or(
+          ilike(users.firstName, `%${filters.search}%`),
+          ilike(users.lastName, `%${filters.search}%`),
+          ilike(users.username, `%${filters.search}%`),
+          ilike(users.mobile, `%${filters.search}%`),
+          ilike(users.email, `%${filters.search}%`)
+        )
+      );
+    }
+    
+    if (filters?.status) {
+      conditions.push(eq(users.status, filters.status));
+    }
+    
+    if (filters?.defaultRole) {
+      conditions.push(eq(users.defaultRole, filters.defaultRole));
+    }
+    
+    const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [usersResult, totalResult] = await Promise.all([
+      db
+        .select()
+        .from(users)
+        .where(whereConditions)
+        .orderBy(desc(users.createdAt))
+        .limit(filters?.limit || 50)
+        .offset(filters?.offset || 0),
+      db
+        .select({ count: count() })
+        .from(users)
+        .where(whereConditions),
+    ]);
+
+    return {
+      users: usersResult,
+      total: totalResult[0].count as number,
+    };
+  }
+
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -253,49 +304,53 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Customer operations
+  // Customer operations - use unified users table instead
   async getCustomers(search?: string, limit = 50, offset = 0, activeOnly = false): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }> {
     const conditions = [];
+    
+    // Only get users with Customer role
+    conditions.push(eq(users.defaultRole, 'Customer'));
     
     if (search) {
       conditions.push(
         or(
-          ilike(customers.name, `%${search}%`),
-          ilike(customers.mobile, `%${search}%`),
-          ilike(customers.email, `%${search}%`)
+          ilike(users.firstName, `%${search}%`),
+          ilike(users.lastName, `%${search}%`),
+          ilike(users.mobile, `%${search}%`),
+          ilike(users.email, `%${search}%`)
         )
       );
     }
     
     if (activeOnly) {
-      conditions.push(eq(customers.isActive, true));
+      conditions.push(eq(users.status, 'active'));
     }
     
-    const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
+    const whereConditions = and(...conditions);
 
     const [customersResult, totalResult] = await Promise.all([
       db
         .select({
-          id: customers.id,
-          name: customers.name,
-          mobile: customers.mobile,
-          email: customers.email,
-          password: customers.password,
-          isActive: customers.isActive,
-          createdAt: customers.createdAt,
-          updatedAt: customers.updatedAt,
+          id: users.id,
+          name: sql<string>`CONCAT(COALESCE(${users.firstName}, ''), ' ', COALESCE(${users.lastName}, ''))`.as('name'),
+          mobile: users.mobile,
+          email: users.email,
+          password: users.password,
+          isActive: sql<boolean>`CASE WHEN ${users.status} = 'active' THEN true ELSE false END`.as('is_active'),
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
           agreementCount: sql<number>`count(${agreements.id})::int`.as('agreement_count')
         })
-        .from(customers)
-        .leftJoin(agreements, eq(customers.id, agreements.customerId))
+        .from(users)
+        .leftJoin(agreements, eq(users.id, agreements.customerId))
         .where(whereConditions)
-        .groupBy(customers.id)
-        .orderBy(desc(customers.createdAt))
+        .groupBy(users.id)
+        .orderBy(desc(users.createdAt))
         .limit(limit)
         .offset(offset),
       db
         .select({ count: count() })
-        .from(customers)
+        .from(users)
         .where(whereConditions),
     ]);
 

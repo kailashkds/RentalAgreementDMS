@@ -24,12 +24,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint to check admin user status (temporary)
   app.get("/api/debug/admin-status", async (req, res) => {
     try {
-      const adminUser = await storage.getAdminUserByUsername("admin");
-      const allAdmins = await storage.getAdminUsers();
+      const adminUser = await storage.getUserByUsername("admin");
+      const allAdmins = await storage.getUsers({ defaultRole: "super_admin" });
       res.json({
         adminExists: !!adminUser,
-        adminUser: adminUser ? { id: adminUser.id, username: adminUser.username, phone: adminUser.phone, name: adminUser.name } : null,
-        totalAdmins: allAdmins.length,
+        adminUser: adminUser ? { 
+          id: adminUser.id, 
+          username: adminUser.username, 
+          phone: adminUser.phone, 
+          name: `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() 
+        } : null,
+        totalAdmins: allAdmins.users.length,
         environment: process.env.NODE_ENV || 'development'
       });
     } catch (error) {
@@ -45,22 +50,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Invalid secret" });
       }
       
-      const existingAdmin = await storage.getAdminUserByUsername("admin");
+      const existingAdmin = await storage.getUserByUsername("admin");
       if (existingAdmin) {
-        return res.json({ message: "Admin already exists", admin: { username: existingAdmin.username, phone: existingAdmin.phone, name: existingAdmin.name } });
+        return res.json({ 
+          message: "Admin already exists", 
+          admin: { 
+            username: existingAdmin.username, 
+            phone: existingAdmin.phone, 
+            name: `${existingAdmin.firstName || ''} ${existingAdmin.lastName || ''}`.trim() 
+          } 
+        });
       }
       
       const hashedPassword = await bcrypt.hash("admin123", 10);
-      const newAdmin = await storage.createAdminUser({
+      const newAdmin = await storage.createUser({
         username: "admin",
         phone: "9999999999",
-        name: "Administrator",
+        firstName: "Administrator",
+        lastName: null,
         password: hashedPassword,
-        role: "super_admin",
-        isActive: true
+        defaultRole: "super_admin",
+        status: "active"
       });
       
-      res.json({ message: "Admin created successfully", admin: { username: newAdmin.username, phone: newAdmin.phone, name: newAdmin.name } });
+      res.json({ 
+        message: "Admin created successfully", 
+        admin: { 
+          username: newAdmin.username, 
+          phone: newAdmin.phone, 
+          name: `${newAdmin.firstName || ''} ${newAdmin.lastName || ''}`.trim() 
+        } 
+      });
     } catch (error) {
       res.status(500).json({ error: String(error) });
     }
