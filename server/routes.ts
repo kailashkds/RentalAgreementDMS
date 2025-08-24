@@ -65,9 +65,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   // Dashboard stats
-  app.get("/api/dashboard/stats", async (req, res) => {
+  app.get("/api/dashboard/stats", requireAuth, async (req: any, res) => {
     try {
-      const stats = await storage.getDashboardStats();
+      // For customers, get stats filtered by their ID
+      const customerId = req.user.userType === 'customer' ? req.user.id : undefined;
+      const stats = await storage.getDashboardStats(customerId);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
@@ -1259,14 +1261,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Agreement routes
-  app.get("/api/agreements", async (req, res) => {
+  app.get("/api/agreements", requireAuth, async (req: any, res) => {
     try {
       const { customerId, status, search, dateFilter, startDate, endDate, limit, offset } = req.query;
       
       console.log(`[API Debug] Received params:`, { dateFilter, startDate, endDate });
       
+      // For customers, only show their own agreements
+      let finalCustomerId = customerId as string;
+      if (req.user.userType === 'customer') {
+        finalCustomerId = req.user.id; // Force customer to only see their own agreements
+      }
+      
       const result = await storage.getAgreements({
-        customerId: customerId as string,
+        customerId: finalCustomerId,
         status: status as string,
         search: search as string,
         dateFilter: dateFilter as string,

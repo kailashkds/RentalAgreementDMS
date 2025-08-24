@@ -852,7 +852,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(agreements.id, agreementId));
   }
 
-  async getDashboardStats(): Promise<{
+  async getDashboardStats(customerId?: string): Promise<{
     totalAgreements: number;
     activeAgreements: number;
     expiringSoon: number;
@@ -862,23 +862,43 @@ export class DatabaseStorage implements IStorage {
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
     const thirtyDaysFormatted = thirtyDaysFromNow.toISOString().split('T')[0];
 
+    // For customers, filter by their ID; for admins, show all stats
+    const customerFilter = customerId ? eq(agreements.customerId, customerId) : undefined;
+
     const [
       totalAgreements,
       activeAgreements,
       expiringSoon,
       totalCustomers,
     ] = await Promise.all([
-      db.select({ count: count() }).from(agreements),
-      db.select({ count: count() }).from(agreements).where(eq(agreements.status, "active")),
-      db.select({ count: count() })
-        .from(agreements)
-        .where(
-          and(
-            eq(agreements.status, "active"),
-            sql`${agreements.endDate} <= ${thirtyDaysFormatted}`
-          )
-        ),
-      db.select({ count: count() }).from(customers).where(eq(customers.isActive, true)),
+      customerFilter 
+        ? db.select({ count: count() }).from(agreements).where(customerFilter)
+        : db.select({ count: count() }).from(agreements),
+      customerFilter
+        ? db.select({ count: count() }).from(agreements).where(and(eq(agreements.status, "active"), customerFilter))
+        : db.select({ count: count() }).from(agreements).where(eq(agreements.status, "active")),
+      customerFilter
+        ? db.select({ count: count() })
+            .from(agreements)
+            .where(
+              and(
+                eq(agreements.status, "active"),
+                customerFilter,
+                sql`${agreements.endDate} <= ${thirtyDaysFormatted}`
+              )
+            )
+        : db.select({ count: count() })
+            .from(agreements)
+            .where(
+              and(
+                eq(agreements.status, "active"),
+                sql`${agreements.endDate} <= ${thirtyDaysFormatted}`
+              )
+            ),
+      // For customers, totalCustomers should be 1 (themselves); for admins, show all
+      customerId 
+        ? Promise.resolve([{ count: 1 }]) 
+        : db.select({ count: count() }).from(customers).where(eq(customers.isActive, true)),
     ]);
 
     return {
