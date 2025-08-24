@@ -4,6 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Shield } from "lucide-react";
 import Dashboard from "@/pages/Dashboard";
 import Agreements from "@/pages/Agreements";
 import NotarizedDocuments from "@/pages/NotarizedDocuments";
@@ -22,6 +24,37 @@ import RoleManagement from "@/pages/RoleManagement";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
+
+// Component to show access denied for customers
+function AccessDenied() {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <Shield className="w-16 h-16 mx-auto text-red-500 mb-4" />
+          <CardTitle className="text-xl">Access Denied</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center">
+          <p className="text-muted-foreground">
+            You don't have permission to access this page.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Protected route wrapper for admin-only pages
+function ProtectedRoute({ component: Component }: { component: () => JSX.Element }) {
+  const { user } = useAuth();
+  const isCustomer = (user as any)?.userType === 'customer';
+  
+  if (isCustomer) {
+    return <AccessDenied />;
+  }
+  
+  return <Component />;
+}
 
 function AuthenticatedRouter() {
   const { user, isAuthenticated, isLoading, error } = useAuth();
@@ -55,7 +88,7 @@ function AuthenticatedRouter() {
       <Route path="/admin/roles" component={RoleManagement} />
       <Route path="/settings" component={SystemSettings} />
       <Route path="/profile" component={Profile} />
-      <Route path="/pdf-templates" component={PdfTemplates} />
+      <Route path="/pdf-templates" component={() => <ProtectedRoute component={PdfTemplates} />} />
       <Route path="/agreement-editor" component={AgreementEditor} />
       <Route path="/create-agreement" component={CreateAgreement} />
       <Route path="/agreements/:id" component={AgreementDetail} />

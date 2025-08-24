@@ -56,6 +56,17 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
     if (item.href === "/customers") {
       return (user as any)?.role === "super_admin";
     }
+    
+    // PDF Templates - hide from customers (admin feature only)
+    if (item.href === "/pdf-templates") {
+      return !isCustomer;
+    }
+    
+    // WhatsApp - hide from customers (admin feature only)
+    if (item.href === "/whatsapp") {
+      return !isCustomer;
+    }
+    
     return true;
   });
 
