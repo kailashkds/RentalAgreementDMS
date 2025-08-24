@@ -967,21 +967,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties", requireAuth, async (req, res) => {
     try {
       const currentUser = req.user as any;
-      const currentCustomer = req.customer as any;
       
-      // Get user permissions and ID
-      let userPermissions: string[] = [];
-      let userId: string;
-      
-      if (currentUser) {
-        userPermissions = await storage.getUserPermissions(currentUser.id);
-        userId = currentUser.id;
-      } else if (currentCustomer) {
-        userPermissions = await storage.getCustomerPermissions(currentCustomer.id);
-        userId = currentCustomer.id;
-      } else {
+      if (!currentUser) {
         return res.status(401).json({ message: "User not found" });
       }
+      
+      // Get user permissions from unified system
+      const userPermissions = await storage.getUserPermissions(currentUser.id);
       
       // Check if user can view all properties or only their own
       const canViewAll = userPermissions.includes('agreement.view.all') || userPermissions.includes('customer.view.all');
@@ -992,7 +984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(properties);
       } else {
         // Customer can only see their own properties
-        const properties = await storage.getProperties(userId);
+        const properties = await storage.getProperties(currentUser.id);
         res.json(properties);
       }
     } catch (error) {

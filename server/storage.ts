@@ -557,14 +557,14 @@ export class DatabaseStorage implements IStorage {
         createdAt: properties.createdAt,
         updatedAt: properties.updatedAt,
         customer: {
-          id: customers.id,
-          name: customers.name,
-          mobile: customers.mobile,
-          email: customers.email,
+          id: users.id,
+          name: users.name,
+          mobile: users.mobile,
+          email: users.email,
         }
       })
       .from(properties)
-      .leftJoin(customers, eq(properties.customerId, customers.id))
+      .leftJoin(users, eq(properties.customerId, users.id))
       .orderBy(desc(properties.createdAt));
 
     // Get agreement counts for each property

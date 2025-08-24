@@ -126,7 +126,7 @@ export const customers = pgTable("customers", {
 // Properties table for user property management
 export const properties = pgTable("properties", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id).notNull(), // Changed from customerId to userId
+  customerId: varchar("customer_id").references(() => users.id).notNull(), // Links to unified users table
   
   // Property address details
   flatNumber: text("flat_number").notNull(),
@@ -148,7 +148,7 @@ export const properties = pgTable("properties", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
-  userIdx: index("property_user_idx").on(table.userId), // Changed from customerIdx
+  customerIdx: index("property_customer_idx").on(table.customerId), // Index on customer_id
   addressIdx: index("property_address_idx").on(table.society, table.area, table.city),
 }));
 
@@ -335,7 +335,7 @@ export const customerRolesRelations = relations(customerRoles, ({ one }) => ({
 
 export const propertiesRelations = relations(properties, ({ one, many }) => ({
   user: one(users, {
-    fields: [properties.userId],
+    fields: [properties.customerId],
     references: [users.id],
   }),
   agreements: many(agreements),
