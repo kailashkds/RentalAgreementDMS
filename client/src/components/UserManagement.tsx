@@ -27,8 +27,7 @@ interface Role {
 
 interface AdminUser {
   id: string;
-  username: string;
-  email: string;
+  phone: string;
   name: string;
   role?: string;
   isActive: boolean;
@@ -38,7 +37,6 @@ interface AdminUser {
 interface Customer {
   id: string;
   name: string;
-  email: string;
   phone: string;
   isActive: boolean;
   roles?: string[];
@@ -81,7 +79,7 @@ interface AuditLog {
   metadata: any;
   user?: {
     id: string;
-    email: string;
+    phone: string;
     firstName: string;
     lastName: string;
   };
@@ -97,8 +95,6 @@ export function UserManagement() {
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [newUserData, setNewUserData] = useState({
     type: "admin",
-    username: "",
-    email: "",
     name: "",
     phone: "",
     password: "",
@@ -231,8 +227,7 @@ export function UserManagement() {
       let user;
       if (userData.type === "admin") {
         user = await apiRequest('/api/admin/users', 'POST', {
-          username: userData.username,
-          email: userData.email,
+          phone: userData.phone,
           name: userData.name,
           password: userData.password,
           role: "staff",
@@ -249,7 +244,6 @@ export function UserManagement() {
       } else {
         user = await apiRequest('/api/customers', 'POST', {
           name: userData.name,
-          email: userData.email,
           phone: userData.phone,
           password: userData.password,
           isActive: true,
@@ -273,8 +267,6 @@ export function UserManagement() {
       setShowCreateDialog(false);
       setNewUserData({
         type: "admin",
-        username: "",
-        email: "",
         name: "",
         phone: "",
         password: "",
@@ -851,36 +843,14 @@ export function UserManagement() {
                   </div>
 
                   <div>
-                    <Label>Email</Label>
+                    <Label>Phone</Label>
                     <Input
-                      type="email"
-                      value={newUserData.email}
-                      onChange={(e) => setNewUserData(prev => ({ ...prev, email: e.target.value }))}
-                      data-testid="input-new-user-email"
+                      type="tel"
+                      value={newUserData.phone}
+                      onChange={(e) => setNewUserData(prev => ({ ...prev, phone: e.target.value }))}
+                      data-testid="input-new-user-phone"
                     />
                   </div>
-
-                  {newUserData.type === "admin" && (
-                    <div>
-                      <Label>Username</Label>
-                      <Input
-                        value={newUserData.username}
-                        onChange={(e) => setNewUserData(prev => ({ ...prev, username: e.target.value }))}
-                        data-testid="input-new-user-username"
-                      />
-                    </div>
-                  )}
-
-                  {newUserData.type === "customer" && (
-                    <div>
-                      <Label>Phone</Label>
-                      <Input
-                        value={newUserData.phone}
-                        onChange={(e) => setNewUserData(prev => ({ ...prev, phone: e.target.value }))}
-                        data-testid="input-new-user-phone"
-                      />
-                    </div>
-                  )}
 
                   <div>
                     <Label>Password</Label>
@@ -1114,9 +1084,8 @@ export function UserManagement() {
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
                           <div>
-                            <div className="font-medium">{user.username}</div>
-                            <div className="text-sm text-muted-foreground">{user.email}</div>
-                            <div className="text-sm text-muted-foreground">{user.name}</div>
+                            <div className="font-medium">{user.name}</div>
+                            <div className="text-sm text-muted-foreground">{user.phone}</div>
                           </div>
                           <div className="flex gap-1">
                             <Badge variant={user.isActive ? "default" : "secondary"}>
@@ -1179,7 +1148,7 @@ export function UserManagement() {
                         <div className="flex items-center gap-3">
                           <div>
                             <div className="font-medium">{customer.name}</div>
-                            <div className="text-sm text-muted-foreground">{customer.email}</div>
+                            <div className="text-sm text-muted-foreground">{customer.phone}</div>
                             <div className="text-sm text-muted-foreground">{customer.phone}</div>
                           </div>
                           <Badge variant={customer.isActive ? "default" : "secondary"}>

@@ -22,11 +22,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint to check admin user status (temporary)
   app.get("/api/debug/admin-status", async (req, res) => {
     try {
-      const adminUser = await storage.getAdminUserByUsername("admin");
+      const adminUser = await storage.getAdminUserByPhone("9999999999");
       const allAdmins = await storage.getAdminUsers();
       res.json({
         adminExists: !!adminUser,
-        adminUser: adminUser ? { id: adminUser.id, username: adminUser.username, email: adminUser.email } : null,
+        adminUser: adminUser ? { id: adminUser.id, phone: adminUser.phone, name: adminUser.name } : null,
         totalAdmins: allAdmins.length,
         environment: process.env.NODE_ENV || 'development'
       });
@@ -43,22 +43,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Invalid secret" });
       }
       
-      const existingAdmin = await storage.getAdminUserByUsername("admin");
+      const existingAdmin = await storage.getAdminUserByPhone("9999999999");
       if (existingAdmin) {
-        return res.json({ message: "Admin already exists", admin: { username: existingAdmin.username, email: existingAdmin.email } });
+        return res.json({ message: "Admin already exists", admin: { phone: existingAdmin.phone, name: existingAdmin.name } });
       }
       
       const hashedPassword = await bcrypt.hash("admin123", 10);
       const newAdmin = await storage.createAdminUser({
-        username: "admin",
+        phone: "9999999999",
         name: "Administrator",
-        email: "admin@quickkaraar.com", 
         password: hashedPassword,
         role: "super_admin",
         isActive: true
       });
       
-      res.json({ message: "Admin created successfully", admin: { username: newAdmin.username, email: newAdmin.email } });
+      res.json({ message: "Admin created successfully", admin: { phone: newAdmin.phone, name: newAdmin.name } });
     } catch (error) {
       res.status(500).json({ error: String(error) });
     }
@@ -122,10 +121,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new role
   app.post("/api/rbac/roles", requireAuth, async (req: any, res) => {
     try {
-      const { name, description, permissions: permissionIds = [], isSystemRole = false } = req.body;
+      const { name, description, permissions: permissionIds = [] } = req.body;
 
       // Create the role
-      const role = await storage.createRole({ name, description, isSystemRole });
+      const role = await storage.createRole({ name, description });
       
       // Assign permissions to the role
       for (const permissionId of permissionIds) {
@@ -143,7 +142,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name,
             description,
             permissions: permissionIds,
-            isSystemRole
           }
         },
         metadata: {

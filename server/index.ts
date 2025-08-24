@@ -45,14 +45,13 @@ app.use((req, res, next) => {
 async function initializeAdminUser() {
   try {
     log("Checking for admin user...");
-    const adminUser = await storage.getAdminUserByUsername("admin");
+    const adminUser = await storage.getAdminUserByPhone("9999999999");
     if (!adminUser) {
       log("Creating admin user...");
       const hashedPassword = await bcrypt.hash("admin123", 10);
       await storage.createAdminUser({
-        username: "admin",
+        phone: "9999999999",
         name: "Administrator",
-        email: "admin@quickkaraar.com",
         password: hashedPassword,
         role: "super_admin", // Changed to match existing role
         isActive: true
@@ -66,13 +65,12 @@ async function initializeAdminUser() {
     // Force retry once more in case of connection issues
     try {
       await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-      const adminUser2 = await storage.getAdminUserByUsername("admin");
+      const adminUser2 = await storage.getAdminUserByPhone("9999999999");
       if (!adminUser2) {
         const hashedPassword = await bcrypt.hash("admin123", 10);
         await storage.createAdminUser({
-          username: "admin",
+          phone: "9999999999",
           name: "Administrator", 
-          email: "admin@quickkaraar.com",
           password: hashedPassword,
           role: "super_admin",
           isActive: true
@@ -92,7 +90,7 @@ async function initializeRBAC() {
     await seedRBAC();
     
     // Assign Super Admin role to the admin user
-    const adminUser = await storage.getAdminUserByUsername("admin");
+    const adminUser = await storage.getAdminUserByPhone("9999999999");
     if (adminUser) {
       try {
         await assignDefaultRoleToUser(adminUser.id, "Super Admin");

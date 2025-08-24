@@ -142,17 +142,16 @@ export async function setupAuth(app: Express) {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
       
-      const { username, email, password, name, role = 'admin' } = req.body;
+      const { phone, password, name, role = 'admin' } = req.body;
       
-      if (!username || !email || !password || !name) {
+      if (!phone || !password || !name) {
         return res.status(400).json({ message: "All fields are required" });
       }
       
       const hashedPassword = await bcrypt.hash(password, 10);
       
       const newUser = await storage.createAdminUser({
-        username,
-        email,
+        phone,
         password: hashedPassword,
         name,
         role,
@@ -163,7 +162,7 @@ export async function setupAuth(app: Express) {
     } catch (error: any) {
       console.error("Create admin user error:", error);
       if (error.code === '23505') { // unique constraint violation
-        return res.status(400).json({ message: "Username or email already exists" });
+        return res.status(400).json({ message: "Phone number already exists" });
       }
       res.status(500).json({ message: "Failed to create admin user" });
     }

@@ -135,8 +135,7 @@ export const properties = pgTable("properties", {
 // Admin users table for login system
 export const adminUsers = pgTable("admin_users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: varchar("username", { length: 50 }).notNull().unique(),
-  email: varchar("email").notNull().unique(),
+  phone: varchar("phone", { length: 15 }).notNull().unique(),
   password: text("password").notNull(), // hashed password
   name: text("name").notNull(),
   role: varchar("role", { length: 20 }).notNull().default("admin"), // admin, super_admin
