@@ -172,6 +172,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete admin user endpoint (protected)
+  app.delete("/api/admin/users/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Only super_admin can delete admin users
+      if (req.user!.role !== 'super_admin') {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+      
+      // Prevent user from deleting themselves
+      if (req.user!.id === id) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+      
+      // Check if user exists
+      const userToDelete = await storage.getAdminUser(id);
+      if (!userToDelete) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Delete the user
+      await storage.deleteAdminUser(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete admin user error:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Delete customer endpoint (protected)
+  app.delete("/api/customers/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Only super_admin can delete customers
+      if (req.user!.role !== 'super_admin') {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+      
+      // Delete the customer
+      await storage.deleteCustomer(id);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Delete customer error:", error);
+      if (error.message?.includes('existing agreements')) {
+        return res.status(400).json({ message: "Cannot delete customer with existing agreements" });
+      }
+      res.status(500).json({ message: "Failed to delete customer" });
+    }
+  });
+
   // RBAC management endpoints
   app.get("/api/rbac/permissions", requireAuth, async (req, res) => {
     try {

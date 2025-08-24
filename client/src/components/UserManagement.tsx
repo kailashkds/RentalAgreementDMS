@@ -325,6 +325,42 @@ export function UserManagement() {
     },
   });
 
+  // Delete admin user mutation
+  const deleteAdminMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest(`/api/admin/users/${userId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Admin user deleted successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to delete user",
+        variant: "destructive" 
+      });
+    },
+  });
+
+  // Delete customer mutation
+  const deleteCustomerMutation = useMutation({
+    mutationFn: async (customerId: string) => {
+      return apiRequest(`/api/customers/${customerId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Customer deleted successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to delete customer",
+        variant: "destructive" 
+      });
+    },
+  });
+
   const handleAssignRole = () => {
     if (!selectedUser || !selectedRole) {
       toast({ 
@@ -344,6 +380,18 @@ export function UserManagement() {
 
   const handleRemoveRole = (userId: string, roleId: string, userType: 'admin' | 'customer') => {
     removeRoleMutation.mutate({ userId, roleId, userType });
+  };
+
+  const handleDeleteAdminUser = (userId: string) => {
+    if (confirm('Are you sure you want to delete this admin user? This action cannot be undone.')) {
+      deleteAdminMutation.mutate(userId);
+    }
+  };
+
+  const handleDeleteCustomer = (customerId: string) => {
+    if (confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
+      deleteCustomerMutation.mutate(customerId);
+    }
   };
 
   const handleCreateUser = () => {
@@ -1082,6 +1130,17 @@ export function UserManagement() {
                             </div>
                           ) : null;
                         })}
+                        <PermissionGuard permission={PERMISSIONS.USER_DELETE_ALL}>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteAdminUser(user.id)}
+                            disabled={deleteAdminMutation.isPending}
+                            data-testid={`button-delete-admin-${user.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </PermissionGuard>
                       </div>
                     </div>
                   ))}
@@ -1139,6 +1198,17 @@ export function UserManagement() {
                             </div>
                           ) : null;
                         })}
+                        <PermissionGuard permission={PERMISSIONS.CUSTOMER_DELETE_ALL}>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteCustomer(customer.id)}
+                            disabled={deleteCustomerMutation.isPending}
+                            data-testid={`button-delete-customer-${customer.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </PermissionGuard>
                       </div>
                     </div>
                   ))}
