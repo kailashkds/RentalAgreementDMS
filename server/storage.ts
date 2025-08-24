@@ -293,6 +293,21 @@ export class DatabaseStorage implements IStorage {
         password: customerData.password || "default123",
       })
       .returning();
+    
+    // Automatically assign Customer role to new customers
+    try {
+      const [customerRole] = await db.select().from(roles).where(eq(roles.name, "Customer"));
+      if (customerRole) {
+        await db.insert(customerRoles).values({
+          customerId: newCustomer.id,
+          roleId: customerRole.id,
+        });
+      }
+    } catch (error) {
+      console.error("Error assigning Customer role:", error);
+      // Don't fail customer creation if role assignment fails
+    }
+    
     return newCustomer;
   }
 
