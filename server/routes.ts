@@ -14,6 +14,7 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import path from "path";
 import fs from "fs";
+import { generatePassword, generateUsername, generateUserDisplayId } from "./utils/credentialGenerator";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication system
@@ -95,6 +96,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user permissions:", error);
       res.status(500).json({ message: "Failed to fetch user permissions" });
+    }
+  });
+
+  // Enhanced user creation with auto-generated credentials
+  app.post("/api/users/create", requireAuth, async (req, res) => {
+    try {
+      const { name, userType, roleId } = req.body;
+      
+      if (!name || !userType) {
+        return res.status(400).json({ message: "Name and user type are required" });
+      }
+
+      // Generate credentials
+      const username = generateUsername(name, userType);
+      const password = generatePassword(8);
+      const displayId = generateUserDisplayId(userType);
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      let user;
+      
+      if (userType === "admin") {
+        // Create admin user
+        user = await storage.createAdminUser({
+          username,
+          phone: `generated_${Date.now()}`, // Temporary phone for admin users
+          password: hashedPassword,
+          name,
+          role: "staff",
+          isActive: true,
+        });
+        
+        // Assign role if specified
+        if (roleId) {
+          await storage.assignRoleToUser(user.id, roleId);
+        }
+      } else {
+        // Create customer
+        user = await storage.createCustomer({
+          name,
+          username,
+          mobile: `generated_${Date.now()}`, // Temporary mobile for customers  
+          password: hashedPassword,
+          isActive: true,
+        });
+        
+        // Assign role if specified
+        if (roleId) {
+          await storage.assignRoleToCustomer(user.id, roleId);
+        }
+      }
+
+      // Return user info with generated credentials (password only returned once)
+      res.status(201).json({
+        user: {
+          id: user.id,
+          name: user.name,
+          username,
+          userType,
+          displayId,
+          isActive: user.isActive,
+        },
+        credentials: {
+          username,
+          password, // Only returned once for admin to share
+          displayId,
+        }
+      });
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      if (error.code === '23505') {
+        return res.status(400).json({ message: "Username already exists, please try again" });
+      }
+      res.status(500).json({ message: "Failed to create user" });
     }
   });
 

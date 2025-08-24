@@ -95,6 +95,7 @@ export const customerRoles = pgTable("customer_roles", {
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
+  username: varchar("username").unique(), // Add username for login
   mobile: varchar("mobile", { length: 15 }).notNull().unique(), // Make mobile unique
   email: varchar("email"),
   password: text("password"),

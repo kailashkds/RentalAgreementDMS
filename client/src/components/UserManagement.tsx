@@ -97,11 +97,15 @@ export function UserManagement() {
   const [newUserData, setNewUserData] = useState({
     type: "admin",
     name: "",
-    username: "",
-    phone: "",
-    password: "",
     roleId: "",
   });
+  const [generatedCredentials, setGeneratedCredentials] = useState<{
+    username: string;
+    password: string;
+    displayId: string;
+    userType: string;
+  } | null>(null);
+  const [showCredentialsDialog, setShowCredentialsDialog] = useState(false);
   const [newRoleData, setNewRoleData] = useState({
     name: "",
     description: "",
@@ -226,52 +230,23 @@ export function UserManagement() {
   // Create new user mutation
   const createUserMutation = useMutation({
     mutationFn: async (userData: typeof newUserData) => {
-      let user;
-      if (userData.type === "admin") {
-        user = await apiRequest('/api/admin/users', 'POST', {
-          phone: userData.phone,
-          name: userData.name,
-          password: userData.password,
-          role: "staff",
-          isActive: true,
-        }) as any;
-        
-        // Assign role if selected
-        if (userData.roleId) {
-          await apiRequest('/api/rbac/assign-user-role', 'POST', {
-            userId: user.id,
-            roleId: userData.roleId,
-          });
-        }
-      } else {
-        user = await apiRequest('/api/customers', 'POST', {
-          name: userData.name,
-          phone: userData.phone,
-          password: userData.password,
-          isActive: true,
-        }) as any;
-        
-        // Assign role if selected
-        if (userData.roleId) {
-          await apiRequest('/api/rbac/assign-customer-role', 'POST', {
-            userId: user.id,
-            roleId: userData.roleId,
-          });
-        }
-      }
-      
-      return user;
+      const response = await apiRequest('/api/users/create', 'POST', {
+        name: userData.name,
+        userType: userData.type,
+        roleId: userData.roleId,
+      });
+      return response;
     },
-    onSuccess: () => {
-      toast({ title: "Success", description: "User created successfully" });
+    onSuccess: (data: any) => {
+      setGeneratedCredentials(data.credentials);
+      setShowCredentialsDialog(true);
+      toast({ title: "Success", description: "User created successfully with auto-generated credentials" });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       setShowCreateDialog(false);
       setNewUserData({
         type: "admin",
         name: "",
-        phone: "",
-        password: "",
         roleId: "",
       });
     },
@@ -372,19 +347,10 @@ export function UserManagement() {
   };
 
   const handleCreateUser = () => {
-    if (!newUserData.name || !newUserData.email) {
+    if (!newUserData.name) {
       toast({ 
         title: "Error", 
-        description: "Please fill in all required fields",
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    if (newUserData.type === "admin" && !newUserData.username) {
-      toast({ 
-        title: "Error", 
-        description: "Username is required for admin users",
+        description: "Name is required",
         variant: "destructive" 
       });
       return;
@@ -844,36 +810,17 @@ export function UserManagement() {
                     />
                   </div>
 
-                  {newUserData.type === "admin" && (
-                    <div>
-                      <Label>Username</Label>
-                      <Input
-                        value={newUserData.username}
-                        onChange={(e) => setNewUserData(prev => ({ ...prev, username: e.target.value }))}
-                        data-testid="input-new-user-username"
-                        placeholder="Enter username for login"
-                      />
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Shield className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                        Auto-Generated Security
+                      </span>
                     </div>
-                  )}
-
-                  <div>
-                    <Label>Phone</Label>
-                    <Input
-                      type="tel"
-                      value={newUserData.phone}
-                      onChange={(e) => setNewUserData(prev => ({ ...prev, phone: e.target.value }))}
-                      data-testid="input-new-user-phone"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Password</Label>
-                    <Input
-                      type="password"
-                      value={newUserData.password}
-                      onChange={(e) => setNewUserData(prev => ({ ...prev, password: e.target.value }))}
-                      data-testid="input-new-user-password"
-                    />
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                      Username and password will be automatically generated for security.
+                      You'll receive the credentials after user creation to share with the new user.
+                    </p>
                   </div>
 
                   <div>
@@ -1311,6 +1258,112 @@ export function UserManagement() {
                 </Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Generated Credentials Dialog */}
+        <Dialog open={showCredentialsDialog} onOpenChange={setShowCredentialsDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-green-600" />
+                User Created Successfully
+              </DialogTitle>
+              <DialogDescription>
+                New user credentials have been generated. Please share these with the user securely.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {generatedCredentials && (
+              <div className="space-y-4">
+                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">User ID:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm bg-white dark:bg-gray-800 px-2 py-1 rounded border">
+                          {generatedCredentials.displayId}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            navigator.clipboard.writeText(generatedCredentials.displayId);
+                            toast({ title: "Copied!", description: "User ID copied to clipboard" });
+                          }}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Username:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm bg-white dark:bg-gray-800 px-2 py-1 rounded border">
+                          {generatedCredentials.username}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            navigator.clipboard.writeText(generatedCredentials.username);
+                            toast({ title: "Copied!", description: "Username copied to clipboard" });
+                          }}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Password:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm bg-white dark:bg-gray-800 px-2 py-1 rounded border">
+                          {generatedCredentials.password}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            navigator.clipboard.writeText(generatedCredentials.password);
+                            toast({ title: "Copied!", description: "Password copied to clipboard" });
+                          }}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-800 dark:text-amber-300">
+                    <Shield className="h-3 w-3 inline mr-1" />
+                    <strong>Security Notice:</strong> These credentials will only be shown once. 
+                    Please save them securely and share them with the user through a secure channel.
+                  </p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const credentialsText = `User ID: ${generatedCredentials.displayId}\nUsername: ${generatedCredentials.username}\nPassword: ${generatedCredentials.password}`;
+                      navigator.clipboard.writeText(credentialsText);
+                      toast({ title: "All credentials copied!", description: "All login details copied to clipboard" });
+                    }}
+                    className="flex-1"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy All
+                  </Button>
+                  <Button onClick={() => setShowCredentialsDialog(false)} className="flex-1">
+                    Done
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
