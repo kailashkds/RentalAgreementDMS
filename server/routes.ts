@@ -6,6 +6,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { mapFormDataToTemplateFields, generatePdfHtml, convertPdfToImages } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
+import { requirePermission } from "./rbacMiddleware";
 import { insertCustomerSchema, insertSocietySchema, insertPropertySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
 import { directFileUpload } from "./directFileUpload";
 import { upload, getFileInfo, deleteFile, readFileAsBase64 } from "./localFileUpload";
@@ -108,8 +109,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user's permissions
   app.get("/api/auth/permissions", requireAuth, async (req, res) => {
     try {
-      const userId = req.user!.id;
-      const permissions = await storage.getUserPermissions(userId);
+      let permissions: string[] = [];
+      
+      if (req.user) {
+        // Admin user permissions
+        permissions = await storage.getUserPermissions(req.user.id);
+      } else if (req.customer) {
+        // Customer permissions
+        permissions = await storage.getCustomerPermissions(req.customer.id);
+      }
+      
       res.json(permissions);
     } catch (error) {
       console.error("Error fetching user permissions:", error);
@@ -924,8 +933,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Property API routes
-  app.get("/api/properties/all", async (req, res) => {
+  app.get("/api/properties/all", requireAuth, async (req, res) => {
     try {
+      const currentUser = req.user as any;
+      const currentCustomer = req.customer as any;
+      
+      // Get user permissions
+      let userPermissions: string[] = [];
+      if (currentUser) {
+        userPermissions = await storage.getUserPermissions(currentUser.id);
+      } else if (currentCustomer) {
+        userPermissions = await storage.getCustomerPermissions(currentCustomer.id);
+      }
+      
+      // Check if user can view all properties
+      const canViewAll = userPermissions.includes('agreement.view.all') || userPermissions.includes('customer.view.all');
+      
+      if (!canViewAll) {
+        return res.status(403).json({ message: "Insufficient permissions to view all properties" });
+      }
+      
       const properties = await storage.getAllPropertiesWithCustomers();
       res.json(properties);
     } catch (error) {
@@ -934,27 +961,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/properties", async (req, res) => {
+  app.get("/api/properties", requireAuth, async (req, res) => {
     try {
-      const { customerId } = req.query;
-      if (!customerId) {
-        return res.status(400).json({ message: "Customer ID is required" });
+      const currentUser = req.user as any;
+      const currentCustomer = req.customer as any;
+      
+      // Get user permissions and ID
+      let userPermissions: string[] = [];
+      let userId: string;
+      
+      if (currentUser) {
+        userPermissions = await storage.getUserPermissions(currentUser.id);
+        userId = currentUser.id;
+      } else if (currentCustomer) {
+        userPermissions = await storage.getCustomerPermissions(currentCustomer.id);
+        userId = currentCustomer.id;
+      } else {
+        return res.status(401).json({ message: "User not found" });
       }
       
-      const properties = await storage.getProperties(customerId as string);
-      res.json(properties);
+      // Check if user can view all properties or only their own
+      const canViewAll = userPermissions.includes('agreement.view.all') || userPermissions.includes('customer.view.all');
+      
+      if (canViewAll) {
+        // Admin/Staff can see all properties
+        const properties = await storage.getAllPropertiesWithCustomers();
+        res.json(properties);
+      } else {
+        // Customer can only see their own properties
+        const properties = await storage.getProperties(userId);
+        res.json(properties);
+      }
     } catch (error) {
       console.error("Error fetching properties:", error);
       res.status(500).json({ message: "Failed to fetch properties" });
     }
   });
 
-  app.get("/api/properties/:id", async (req, res) => {
+  app.get("/api/properties/:id", requireAuth, async (req, res) => {
     try {
+      const currentUser = req.user as any;
+      const currentCustomer = req.customer as any;
+      
+      // Get user permissions and ID
+      let userPermissions: string[] = [];
+      let userId: string;
+      
+      if (currentUser) {
+        userPermissions = await storage.getUserPermissions(currentUser.id);
+        userId = currentUser.id;
+      } else if (currentCustomer) {
+        userPermissions = await storage.getCustomerPermissions(currentCustomer.id);
+        userId = currentCustomer.id;
+      } else {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
       const property = await storage.getProperty(req.params.id);
       if (!property) {
         return res.status(404).json({ message: "Property not found" });
       }
+      
+      // Check if user can view all properties or only their own
+      const canViewAll = userPermissions.includes('agreement.view.all') || userPermissions.includes('customer.view.all');
+      
+      if (!canViewAll && property.customerId !== userId) {
+        return res.status(403).json({ message: "Insufficient permissions to view this property" });
+      }
+      
       res.json(property);
     } catch (error) {
       console.error("Error fetching property:", error);
@@ -962,7 +1036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/properties", async (req, res) => {
+  app.post("/api/properties", requireAuth, async (req, res) => {
     try {
       const propertyData = insertPropertySchema.parse(req.body);
       const property = await storage.createProperty(propertyData);
@@ -1194,68 +1268,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Property routes
-  app.get("/api/properties", async (req, res) => {
-    try {
-      const { customerId } = req.query;
-      const properties = await storage.getProperties(customerId as string);
-      res.json(properties);
-    } catch (error) {
-      console.error("Error fetching properties:", error);
-      res.status(500).json({ message: "Failed to fetch properties" });
-    }
-  });
-
-  app.get("/api/properties/:id", async (req, res) => {
-    try {
-      const property = await storage.getProperty(req.params.id);
-      if (!property) {
-        return res.status(404).json({ message: "Property not found" });
-      }
-      res.json(property);
-    } catch (error) {
-      console.error("Error fetching property:", error);
-      res.status(500).json({ message: "Failed to fetch property" });
-    }
-  });
-
-  app.post("/api/properties", async (req, res) => {
-    try {
-      const propertyData = insertPropertySchema.parse(req.body);
-      const property = await storage.createProperty(propertyData);
-      res.status(201).json(property);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid property data", errors: error.errors });
-      }
-      console.error("Error creating property:", error);
-      res.status(500).json({ message: "Failed to create property" });
-    }
-  });
-
-  app.put("/api/properties/:id", async (req, res) => {
-    try {
-      const propertyData = insertPropertySchema.partial().parse(req.body);
-      const property = await storage.updateProperty(req.params.id, propertyData);
-      res.json(property);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid property data", errors: error.errors });
-      }
-      console.error("Error updating property:", error);
-      res.status(500).json({ message: "Failed to update property" });
-    }
-  });
-
-  app.delete("/api/properties/:id", async (req, res) => {
-    try {
-      await storage.deleteProperty(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting property:", error);
-      res.status(500).json({ message: "Failed to delete property" });
-    }
-  });
 
   // Get agreements for a specific property
   app.get("/api/properties/:propertyId/agreements", async (req, res) => {
