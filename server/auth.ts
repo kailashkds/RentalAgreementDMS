@@ -30,20 +30,28 @@ export function getSession() {
   });
 }
 
-// Auth middleware
+// Auth middleware - works for both admin and customer
 export const requireAuth: RequestHandler = async (req, res, next) => {
   if (!req.session?.userId) {
     return res.status(401).json({ message: "Authentication required" });
   }
   
   try {
-    const user = await storage.getAdminUser(req.session.userId);
+    const userType = req.session.userType || 'admin'; // Default to admin for backward compatibility
+    let user;
+    
+    if (userType === 'customer') {
+      user = await storage.getCustomer(req.session.userId);
+    } else {
+      user = await storage.getAdminUser(req.session.userId);
+    }
+    
     if (!user || !user.isActive) {
       req.session.destroy(() => {});
       return res.status(401).json({ message: "Invalid session" });
     }
     
-    req.user = user;
+    req.user = { ...user, userType };
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
@@ -55,9 +63,17 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
 export const optionalAuth: RequestHandler = async (req, res, next) => {
   if (req.session?.userId) {
     try {
-      const user = await storage.getAdminUser(req.session.userId);
+      const userType = req.session.userType || 'admin';
+      let user;
+      
+      if (userType === 'customer') {
+        user = await storage.getCustomer(req.session.userId);
+      } else {
+        user = await storage.getAdminUser(req.session.userId);
+      }
+      
       if (user && user.isActive) {
-        req.user = user;
+        req.user = { ...user, userType };
       }
     } catch (error) {
       console.error("Optional auth error:", error);
@@ -87,7 +103,7 @@ export async function setupAuth(app: Express) {
     });
   });
   
-  // Login endpoint
+  // Admin login endpoint
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -107,6 +123,7 @@ export async function setupAuth(app: Express) {
       }
       
       req.session.userId = user.id;
+      req.session.userType = 'admin';
       
       // Ensure session is saved before sending response
       req.session.save((err) => {
@@ -116,10 +133,48 @@ export async function setupAuth(app: Express) {
         }
         
         const { password: _, ...userWithoutPassword } = user;
-        res.json({ user: userWithoutPassword });
+        res.json({ user: { ...userWithoutPassword, userType: 'admin' } });
       });
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Customer login endpoint
+  app.post('/api/auth/customer-login', async (req, res) => {
+    try {
+      const { mobile, password } = req.body;
+      
+      if (!mobile || !password) {
+        return res.status(400).json({ message: "Phone number and password required" });
+      }
+      
+      const customer = await storage.getCustomerByMobile(mobile);
+      if (!customer || !customer.isActive) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // For customers, we check plain text password as per the current system
+      if (customer.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      req.session.userId = customer.id;
+      req.session.userType = 'customer';
+      
+      // Ensure session is saved before sending response
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Session error" });
+        }
+        
+        const { password: _, ...customerWithoutPassword } = customer;
+        res.json({ user: { ...customerWithoutPassword, userType: 'customer' } });
+      });
+    } catch (error) {
+      console.error("Customer login error:", error);
       res.status(500).json({ message: "Login failed" });
     }
   });
@@ -191,9 +246,6 @@ declare global {
   namespace Express {
     interface Request {
       user?: any;
-    }
-    interface Session {
-      userId?: string;
     }
   }
 }

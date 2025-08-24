@@ -19,11 +19,12 @@ import AgreementEditor from "@/pages/AgreementEditor";
 import AgreementDetail from "@/pages/AgreementDetail";
 import CreateAgreement from "@/pages/CreateAgreement";
 import RoleManagement from "@/pages/RoleManagement";
+import CustomerDashboard from "@/pages/CustomerDashboard";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRouter() {
-  const { isAuthenticated, isLoading, error } = useAuth();
+  const { user, isAuthenticated, isLoading, error } = useAuth();
 
   if (isLoading) {
     return (
@@ -40,6 +41,12 @@ function AuthenticatedRouter() {
     return <Login />;
   }
 
+  // Customer Dashboard
+  if ((user as any)?.userType === 'customer') {
+    return <CustomerDashboard />;
+  }
+
+  // Admin Dashboard and Routes
   return (
     <Switch>
       <Route path="/" component={Dashboard} />

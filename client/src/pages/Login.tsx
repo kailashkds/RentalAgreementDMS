@@ -5,31 +5,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Building2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle, Building2, Users } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Login() {
   const [, navigate] = useLocation();
-  const [formData, setFormData] = useState({
+  const [adminData, setAdminData] = useState({
     username: "",
+    password: "",
+  });
+  const [customerData, setCustomerData] = useState({
+    mobile: "",
     password: "",
   });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      const response = await apiRequest("POST", "/api/auth/login", formData);
+      const response = await apiRequest("/api/auth/login", "POST", adminData);
       
       if (response.ok) {
-        // Clear all queries first
         queryClient.clear();
-        
-        // Force a complete page reload to ensure proper session state
         window.location.href = "/";
       } else {
         const data = await response.json();
@@ -42,8 +44,37 @@ export default function Login() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+  const handleCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await apiRequest("/api/auth/customer-login", "POST", customerData);
+      
+      if (response.ok) {
+        queryClient.clear();
+        window.location.href = "/";
+      } else {
+        const data = await response.json();
+        setError(data.message || "Login failed");
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAdminChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAdminData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const handleCustomerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomerData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
@@ -60,13 +91,24 @@ export default function Login() {
               className="h-16 w-auto"
             />
           </div>
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
+          <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
-            Enter your credentials to access the admin panel
+            Choose your account type and enter credentials
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <Tabs defaultValue="admin" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="admin" className="flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                Admin
+              </TabsTrigger>
+              <TabsTrigger value="customer" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Customer
+              </TabsTrigger>
+            </TabsList>
+            
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -74,36 +116,78 @@ export default function Login() {
               </Alert>
             )}
             
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={formData.username}
-                onChange={handleChange}
-                placeholder="Enter your username"
-              />
-            </div>
+            <TabsContent value="admin">
+              <form onSubmit={handleAdminSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="admin-username">Username</Label>
+                  <Input
+                    id="admin-username"
+                    name="username"
+                    type="text"
+                    required
+                    value={adminData.username}
+                    onChange={handleAdminChange}
+                    placeholder="Enter your username"
+                    data-testid="input-admin-username"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="admin-password">Password</Label>
+                  <Input
+                    id="admin-password"
+                    name="password"
+                    type="password"
+                    required
+                    value={adminData.password}
+                    onChange={handleAdminChange}
+                    placeholder="Enter your password"
+                    data-testid="input-admin-password"
+                  />
+                </div>
+                
+                <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-admin-login">
+                  {isLoading ? "Signing in..." : "Sign In as Admin"}
+                </Button>
+              </form>
+            </TabsContent>
             
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Enter your password"
-              />
-            </div>
-            
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
+            <TabsContent value="customer">
+              <form onSubmit={handleCustomerSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="customer-mobile">Phone Number</Label>
+                  <Input
+                    id="customer-mobile"
+                    name="mobile"
+                    type="tel"
+                    required
+                    value={customerData.mobile}
+                    onChange={handleCustomerChange}
+                    placeholder="Enter your phone number"
+                    data-testid="input-customer-mobile"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="customer-password">Password</Label>
+                  <Input
+                    id="customer-password"
+                    name="password"
+                    type="password"
+                    required
+                    value={customerData.password}
+                    onChange={handleCustomerChange}
+                    placeholder="Enter your password"
+                    data-testid="input-customer-password"
+                  />
+                </div>
+                
+                <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-customer-login">
+                  {isLoading ? "Signing in..." : "Sign In as Customer"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
