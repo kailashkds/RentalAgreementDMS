@@ -50,6 +50,9 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
   
+  // Check if user is a customer (for display purposes)
+  const isCustomer = (user as any)?.defaultRole === 'Customer';
+  
   // Filter main navigation based on permissions
   const filteredNavigation = navigation.filter(item => {
     // Customer management - requires user management permission
