@@ -27,6 +27,7 @@ interface Role {
 
 interface AdminUser {
   id: string;
+  username: string;
   phone: string;
   name: string;
   role?: string;
@@ -96,6 +97,7 @@ export function UserManagement() {
   const [newUserData, setNewUserData] = useState({
     type: "admin",
     name: "",
+    username: "",
     phone: "",
     password: "",
     roleId: "",
@@ -841,6 +843,18 @@ export function UserManagement() {
                       data-testid="input-new-user-name"
                     />
                   </div>
+
+                  {newUserData.type === "admin" && (
+                    <div>
+                      <Label>Username</Label>
+                      <Input
+                        value={newUserData.username}
+                        onChange={(e) => setNewUserData(prev => ({ ...prev, username: e.target.value }))}
+                        data-testid="input-new-user-username"
+                        placeholder="Enter username for login"
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <Label>Phone</Label>

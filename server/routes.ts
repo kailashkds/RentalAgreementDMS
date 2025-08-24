@@ -22,11 +22,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint to check admin user status (temporary)
   app.get("/api/debug/admin-status", async (req, res) => {
     try {
-      const adminUser = await storage.getAdminUserByPhone("9999999999");
+      const adminUser = await storage.getAdminUserByUsername("admin");
       const allAdmins = await storage.getAdminUsers();
       res.json({
         adminExists: !!adminUser,
-        adminUser: adminUser ? { id: adminUser.id, phone: adminUser.phone, name: adminUser.name } : null,
+        adminUser: adminUser ? { id: adminUser.id, username: adminUser.username, phone: adminUser.phone, name: adminUser.name } : null,
         totalAdmins: allAdmins.length,
         environment: process.env.NODE_ENV || 'development'
       });
@@ -43,13 +43,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Invalid secret" });
       }
       
-      const existingAdmin = await storage.getAdminUserByPhone("9999999999");
+      const existingAdmin = await storage.getAdminUserByUsername("admin");
       if (existingAdmin) {
-        return res.json({ message: "Admin already exists", admin: { phone: existingAdmin.phone, name: existingAdmin.name } });
+        return res.json({ message: "Admin already exists", admin: { username: existingAdmin.username, phone: existingAdmin.phone, name: existingAdmin.name } });
       }
       
       const hashedPassword = await bcrypt.hash("admin123", 10);
       const newAdmin = await storage.createAdminUser({
+        username: "admin",
         phone: "9999999999",
         name: "Administrator",
         password: hashedPassword,
@@ -57,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: true
       });
       
-      res.json({ message: "Admin created successfully", admin: { phone: newAdmin.phone, name: newAdmin.name } });
+      res.json({ message: "Admin created successfully", admin: { username: newAdmin.username, phone: newAdmin.phone, name: newAdmin.name } });
     } catch (error) {
       res.status(500).json({ error: String(error) });
     }
@@ -308,7 +309,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newRole = await storage.createRole({
         name,
         description: description || `Cloned from ${sourceRole.name}`,
-        isSystemRole: false
       });
 
       // Assign same permissions

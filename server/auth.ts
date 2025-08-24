@@ -90,13 +90,13 @@ export async function setupAuth(app: Express) {
   // Login endpoint
   app.post('/api/auth/login', async (req, res) => {
     try {
-      const { phone, password } = req.body;
+      const { username, password } = req.body;
       
-      if (!phone || !password) {
-        return res.status(400).json({ message: "Phone and password required" });
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password required" });
       }
       
-      const user = await storage.getAdminUserByPhone(phone);
+      const user = await storage.getAdminUserByUsername(username);
       if (!user || !user.isActive) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -142,15 +142,16 @@ export async function setupAuth(app: Express) {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
       
-      const { phone, password, name, role = 'admin' } = req.body;
+      const { username, phone, password, name, role = 'admin' } = req.body;
       
-      if (!phone || !password || !name) {
+      if (!username || !phone || !password || !name) {
         return res.status(400).json({ message: "All fields are required" });
       }
       
       const hashedPassword = await bcrypt.hash(password, 10);
       
       const newUser = await storage.createAdminUser({
+        username,
         phone,
         password: hashedPassword,
         name,
