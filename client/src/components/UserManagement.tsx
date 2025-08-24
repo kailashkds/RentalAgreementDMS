@@ -87,12 +87,6 @@ interface AuditLog {
   };
 }
 
-interface RoleTemplate {
-  id: string;
-  name: string;
-  description: string;
-  permissions: string[] | "all";
-}
 
 export function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<string>("");
@@ -125,7 +119,6 @@ export function UserManagement() {
   const [cloneSourceRole, setCloneSourceRole] = useState<Role | null>(null);
   const [showAuditDialog, setShowAuditDialog] = useState(false);
   const [selectedRoleForAudit, setSelectedRoleForAudit] = useState<string>("");
-  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -154,11 +147,6 @@ export function UserManagement() {
     queryKey: ['/api/rbac/audit-logs'],
     enabled: showAuditDialog,
   }) as { data: { logs: AuditLog[]; total: number } | undefined; isLoading: boolean };
-
-  const { data: roleTemplates = [], isLoading: templatesLoading } = useQuery({
-    queryKey: ['/api/rbac/role-templates'],
-    enabled: showTemplateDialog,
-  }) as { data: RoleTemplate[]; isLoading: boolean };
 
   // Create new role mutation
   const createRoleMutation = useMutation({
@@ -203,7 +191,8 @@ export function UserManagement() {
       });
       
       // Get current permissions for this role
-      const currentPermissions = await apiRequest(`/api/rbac/roles/${roleId}/permissions`, 'GET') as Permission[];
+      const currentPermissionsResponse = await apiRequest(`/api/rbac/roles/${roleId}/permissions`, 'GET');
+      const currentPermissions = await currentPermissionsResponse.json() as Permission[];
       
       // Remove all current permissions
       for (const permission of currentPermissions) {
@@ -324,40 +313,6 @@ export function UserManagement() {
     },
   });
 
-  // Create role from template mutation
-  const createFromTemplateMutation = useMutation({
-    mutationFn: async ({ template, name, description }: { template: RoleTemplate; name: string; description?: string }) => {
-      let permissionIds: string[] = [];
-      
-      if (template.permissions === "all") {
-        permissionIds = permissions.map(p => p.id);
-      } else {
-        // Map permission codes to IDs
-        permissionIds = permissions
-          .filter(p => (template.permissions as string[]).includes(p.code))
-          .map(p => p.id);
-      }
-
-      return await apiRequest('/api/rbac/roles', 'POST', {
-        name,
-        description: description || template.description,
-        permissions: permissionIds,
-        isSystemRole: false,
-      });
-    },
-    onSuccess: () => {
-      toast({ title: "Success", description: "Role created from template successfully" });
-      queryClient.invalidateQueries({ queryKey: ['/api/rbac/roles'] });
-      setShowTemplateDialog(false);
-    },
-    onError: (error: Error) => {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to create role from template",
-        variant: "destructive" 
-      });
-    },
-  });
 
   // Assign role mutation
   const assignRoleMutation = useMutation({
@@ -462,7 +417,8 @@ export function UserManagement() {
     
     try {
       // Load current permissions for this role
-      const currentPermissions = await apiRequest(`/api/rbac/roles/${role.id}/permissions`, 'GET') as Permission[];
+      const currentPermissionsResponse = await apiRequest(`/api/rbac/roles/${role.id}/permissions`, 'GET');
+      const currentPermissions = await currentPermissionsResponse.json() as Permission[];
       
       setNewRoleData({
         name: role.name,
@@ -685,15 +641,6 @@ export function UserManagement() {
           </div>
           
           <div className="flex gap-2">
-            <Button 
-              variant="outline"
-              onClick={() => setShowTemplateDialog(true)}
-              data-testid="button-create-from-template"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              From Template
-            </Button>
-            
             <Dialog open={showCreateRoleDialog} onOpenChange={(open) => {
               setShowCreateRoleDialog(open);
               if (!open) resetRoleForm();
@@ -1286,7 +1233,7 @@ export function UserManagement() {
             <div className="space-y-4">
               {auditLogsLoading ? (
                 <div className="text-center py-4">Loading audit logs...</div>
-              ) : auditLogs?.logs?.length > 0 ? (
+              ) : auditLogs?.logs && auditLogs.logs.length > 0 ? (
                 <div className="space-y-2">
                   {auditLogs.logs.map((log: AuditLog) => (
                     <div key={log.id} className="p-4 border rounded-lg" data-testid={`audit-log-${log.id}`}>
@@ -1384,64 +1331,6 @@ export function UserManagement() {
           </DialogContent>
         </Dialog>
 
-        {/* Role Templates Dialog */}
-        <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
-          <DialogContent className="max-w-4xl" data-testid="dialog-role-templates">
-            <DialogHeader>
-              <DialogTitle>Create Role from Template</DialogTitle>
-              <DialogDescription>
-                Choose a pre-configured role template to get started quickly
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              {templatesLoading ? (
-                <div className="text-center py-4">Loading templates...</div>
-              ) : (
-                <div className="grid gap-4">
-                  {roleTemplates.map((template) => (
-                    <div key={template.id} className="p-4 border rounded-lg hover:bg-muted/50" data-testid={`template-${template.id}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">{template.name}</h4>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            const roleName = prompt(`Enter name for new role based on "${template.name}":`);
-                            if (roleName) {
-                              createFromTemplateMutation.mutate({
-                                template,
-                                name: roleName,
-                                description: template.description
-                              });
-                            }
-                          }}
-                          disabled={createFromTemplateMutation.isPending}
-                          data-testid={`button-use-template-${template.id}`}
-                        >
-                          Use Template
-                        </Button>
-                      </div>
-                      
-                      <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
-                      
-                      <div className="text-xs">
-                        <span className="font-medium">Permissions: </span>
-                        {template.permissions === "all" ? (
-                          <Badge variant="default">All Permissions</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            {Array.isArray(template.permissions) ? template.permissions.length : 0} permissions
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </PermissionGuard>
   );
