@@ -56,8 +56,14 @@ import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYea
 import bcrypt from "bcrypt";
 
 export interface IStorage {
-  // User operations
+  // Unified user operations
   getUser(id: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByMobile(mobile: string): Promise<User | undefined>;
+  getUserByPhone(phone: string): Promise<User | undefined>;
+  createUser(user: Omit<UpsertUser, 'id'>): Promise<User>;
+  updateUser(id: string, user: Partial<UpsertUser>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Customer operations
@@ -172,10 +178,12 @@ export interface IStorage {
   getCustomerRoles(customerId: string): Promise<RoleWithPermissions[]>;
   getCustomerWithRoles(customerId: string): Promise<CustomerWithRoles | undefined>;
   
-  // Permission checking
+  // Unified permission checking
   userHasPermission(userId: string, permissionCode: string): Promise<boolean>;
-  customerHasPermission(customerId: string, permissionCode: string): Promise<boolean>;
   getUserPermissions(userId: string): Promise<string[]>;
+  
+  // Legacy permission checking (deprecated)
+  customerHasPermission(customerId: string, permissionCode: string): Promise<boolean>;
   getCustomerPermissions(customerId: string): Promise<string[]>;
 
   // Audit logging operations
@@ -195,6 +203,39 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async getUserByMobile(mobile: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.mobile, mobile));
+    return user;
+  }
+
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.phone, phone));
+    return user;
+  }
+
+  async createUser(userData: Omit<UpsertUser, 'id'>): Promise<User> {
+    const [user] = await db.insert(users).values(userData).returning();
+    return user;
+  }
+
+  async updateUser(id: string, userData: Partial<UpsertUser>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ ...userData, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {

@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,36 +48,38 @@ const settingsNavigation = [
 export default function AdminLayout({ children, title, subtitle }: AdminLayoutProps) {
   const [location] = useLocation();
   const { user } = useAuth();
-  
-  const isCustomer = (user as any)?.userType === 'customer';
+  const { hasPermission } = usePermissions();
   
   // Filter main navigation based on permissions
   const filteredNavigation = navigation.filter(item => {
-    // Customers management - only super admins can see
+    // Customer management - requires user management permission
     if (item.href === "/customers") {
-      return (user as any)?.role === "super_admin";
+      return hasPermission('user.view.all') || hasPermission('customer.manage');
     }
     
-    // PDF Templates - hide from customers (admin feature only)
+    // PDF Templates - requires template management permission
     if (item.href === "/pdf-templates") {
-      return !isCustomer;
+      return hasPermission('template.manage') || hasPermission('template.edit');
     }
     
-    // WhatsApp - hide from customers (admin feature only)
+    // WhatsApp - requires system admin permission
     if (item.href === "/whatsapp") {
-      return !isCustomer;
+      return hasPermission('system.admin');
     }
     
     return true;
   });
 
-  // Filter settings navigation - hide admin-specific settings for customers
+  // Filter settings navigation based on permissions
   const filteredSettingsNavigation = settingsNavigation.filter(item => {
-    if (isCustomer) {
-      // Customers only see Profile, hide admin settings
-      return item.href === "/profile";
+    if (item.href === "/admin/users" || item.href === "/admin/roles") {
+      return hasPermission('user.manage') || hasPermission('role.manage');
     }
-    return true; // Show all settings for admins
+    if (item.href === "/settings") {
+      return hasPermission('system.admin');
+    }
+    // Profile is always visible
+    return true;
   });
 
   const handleLogout = async () => {

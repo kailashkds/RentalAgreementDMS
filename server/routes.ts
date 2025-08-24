@@ -69,24 +69,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/dashboard/stats", requireAuth, async (req: any, res) => {
     try {
       // Check permissions to determine data access level
-      let canViewAllAgreements = false;
-      let canViewOwnAgreements = false;
-      
-      if (req.user.userType === 'customer') {
-        canViewAllAgreements = await storage.customerHasPermission(req.user.id, 'agreement.view.all');
-        canViewOwnAgreements = await storage.customerHasPermission(req.user.id, 'agreement.view.own');
-      } else {
-        canViewAllAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.all');
-        canViewOwnAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.own');
-      }
+      const canViewAllAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.all');
+      const canViewOwnAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.own');
       
       if (!canViewAllAgreements && !canViewOwnAgreements) {
         return res.status(403).json({ message: "Insufficient permissions to view dashboard" });
       }
       
       // If user can only view own agreements, filter stats by their ID
-      const customerId = (!canViewAllAgreements && canViewOwnAgreements) ? req.user.id : undefined;
-      const stats = await storage.getDashboardStats(customerId);
+      const userId = (!canViewAllAgreements && canViewOwnAgreements) ? req.user.id : undefined;
+      const stats = await storage.getDashboardStats(userId);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
@@ -109,16 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user's permissions
   app.get("/api/auth/permissions", requireAuth, async (req, res) => {
     try {
-      let permissions: string[] = [];
-      
-      if (req.user) {
-        // Admin user permissions
-        permissions = await storage.getUserPermissions(req.user.id);
-      } else if (req.customer) {
-        // Customer permissions
-        permissions = await storage.getCustomerPermissions(req.customer.id);
-      }
-      
+      const permissions = await storage.getUserPermissions(req.user!.id);
       res.json(permissions);
     } catch (error) {
       console.error("Error fetching user permissions:", error);

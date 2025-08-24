@@ -25,13 +25,25 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Users table for admin authentication
+// Unified users table - supports both admin and customer users
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Authentication fields
+  username: varchar("username", { length: 50 }).unique(), // For admin login
+  phone: varchar("phone", { length: 15 }).unique(), // For admin phone or customer mobile
+  mobile: varchar("mobile", { length: 15 }).unique(), // For customer mobile (alias for phone)
+  password: text("password").notNull(), // Password for login
+  
+  // Profile fields
+  name: text("name").notNull(), // Full name or display name
   email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
+  firstName: varchar("first_name"), // For OpenID compatibility
+  lastName: varchar("last_name"), // For OpenID compatibility 
   profileImageUrl: varchar("profile_image_url"),
+  
+  // Status and metadata
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -77,13 +89,16 @@ export const auditLogs = pgTable("audit_logs", {
   index("idx_audit_logs_timestamp").on(table.timestamp),
 ]);
 
+// Unified user roles table - works for all users
 export const userRoles = pgTable("user_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => adminUsers.id, { onDelete: 'cascade' }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
   roleId: varchar("role_id").references(() => roles.id, { onDelete: 'cascade' }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// DEPRECATED: customerRoles is merged into userRoles
+// This table will be dropped after data migration
 export const customerRoles = pgTable("customer_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   customerId: varchar("customer_id").references(() => customers.id, { onDelete: 'cascade' }).notNull(),
@@ -91,12 +106,13 @@ export const customerRoles = pgTable("customer_roles", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Customers table
+// DEPRECATED: customers table is merged into users
+// This table will be dropped after data migration
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  username: varchar("username").unique(), // Add username for login
-  mobile: varchar("mobile", { length: 15 }).notNull().unique(), // Make mobile unique
+  username: varchar("username").unique(),
+  mobile: varchar("mobile", { length: 15 }).notNull().unique(),
   email: varchar("email"),
   password: text("password"),
   isActive: boolean("is_active").default(true),
@@ -104,10 +120,10 @@ export const customers = pgTable("customers", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Properties table for customer property management
+// Properties table for user property management
 export const properties = pgTable("properties", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(), // Changed from customerId to userId
   
   // Property address details
   flatNumber: text("flat_number").notNull(),
@@ -129,18 +145,19 @@ export const properties = pgTable("properties", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
-  customerIdx: index("property_customer_idx").on(table.customerId),
+  userIdx: index("property_user_idx").on(table.userId), // Changed from customerIdx
   addressIdx: index("property_address_idx").on(table.society, table.area, table.city),
 }));
 
-// Admin users table for login system
+// DEPRECATED: adminUsers table is merged into users
+// This table will be dropped after data migration
 export const adminUsers = pgTable("admin_users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: varchar("username", { length: 50 }).notNull().unique(),
   phone: varchar("phone", { length: 15 }).notNull().unique(),
-  password: text("password").notNull(), // hashed password
+  password: text("password").notNull(),
   name: text("name").notNull(),
-  role: varchar("role", { length: 20 }).notNull().default("admin"), // admin, super_admin
+  role: varchar("role", { length: 20 }).notNull().default("admin"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -182,7 +199,7 @@ export const addresses = pgTable("addresses", {
 export const agreements: any = pgTable("agreements", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   agreementNumber: varchar("agreement_number").unique().notNull(),
-  customerId: varchar("customer_id").references(() => customers.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(), // Changed from customerId to userId
   propertyId: varchar("property_id").references(() => properties.id),
   language: varchar("language", { length: 20 }).notNull().default("english"),
   
@@ -266,6 +283,8 @@ export const customersRelations = relations(customers, ({ many }) => ({
 // RBAC Relations
 export const usersRelations = relations(users, ({ many }) => ({
   userRoles: many(userRoles),
+  properties: many(properties),
+  agreements: many(agreements),
 }));
 
 export const permissionsRelations = relations(permissions, ({ many }) => ({
@@ -275,7 +294,7 @@ export const permissionsRelations = relations(permissions, ({ many }) => ({
 export const rolesRelations = relations(roles, ({ many }) => ({
   rolePermissions: many(rolePermissions),
   userRoles: many(userRoles),
-  customerRoles: many(customerRoles),
+  customerRoles: many(customerRoles), // Will be deprecated after migration
 }));
 
 export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
@@ -312,17 +331,17 @@ export const customerRolesRelations = relations(customerRoles, ({ one }) => ({
 }));
 
 export const propertiesRelations = relations(properties, ({ one, many }) => ({
-  customer: one(customers, {
-    fields: [properties.customerId],
-    references: [customers.id],
+  user: one(users, {
+    fields: [properties.userId],
+    references: [users.id],
   }),
   agreements: many(agreements),
 }));
 
 export const agreementsRelations = relations(agreements, ({ one, many }) => ({
-  customer: one(customers, {
-    fields: [agreements.customerId],
-    references: [customers.id],
+  user: one(users, {
+    fields: [agreements.userId],
+    references: [users.id],
   }),
   property: one(properties, {
     fields: [agreements.propertyId],

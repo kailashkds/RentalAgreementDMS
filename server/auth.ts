@@ -30,28 +30,21 @@ export function getSession() {
   });
 }
 
-// Auth middleware - works for both admin and customer
+// Unified auth middleware - works for all users
 export const requireAuth: RequestHandler = async (req, res, next) => {
   if (!req.session?.userId) {
     return res.status(401).json({ message: "Authentication required" });
   }
   
   try {
-    const userType = req.session.userType || 'admin'; // Default to admin for backward compatibility
-    let user;
-    
-    if (userType === 'customer') {
-      user = await storage.getCustomer(req.session.userId);
-    } else {
-      user = await storage.getAdminUser(req.session.userId);
-    }
+    const user = await storage.getUser(req.session.userId);
     
     if (!user || !user.isActive) {
       req.session.destroy(() => {});
       return res.status(401).json({ message: "Invalid session" });
     }
     
-    req.user = { ...user, userType };
+    req.user = user;
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
@@ -63,17 +56,10 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
 export const optionalAuth: RequestHandler = async (req, res, next) => {
   if (req.session?.userId) {
     try {
-      const userType = req.session.userType || 'admin';
-      let user;
-      
-      if (userType === 'customer') {
-        user = await storage.getCustomer(req.session.userId);
-      } else {
-        user = await storage.getAdminUser(req.session.userId);
-      }
+      const user = await storage.getUser(req.session.userId);
       
       if (user && user.isActive) {
-        req.user = { ...user, userType };
+        req.user = user;
       }
     } catch (error) {
       console.error("Optional auth error:", error);
@@ -103,16 +89,23 @@ export async function setupAuth(app: Express) {
     });
   });
   
-  // Admin login endpoint
+  // Unified login endpoint - supports both username/phone and mobile login
   app.post('/api/auth/login', async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { username, mobile, password } = req.body;
       
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password required" });
+      if ((!username && !mobile) || !password) {
+        return res.status(400).json({ message: "Username/mobile and password required" });
       }
       
-      const user = await storage.getAdminUserByUsername(username);
+      // Try to find user by username or mobile
+      let user;
+      if (username) {
+        user = await storage.getUserByUsername(username);
+      } else if (mobile) {
+        user = await storage.getUserByMobile(mobile);
+      }
+      
       if (!user || !user.isActive) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -123,7 +116,6 @@ export async function setupAuth(app: Express) {
       }
       
       req.session.userId = user.id;
-      req.session.userType = 'admin';
       
       // Ensure session is saved before sending response
       req.session.save((err) => {
@@ -133,7 +125,7 @@ export async function setupAuth(app: Express) {
         }
         
         const { password: _, ...userWithoutPassword } = user;
-        res.json({ user: { ...userWithoutPassword, userType: 'admin' } });
+        res.json({ user: userWithoutPassword });
       });
     } catch (error) {
       console.error("Admin login error:", error);
@@ -141,50 +133,16 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  // Customer login endpoint
-  app.post('/api/auth/customer-login', async (req, res) => {
-    try {
-      const { mobile, password } = req.body;
-      
-      if (!mobile || !password) {
-        return res.status(400).json({ message: "Phone number and password required" });
-      }
-      
-      const customer = await storage.getCustomerByMobile(mobile);
-      if (!customer || !customer.isActive) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      // For customers, we check plain text password as per the current system
-      if (customer.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      req.session.userId = customer.id;
-      req.session.userType = 'customer';
-      
-      // Ensure session is saved before sending response
-      req.session.save((err) => {
-        if (err) {
-          console.error("Session save error:", err);
-          return res.status(500).json({ message: "Session error" });
-        }
-        
-        const { password: _, ...customerWithoutPassword } = customer;
-        res.json({ user: { ...customerWithoutPassword, userType: 'customer' } });
-      });
-    } catch (error) {
-      console.error("Customer login error:", error);
-      res.status(500).json({ message: "Login failed" });
-    }
-  });
+  // DEPRECATED: Customer login endpoint - now handled by unified /api/auth/login
+  // This endpoint is kept for backward compatibility but will be removed
   
-  // Logout endpoint
+  // Unified logout endpoint
   app.post('/api/auth/logout', (req, res) => {
     req.session.destroy((err) => {
       if (err) {
         return res.status(500).json({ message: "Logout failed" });
       }
+      res.clearCookie('connect.sid'); // Clear the session cookie
       res.json({ message: "Logged out successfully" });
     });
   });

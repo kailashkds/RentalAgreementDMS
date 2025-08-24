@@ -3,7 +3,9 @@ import { useAuth } from "./useAuth";
 
 export interface UserPermissions {
   permissions: string[];
-  userType: 'admin' | 'customer' | null;
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissionList: string[]) => boolean;
+  hasAllPermissions: (permissionList: string[]) => boolean;
 }
 
 /**
@@ -18,9 +20,23 @@ export function usePermissions(): UserPermissions & { isLoading: boolean } {
     retry: false,
   }) as { data: string[]; isLoading: boolean };
 
+  const hasPermission = (permission: string): boolean => {
+    return permissions.includes(permission);
+  };
+
+  const hasAnyPermission = (permissionList: string[]): boolean => {
+    return permissionList.some(permission => permissions.includes(permission));
+  };
+
+  const hasAllPermissions = (permissionList: string[]): boolean => {
+    return permissionList.every(permission => permissions.includes(permission));
+  };
+
   return {
     permissions,
-    userType: user ? 'admin' : null, // For now, only admin users are supported in auth
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
     isLoading: authLoading || permissionsLoading,
   };
 }
