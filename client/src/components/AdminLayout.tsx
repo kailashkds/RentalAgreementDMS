@@ -48,12 +48,31 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   const [location] = useLocation();
   const { user } = useAuth();
   
-  // Filter navigation based on user role - only super admin can see customers
+  const isCustomer = (user as any)?.userType === 'customer';
+  const isAdmin = (user as any)?.userType === 'admin' || !isCustomer;
+  
+  // Filter main navigation based on user type
   const filteredNavigation = navigation.filter(item => {
+    // Customers can't see admin-specific items
+    if (isCustomer) {
+      // Hide some admin-specific navigation for customers if needed
+      return true; // For now, show all main navigation to customers
+    }
+    
+    // Admin filtering (existing logic)
     if (item.href === "/customers") {
       return (user as any)?.role === "super_admin";
     }
     return true;
+  });
+
+  // Filter settings navigation - hide admin settings for customers
+  const filteredSettingsNavigation = settingsNavigation.filter(item => {
+    if (isCustomer) {
+      // Only show Profile for customers, hide admin settings
+      return item.href === "/profile";
+    }
+    return true; // Show all settings for admins
   });
 
   const handleLogout = async () => {
@@ -101,29 +120,31 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
               })}
             </div>
             
-            <div className="mt-8">
-              <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Settings
-              </h3>
-              <div className="mt-2 space-y-2">
-                {settingsNavigation.map((item) => {
-                  const isActive = location === item.href;
-                  return (
-                    <Link key={item.name} href={item.href}
-                        className={cn(
-                          "flex items-center px-4 py-3 rounded-lg transition-colors",
-                          isActive
-                            ? "text-primary bg-primary/10"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-primary"
-                        )}
-                      >
-                        <item.icon className="w-5 h-5 mr-3" />
-                        {item.name}
-                    </Link>
-                  );
-                })}
+            {filteredSettingsNavigation.length > 0 && (
+              <div className="mt-8">
+                <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Settings
+                </h3>
+                <div className="mt-2 space-y-2">
+                  {filteredSettingsNavigation.map((item) => {
+                    const isActive = location === item.href;
+                    return (
+                      <Link key={item.name} href={item.href}
+                          className={cn(
+                            "flex items-center px-4 py-3 rounded-lg transition-colors",
+                            isActive
+                              ? "text-primary bg-primary/10"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-primary"
+                          )}
+                        >
+                          <item.icon className="w-5 h-5 mr-3" />
+                          {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </nav>
         
@@ -135,8 +156,10 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
                 <UserCircle className="w-5 h-5 text-blue-600" />
               </div>
               <div className="text-sm">
-                <div className="font-medium text-gray-900">{(user as any)?.name || 'Administrator'}</div>
-                <div className="text-gray-500">@{(user as any)?.username || 'admin'}</div>
+                <div className="font-medium text-gray-900">{(user as any)?.name || 'User'}</div>
+                <div className="text-gray-500">
+                  {isCustomer ? (user as any)?.mobile : `@${(user as any)?.username || 'admin'}`}
+                </div>
               </div>
             </div>
             <Button variant="ghost" size="sm" onClick={handleLogout}>

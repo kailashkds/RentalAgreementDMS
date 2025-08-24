@@ -41,12 +41,7 @@ function AuthenticatedRouter() {
     return <Login />;
   }
 
-  // Customer Dashboard
-  if ((user as any)?.userType === 'customer') {
-    return <CustomerDashboard />;
-  }
-
-  // Admin Dashboard and Routes
+  // Both Admin and Customer use the same routes, but with different navigation visibility
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
