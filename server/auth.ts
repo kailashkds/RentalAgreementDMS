@@ -90,13 +90,13 @@ export async function setupAuth(app: Express) {
   // Login endpoint
   app.post('/api/auth/login', async (req, res) => {
     try {
-      const { username, password } = req.body;
+      const { phone, password } = req.body;
       
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password required" });
+      if (!phone || !password) {
+        return res.status(400).json({ message: "Phone and password required" });
       }
       
-      const user = await storage.getAdminUserByUsername(username);
+      const user = await storage.getAdminUserByPhone(phone);
       if (!user || !user.isActive) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
