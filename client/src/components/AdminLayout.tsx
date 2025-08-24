@@ -58,7 +58,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
 
   const handleLogout = async () => {
     try {
-      await apiRequest("POST", "/api/auth/logout", {});
+      await apiRequest("/api/auth/logout", "POST");
       queryClient.clear();
       window.location.reload();
     } catch (error) {
