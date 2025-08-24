@@ -67,8 +67,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get("/api/dashboard/stats", requireAuth, async (req: any, res) => {
     try {
-      // For customers, get stats filtered by their ID
-      const customerId = req.user.userType === 'customer' ? req.user.id : undefined;
+      // Check permissions to determine data access level
+      let canViewAllAgreements = false;
+      let canViewOwnAgreements = false;
+      
+      if (req.user.userType === 'customer') {
+        canViewAllAgreements = await storage.customerHasPermission(req.user.id, 'agreement.view.all');
+        canViewOwnAgreements = await storage.customerHasPermission(req.user.id, 'agreement.view.own');
+      } else {
+        canViewAllAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.all');
+        canViewOwnAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.own');
+      }
+      
+      if (!canViewAllAgreements && !canViewOwnAgreements) {
+        return res.status(403).json({ message: "Insufficient permissions to view dashboard" });
+      }
+      
+      // If user can only view own agreements, filter stats by their ID
+      const customerId = (!canViewAllAgreements && canViewOwnAgreements) ? req.user.id : undefined;
       const stats = await storage.getDashboardStats(customerId);
       res.json(stats);
     } catch (error) {
@@ -1267,10 +1283,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[API Debug] Received params:`, { dateFilter, startDate, endDate });
       
-      // For customers, only show their own agreements
-      let finalCustomerId = customerId as string;
+      // Check permissions to determine data access level
+      let canViewAllAgreements = false;
+      let canViewOwnAgreements = false;
+      
       if (req.user.userType === 'customer') {
-        finalCustomerId = req.user.id; // Force customer to only see their own agreements
+        canViewAllAgreements = await storage.customerHasPermission(req.user.id, 'agreement.view.all');
+        canViewOwnAgreements = await storage.customerHasPermission(req.user.id, 'agreement.view.own');
+      } else {
+        canViewAllAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.all');
+        canViewOwnAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.own');
+      }
+      
+      if (!canViewAllAgreements && !canViewOwnAgreements) {
+        return res.status(403).json({ message: "Insufficient permissions to view agreements" });
+      }
+      
+      // If user can only view own agreements, filter by their ID
+      let finalCustomerId = customerId as string;
+      if (!canViewAllAgreements && canViewOwnAgreements) {
+        finalCustomerId = req.user.id; // Filter to only their own agreements
       }
       
       const result = await storage.getAgreements({

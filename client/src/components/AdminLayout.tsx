@@ -49,27 +49,20 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   const { user } = useAuth();
   
   const isCustomer = (user as any)?.userType === 'customer';
-  const isAdmin = (user as any)?.userType === 'admin' || !isCustomer;
   
-  // Filter main navigation based on user type
+  // Filter main navigation based on permissions
   const filteredNavigation = navigation.filter(item => {
-    // Customers can't see admin-specific items
-    if (isCustomer) {
-      // Hide some admin-specific navigation for customers if needed
-      return true; // For now, show all main navigation to customers
-    }
-    
-    // Admin filtering (existing logic)
+    // Customers management - only super admins can see
     if (item.href === "/customers") {
       return (user as any)?.role === "super_admin";
     }
     return true;
   });
 
-  // Filter settings navigation - hide admin settings for customers
+  // Filter settings navigation - hide admin-specific settings for customers
   const filteredSettingsNavigation = settingsNavigation.filter(item => {
     if (isCustomer) {
-      // Only show Profile for customers, hide admin settings
+      // Customers only see Profile, hide admin settings
       return item.href === "/profile";
     }
     return true; // Show all settings for admins
