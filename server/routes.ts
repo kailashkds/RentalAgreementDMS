@@ -256,6 +256,209 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Unified user management endpoints
+  app.get("/api/unified/users", requireAuth, requirePermission({ anyOf: ["user.view.all", "user.view.own"] }), async (req: any, res) => {
+    try {
+      const { role, status, search, limit, offset } = req.query;
+      const result = await storage.getUsersWithRoles({
+        role: role as string,
+        status: status as string,
+        search: search as string,
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0,
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post("/api/unified/users", requireAuth, requirePermission("user.create"), async (req: any, res) => {
+    try {
+      const { name, email, username, phone, roleId, password } = req.body;
+      
+      // Validate required fields
+      if (!name || !roleId) {
+        return res.status(400).json({ message: "Name and role are required" });
+      }
+
+      // Generate credentials if not provided
+      const finalUsername = username || generateUsername(name);
+      const finalPassword = password || generatePassword();
+      const hashedPassword = await bcrypt.hash(finalPassword, 10);
+
+      // Create user
+      const user = await storage.createUser({
+        name,
+        email,
+        username: finalUsername,
+        phone,
+        password: hashedPassword,
+        status: 'active',
+        isActive: true,
+      });
+
+      // Assign role
+      if (roleId) {
+        await storage.assignUserRole(user.id, roleId);
+      }
+
+      // Log audit
+      await storage.createAuditLog({
+        action: 'user.created',
+        resourceType: 'user',
+        resourceId: user.id,
+        changedBy: req.user.id,
+        diff: { created: { name, email, username: finalUsername, roleId } },
+        metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+      });
+
+      res.status(201).json({
+        user,
+        credentials: { username: finalUsername, password: finalPassword }
+      });
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.put("/api/unified/users/:id", requireAuth, requirePermission({ anyOf: ["user.edit.all", "user.edit.own"] }), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { name, email, username, phone, status, isActive, roleId } = req.body;
+      
+      // Get existing user
+      const existingUser = await storage.getUser(id);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Update user
+      const updatedUser = await storage.updateUser(id, {
+        name,
+        email,
+        username,
+        phone,
+        status,
+        isActive,
+      });
+
+      // Update role if provided
+      if (roleId) {
+        // Remove existing roles
+        const currentRoles = await storage.getUserRoles(id);
+        for (const role of currentRoles) {
+          await storage.removeUserRole(id, role.id);
+        }
+        // Assign new role
+        await storage.assignUserRole(id, roleId);
+      }
+
+      // Log audit
+      await storage.createAuditLog({
+        action: 'user.updated',
+        resourceType: 'user',
+        resourceId: id,
+        changedBy: req.user.id,
+        diff: { 
+          before: existingUser, 
+          after: { name, email, username, phone, status, isActive, roleId } 
+        },
+        metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+      });
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/unified/users/:id", requireAuth, requirePermission({ anyOf: ["user.delete.all", "user.delete.own"] }), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent user from deleting themselves
+      if (req.user.id === id) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+
+      // Get user before deleting for audit log
+      const existingUser = await storage.getUser(id);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Delete user
+      await storage.deleteUser(id);
+
+      // Log audit
+      await storage.createAuditLog({
+        action: 'user.deleted',
+        resourceType: 'user',
+        resourceId: id,
+        changedBy: req.user.id,
+        diff: { deleted: existingUser },
+        metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  app.patch("/api/unified/users/:id/reset-password", requireAuth, requirePermission({ anyOf: ["user.edit.all", "user.edit.own"] }), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { newPassword } = req.body;
+      
+      const finalPassword = newPassword || generatePassword();
+      await storage.resetUserPassword(id, finalPassword);
+
+      // Log audit
+      await storage.createAuditLog({
+        action: 'user.password_reset',
+        resourceType: 'user',
+        resourceId: id,
+        changedBy: req.user.id,
+        metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+      });
+
+      res.json({ password: finalPassword });
+    } catch (error) {
+      console.error("Error resetting user password:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  app.patch("/api/unified/users/:id/toggle-status", requireAuth, requirePermission({ anyOf: ["user.edit.all", "user.edit.own"] }), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+      
+      const user = await storage.toggleUserStatus(id, isActive);
+
+      // Log audit
+      await storage.createAuditLog({
+        action: 'user.status_changed',
+        resourceType: 'user',
+        resourceId: id,
+        changedBy: req.user.id,
+        diff: { status: isActive ? 'active' : 'inactive' },
+        metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+      });
+
+      res.json(user);
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+      res.status(500).json({ message: "Failed to toggle user status" });
+    }
+  });
+
   // RBAC management endpoints
   app.get("/api/rbac/permissions", requireAuth, async (req, res) => {
     try {

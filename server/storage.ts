@@ -110,7 +110,7 @@ export interface IStorage {
   
 
   
-  // Admin user operations
+  // Admin user operations (DEPRECATED - use unified user operations)
   getAdminUsers(): Promise<AdminUser[]>;
   getAdminUser(id: string): Promise<AdminUser | undefined>;
   getAdminUserByPhone(phone: string): Promise<AdminUser | undefined>;
@@ -118,6 +118,13 @@ export interface IStorage {
   createAdminUser(userData: InsertAdminUser): Promise<AdminUser>;
   updateAdminUser(id: string, user: Partial<InsertAdminUser>): Promise<AdminUser>;
   deleteAdminUser(id: string): Promise<void>;
+  
+  // Unified user role operations
+  assignUserRole(userId: string, roleId: string): Promise<void>;
+  removeUserRole(userId: string, roleId: string): Promise<void>;
+  getUserRoles(userId: string): Promise<Role[]>;
+  getUserPermissions(userId: string): Promise<string[]>;
+  getUsersWithRoles(filters?: { role?: string; status?: string; search?: string; limit?: number; offset?: number }): Promise<{ users: UserWithRoles[]; total: number }>;
   
   // Agreement operations
   getAgreements(filters?: {
@@ -258,6 +265,102 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: string): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
+  }
+
+  async resetUserPassword(id: string, newPassword: string): Promise<User> {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const encryptedPassword = encryptPasswordForStorage(newPassword);
+    
+    const [user] = await db
+      .update(users)
+      .set({ 
+        password: hashedPassword,
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async toggleUserStatus(id: string, isActive: boolean): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        isActive, 
+        status: isActive ? 'active' : 'inactive',
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async assignUserRole(userId: string, roleId: string): Promise<void> {
+    await this.assignRoleToUser(userId, roleId);
+  }
+
+  async removeUserRole(userId: string, roleId: string): Promise<void> {
+    await this.removeRoleFromUser(userId, roleId);
+  }
+
+  async getUsersWithRoles(filters?: { role?: string; status?: string; search?: string; limit?: number; offset?: number }): Promise<{ users: UserWithRoles[]; total: number }> {
+    let conditions: any[] = [];
+    
+    if (filters?.search) {
+      conditions.push(
+        or(
+          ilike(users.name, `%${filters.search}%`),
+          ilike(users.email, `%${filters.search}%`),
+          ilike(users.username, `%${filters.search}%`),
+          ilike(users.phone, `%${filters.search}%`)
+        )
+      );
+    }
+    
+    if (filters?.status) {
+      conditions.push(eq(users.status, filters.status));
+    }
+    
+    const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get users
+    const usersResult = await db
+      .select()
+      .from(users)
+      .where(whereConditions)
+      .orderBy(desc(users.createdAt))
+      .limit(filters?.limit || 50)
+      .offset(filters?.offset || 0);
+
+    // Get total count
+    const totalResult = await db
+      .select({ count: count() })
+      .from(users)
+      .where(whereConditions);
+
+    // Get roles for each user
+    const usersWithRoles = await Promise.all(
+      usersResult.map(async (user) => {
+        const userRoles = await this.getUserRoles(user.id);
+        return {
+          ...user,
+          roles: userRoles,
+        };
+      })
+    );
+
+    // Filter by role if specified
+    let filteredUsers = usersWithRoles;
+    if (filters?.role) {
+      filteredUsers = usersWithRoles.filter(user => 
+        user.roles.some(role => role.name === filters.role)
+      );
+    }
+
+    return {
+      users: filteredUsers,
+      total: totalResult[0].count as number,
+    };
   }
 
   async getUsers(filters?: { 
