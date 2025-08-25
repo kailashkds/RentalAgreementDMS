@@ -349,7 +349,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     // Save addresses to database
     for (const address of addressesToSave) {
       try {
-        await apiRequest("POST", "/api/addresses", address);
+        await apiRequest("/api/addresses", "POST", address);
       } catch (error) {
         console.error("Error saving address:", error);
       }
@@ -413,7 +413,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       // Fetch and populate form with existing agreement data
       const loadAgreement = async () => {
         try {
-          const agreement = await apiRequest("GET", `/api/agreements/${agreementId}`) as any;
+          const agreement = await apiRequest(`/api/agreements/${agreementId}`, "GET") as any;
           
           // Convert agreement data to form format, handling address structure
           const formData: AgreementFormData = {
@@ -765,11 +765,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       
       if (searchType === 'mobile' && searchTerm.replace(/\D/g, '').length === 10) {
         console.log(`Looking up customer by mobile: ${searchTerm}`);
-        const response = await apiRequest("GET", `/api/customers/by-mobile?mobile=${encodeURIComponent(searchTerm)}`);
+        const response = await apiRequest(`/api/customers/by-mobile?mobile=${encodeURIComponent(searchTerm)}`, "GET");
         customer = await response.json();
       } else if (searchType === 'name' && searchTerm.trim().length >= 3) {
         console.log(`Looking up customer by name: ${searchTerm}`);
-        const response = await apiRequest("GET", `/api/customers?search=${encodeURIComponent(searchTerm)}`);
+        const response = await apiRequest(`/api/customers?search=${encodeURIComponent(searchTerm)}`, "GET");
         const data = await response.json();
         // Find exact or close match
         const customers = data.customers || [];
@@ -836,7 +836,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   // Fill associated address from customer's previous agreements
   const fillAssociatedAddress = async (customerId: string, userType: 'owner' | 'tenant') => {
     try {
-      const response = await apiRequest("GET", `/api/agreements?customerId=${customerId}&limit=1`);
+      const response = await apiRequest(`/api/agreements?customerId=${customerId}&limit=1`, "GET");
       const data = await response.json();
       const agreements = data.agreements || [];
       
@@ -919,7 +919,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
 
   const getUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload");
+    const response = await apiRequest("/api/objects/upload", "POST");
     const data = await response.json();
     return {
       method: "PUT" as const,
@@ -955,7 +955,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
         agreementDate: new Date().toISOString().split('T')[0],
       };
 
-      const response = await apiRequest("POST", "/api/agreements", agreementData);
+      const response = await apiRequest("/api/agreements", "POST", agreementData);
       const agreement = await response.json();
 
       queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
@@ -1284,7 +1284,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
       console.log('Creating agreement with language:', agreementData.language);
 
-      const response = await apiRequest("POST", "/api/agreements", agreementData);
+      const response = await apiRequest("/api/agreements", "POST", agreementData);
       const agreement = await response.json();
       
       // Store the created agreement ID for PDF generation
@@ -1350,7 +1350,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
       console.log('Updating agreement with language:', agreementData.language);
 
-      const response = await apiRequest("PUT", `/api/agreements/${agreementId}`, agreementData);
+      const response = await apiRequest(`/api/agreements/${agreementId}`, "PUT", agreementData);
       const agreement = await response.json();
       
       // Use the existing agreement number
