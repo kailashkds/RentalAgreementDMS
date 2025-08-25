@@ -9,7 +9,7 @@ import {
   pdfTemplates,
   permissions,
   roles,
-  rolePermissions,
+  rolePermissions as rolePermissionsTable,
   userRoles,
   customerRoles,
   userPermissions,
@@ -1429,7 +1429,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePermission(id: string): Promise<void> {
-    await db.delete(rolePermissions).where(eq(rolePermissions.permissionId, id));
+    await db.delete(rolePermissionsTable).where(eq(rolePermissionsTable.permissionId, id));
     await db.delete(permissions).where(eq(permissions.id, id));
   }
 
@@ -1441,8 +1441,8 @@ export class DatabaseStorage implements IStorage {
         permission: permissions,
       })
       .from(roles)
-      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
-      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .leftJoin(rolePermissionsTable, eq(roles.id, rolePermissionsTable.roleId))
+      .leftJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .orderBy(roles.name);
 
     const rolesMap = new Map<string, RoleWithPermissions>();
@@ -1470,20 +1470,20 @@ export class DatabaseStorage implements IStorage {
         permission: permissions,
       })
       .from(roles)
-      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
-      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .leftJoin(rolePermissionsTable, eq(roles.id, rolePermissionsTable.roleId))
+      .leftJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(roles.id, id));
 
     if (result.length === 0) return undefined;
 
     const role = result[0].role;
-    const rolePermissionsList = result
+    const rolePermissionsTableList = result
       .filter(row => row.permission)
       .map(row => row.permission!);
 
     return {
       ...role,
-      permissions: rolePermissionsList,
+      permissions: rolePermissionsTableList,
     };
   }
 
@@ -1494,20 +1494,20 @@ export class DatabaseStorage implements IStorage {
         permission: permissions,
       })
       .from(roles)
-      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
-      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .leftJoin(rolePermissionsTable, eq(roles.id, rolePermissionsTable.roleId))
+      .leftJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(roles.name, name));
 
     if (result.length === 0) return undefined;
 
     const role = result[0].role;
-    const rolePermissionsList = result
+    const rolePermissionsTableList = result
       .filter(row => row.permission)
       .map(row => row.permission!);
 
     return {
       ...role,
-      permissions: rolePermissionsList,
+      permissions: rolePermissionsTableList,
     };
   }
 
@@ -1526,7 +1526,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteRole(id: string): Promise<void> {
-    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, id));
+    await db.delete(rolePermissionsTable).where(eq(rolePermissionsTable.roleId, id));
     await db.delete(userRoles).where(eq(userRoles.roleId, id));
     await db.delete(customerRoles).where(eq(customerRoles.roleId, id));
     await db.delete(roles).where(eq(roles.id, id));
@@ -1535,7 +1535,7 @@ export class DatabaseStorage implements IStorage {
   // Role-Permission operations
   async assignPermissionToRole(roleId: string, permissionId: string): Promise<RolePermission> {
     const [rolePermission] = await db
-      .insert(rolePermissions)
+      .insert(rolePermissionsTable)
       .values({ roleId, permissionId })
       .returning();
     return rolePermission;
@@ -1543,16 +1543,16 @@ export class DatabaseStorage implements IStorage {
 
   async removePermissionFromRole(roleId: string, permissionId: string): Promise<void> {
     await db
-      .delete(rolePermissions)
-      .where(and(eq(rolePermissions.roleId, roleId), eq(rolePermissions.permissionId, permissionId)));
+      .delete(rolePermissionsTable)
+      .where(and(eq(rolePermissionsTable.roleId, roleId), eq(rolePermissionsTable.permissionId, permissionId)));
   }
 
   async getRolePermissions(roleId: string): Promise<Permission[]> {
     const result = await db
       .select({ permission: permissions })
-      .from(rolePermissions)
-      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .where(eq(rolePermissions.roleId, roleId));
+      .from(rolePermissionsTable)
+      .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
+      .where(eq(rolePermissionsTable.roleId, roleId));
 
     return result.map(row => row.permission);
   }
@@ -1591,8 +1591,8 @@ export class DatabaseStorage implements IStorage {
       })
       .from(userRoles)
       .innerJoin(roles, eq(userRoles.roleId, roles.id))
-      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
-      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .leftJoin(rolePermissionsTable, eq(roles.id, rolePermissionsTable.roleId))
+      .leftJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(userRoles.userId, userId));
 
     const rolesMap = new Map<string, RoleWithPermissions>();
@@ -1659,8 +1659,8 @@ export class DatabaseStorage implements IStorage {
       })
       .from(customerRoles)
       .innerJoin(roles, eq(customerRoles.roleId, roles.id))
-      .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
-      .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .leftJoin(rolePermissionsTable, eq(roles.id, rolePermissionsTable.roleId))
+      .leftJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(customerRoles.customerId, customerId));
 
     const rolesMap = new Map<string, RoleWithPermissions>();
@@ -1698,8 +1698,8 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({ count: count() })
       .from(userRoles)
-      .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
-      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .innerJoin(rolePermissionsTable, eq(userRoles.roleId, rolePermissionsTable.roleId))
+      .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(and(eq(userRoles.userId, userId), eq(permissions.code, permissionCode)));
 
     return result[0].count > 0;
@@ -1709,8 +1709,8 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({ count: count() })
       .from(customerRoles)
-      .innerJoin(rolePermissions, eq(customerRoles.roleId, rolePermissions.roleId))
-      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .innerJoin(rolePermissionsTable, eq(customerRoles.roleId, rolePermissionsTable.roleId))
+      .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(and(eq(customerRoles.customerId, customerId), eq(permissions.code, permissionCode)));
 
     return result[0].count > 0;
@@ -1721,8 +1721,8 @@ export class DatabaseStorage implements IStorage {
     const rolePermissionResults = await db
       .select({ code: permissions.code })
       .from(userRoles)
-      .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
-      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .innerJoin(rolePermissionsTable, eq(userRoles.roleId, rolePermissionsTable.roleId))
+      .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(userRoles.userId, userId));
 
     // Get manual permission overrides
@@ -1750,8 +1750,8 @@ export class DatabaseStorage implements IStorage {
       })
       .from(userRoles)
       .innerJoin(roles, eq(userRoles.roleId, roles.id))
-      .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
-      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .innerJoin(rolePermissionsTable, eq(userRoles.roleId, rolePermissionsTable.roleId))
+      .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(userRoles.userId, userId));
 
     // Get manual permission overrides
@@ -1825,8 +1825,8 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({ code: permissions.code })
       .from(customerRoles)
-      .innerJoin(rolePermissions, eq(customerRoles.roleId, rolePermissions.roleId))
-      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .innerJoin(rolePermissionsTable, eq(customerRoles.roleId, rolePermissionsTable.roleId))
+      .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(customerRoles.customerId, customerId));
 
     return result.map(row => row.code);
