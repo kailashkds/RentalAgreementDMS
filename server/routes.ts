@@ -304,22 +304,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.assignUserRole(user.id, roleId);
       }
 
-      // Log audit
-      await storage.createAuditLog({
-        action: 'user.created',
-        resourceType: 'user',
-        resourceId: user.id,
-        changedBy: req.user.id,
-        diff: { created: { name, email, username: finalUsername, roleId } },
-        metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
-      });
+      // Log audit (non-blocking)
+      try {
+        await storage.createAuditLog({
+          action: 'user.created',
+          resourceType: 'user',
+          resourceId: user.id,
+          changedBy: req.user.id,
+          diff: { created: { name, email, username: finalUsername, roleId } },
+          metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
 
       res.status(201).json({
         user,
         credentials: { username: finalUsername, password: finalPassword }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating user:", error);
+      
+      // Handle specific constraint violations
+      if (error.code === '23505') {
+        if (error.detail?.includes('email')) {
+          return res.status(400).json({ message: "Email already exists" });
+        }
+        if (error.detail?.includes('username')) {
+          return res.status(400).json({ message: "Username already exists" });
+        }
+        if (error.detail?.includes('phone') || error.detail?.includes('mobile')) {
+          return res.status(400).json({ message: "Phone number already exists" });
+        }
+      }
+      
       res.status(500).json({ message: "Failed to create user" });
     }
   });
@@ -356,18 +374,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.assignUserRole(id, roleId);
       }
 
-      // Log audit
-      await storage.createAuditLog({
-        action: 'user.updated',
-        resourceType: 'user',
-        resourceId: id,
-        changedBy: req.user.id,
-        diff: { 
-          before: existingUser, 
-          after: { name, email, username, phone, status, isActive, roleId } 
-        },
-        metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
-      });
+      // Log audit (non-blocking)
+      try {
+        await storage.createAuditLog({
+          action: 'user.updated',
+          resourceType: 'user',
+          resourceId: id,
+          changedBy: req.user.id,
+          diff: { 
+            before: existingUser, 
+            after: { name, email, username, phone, status, isActive, roleId } 
+          },
+          metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
 
       res.json(updatedUser);
     } catch (error) {
@@ -394,15 +416,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete user
       await storage.deleteUser(id);
 
-      // Log audit
-      await storage.createAuditLog({
-        action: 'user.deleted',
-        resourceType: 'user',
-        resourceId: id,
-        changedBy: req.user.id,
-        diff: { deleted: existingUser },
-        metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
-      });
+      // Log audit (non-blocking)
+      try {
+        await storage.createAuditLog({
+          action: 'user.deleted',
+          resourceType: 'user',
+          resourceId: id,
+          changedBy: req.user.id,
+          diff: { deleted: existingUser },
+          metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
 
       res.status(204).send();
     } catch (error) {
@@ -419,14 +445,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const finalPassword = newPassword || generatePassword();
       await storage.resetUserPassword(id, finalPassword);
 
-      // Log audit
-      await storage.createAuditLog({
-        action: 'user.password_reset',
-        resourceType: 'user',
-        resourceId: id,
-        changedBy: req.user.id,
-        metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
-      });
+      // Log audit (non-blocking)
+      try {
+        await storage.createAuditLog({
+          action: 'user.password_reset',
+          resourceType: 'user',
+          resourceId: id,
+          changedBy: req.user.id,
+          metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
 
       res.json({ password: finalPassword });
     } catch (error) {
@@ -442,15 +472,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const user = await storage.toggleUserStatus(id, isActive);
 
-      // Log audit
-      await storage.createAuditLog({
-        action: 'user.status_changed',
-        resourceType: 'user',
-        resourceId: id,
-        changedBy: req.user.id,
-        diff: { status: isActive ? 'active' : 'inactive' },
-        metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
-      });
+      // Log audit (non-blocking)
+      try {
+        await storage.createAuditLog({
+          action: 'user.status_changed',
+          resourceType: 'user',
+          resourceId: id,
+          changedBy: req.user.id,
+          diff: { status: isActive ? 'active' : 'inactive' },
+          metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
 
       res.json(user);
     } catch (error) {
