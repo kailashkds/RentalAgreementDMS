@@ -1341,6 +1341,17 @@ export class DatabaseStorage implements IStorage {
 
   // User-Role operations
   async assignRoleToUser(userId: string, roleId: string): Promise<UserRole> {
+    // Check if role is already assigned to avoid duplicate key errors
+    const existing = await db
+      .select()
+      .from(userRoles)
+      .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)))
+      .limit(1);
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    
     const [userRole] = await db
       .insert(userRoles)
       .values({ userId, roleId })
@@ -1398,6 +1409,17 @@ export class DatabaseStorage implements IStorage {
 
   // Customer-Role operations
   async assignRoleToCustomer(customerId: string, roleId: string): Promise<CustomerRole> {
+    // Check if role is already assigned to avoid duplicate key errors
+    const existing = await db
+      .select()
+      .from(customerRoles)
+      .where(and(eq(customerRoles.customerId, customerId), eq(customerRoles.roleId, roleId)))
+      .limit(1);
+    
+    if (existing.length > 0) {
+      return existing[0];
+    }
+    
     const [customerRole] = await db
       .insert(customerRoles)
       .values({ customerId, roleId })
@@ -1533,7 +1555,7 @@ export class DatabaseStorage implements IStorage {
 
     if (conditions.length > 0) {
       const whereCondition = conditions.length === 1 ? conditions[0] : and(...conditions);
-      query = query.where(whereCondition);
+      query = query.where(whereCondition) as any;
     }
 
     // Get total count
@@ -1543,7 +1565,7 @@ export class DatabaseStorage implements IStorage {
     
     if (conditions.length > 0) {
       const whereCondition = conditions.length === 1 ? conditions[0] : and(...conditions);
-      countQuery = countQuery.where(whereCondition);
+      countQuery = countQuery.where(whereCondition) as any;
     }
 
     const [{ total }] = await countQuery;

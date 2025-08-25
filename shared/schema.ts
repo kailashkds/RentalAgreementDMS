@@ -31,8 +31,8 @@ export const users = pgTable("users", {
   
   // Authentication fields
   username: varchar("username", { length: 50 }).unique(), // For admin login
-  phone: varchar("phone", { length: 15 }).unique(), // For admin phone or customer mobile
-  mobile: varchar("mobile", { length: 15 }).unique(), // For customer mobile (alias for phone)
+  phone: varchar("phone", { length: 20 }).unique(), // For admin phone or customer mobile
+  mobile: varchar("mobile", { length: 20 }).unique(), // For customer mobile (alias for phone)
   password: text("password").notNull(), // Password for login
   
   // Profile fields
@@ -115,7 +115,7 @@ export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   username: varchar("username").unique(),
-  mobile: varchar("mobile", { length: 15 }).notNull().unique(),
+  mobile: varchar("mobile", { length: 20 }).notNull().unique(),
   email: varchar("email"),
   password: text("password"),
   isActive: boolean("is_active").default(true),
