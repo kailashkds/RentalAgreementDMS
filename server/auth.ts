@@ -44,7 +44,10 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid session" });
     }
     
-    req.user = user;
+    req.user = {
+      ...user,
+      role: user.defaultRole || 'Customer'
+    };
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
@@ -59,7 +62,10 @@ export const optionalAuth: RequestHandler = async (req, res, next) => {
       const user = await storage.getUser(req.session.userId);
       
       if (user && user.isActive) {
-        req.user = user;
+        req.user = {
+          ...user,
+          role: user.defaultRole || 'Customer'
+        };
       }
     } catch (error) {
       console.error("Optional auth error:", error);
@@ -263,12 +269,11 @@ declare global {
         role: string;
         name: string;
         password: string;
-        username: string;
-        phone: string;
+        username: string | null;
+        phone: string | null;
         isActive: boolean | null;
         createdAt: Date | null;
         updatedAt: Date | null;
-        [key: string]: any;
       };
     }
   }
