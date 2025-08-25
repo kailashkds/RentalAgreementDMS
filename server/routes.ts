@@ -1473,15 +1473,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/agreements/:id", async (req, res) => {
     try {
+      console.log("=== UPDATING AGREEMENT ===");
+      console.log("Agreement ID:", req.params.id);
+      console.log("Request body keys:", Object.keys(req.body));
+      console.log("Request body sample:", JSON.stringify(req.body, null, 2).substring(0, 500));
+      
       const agreementData = insertAgreementSchema.partial().parse(req.body);
+      console.log("Parsed agreement data successfully");
+      
       const agreement = await storage.updateAgreement(req.params.id, agreementData);
+      console.log("Agreement updated successfully:", agreement.id);
+      
       res.json(agreement);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("=== ZOD VALIDATION ERROR ===");
+        console.error("Validation errors:", JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ message: "Invalid agreement data", errors: error.errors });
       }
-      console.error("Error updating agreement:", error);
-      res.status(500).json({ message: "Failed to update agreement" });
+      
+      console.error("=== UPDATE AGREEMENT ERROR ===");
+      console.error("Error type:", error.constructor.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      
+      res.status(500).json({ 
+        message: "Failed to update agreement",
+        error: error.message 
+      });
     }
   });
 

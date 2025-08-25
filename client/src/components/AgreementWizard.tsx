@@ -1370,9 +1370,26 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       return updatedAgreement;
     } catch (error) {
       console.error("Update agreement error:", error);
+      
+      // Try to extract more specific error information
+      let errorMessage = "Failed to update agreement.";
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+        
+        // Check if it's an API error with response
+        if (error.message.includes("400:") || error.message.includes("422:")) {
+          errorMessage = "Invalid agreement data. Please check all required fields.";
+        } else if (error.message.includes("500:")) {
+          errorMessage = "Server error while updating agreement. Please try again.";
+        } else if (error.message.includes("404:")) {
+          errorMessage = "Agreement not found. It may have been deleted.";
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to update agreement.",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;
