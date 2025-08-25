@@ -202,17 +202,35 @@ export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    if (!user) return undefined;
+    
+    // Map defaultRole to role for compatibility
+    return {
+      ...user,
+      role: user.defaultRole || 'Customer'
+    } as User;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    if (!user) return undefined;
+    
+    // Map defaultRole to role for compatibility
+    return {
+      ...user,
+      role: user.defaultRole || 'Customer'
+    } as User;
   }
 
   async getUserByMobile(mobile: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.mobile, mobile));
-    return user;
+    if (!user) return undefined;
+    
+    // Map defaultRole to role for compatibility
+    return {
+      ...user,
+      role: user.defaultRole || 'Customer'
+    } as User;
   }
 
   async getUserByPhone(phone: string): Promise<User | undefined> {
@@ -394,12 +412,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCustomer(customerData: InsertCustomer & { password?: string }): Promise<Customer> {
-    // Store password in plain text as requested by user
+    const plainPassword = customerData.password || "default123";
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+    
     const [newCustomer] = await db
       .insert(customers)
       .values({
         ...customerData,
-        password: customerData.password || "default123",
+        password: hashedPassword, // Store bcrypt hashed password
+        plainPassword: plainPassword, // Store plain text copy for admin visibility
       })
       .returning();
     
@@ -420,10 +441,22 @@ export class DatabaseStorage implements IStorage {
     return newCustomer;
   }
 
-  async updateCustomer(id: string, customerData: Partial<InsertCustomer>): Promise<Customer> {
+  async updateCustomer(id: string, customerData: Partial<InsertCustomer> & { password?: string }): Promise<Customer> {
+    let updateData = { ...customerData, updatedAt: new Date() };
+    
+    // If password is being updated, hash it and store both versions
+    if (customerData.password) {
+      const hashedPassword = await bcrypt.hash(customerData.password, 10);
+      updateData = {
+        ...updateData,
+        password: hashedPassword, // Store bcrypt hashed password
+        plainPassword: customerData.password, // Store plain text copy for admin visibility
+      };
+    }
+    
     const [customer] = await db
       .update(customers)
-      .set({ ...customerData, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(customers.id, id))
       .returning();
     return customer;
@@ -444,10 +477,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async resetCustomerPassword(id: string, newPassword: string): Promise<Customer> {
-    // Store password in plain text as requested by user
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
     const [customer] = await db
       .update(customers)
-      .set({ password: newPassword, updatedAt: new Date() })
+      .set({ 
+        password: hashedPassword, // Store bcrypt hashed password
+        plainPassword: newPassword, // Store plain text copy for admin visibility
+        updatedAt: new Date() 
+      })
       .where(eq(customers.id, id))
       .returning();
     return customer;

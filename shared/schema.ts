@@ -117,7 +117,8 @@ export const customers = pgTable("customers", {
   username: varchar("username").unique(),
   mobile: varchar("mobile", { length: 20 }).notNull().unique(),
   email: varchar("email"),
-  password: text("password"),
+  password: text("password"), // bcrypt hashed password for authentication
+  plainPassword: text("plain_password"), // plain text copy for admin visibility
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

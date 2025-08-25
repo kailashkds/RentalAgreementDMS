@@ -124,11 +124,12 @@ export async function setupAuth(app: Express) {
               profileImageUrl: null,
               isActive: customer.isActive,
               status: customer.isActive ? 'active' : 'inactive',
+              role: 'Customer',
               defaultRole: 'Customer',
               permissions: [],
               createdAt: customer.createdAt,
               updatedAt: customer.updatedAt
-            } as User;
+            };
             isCustomer = true;
           }
         }
@@ -138,10 +139,11 @@ export async function setupAuth(app: Express) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      // For customers, use plain text comparison; for admin users, use bcrypt
+      // For customers, use bcrypt comparison; for admin users, use bcrypt
       let validPassword = false;
       if (isCustomer) {
-        validPassword = password === user.password;
+        // Use bcrypt for customer authentication
+        validPassword = await bcrypt.compare(password, user.password || '');
       } else {
         validPassword = await bcrypt.compare(password, user.password || '');
       }

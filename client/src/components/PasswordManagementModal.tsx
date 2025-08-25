@@ -14,6 +14,7 @@ interface Customer {
   mobile: string;
   email?: string;
   password: string;
+  plainPassword?: string; // Plain text copy for admin visibility
   isActive: boolean;
 }
 
@@ -146,7 +147,7 @@ export default function PasswordManagementModal({
               <Input
                 id="current-password"
                 type={showPassword ? "text" : "password"}
-                value={customer.password}
+                value={customer.plainPassword || customer.password}
                 readOnly
                 className="pr-10 bg-gray-50"
                 data-testid="input-current-password"
