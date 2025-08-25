@@ -1288,27 +1288,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId, status, search, dateFilter, startDate, endDate, limit, offset } = req.query;
       
-      console.log(`[API Debug] Received params:`, { dateFilter, startDate, endDate });
+      // Cache permission checks to avoid repeated database hits
+      const cacheKey = `${req.user.id}_${req.user.userType}_permissions`;
+      let permissions = req.user.cachedPermissions;
       
-      // Check permissions to determine data access level
-      let canViewAllAgreements = false;
-      let canViewOwnAgreements = false;
-      
-      if (req.user.userType === 'customer') {
-        canViewAllAgreements = await storage.customerHasPermission(req.user.id, 'agreement.view.all');
-        canViewOwnAgreements = await storage.customerHasPermission(req.user.id, 'agreement.view.own');
-      } else {
-        canViewAllAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.all');
-        canViewOwnAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.own');
+      if (!permissions) {
+        // Check permissions to determine data access level
+        let canViewAllAgreements = false;
+        let canViewOwnAgreements = false;
+        
+        if (req.user.userType === 'customer') {
+          [canViewAllAgreements, canViewOwnAgreements] = await Promise.all([
+            storage.customerHasPermission(req.user.id, 'agreement.view.all'),
+            storage.customerHasPermission(req.user.id, 'agreement.view.own')
+          ]);
+        } else {
+          [canViewAllAgreements, canViewOwnAgreements] = await Promise.all([
+            storage.userHasPermission(req.user.id, 'agreement.view.all'),
+            storage.userHasPermission(req.user.id, 'agreement.view.own')
+          ]);
+        }
+        
+        permissions = { canViewAllAgreements, canViewOwnAgreements };
+        req.user.cachedPermissions = permissions; // Cache for this request
       }
       
-      if (!canViewAllAgreements && !canViewOwnAgreements) {
+      if (!permissions.canViewAllAgreements && !permissions.canViewOwnAgreements) {
         return res.status(403).json({ message: "Insufficient permissions to view agreements" });
       }
       
       // If user can only view own agreements, filter by their ID
       let finalCustomerId = customerId as string;
-      if (!canViewAllAgreements && canViewOwnAgreements) {
+      if (!permissions.canViewAllAgreements && permissions.canViewOwnAgreements) {
         finalCustomerId = req.user.id; // Filter to only their own agreements
       }
       

@@ -650,7 +650,7 @@ export class DatabaseStorage implements IStorage {
   }): Promise<{ agreements: Agreement[]; total: number }> {
     const { customerId, propertyId, status, search, dateFilter, startDate, endDate, limit = 50, offset = 0 } = filters || {};
     
-    console.log(`[Date Filter Debug] Received parameters:`, { dateFilter, startDate, endDate });
+    // console.log(`[Date Filter Debug] Received parameters:`, { dateFilter, startDate, endDate }); // Removed for performance
     
     // Build date condition for agreement expiration date filtering (endDate field)
     let dateCondition;
@@ -672,7 +672,7 @@ export class DatabaseStorage implements IStorage {
             gte(agreements.endDate, cleanStartDate),
             lte(agreements.endDate, cleanEndDate)
           );
-          console.log(`[Date Filter] Applied expiration date filter: ${cleanStartDate} to ${cleanEndDate}`);
+          // console.log(`[Date Filter] Applied expiration date filter: ${cleanStartDate} to ${cleanEndDate}`); // Removed for performance
         } else {
           console.error('[Date Filter] Invalid date format:', { startDate, endDate });
         }
@@ -680,7 +680,7 @@ export class DatabaseStorage implements IStorage {
         console.error('[Date Filter] Error parsing dates:', e);
       }
     } else {
-      console.log('[Date Filter] No date filtering applied - missing start or end date');
+      // console.log('[Date Filter] No date filtering applied - missing start or end date'); // Removed for performance
     }
     // For no date filter or 'all' filter, dateCondition remains undefined (no date filtering)
     
@@ -753,87 +753,64 @@ export class DatabaseStorage implements IStorage {
     return this.convertToUpperCase(agreement);
   }
 
-  // Helper function to convert names, professions, and addresses to uppercase
+  // Optimized helper function to convert names, professions, and addresses to uppercase
   private convertToUpperCase(data: any): any {
     if (!data || typeof data !== 'object') return data;
-    
-    const converted = { ...data };
     
     // Helper function to safely convert string to uppercase
     const safeUpperCase = (value: any): string => {
       return (value && typeof value === 'string') ? value.toUpperCase() : value;
     };
     
-    // Convert owner details
-    if (converted.ownerDetails && typeof converted.ownerDetails === 'object') {
-      const owner = converted.ownerDetails;
-      if (owner.name) owner.name = safeUpperCase(owner.name);
-      if (owner.profession) owner.profession = safeUpperCase(owner.profession);
-      if (owner.occupation) owner.occupation = safeUpperCase(owner.occupation);
-      if (owner.address) owner.address = safeUpperCase(owner.address);
-      if (owner.fullAddress) owner.fullAddress = safeUpperCase(owner.fullAddress);
+    // Process fields in-place for better performance
+    const processDetails = (details: any) => {
+      if (!details || typeof details !== 'object') return;
+      
+      // Convert main fields
+      if (details.name) details.name = safeUpperCase(details.name);
+      if (details.profession) details.profession = safeUpperCase(details.profession);
+      if (details.occupation) details.occupation = safeUpperCase(details.occupation);
+      if (details.address && typeof details.address === 'string') details.address = safeUpperCase(details.address);
+      if (details.fullAddress) details.fullAddress = safeUpperCase(details.fullAddress);
+      
       // Convert individual address components
-      if (owner.houseNumber) owner.houseNumber = safeUpperCase(owner.houseNumber);
-      if (owner.society) owner.society = safeUpperCase(owner.society);
-      if (owner.area) owner.area = safeUpperCase(owner.area);
-      if (owner.city) owner.city = safeUpperCase(owner.city);
-      if (owner.state) owner.state = safeUpperCase(owner.state);
+      if (details.houseNumber) details.houseNumber = safeUpperCase(details.houseNumber);
+      if (details.society) details.society = safeUpperCase(details.society);
+      if (details.area) details.area = safeUpperCase(details.area);
+      if (details.city) details.city = safeUpperCase(details.city);
+      if (details.state) details.state = safeUpperCase(details.state);
+      
       // Handle nested address object
-      if (owner.address && typeof owner.address === 'object') {
-        if (owner.address.flatNo) owner.address.flatNo = safeUpperCase(owner.address.flatNo);
-        if (owner.address.society) owner.address.society = safeUpperCase(owner.address.society);
-        if (owner.address.area) owner.address.area = safeUpperCase(owner.address.area);
-        if (owner.address.city) owner.address.city = safeUpperCase(owner.address.city);
-        if (owner.address.state) owner.address.state = safeUpperCase(owner.address.state);
+      if (details.address && typeof details.address === 'object') {
+        const addr = details.address;
+        if (addr.flatNo) addr.flatNo = safeUpperCase(addr.flatNo);
+        if (addr.society) addr.society = safeUpperCase(addr.society);
+        if (addr.area) addr.area = safeUpperCase(addr.area);
+        if (addr.city) addr.city = safeUpperCase(addr.city);
+        if (addr.state) addr.state = safeUpperCase(addr.state);
       }
+    };
+    
+    // Convert owner details
+    if (data.ownerDetails) {
+      processDetails(data.ownerDetails);
     }
     
     // Convert tenant details
-    if (converted.tenantDetails && typeof converted.tenantDetails === 'object') {
-      const tenant = converted.tenantDetails;
-      if (tenant.name) tenant.name = safeUpperCase(tenant.name);
-      if (tenant.profession) tenant.profession = safeUpperCase(tenant.profession);
-      if (tenant.occupation) tenant.occupation = safeUpperCase(tenant.occupation);
-      if (tenant.address) tenant.address = safeUpperCase(tenant.address);
-      if (tenant.fullAddress) tenant.fullAddress = safeUpperCase(tenant.fullAddress);
-      // Convert individual address components
-      if (tenant.houseNumber) tenant.houseNumber = safeUpperCase(tenant.houseNumber);
-      if (tenant.society) tenant.society = safeUpperCase(tenant.society);
-      if (tenant.area) tenant.area = safeUpperCase(tenant.area);
-      if (tenant.city) tenant.city = safeUpperCase(tenant.city);
-      if (tenant.state) tenant.state = safeUpperCase(tenant.state);
-      // Handle nested address object
-      if (tenant.address && typeof tenant.address === 'object') {
-        if (tenant.address.flatNo) tenant.address.flatNo = safeUpperCase(tenant.address.flatNo);
-        if (tenant.address.society) tenant.address.society = safeUpperCase(tenant.address.society);
-        if (tenant.address.area) tenant.address.area = safeUpperCase(tenant.address.area);
-        if (tenant.address.city) tenant.address.city = safeUpperCase(tenant.address.city);
-        if (tenant.address.state) tenant.address.state = safeUpperCase(tenant.address.state);
-      }
+    if (data.tenantDetails) {
+      processDetails(data.tenantDetails);
     }
     
-    // Convert property details addresses
-    if (converted.propertyDetails && typeof converted.propertyDetails === 'object') {
-      const property = converted.propertyDetails;
-      if (property.address) property.address = safeUpperCase(property.address);
-      if (property.fullAddress) property.fullAddress = safeUpperCase(property.fullAddress);
-      if (property.flatNumber) property.flatNumber = safeUpperCase(property.flatNumber);
-      if (property.houseNumber) property.houseNumber = safeUpperCase(property.houseNumber);
-      if (property.society) property.society = safeUpperCase(property.society);
-      if (property.area) property.area = safeUpperCase(property.area);
-      if (property.city) property.city = safeUpperCase(property.city);
-      if (property.state) property.state = safeUpperCase(property.state);
-      // Handle nested address object
-      if (property.address && typeof property.address === 'object') {
-        if (property.address.flatNo) property.address.flatNo = safeUpperCase(property.address.flatNo);
-        if (property.address.society) property.address.society = safeUpperCase(property.address.society);
-        if (property.address.area) property.address.area = safeUpperCase(property.address.area);
-        if (property.address.city) property.address.city = safeUpperCase(property.address.city);
-        if (property.address.state) property.address.state = safeUpperCase(property.address.state);
-      }
+    // Convert property details
+    if (data.propertyDetails) {
+      processDetails(data.propertyDetails);
+      // Additional property-specific fields
+      if (data.propertyDetails.type) data.propertyDetails.type = safeUpperCase(data.propertyDetails.type);
+      if (data.propertyDetails.purpose) data.propertyDetails.purpose = safeUpperCase(data.propertyDetails.purpose);
+      if (data.propertyDetails.flatNumber) data.propertyDetails.flatNumber = safeUpperCase(data.propertyDetails.flatNumber);
     }
     
-    return converted;
+    return data;
   }
 
   async createAgreement(agreementData: InsertAgreement): Promise<Agreement> {
