@@ -247,12 +247,12 @@ export class DatabaseStorage implements IStorage {
     // Normalize the input full name (trim spaces, case insensitive)
     const normalizedFullName = fullName.trim().toLowerCase();
     
-    // Find user where first_name + " " + last_name matches the full name
+    // Find user where name field matches the full name (case insensitive)
     const users_result = await db
       .select()
       .from(users)
       .where(
-        sql`LOWER(TRIM(${users.firstName} || ' ' || ${users.lastName})) = ${normalizedFullName}`
+        sql`LOWER(TRIM(${users.name})) = ${normalizedFullName}`
       );
     
     if (!users_result[0]) return undefined;

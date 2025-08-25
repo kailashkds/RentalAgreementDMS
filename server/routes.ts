@@ -284,7 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate credentials if not provided
-      const finalUsername = username || generateUsername();
+      const finalUsername = username || generateUsername(name, 'customer');
       const finalPassword = password || generatePassword();
       const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
@@ -336,6 +336,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (error.detail?.includes('phone') || error.detail?.includes('mobile')) {
           return res.status(400).json({ message: "Phone number already exists" });
         }
+      }
+      
+      // Handle foreign key violations
+      if (error.code === '23503') {
+        if (error.detail?.includes('role_id')) {
+          return res.status(400).json({ message: "Invalid role selected. Please choose a valid role." });
+        }
+        return res.status(400).json({ message: "Referenced record not found. Please check your inputs." });
       }
       
       res.status(500).json({ message: "Failed to create user" });
@@ -431,8 +439,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting user:", error);
+      
+      // Handle foreign key constraint violations
+      if (error.code === '23503') {
+        if (error.detail?.includes('agreements')) {
+          return res.status(400).json({ message: "Cannot delete user: User has existing agreements" });
+        }
+        if (error.detail?.includes('audit_logs')) {
+          return res.status(400).json({ message: "Cannot delete user: User has audit log entries" });
+        }
+        return res.status(400).json({ message: "Cannot delete user: User is still referenced by other records" });
+      }
+      
       res.status(500).json({ message: "Failed to delete user" });
     }
   });
