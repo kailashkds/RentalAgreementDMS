@@ -697,7 +697,20 @@ export class DatabaseStorage implements IStorage {
 
     const [agreementsResult, totalResult] = await Promise.all([
       db
-        .select()
+        .select({
+          id: agreements.id,
+          agreementNumber: agreements.agreementNumber,
+          customerId: agreements.customerId,
+          propertyId: agreements.propertyId,
+          status: agreements.status,
+          startDate: agreements.startDate,
+          endDate: agreements.endDate,
+          createdAt: agreements.createdAt,
+          updatedAt: agreements.updatedAt,
+          customerName: users.firstName,
+          customerPhone: users.phone,
+          customerEmail: users.email
+        })
         .from(agreements)
         .leftJoin(users, eq(agreements.customerId, users.id))
         .where(whereConditions)
@@ -712,8 +725,21 @@ export class DatabaseStorage implements IStorage {
 
     return {
       agreements: agreementsResult.map(row => ({
-        ...row.agreements,
-        customer: row.users
+        id: row.id,
+        agreementNumber: row.agreementNumber,
+        customerId: row.customerId,
+        propertyId: row.propertyId,
+        status: row.status,
+        startDate: row.startDate,
+        endDate: row.endDate,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        customer: {
+          id: row.customerId,
+          firstName: row.customerName,
+          phone: row.customerPhone,
+          email: row.customerEmail
+        }
       })) as Agreement[],
       total: totalResult[0].count,
     };

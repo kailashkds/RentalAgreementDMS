@@ -1289,29 +1289,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId, status, search, dateFilter, startDate, endDate, limit, offset } = req.query;
       
-      // Cache permission checks to avoid repeated database hits
-      const cacheKey = `${req.user.id}_${req.user.userType}_permissions`;
-      let permissions = req.user.cachedPermissions;
-      
-      if (!permissions) {
-        // Check permissions to determine data access level
-        let canViewAllAgreements = false;
-        let canViewOwnAgreements = false;
+      // For Super Admin users, skip permission checks to save time
+      let permissions;
+      if (req.user.userType === 'admin' && req.user.username === 'admin') {
+        permissions = { canViewAllAgreements: true, canViewOwnAgreements: true };
+      } else {
+        // Cache permission checks to avoid repeated database hits
+        permissions = req.user.cachedPermissions;
         
-        if (req.user.userType === 'customer') {
-          [canViewAllAgreements, canViewOwnAgreements] = await Promise.all([
-            storage.customerHasPermission(req.user.id, 'agreement.view.all'),
-            storage.customerHasPermission(req.user.id, 'agreement.view.own')
-          ]);
-        } else {
-          [canViewAllAgreements, canViewOwnAgreements] = await Promise.all([
-            storage.userHasPermission(req.user.id, 'agreement.view.all'),
-            storage.userHasPermission(req.user.id, 'agreement.view.own')
-          ]);
+        if (!permissions) {
+          // Check permissions to determine data access level
+          let canViewAllAgreements = false;
+          let canViewOwnAgreements = false;
+          
+          if (req.user.userType === 'customer') {
+            [canViewAllAgreements, canViewOwnAgreements] = await Promise.all([
+              storage.customerHasPermission(req.user.id, 'agreement.view.all'),
+              storage.customerHasPermission(req.user.id, 'agreement.view.own')
+            ]);
+          } else {
+            [canViewAllAgreements, canViewOwnAgreements] = await Promise.all([
+              storage.userHasPermission(req.user.id, 'agreement.view.all'),
+              storage.userHasPermission(req.user.id, 'agreement.view.own')
+            ]);
+          }
+          
+          permissions = { canViewAllAgreements, canViewOwnAgreements };
+          req.user.cachedPermissions = permissions; // Cache for this request
         }
-        
-        permissions = { canViewAllAgreements, canViewOwnAgreements };
-        req.user.cachedPermissions = permissions; // Cache for this request
       }
       
       if (!permissions.canViewAllAgreements && !permissions.canViewOwnAgreements) {
