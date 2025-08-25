@@ -102,7 +102,7 @@ export async function setupAuth(app: Express) {
       console.log('🔐 Login attempt:', { username, mobile, passwordLength: password?.length });
       
       if ((!username && !mobile) || !password) {
-        return res.status(400).json({ message: "Username/mobile and password required" });
+        return res.status(400).json({ message: "Username/phone number and password required" });
       }
       
       // Try to find user by username or mobile
@@ -155,7 +155,7 @@ export async function setupAuth(app: Express) {
       
       if (!user || !user.isActive) {
         console.log('❌ Login failed: no user or inactive user');
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Username/phone number or password wrong" });
       }
       
       // For customers, use bcrypt comparison; for admin users, use bcrypt
@@ -173,7 +173,7 @@ export async function setupAuth(app: Express) {
       
       if (!validPassword) {
         console.log('❌ Password validation failed');
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Username/phone number or password wrong" });
       }
       
       req.session.userId = user.id;

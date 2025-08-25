@@ -83,7 +83,19 @@ export function UnifiedUserManagement() {
 
   // Fetch users with roles
   const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ['/api/unified/users', { search: searchTerm, role: roleFilter, status: statusFilter }],
+    queryKey: ['/api/unified/users'],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (roleFilter) params.append('role', roleFilter);
+      if (statusFilter) params.append('status', statusFilter);
+      
+      const response = await fetch(`/api/unified/users?${params.toString()}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch users');
+      return response.json();
+    }
   }) as { data: { users: UnifiedUser[]; total: number } | undefined; isLoading: boolean };
 
   // Fetch roles for dropdown
