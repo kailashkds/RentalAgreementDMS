@@ -1193,8 +1193,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
         htmlSource = 'edited_html';
-        console.log(`[PDF Download] ✓ USING EDITED HTML for agreement ${req.params.id} (${agreement.editedHtml.length} chars)`);
-        // Resolve placeholders in saved edited HTML with current DB values
+        console.log(`[PDF Download] ✓ USING EDITED HTML (manual edits preserved) for agreement ${req.params.id} (${agreement.editedHtml.length} chars)`);
+        // Use saved edited HTML as-is to preserve manual edits
+        // Only resolve remaining placeholders (ones that were never edited)
         const { resolvePlaceholders } = await import("./fieldMapping");
         processedHtml = await resolvePlaceholders(agreement.editedHtml, agreement);
       } else {
@@ -1376,21 +1377,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Agreement not found" });
       }
 
-      // Convert resolved values back to placeholders before saving
-      const { convertToPlaceholders } = await import("./fieldMapping");
-      const placeholderHtml = await convertToPlaceholders(htmlContent, agreement);
-      
-      console.log(`[Save Content API] ✓ CONVERTED TO PLACEHOLDER FORMAT (${placeholderHtml.length} characters)`);
-      console.log(`[Save Content API] Sample placeholders: ${placeholderHtml.substring(0, 200)}...`);
+      // Save content as-is to preserve manual edits
+      // Manual edits should NOT be converted to placeholders
+      console.log(`[Save Content API] ✓ SAVING CONTENT AS-IS (preserving manual edits) - ${htmlContent.length} characters`);
+      console.log(`[Save Content API] Sample content: ${htmlContent.substring(0, 200)}...`);
 
-      await storage.saveEditedHtml(id, placeholderHtml);
-      console.log(`[Save Content API] ✓ SUCCESSFULLY SAVED with placeholders for agreement ${id}`);
+      await storage.saveEditedHtml(id, htmlContent);
+      console.log(`[Save Content API] ✓ SUCCESSFULLY SAVED manual edits for agreement ${id}`);
       
       res.json({ 
         success: true, 
         message: "Content saved successfully",
         savedAt: new Date().toISOString(),
-        savedLength: placeholderHtml.length
+        savedLength: htmlContent.length
       });
     } catch (error) {
       console.error(`[Backend] Error saving edited content for agreement ${req.params.id}:`, error);
@@ -1419,8 +1418,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // NORMALIZED: Always prioritize edited_html when it exists and is not empty
       if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
         contentSource = 'edited_content';
-        console.log(`[Edited Content API] ✓ USING EDITED CONTENT for agreement ${id} (${agreement.editedHtml.length} chars)`);
-        // Resolve placeholders with current DB values
+        console.log(`[Edited Content API] ✓ USING EDITED CONTENT (preserving manual edits) for agreement ${id} (${agreement.editedHtml.length} chars)`);
+        // Use saved content with only placeholder resolution for unfilled fields
         const { resolvePlaceholders } = await import("./fieldMapping");
         resolvedContent = await resolvePlaceholders(agreement.editedHtml, agreement);
       } else {
