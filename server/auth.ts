@@ -93,6 +93,7 @@ export async function setupAuth(app: Express) {
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { username, mobile, password } = req.body;
+      console.log('🔐 Login attempt:', { username, mobile, passwordLength: password?.length });
       
       if ((!username && !mobile) || !password) {
         return res.status(400).json({ message: "Username/mobile and password required" });
@@ -104,13 +105,24 @@ export async function setupAuth(app: Express) {
       
       if (username) {
         user = await storage.getUserByUsername(username);
+        console.log('👤 User lookup by username:', user ? 'found' : 'not found');
       } else if (mobile) {
         user = await storage.getUserByMobile(mobile);
+        console.log('👤 User lookup by mobile:', user ? 'found' : 'not found');
         
         // If not found in users table, try customers table (legacy support)
         if (!user) {
           const customer = await storage.getCustomerByMobile(mobile);
+          console.log('👥 Customer lookup by mobile:', customer ? 'found' : 'not found');
           if (customer) {
+            console.log('📊 Customer data:', { 
+              id: customer.id, 
+              name: customer.name, 
+              mobile: customer.mobile,
+              hasPassword: !!customer.password,
+              passwordType: customer.password?.startsWith('$2b$') ? 'bcrypt' : 'plain',
+              isActive: customer.isActive 
+            });
             user = {
               id: customer.id,
               username: null,
@@ -136,19 +148,25 @@ export async function setupAuth(app: Express) {
       }
       
       if (!user || !user.isActive) {
+        console.log('❌ Login failed: no user or inactive user');
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
       // For customers, use bcrypt comparison; for admin users, use bcrypt
       let validPassword = false;
+      console.log('🔒 Password validation starting...', { isCustomer, hasStoredPassword: !!user.password });
+      
       if (isCustomer) {
         // Use bcrypt for customer authentication
         validPassword = await bcrypt.compare(password, user.password || '');
+        console.log('🔐 Customer bcrypt result:', validPassword);
       } else {
         validPassword = await bcrypt.compare(password, user.password || '');
+        console.log('🔐 Admin bcrypt result:', validPassword);
       }
       
       if (!validPassword) {
+        console.log('❌ Password validation failed');
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
@@ -240,7 +258,18 @@ export async function setupAuth(app: Express) {
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: {
+        id: string;
+        role: string;
+        name: string;
+        password: string;
+        username: string;
+        phone: string;
+        isActive: boolean | null;
+        createdAt: Date | null;
+        updatedAt: Date | null;
+        [key: string]: any;
+      };
     }
   }
 }
