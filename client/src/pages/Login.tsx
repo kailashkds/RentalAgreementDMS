@@ -23,11 +23,18 @@ export default function Login() {
     setError("");
 
     try {
-      // Determine if input is a phone number or username
+      // Determine if input is a phone number, full name, or username
       const isPhoneNumber = /^\d+$/.test(loginData.username);
-      const requestData = isPhoneNumber 
-        ? { mobile: loginData.username, password: loginData.password }
-        : { username: loginData.username, password: loginData.password };
+      const isFullName = /^[a-zA-Z\s]+$/.test(loginData.username) && loginData.username.includes(' ');
+      
+      let requestData;
+      if (isPhoneNumber) {
+        requestData = { mobile: loginData.username, password: loginData.password };
+      } else if (isFullName) {
+        requestData = { fullName: loginData.username, password: loginData.password };
+      } else {
+        requestData = { username: loginData.username, password: loginData.password };
+      }
 
       const response = await apiRequest("/api/auth/login", "POST", requestData);
       
@@ -79,7 +86,7 @@ export default function Login() {
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username or Phone Number</Label>
+                <Label htmlFor="username">Full Name, Username, or Phone Number</Label>
                 <Input
                   id="username"
                   name="username"
@@ -87,7 +94,7 @@ export default function Login() {
                   required
                   value={loginData.username}
                   onChange={handleChange}
-                  placeholder="Enter your username or phone number"
+                  placeholder="Enter your full name, username, or phone number"
                   data-testid="input-username"
                 />
               </div>

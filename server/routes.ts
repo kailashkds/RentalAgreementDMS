@@ -1785,6 +1785,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Request body keys:", Object.keys(req.body));
       console.log("Request body sample:", JSON.stringify(req.body, null, 2).substring(0, 500));
       
+      // Check if agreement exists and validate business rules
+      const existingAgreement = await storage.getAgreement(req.params.id);
+      if (!existingAgreement) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+      
+      // Rule: Notarized agreements cannot be edited
+      if (existingAgreement.notarizedDocument && 
+          Object.keys(existingAgreement.notarizedDocument).length > 0) {
+        return res.status(400).json({ 
+          message: "Cannot edit notarized agreements. Notarized agreements are legally binding and cannot be modified.",
+          reason: "notarized_agreement"
+        });
+      }
+      
       const agreementData = insertAgreementSchema.partial().parse(req.body);
       console.log("Parsed agreement data successfully");
       
@@ -1813,6 +1828,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/agreements/:id", async (req, res) => {
     try {
+      // Check if agreement exists and validate business rules
+      const existingAgreement = await storage.getAgreement(req.params.id);
+      if (!existingAgreement) {
+        return res.status(404).json({ message: "Agreement not found" });
+      }
+      
+      // Rule: Active agreements cannot be deleted
+      if (existingAgreement.status === "active") {
+        return res.status(400).json({ 
+          message: "Cannot delete active agreements. Active agreements are currently in effect and must be terminated first.",
+          reason: "active_agreement"
+        });
+      }
+      
       await storage.deleteAgreement(req.params.id);
       res.status(204).send();
     } catch (error) {

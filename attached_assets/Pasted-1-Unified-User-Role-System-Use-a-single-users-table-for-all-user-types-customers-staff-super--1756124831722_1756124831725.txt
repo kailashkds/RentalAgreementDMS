@@ -1,0 +1,94 @@
+1. Unified User & Role System
+
+Use a single users table for all user types (customers, staff, super admins).
+
+Each user is assigned a role, and roles are just collections of permissions.
+
+The UI should dynamically show/hide features based on assigned permissions.
+
+Example:
+
+If a user doesn’t have user.manage, they won’t see the User Management section.
+
+If a user doesn’t have agreement.view.all, they only see their own agreements.
+
+2. Login System (Simplified & Flexible)
+
+Login should support either:
+
+Full Name + Password
+
+Full Name = first_name + " " + last_name (case-insensitive, spaces trimmed).
+
+Enforce unique full names across users.
+
+Phone Number + Password
+
+Phone number must be unique.
+
+Password remains as usual.
+
+Default Super Admin:
+
+Full Name: Admin
+
+Password: admin123
+
+Phone Number: 9999999999 (set as default/test number)
+
+3. Agreement Rules
+
+Notarized Agreements:
+
+Once notarized → cannot be edited.
+
+Special permission: agreement.view.notarized
+
+If user has it → they can see notarized agreements.
+
+If not → their own notarized agreements remain hidden.
+
+Super Admin bypasses this restriction.
+
+Active Agreements:
+
+Once status = active → cannot be deleted.
+
+4. Simplified User Management (Replaces Roles + Admin Tab)
+
+Entire Role Management and Admin/User Management tabs are replaced with a single Users section.
+
+Features of the Users Section:
+✅ Create User (First Name, Last Name, Phone Number, Password, Role assignment)
+✅ Assign Role at Creation → direct role selection while adding user
+✅ Edit Role/Permissions of any user after creation
+✅ View All Users with details (Full Name, Phone, Role, Permissions summary)
+✅ Edit User (update details, change role, adjust permissions)
+✅ Delete User
+✅ Audit Logs → who created, edited, or deleted users
+
+Roles still exist in backend (as permission sets), but from the UI perspective:
+
+Super Admin just manages everything from Users section.
+
+When creating/editing a user, permissions can be customized inline (no need to go to a separate Role tab).
+
+5. Role Assignment UI (Inside User Section)
+
+While creating/editing a user:
+
+Choose a Role (predefined set of permissions).
+
+Optionally adjust permissions manually with checkboxes.
+
+Display preview summary:
+
+Example: “This user can: View All Agreements, Edit Own Agreements, Manage Users…”
+
+Permissions grouped by category: Agreements, Downloads/Sharing, Customers, Users, Templates, System.
+
+Smart Defaults:
+
+view, edit, delete → checkbox checked = All, unchecked = defaults to Own.
+
+Search, collapse, and tooltips available for easy navigation.

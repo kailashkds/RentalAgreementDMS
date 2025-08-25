@@ -60,6 +60,7 @@ export interface IStorage {
   // Unified user operations
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByFullName(fullName: string): Promise<User | undefined>;
   getUserByMobile(mobile: string): Promise<User | undefined>;
   getUserByPhone(phone: string): Promise<User | undefined>;
   createUser(user: Omit<UpsertUser, 'id'>): Promise<User>;
@@ -230,6 +231,27 @@ export class DatabaseStorage implements IStorage {
     return {
       ...user,
       role: user.defaultRole || 'Customer'
+    } as User;
+  }
+
+  async getUserByFullName(fullName: string): Promise<User | undefined> {
+    // Normalize the input full name (trim spaces, case insensitive)
+    const normalizedFullName = fullName.trim().toLowerCase();
+    
+    // Find user where first_name + " " + last_name matches the full name
+    const users_result = await db
+      .select()
+      .from(users)
+      .where(
+        sql`LOWER(TRIM(${users.firstName} || ' ' || ${users.lastName})) = ${normalizedFullName}`
+      );
+    
+    if (!users_result[0]) return undefined;
+    
+    // Map defaultRole to role for compatibility
+    return {
+      ...users_result[0],
+      role: users_result[0].defaultRole || 'Customer'
     } as User;
   }
 

@@ -98,20 +98,23 @@ export async function setupAuth(app: Express) {
   // Unified login endpoint - supports both username/phone and mobile login
   app.post('/api/auth/login', async (req, res) => {
     try {
-      const { username, mobile, password } = req.body;
-      console.log('🔐 Login attempt:', { username, mobile, passwordLength: password?.length });
+      const { username, fullName, mobile, password } = req.body;
+      console.log('🔐 Login attempt:', { username, fullName, mobile, passwordLength: password?.length });
       
-      if ((!username && !mobile) || !password) {
-        return res.status(400).json({ message: "Username/phone number and password required" });
+      if ((!username && !fullName && !mobile) || !password) {
+        return res.status(400).json({ message: "Username/full name/phone number and password required" });
       }
       
-      // Try to find user by username or mobile
+      // Try to find user by username, full name, or mobile
       let user;
       let isCustomer = false;
       
       if (username) {
         user = await storage.getUserByUsername(username);
         console.log('👤 User lookup by username:', user ? 'found' : 'not found');
+      } else if (fullName) {
+        user = await storage.getUserByFullName(fullName);
+        console.log('👤 User lookup by full name:', user ? 'found' : 'not found');
       } else if (mobile) {
         user = await storage.getUserByMobile(mobile);
         console.log('👤 User lookup by mobile:', user ? 'found' : 'not found');
