@@ -113,15 +113,22 @@ export async function setupAuth(app: Express) {
           if (customer) {
             user = {
               id: customer.id,
-              name: customer.name,
+              username: null,
+              phone: customer.mobile,
               mobile: customer.mobile,
-              email: customer.email,
               password: customer.password,
+              name: customer.name,
+              email: customer.email,
+              firstName: null,
+              lastName: null,
+              profileImageUrl: null,
               isActive: customer.isActive,
+              status: customer.isActive ? 'active' : 'inactive',
               defaultRole: 'Customer',
+              permissions: [],
               createdAt: customer.createdAt,
               updatedAt: customer.updatedAt
-            };
+            } as User;
             isCustomer = true;
           }
         }
@@ -136,7 +143,7 @@ export async function setupAuth(app: Express) {
       if (isCustomer) {
         validPassword = password === user.password;
       } else {
-        validPassword = await bcrypt.compare(password, user.password);
+        validPassword = await bcrypt.compare(password, user.password || '');
       }
       
       if (!validPassword) {
