@@ -697,20 +697,7 @@ export class DatabaseStorage implements IStorage {
 
     const [agreementsResult, totalResult] = await Promise.all([
       db
-        .select({
-          id: agreements.id,
-          agreementNumber: agreements.agreementNumber,
-          customerId: agreements.customerId,
-          propertyId: agreements.propertyId,
-          status: agreements.status,
-          startDate: agreements.startDate,
-          endDate: agreements.endDate,
-          createdAt: agreements.createdAt,
-          updatedAt: agreements.updatedAt,
-          customerName: users.firstName,
-          customerPhone: users.phone,
-          customerEmail: users.email
-        })
+        .select()
         .from(agreements)
         .leftJoin(users, eq(agreements.customerId, users.id))
         .where(whereConditions)
@@ -724,23 +711,14 @@ export class DatabaseStorage implements IStorage {
     ]);
 
     return {
-      agreements: agreementsResult.map(row => ({
-        id: row.id,
-        agreementNumber: row.agreementNumber,
-        customerId: row.customerId,
-        propertyId: row.propertyId,
-        status: row.status,
-        startDate: row.startDate,
-        endDate: row.endDate,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-        customer: {
-          id: row.customerId,
-          firstName: row.customerName,
-          phone: row.customerPhone,
-          email: row.customerEmail
-        }
-      })) as Agreement[],
+      agreements: agreementsResult.map(row => {
+        const agreement = {
+          ...row.agreements,
+          customer: row.users
+        } as any;
+        // Apply uppercase conversion to existing data when retrieving
+        return this.convertToUpperCase(agreement);
+      }),
       total: totalResult[0].count,
     };
   }
@@ -754,10 +732,13 @@ export class DatabaseStorage implements IStorage {
     
     if (!result) return undefined;
     
-    return {
+    const agreement = {
       ...result.agreements,
       customer: result.users
-    } as Agreement;
+    } as any;
+    
+    // Apply uppercase conversion to existing data when retrieving
+    return this.convertToUpperCase(agreement);
   }
 
   async getAgreementByNumber(agreementNumber: string): Promise<Agreement | undefined> {
@@ -768,7 +749,8 @@ export class DatabaseStorage implements IStorage {
     
     if (!agreement) return undefined;
     
-    return agreement;
+    // Apply uppercase conversion to existing data when retrieving
+    return this.convertToUpperCase(agreement);
   }
 
   // Optimized helper function to convert names, professions, and addresses to uppercase
