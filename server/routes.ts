@@ -1194,10 +1194,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
         htmlSource = 'edited_html';
         console.log(`[PDF Download] ✓ USING EDITED HTML (manual edits preserved) for agreement ${req.params.id} (${agreement.editedHtml.length} chars)`);
-        // Use saved edited HTML as-is to preserve manual edits
-        // Only resolve remaining placeholders (ones that were never edited)
-        const { resolvePlaceholders } = await import("./fieldMapping");
-        processedHtml = await resolvePlaceholders(agreement.editedHtml, agreement);
+        // Use saved edited HTML exactly as-is to preserve ALL manual edits
+        // Do NOT resolve placeholders as this overwrites manual changes
+        processedHtml = agreement.editedHtml;
       } else {
         console.log(`[PDF Download] ✓ USING TEMPLATE FALLBACK for agreement ${req.params.id} (no edited HTML found)`);
         // Find template for this agreement and generate HTML
@@ -1419,9 +1418,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
         contentSource = 'edited_content';
         console.log(`[Edited Content API] ✓ USING EDITED CONTENT (preserving manual edits) for agreement ${id} (${agreement.editedHtml.length} chars)`);
-        // Use saved content with only placeholder resolution for unfilled fields
-        const { resolvePlaceholders } = await import("./fieldMapping");
-        resolvedContent = await resolvePlaceholders(agreement.editedHtml, agreement);
+        // Use saved content exactly as-is to preserve ALL manual edits
+        // Do NOT resolve placeholders as this overwrites manual changes
+        resolvedContent = agreement.editedHtml;
       } else {
         console.log(`[Edited Content API] ✓ GENERATING FROM TEMPLATE for agreement ${id} (no edited content)`);
         // Generate fresh HTML from template for the editor
