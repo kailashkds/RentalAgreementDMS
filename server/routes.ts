@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unified user management endpoints
-  app.get("/api/unified/users", requireAuth, requirePermission({ anyOf: ["user.view.all", "user.view.own"] }), async (req: any, res) => {
+  app.get("/api/unified/users", requireAuth, requirePermission({ permission: "user.view.all" }), async (req: any, res) => {
     try {
       const { role, status, search, limit, offset } = req.query;
       const result = await storage.getUsersWithRoles({
@@ -284,7 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate credentials if not provided
-      const finalUsername = username || generateUsername(name);
+      const finalUsername = username || generateUsername();
       const finalPassword = password || generatePassword();
       const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
@@ -324,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/unified/users/:id", requireAuth, requirePermission({ anyOf: ["user.edit.all", "user.edit.own"] }), async (req: any, res) => {
+  app.put("/api/unified/users/:id", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
       const { name, email, username, phone, status, isActive, roleId } = req.body;
@@ -376,7 +376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/unified/users/:id", requireAuth, requirePermission({ anyOf: ["user.delete.all", "user.delete.own"] }), async (req: any, res) => {
+  app.delete("/api/unified/users/:id", requireAuth, requirePermission({ permission: "user.delete.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
       
@@ -411,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/unified/users/:id/reset-password", requireAuth, requirePermission({ anyOf: ["user.edit.all", "user.edit.own"] }), async (req: any, res) => {
+  app.patch("/api/unified/users/:id/reset-password", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
       const { newPassword } = req.body;
@@ -435,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/unified/users/:id/toggle-status", requireAuth, requirePermission({ anyOf: ["user.edit.all", "user.edit.own"] }), async (req: any, res) => {
+  app.patch("/api/unified/users/:id/toggle-status", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
       const { isActive } = req.body;
