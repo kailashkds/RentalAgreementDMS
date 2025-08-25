@@ -711,14 +711,10 @@ export class DatabaseStorage implements IStorage {
     ]);
 
     return {
-      agreements: agreementsResult.map(row => {
-        const agreement = {
-          ...row.agreements,
-          customer: row.users
-        } as any;
-        // Apply uppercase conversion to existing data when retrieving
-        return this.convertToUpperCase(agreement);
-      }),
+      agreements: agreementsResult.map(row => ({
+        ...row.agreements,
+        customer: row.users
+      })) as Agreement[],
       total: totalResult[0].count,
     };
   }
@@ -732,13 +728,10 @@ export class DatabaseStorage implements IStorage {
     
     if (!result) return undefined;
     
-    const agreement = {
+    return {
       ...result.agreements,
       customer: result.users
-    } as any;
-    
-    // Apply uppercase conversion to existing data when retrieving
-    return this.convertToUpperCase(agreement);
+    } as Agreement;
   }
 
   async getAgreementByNumber(agreementNumber: string): Promise<Agreement | undefined> {
@@ -749,8 +742,7 @@ export class DatabaseStorage implements IStorage {
     
     if (!agreement) return undefined;
     
-    // Apply uppercase conversion to existing data when retrieving
-    return this.convertToUpperCase(agreement);
+    return agreement;
   }
 
   // Optimized helper function to convert names, professions, and addresses to uppercase
