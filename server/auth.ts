@@ -100,17 +100,45 @@ export async function setupAuth(app: Express) {
       
       // Try to find user by username or mobile
       let user;
+      let isCustomer = false;
+      
       if (username) {
         user = await storage.getUserByUsername(username);
       } else if (mobile) {
         user = await storage.getUserByMobile(mobile);
+        
+        // If not found in users table, try customers table (legacy support)
+        if (!user) {
+          const customer = await storage.getCustomerByMobile(mobile);
+          if (customer) {
+            user = {
+              id: customer.id,
+              name: customer.name,
+              mobile: customer.mobile,
+              email: customer.email,
+              password: customer.password,
+              isActive: customer.isActive,
+              defaultRole: 'Customer',
+              createdAt: customer.createdAt,
+              updatedAt: customer.updatedAt
+            };
+            isCustomer = true;
+          }
+        }
       }
       
       if (!user || !user.isActive) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
-      const validPassword = await bcrypt.compare(password, user.password);
+      // For customers, use plain text comparison; for admin users, use bcrypt
+      let validPassword = false;
+      if (isCustomer) {
+        validPassword = password === user.password;
+      } else {
+        validPassword = await bcrypt.compare(password, user.password);
+      }
+      
       if (!validPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
