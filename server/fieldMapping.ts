@@ -509,20 +509,7 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
   const templateLanguage = language || formData.language || 'english';
   const templateFields: Record<string, string> = {};
 
-  // Debug: Log the form data to understand its structure
-  console.log("Mapping form data to template fields...");
-  console.log("Form data keys:", Object.keys(formData));
-  
-  // Debug: Log document-related fields to see structure
-  if (formData.documents) {
-    console.log("[DEBUG] Documents object:", JSON.stringify(formData.documents, null, 2));
-  }
-  if (formData.ownerDocuments) {
-    console.log("[DEBUG] Owner documents:", JSON.stringify(formData.ownerDocuments, null, 2));
-  }
-  if (formData.tenantDocuments) {
-    console.log("[DEBUG] Tenant documents:", JSON.stringify(formData.tenantDocuments, null, 2));
-  }
+  // Debug logging removed for performance
   
   // Map all configured fields, handling precedence for granular vs nested
   for (const [formPath, templateField] of Object.entries(FIELD_MAPPINGS)) {
@@ -539,7 +526,7 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
           formattedValue = String(value.url);
         } else {
           // Skip objects that can't be converted to URLs
-          console.log(`Skipping object value for ${formPath}: ${JSON.stringify(value)}`);
+          // console.log(`Skipping object value for ${formPath}: ${JSON.stringify(value)}`); // Removed for performance
           continue;
         }
       } else {
@@ -554,8 +541,7 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
         
         templateFields[templateField] = formattedValue;
         
-        // Debug: Log successful mappings
-        console.log(`Mapped ${formPath} = "${value}" -> ${templateField} = "${formattedValue}"`);
+        // console.log(`Mapped ${formPath} = "${value}" -> ${templateField} = "${formattedValue}"`); // Removed for performance
       }
     }
   }
@@ -869,7 +855,7 @@ export async function convertToPlaceholders(htmlContent: string, agreement: any)
       }
     }
     
-    console.log(`[Placeholder Conversion] Converted ${Object.keys(fieldValues).length} fields to placeholders`);
+    // console.log(`[Placeholder Conversion] Converted ${Object.keys(fieldValues).length} fields to placeholders`); // Removed for performance
     return placeholderHtml;
     
   } catch (error) {
@@ -906,7 +892,7 @@ export async function resolvePlaceholders(htmlContent: string, agreement: any): 
     // Clean up any remaining unresolve placeholders
     resolvedHtml = resolvedHtml.replace(/\{\{[^}]*\}\}/g, '');
     
-    console.log(`[Placeholder Resolution] Resolved ${Object.keys(fieldValues).length} placeholders`);
+    // console.log(`[Placeholder Resolution] Resolved ${Object.keys(fieldValues).length} placeholders`); // Removed for performance
     return resolvedHtml;
     
   } catch (error) {
@@ -929,14 +915,10 @@ function processConditionalLogic(template: string, fieldValues: Record<string, s
     const trimmedFieldName = fieldName.trim();
     const fieldValue = fieldValues[trimmedFieldName];
     
-    console.log(`[Conditional Logic] Checking field: ${trimmedFieldName}, value: ${fieldValue}`);
-    
     // Show content only if field has a value and is not empty
     if (fieldValue && fieldValue.trim() && fieldValue !== 'undefined' && fieldValue !== 'null') {
-      console.log(`[Conditional Logic] Field ${trimmedFieldName} has value, including content`);
       return content;
     } else {
-      console.log(`[Conditional Logic] Field ${trimmedFieldName} is empty/null, excluding content`);
       return '';
     }
   });
@@ -1365,9 +1347,6 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
     const documentUrl = fieldValues[fieldName];
     if (documentUrl && documentUrl.trim() && documentUrl !== 'undefined' && documentUrl !== 'null' && documentUrl !== '[object Object]') {
       try {
-        console.log(`[PDF Embedding] Processing document field: ${fieldName} with URL: ${documentUrl}`);
-        console.log(`[PDF Embedding] URL analysis: startsWith('/uploads/'): ${documentUrl.startsWith('/uploads/')}, includes('/uploads/'): ${documentUrl.includes('/uploads/')}, not http/objects: ${!documentUrl.startsWith('http') && !documentUrl.startsWith('/objects/')}`);
-        
         // Check if this is a cloud storage URL or local file
         const isCloudStorageUrl = documentUrl.includes('storage.googleapis.com') || 
                                   (documentUrl.startsWith('https://') && !documentUrl.includes('localhost')) || 
@@ -1377,16 +1356,14 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
           (!documentUrl.startsWith('http') && !documentUrl.startsWith('/objects/') && !documentUrl.includes('storage.googleapis.com'))
         );
         
-        console.log(`[PDF Embedding] isCloudStorageUrl: ${isCloudStorageUrl}, isLocalFile: ${isLocalFile}`);
-        
         if (isCloudStorageUrl) {
           // Handle cloud storage URLs (Google Cloud Storage)
-          console.log(`[PDF Embedding] Processing cloud storage URL: ${documentUrl}`);
+          // console.log(`[PDF Embedding] Processing cloud storage URL: ${documentUrl}`); // Removed for performance
           const objectStorageService = new ObjectStorageService();
           const localFileName = await downloadFileFromObjectStorage(documentUrl, fieldName, objectStorageService);
           
           if (localFileName) {
-            console.log(`[PDF Embedding] Successfully downloaded to local file: ${localFileName}`);
+            // console.log(`[PDF Embedding] Successfully downloaded to local file: ${localFileName}`); // Removed for performance
             
             // Now process the downloaded file like a local file
             const filePath = path.join(process.cwd(), 'uploads', localFileName);
@@ -1567,7 +1544,7 @@ async function processDocumentEmbedding(fieldValues: Record<string, string>, for
     } else {
       // Ensure empty fields are properly handled for conditionals
       processedFields[fieldName] = '';
-      console.log(`[PDF Embedding] ${fieldName} is empty, setting to empty string for conditionals`);
+      // console.log(`[PDF Embedding] ${fieldName} is empty, setting to empty string for conditionals`); // Removed for performance
     }
   }
   
@@ -1748,7 +1725,7 @@ function getDocumentTypeFromFieldName(fieldName: string): string {
  */
 export async function convertPdfToImages(pdfPath: string, documentType: string): Promise<string | null> {
   try {
-    console.log(`[PDF Conversion] Converting PDF to images: ${pdfPath}`);
+    // console.log(`[PDF Conversion] Converting PDF to images: ${pdfPath}`); // Removed for performance
     
     // Create a temporary directory for images
     const tempDir = path.join(process.cwd(), 'uploads', 'temp');
@@ -1763,7 +1740,7 @@ export async function convertPdfToImages(pdfPath: string, documentType: string):
     
     // Convert PDF to PNG images using ImageMagick
     const command = `convert -density 150 "${pdfPath}" "${path.join(tempDir, baseFileName)}-%d.png"`;
-    console.log(`[PDF Conversion] Executing command: ${command}`);
+    // console.log(`[PDF Conversion] Executing command: ${command}`); // Removed for performance
     
     execSync(command, { timeout: 30000 });
     
@@ -1773,7 +1750,7 @@ export async function convertPdfToImages(pdfPath: string, documentType: string):
       .filter(file => file.startsWith(baseFileName) && file.endsWith('.png'))
       .sort(); // Sort to maintain page order
     
-    console.log(`[PDF Conversion] Generated ${imageFiles.length} image(s): ${imageFiles.join(', ')}`);
+    // console.log(`[PDF Conversion] Generated ${imageFiles.length} image(s): ${imageFiles.join(', ')}`); // Removed for performance
     
     if (imageFiles.length === 0) {
       console.error(`[PDF Conversion] No images generated from PDF: ${pdfPath}`);
@@ -1809,7 +1786,7 @@ export async function convertPdfToImages(pdfPath: string, documentType: string):
     
     htmlContent += `</div>`;
     
-    console.log(`[PDF Conversion] Successfully converted PDF to ${imageFiles.length} images`);
+    // console.log(`[PDF Conversion] Successfully converted PDF to ${imageFiles.length} images`); // Removed for performance
     return htmlContent;
     
   } catch (error) {
