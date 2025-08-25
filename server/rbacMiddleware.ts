@@ -29,7 +29,11 @@ export function requirePermission(options: PermissionOptions | string) {
 
       // Check if user is authenticated
       if (!req.session?.userId && !req.session?.customerId) {
-        return res.status(401).json({ message: "Authentication required" });
+        return res.status(401).json({ 
+          message: "Please log in to access this feature",
+          error: "authentication_required",
+          action: "Log in with your username and password to continue"
+        });
       }
 
       const isAdmin = !!req.session?.userId && !!req.user;
@@ -37,11 +41,19 @@ export function requirePermission(options: PermissionOptions | string) {
       
       // Type checking
       if (userType === 'admin' && !isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
+        return res.status(403).json({ 
+          message: "This feature requires administrator access",
+          error: "admin_access_required",
+          action: "Contact an administrator or log in with an admin account"
+        });
       }
       
       if (userType === 'customer' && !isCustomer) {
-        return res.status(403).json({ message: "Customer access required" });
+        return res.status(403).json({ 
+          message: "This feature is only available to customers",
+          error: "customer_access_required", 
+          action: "Log in with a customer account to access this feature"
+        });
       }
 
       let hasPermission = false;
@@ -104,7 +116,11 @@ export function requireAllPermissions(permissions: string[], userType: 'admin' |
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.session?.userId && !req.session?.customerId) {
-        return res.status(401).json({ message: "Authentication required" });
+        return res.status(401).json({ 
+          message: "Please log in to access this feature",
+          error: "authentication_required",
+          action: "Log in with your username and password to continue"
+        });
       }
 
       const isAdmin = !!req.session?.userId && !!req.user;
@@ -112,11 +128,19 @@ export function requireAllPermissions(permissions: string[], userType: 'admin' |
       
       // Type checking
       if (userType === 'admin' && !isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
+        return res.status(403).json({ 
+          message: "This feature requires administrator access",
+          error: "admin_access_required",
+          action: "Contact an administrator or log in with an admin account"
+        });
       }
       
       if (userType === 'customer' && !isCustomer) {
-        return res.status(403).json({ message: "Customer access required" });
+        return res.status(403).json({ 
+          message: "This feature is only available to customers",
+          error: "customer_access_required", 
+          action: "Log in with a customer account to access this feature"
+        });
       }
 
       let userPermissions: string[] = [];
@@ -168,7 +192,11 @@ export function requireAnyPermission(permissions: string[], userType: 'admin' | 
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.session?.userId && !req.session?.customerId) {
-        return res.status(401).json({ message: "Authentication required" });
+        return res.status(401).json({ 
+          message: "Please log in to access this feature",
+          error: "authentication_required",
+          action: "Log in with your username and password to continue"
+        });
       }
 
       const isAdmin = !!req.session?.userId && !!req.user;
@@ -176,11 +204,19 @@ export function requireAnyPermission(permissions: string[], userType: 'admin' | 
       
       // Type checking
       if (userType === 'admin' && !isAdmin) {
-        return res.status(403).json({ message: "Admin access required" });
+        return res.status(403).json({ 
+          message: "This feature requires administrator access",
+          error: "admin_access_required",
+          action: "Contact an administrator or log in with an admin account"
+        });
       }
       
       if (userType === 'customer' && !isCustomer) {
-        return res.status(403).json({ message: "Customer access required" });
+        return res.status(403).json({ 
+          message: "This feature is only available to customers",
+          error: "customer_access_required", 
+          action: "Log in with a customer account to access this feature"
+        });
       }
 
       let userPermissions: string[] = [];

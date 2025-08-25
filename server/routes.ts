@@ -95,7 +95,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const canViewOwnAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.own');
       
       if (!canViewAllAgreements && !canViewOwnAgreements) {
-        return res.status(403).json({ message: "Insufficient permissions to view dashboard" });
+        return res.status(403).json({ 
+          message: "You don't have permission to view the dashboard",
+          error: "dashboard_access_denied",
+          action: "Contact an administrator to request dashboard access permissions"
+        });
       }
       
       // If user can only view own agreements, filter stats by their ID
@@ -104,7 +108,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
-      res.status(500).json({ message: "Failed to fetch dashboard stats" });
+      res.status(500).json({ 
+        message: "We're having trouble loading the dashboard data",
+        error: "dashboard_stats_failed",
+        action: "Please try refreshing the page. If the problem continues, contact support."
+      });
     }
   });
 
@@ -115,7 +123,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "RBAC system seeded successfully" });
     } catch (error) {
       console.error("Error seeding RBAC:", error);
-      res.status(500).json({ message: "Failed to seed RBAC system", error: String(error) });
+      res.status(500).json({ 
+        message: "We're having trouble setting up the permission system",
+        error: "rbac_setup_failed",
+        action: "This is a system setup issue. Contact technical support.",
+        details: String(error)
+      });
     }
   });
 
@@ -127,7 +140,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(permissions);
     } catch (error) {
       console.error("Error fetching user permissions:", error);
-      res.status(500).json({ message: "Failed to fetch user permissions" });
+      res.status(500).json({ 
+        message: "We're having trouble loading your permissions",
+        error: "permissions_fetch_failed",
+        action: "Please try logging out and back in. If the problem persists, contact support."
+      });
     }
   });
 
@@ -137,7 +154,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name, userType, roleId } = req.body;
       
       if (!name || !userType) {
-        return res.status(400).json({ message: "Name and user type are required" });
+        return res.status(400).json({ 
+          message: "Please provide both a name and user type",
+          error: "missing_required_fields",
+          action: "Enter a full name and select either 'admin' or 'customer' as user type",
+          missing: {
+            name: !name ? "Name is required" : "✓",
+            userType: !userType ? "User type is required" : "✓"
+          }
+        });
       }
 
       // Generate credentials
@@ -270,7 +295,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       console.error("Error fetching users:", error);
-      res.status(500).json({ message: "Failed to fetch users" });
+      res.status(500).json({ 
+        message: "We're having trouble loading the users list",
+        error: "users_fetch_failed",
+        action: "Please try refreshing the page. If the problem continues, contact support."
+      });
     }
   });
 
@@ -280,7 +309,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate required fields
       if (!name || !roleId) {
-        return res.status(400).json({ message: "Name and role are required" });
+        return res.status(400).json({ 
+          message: "Please provide both a name and select a role",
+          error: "missing_required_fields",
+          action: "Enter a full name and select a role from the dropdown",
+          missing: {
+            name: !name ? "Name is required" : "✓",
+            roleId: !roleId ? "Role selection is required" : "✓"
+          }
+        });
       }
 
       // Generate credentials if not provided
@@ -400,9 +437,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(updatedUser);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating user:", error);
-      res.status(500).json({ message: "Failed to update user" });
+      
+      // Handle specific constraint violations
+      if (error.code === '23505') {
+        if (error.detail?.includes('email')) {
+          return res.status(400).json({ 
+            message: "This email address is already registered",
+            error: "duplicate_email",
+            action: "Use a different email address or check if this user already exists"
+          });
+        }
+        if (error.detail?.includes('username')) {
+          return res.status(400).json({ 
+            message: "This username is already taken",
+            error: "duplicate_username",
+            action: "Choose a different username"
+          });
+        }
+        if (error.detail?.includes('phone') || error.detail?.includes('mobile')) {
+          return res.status(400).json({ 
+            message: "This phone number is already registered",
+            error: "duplicate_phone",
+            action: "Use a different phone number or check if this user already exists"
+          });
+        }
+      }
+      
+      // Handle foreign key violations
+      if (error.code === '23503') {
+        if (error.detail?.includes('role_id')) {
+          return res.status(400).json({ 
+            message: "The selected role is not valid",
+            error: "invalid_role",
+            action: "Please select a valid role from the dropdown"
+          });
+        }
+        return res.status(400).json({ 
+          message: "One of the selected values is not valid",
+          error: "invalid_reference",
+          action: "Please check all dropdown selections and try again"
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "We're having trouble updating this user",
+        error: "user_update_failed",
+        action: "Please try again. If the problem persists, contact support."
+      });
     }
   });
 
@@ -412,13 +495,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Prevent user from deleting themselves
       if (req.user.id === id) {
-        return res.status(400).json({ message: "Cannot delete your own account" });
+        return res.status(400).json({ 
+          message: "You cannot delete your own account",
+          error: "self_deletion_forbidden",
+          action: "Ask another administrator to delete your account if needed"
+        });
       }
 
       // Get user before deleting for audit log
       const existingUser = await storage.getUser(id);
       if (!existingUser) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ 
+          message: "The user you're trying to delete doesn't exist",
+          error: "user_not_found",
+          action: "Check the user list and try again"
+        });
       }
 
       // Delete user
