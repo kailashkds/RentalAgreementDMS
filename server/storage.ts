@@ -12,6 +12,7 @@ import {
   rolePermissions,
   userRoles,
   customerRoles,
+  userPermissions,
   auditLogs,
 
   adminUsers,
@@ -39,6 +40,8 @@ import {
   type InsertRolePermission,
   type UserRole,
   type InsertUserRole,
+  type UserPermission,
+  type InsertUserPermission,
   type CustomerRole,
   type InsertCustomerRole,
   type RoleWithPermissions,
@@ -193,6 +196,12 @@ export interface IStorage {
   // Unified permission checking
   userHasPermission(userId: string, permissionCode: string): Promise<boolean>;
   getUserPermissions(userId: string): Promise<string[]>;
+  getUserPermissionsWithSources(userId: string): Promise<{ code: string; source: 'role' | 'override'; roleName?: string }[]>;
+  
+  // Manual permission overrides
+  addUserPermissionOverride(userId: string, permissionId: string, createdBy: string): Promise<void>;
+  removeUserPermissionOverride(userId: string, permissionId: string): Promise<void>;
+  getUserPermissionOverrides(userId: string): Promise<UserPermission[]>;
   
   // Legacy permission checking (deprecated)
   customerHasPermission(customerId: string, permissionCode: string): Promise<boolean>;
@@ -1708,14 +1717,108 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserPermissions(userId: string): Promise<string[]> {
-    const result = await db
+    // Get permissions from roles
+    const rolePermissionResults = await db
       .select({ code: permissions.code })
       .from(userRoles)
       .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
       .where(eq(userRoles.userId, userId));
 
-    return result.map(row => row.code);
+    // Get manual permission overrides
+    const manualPermissions = await db
+      .select({ code: permissions.code })
+      .from(userPermissions)
+      .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
+      .where(eq(userPermissions.userId, userId));
+
+    // Combine and deduplicate permissions
+    const allPermissions = new Set([
+      ...rolePermissionResults.map(p => p.code),
+      ...manualPermissions.map(p => p.code)
+    ]);
+
+    return Array.from(allPermissions);
+  }
+
+  async getUserPermissionsWithSources(userId: string): Promise<{ code: string; source: 'role' | 'override'; roleName?: string }[]> {
+    // Get permissions from roles with role names
+    const rolePermissions = await db
+      .select({ 
+        code: permissions.code,
+        roleName: roles.name
+      })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .innerJoin(rolePermissions, eq(userRoles.roleId, rolePermissions.roleId))
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(userRoles.userId, userId));
+
+    // Get manual permission overrides
+    const manualPermissions = await db
+      .select({ code: permissions.code })
+      .from(userPermissions)
+      .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
+      .where(eq(userPermissions.userId, userId));
+
+    const result: { code: string; source: 'role' | 'override'; roleName?: string }[] = [];
+
+    // Add role permissions
+    rolePermissions.forEach(p => {
+      result.push({
+        code: p.code,
+        source: 'role',
+        roleName: p.roleName
+      });
+    });
+
+    // Add manual overrides (only if not already from role)
+    const rolePermissionCodes = new Set(rolePermissions.map(p => p.code));
+    manualPermissions.forEach(p => {
+      if (!rolePermissionCodes.has(p.code)) {
+        result.push({
+          code: p.code,
+          source: 'override'
+        });
+      }
+    });
+
+    return result;
+  }
+
+  async addUserPermissionOverride(userId: string, permissionId: string, createdBy: string): Promise<void> {
+    // Check if override already exists
+    const existing = await db
+      .select()
+      .from(userPermissions)
+      .where(and(
+        eq(userPermissions.userId, userId),
+        eq(userPermissions.permissionId, permissionId)
+      ));
+
+    if (existing.length === 0) {
+      await db.insert(userPermissions).values({
+        userId,
+        permissionId,
+        createdBy
+      });
+    }
+  }
+
+  async removeUserPermissionOverride(userId: string, permissionId: string): Promise<void> {
+    await db
+      .delete(userPermissions)
+      .where(and(
+        eq(userPermissions.userId, userId),
+        eq(userPermissions.permissionId, permissionId)
+      ));
+  }
+
+  async getUserPermissionOverrides(userId: string): Promise<UserPermission[]> {
+    return await db
+      .select()
+      .from(userPermissions)
+      .where(eq(userPermissions.userId, userId));
   }
 
   async getCustomerPermissions(customerId: string): Promise<string[]> {

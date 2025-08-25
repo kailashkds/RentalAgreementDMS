@@ -493,6 +493,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Permission override management endpoints
+  app.get("/api/unified/users/:id/permissions-with-sources", requireAuth, requirePermission({ permission: "user.view.all" }), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if user exists
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const permissionsWithSources = await storage.getUserPermissionsWithSources(id);
+      res.json(permissionsWithSources);
+    } catch (error) {
+      console.error("Error fetching user permissions with sources:", error);
+      res.status(500).json({ message: "Failed to fetch user permissions with sources" });
+    }
+  });
+
+  app.post("/api/unified/users/:id/permission-overrides", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { permissionId } = req.body;
+      
+      if (!permissionId) {
+        return res.status(400).json({ message: "Permission ID is required" });
+      }
+
+      // Check if user exists
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if permission exists
+      const permission = await storage.getPermission(permissionId);
+      if (!permission) {
+        return res.status(404).json({ message: "Permission not found" });
+      }
+
+      await storage.addUserPermissionOverride(id, permissionId, req.user.id);
+
+      // Log audit (non-blocking)
+      try {
+        await storage.createAuditLog({
+          action: 'user.permission_override_added',
+          resourceType: 'user',
+          resourceId: id,
+          changedBy: req.user.id,
+          diff: { permissionOverride: { added: permission.code } },
+          metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
+
+      res.json({ message: "Permission override added successfully" });
+    } catch (error) {
+      console.error("Error adding permission override:", error);
+      res.status(500).json({ message: "Failed to add permission override" });
+    }
+  });
+
+  app.delete("/api/unified/users/:id/permission-overrides/:permissionId", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
+    try {
+      const { id, permissionId } = req.params;
+      
+      // Check if user exists
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if permission exists
+      const permission = await storage.getPermission(permissionId);
+      if (!permission) {
+        return res.status(404).json({ message: "Permission not found" });
+      }
+
+      await storage.removeUserPermissionOverride(id, permissionId);
+
+      // Log audit (non-blocking)
+      try {
+        await storage.createAuditLog({
+          action: 'user.permission_override_removed',
+          resourceType: 'user',
+          resourceId: id,
+          changedBy: req.user.id,
+          diff: { permissionOverride: { removed: permission.code } },
+          metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
+
+      res.json({ message: "Permission override removed successfully" });
+    } catch (error) {
+      console.error("Error removing permission override:", error);
+      res.status(500).json({ message: "Failed to remove permission override" });
+    }
+  });
+
   // RBAC management endpoints
   app.get("/api/rbac/permissions", requireAuth, async (req, res) => {
     try {

@@ -51,6 +51,18 @@ interface Role {
   description: string;
 }
 
+interface Permission {
+  id: string;
+  code: string;
+  description: string;
+}
+
+interface PermissionWithSource {
+  code: string;
+  source: 'role' | 'override';
+  roleName?: string;
+}
+
 interface CreateUserData {
   name: string;
   email: string;
@@ -68,6 +80,7 @@ export function UnifiedUserManagement() {
   const [selectedUser, setSelectedUser] = useState<UnifiedUser | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
   const [passwordResult, setPasswordResult] = useState<string>("");
   const [createUserData, setCreateUserData] = useState<CreateUserData>({
     name: "",
@@ -80,6 +93,18 @@ export function UnifiedUserManagement() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Query for all permissions (for permission override management)
+  const { data: allPermissions = [] } = useQuery<Permission[]>({
+    queryKey: ["/api/rbac/permissions"],
+    enabled: showPermissionsDialog && !!selectedUser,
+  });
+
+  // Query for user permissions with sources
+  const { data: userPermissionsWithSources = [] } = useQuery<PermissionWithSource[]>({
+    queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`],
+    enabled: showPermissionsDialog && !!selectedUser,
+  });
 
   // Fetch users with roles
   const { data: usersData, isLoading: usersLoading } = useQuery({
@@ -226,6 +251,48 @@ export function UnifiedUserManagement() {
     },
   });
 
+  // Add permission override mutation
+  const addPermissionOverrideMutation = useMutation({
+    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
+      return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Permission Added",
+        description: "Permission override added successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add permission override",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove permission override mutation
+  const removePermissionOverrideMutation = useMutation({
+    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
+      return await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      toast({
+        title: "Permission Removed",
+        description: "Permission override removed successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove permission override",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!createUserData.name || !createUserData.roleId) {
@@ -271,6 +338,11 @@ export function UnifiedUserManagement() {
       password: "",
     });
     setShowEditDialog(true);
+  };
+
+  const openPermissionsDialog = (user: UnifiedUser) => {
+    setSelectedUser(user);
+    setShowPermissionsDialog(true);
   };
 
   return (
@@ -506,6 +578,12 @@ export function UnifiedUserManagement() {
                             </DropdownMenuItem>
                           </PermissionGuard>
                           <PermissionGuard permission="user.edit.all">
+                            <DropdownMenuItem onClick={() => openPermissionsDialog(user)}>
+                              <Settings className="h-4 w-4 mr-2" />
+                              Manage Permissions
+                            </DropdownMenuItem>
+                          </PermissionGuard>
+                          <PermissionGuard permission="user.edit.all">
                             <DropdownMenuItem onClick={() => resetPasswordMutation.mutate(user.id)}>
                               <RotateCcw className="h-4 w-4 mr-2" />
                               Reset Password
@@ -662,6 +740,133 @@ export function UnifiedUserManagement() {
                 Close
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions Management Dialog */}
+      <Dialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Permissions - {selectedUser?.name}</DialogTitle>
+            <DialogDescription>
+              View and manage user permissions. Role permissions are inherited automatically, 
+              while manual overrides can be added or removed by Super Admins.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Current Permissions */}
+            <div>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Current Permissions
+              </h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {userPermissionsWithSources.map((permission, index) => (
+                  <div 
+                    key={`${permission.code}-${index}`}
+                    className="flex items-center justify-between p-2 bg-muted rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono">{permission.code}</span>
+                      {permission.source === 'role' ? (
+                        <Badge variant="default" className="text-xs">
+                          Role: {permission.roleName}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          Manual Override
+                        </Badge>
+                      )}
+                    </div>
+                    {permission.source === 'override' && (
+                      <PermissionGuard permission="user.edit.all">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            const permissionObj = allPermissions.find(p => p.code === permission.code);
+                            if (permissionObj && selectedUser) {
+                              removePermissionOverrideMutation.mutate({
+                                userId: selectedUser.id,
+                                permissionId: permissionObj.id
+                              });
+                            }
+                          }}
+                          disabled={removePermissionOverrideMutation.isPending}
+                        >
+                          Remove
+                        </Button>
+                      </PermissionGuard>
+                    )}
+                  </div>
+                ))}
+                {userPermissionsWithSources.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No permissions found for this user.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Add Manual Permission Override */}
+            <PermissionGuard permission="user.edit.all">
+              <div>
+                <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Manual Permission Override
+                </h4>
+                <div className="space-y-3">
+                  <div className="max-h-48 overflow-y-auto border rounded-lg">
+                    {allPermissions
+                      .filter(permission => 
+                        !userPermissionsWithSources.some(up => up.code === permission.code)
+                      )
+                      .map((permission) => (
+                        <div 
+                          key={permission.id}
+                          className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-muted/50"
+                        >
+                          <div>
+                            <span className="text-sm font-mono">{permission.code}</span>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {permission.description}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              if (selectedUser) {
+                                addPermissionOverrideMutation.mutate({
+                                  userId: selectedUser.id,
+                                  permissionId: permission.id
+                                });
+                              }
+                            }}
+                            disabled={addPermissionOverrideMutation.isPending}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      ))}
+                    {allPermissions.filter(permission => 
+                      !userPermissionsWithSources.some(up => up.code === permission.code)
+                    ).length === 0 && (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        No additional permissions available to add.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </PermissionGuard>
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setShowPermissionsDialog(false)}>
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -100,6 +100,15 @@ export const userRoles = pgTable("user_roles", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Manual permission overrides (user-specific permissions beyond role)
+export const userPermissions = pgTable("user_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  permissionId: varchar("permission_id").references(() => permissions.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: varchar("created_by").references(() => users.id), // Who assigned this override
+});
+
 // DEPRECATED: customerRoles is merged into userRoles
 // This table will be dropped after data migration
 export const customerRoles = pgTable("customer_roles", {
@@ -287,6 +296,7 @@ export const customersRelations = relations(customers, ({ many }) => ({
 // RBAC Relations
 export const usersRelations = relations(users, ({ many }) => ({
   userRoles: many(userRoles),
+  userPermissions: many(userPermissions),
   properties: many(properties),
   agreements: many(agreements),
 }));
@@ -320,6 +330,21 @@ export const userRolesRelations = relations(userRoles, ({ one }) => ({
   role: one(roles, {
     fields: [userRoles.roleId],
     references: [roles.id],
+  }),
+}));
+
+export const userPermissionsRelations = relations(userPermissions, ({ one }) => ({
+  user: one(users, {
+    fields: [userPermissions.userId],
+    references: [users.id],
+  }),
+  permission: one(permissions, {
+    fields: [userPermissions.permissionId],
+    references: [permissions.id],
+  }),
+  createdByUser: one(users, {
+    fields: [userPermissions.createdBy],
+    references: [users.id],
   }),
 }));
 
@@ -470,6 +495,11 @@ export const insertUserRoleSchema = createInsertSchema(userRoles).omit({
   createdAt: true,
 });
 
+export const insertUserPermissionSchema = createInsertSchema(userPermissions).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertCustomerRoleSchema = createInsertSchema(customerRoles).omit({
   id: true,
   createdAt: true,
@@ -484,6 +514,8 @@ export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
 export type RolePermission = typeof rolePermissions.$inferSelect;
 export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
 export type UserRole = typeof userRoles.$inferSelect;
+export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
+export type UserPermission = typeof userPermissions.$inferSelect;
 export type InsertCustomerRole = z.infer<typeof insertCustomerRoleSchema>;
 export type CustomerRole = typeof customerRoles.$inferSelect;
 
