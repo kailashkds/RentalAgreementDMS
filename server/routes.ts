@@ -13,6 +13,7 @@ import { upload, getFileInfo, deleteFile, readFileAsBase64 } from "./localFileUp
 import { seedRBAC, assignDefaultRoleToUser, assignDefaultRoleToCustomer } from "./rbacSeed";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import { decryptPasswordFromStorage, encryptPasswordForStorage } from "./encryption";
 import path from "path";
 import fs from "fs";
 import { generatePassword, generateUsername, generateUserDisplayId } from "./utils/credentialGenerator";
@@ -881,6 +882,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Decrypt customer password for admin viewing (Protected endpoint)
+  app.get("/api/customers/:id/decrypt-password", requireAuth, requirePermission("customer.edit.all"), async (req, res) => {
+    try {
+      const customer = await storage.getCustomer(req.params.id);
+      
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+
+      if (!customer.encryptedPassword) {
+        return res.status(400).json({ error: "No encrypted password available" });
+      }
+
+      const decryptedPassword = decryptPasswordFromStorage(customer.encryptedPassword);
+      
+      res.json({ password: decryptedPassword });
+    } catch (error) {
+      console.error("Error decrypting customer password:", error);
+      res.status(500).json({ error: "Failed to decrypt password" });
+    }
+  });
+
   app.patch("/api/customers/:id/toggle-status", async (req, res) => {
     try {
       const { isActive } = req.body;
@@ -912,7 +935,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/customers/:id", async (req, res) => {
     try {
       const customerData = insertCustomerSchema.partial().parse(req.body);
-      const customer = await storage.updateCustomer(req.params.id, customerData);
+      // Remove null values and convert to correct types
+      const cleanData = Object.fromEntries(
+        Object.entries(customerData).filter(([_, value]) => value !== null)
+      );
+      const customer = await storage.updateCustomer(req.params.id, cleanData);
       res.json(customer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -933,6 +960,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Cannot delete customer with existing agreements" });
       }
       res.status(500).json({ message: "Failed to delete customer" });
+    }
+  });
+
+  // Migrate existing plain text passwords to encrypted format (Super Admin only)
+  app.post("/api/admin/migrate-passwords", requireAuth, requirePermission("system.admin"), async (req, res) => {
+    try {
+      const customers = await storage.getCustomersForPasswordMigration();
+      let migratedCount = 0;
+      let errorCount = 0;
+      
+      for (const customer of customers) {
+        try {
+          // Check if customer has plainPassword from legacy column
+          const legacyCustomer = await storage.getCustomerLegacy(customer.id);
+          if (legacyCustomer?.plainPassword && !customer.encryptedPassword) {
+            await storage.migrateCustomerPassword(customer.id, legacyCustomer.plainPassword);
+            migratedCount++;
+          }
+        } catch (error) {
+          console.error(`Failed to migrate password for customer ${customer.id}:`, error);
+          errorCount++;
+        }
+      }
+      
+      res.json({ 
+        message: "Password migration completed",
+        migratedCount,
+        errorCount,
+        totalCustomers: customers.length
+      });
+    } catch (error) {
+      console.error("Error during password migration:", error);
+      res.status(500).json({ error: "Failed to migrate passwords" });
     }
   });
 

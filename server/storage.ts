@@ -54,6 +54,7 @@ import { db } from "./db";
 import { eq, ilike, desc, and, or, count, sql, gte, lte } from "drizzle-orm";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths } from "date-fns";
 import bcrypt from "bcrypt";
+import { encryptPasswordForStorage, decryptPasswordFromStorage } from "./encryption";
 
 export interface IStorage {
   // Unified user operations
@@ -75,6 +76,9 @@ export interface IStorage {
   deleteCustomer(id: string): Promise<void>;
   resetCustomerPassword(id: string, newPassword: string): Promise<Customer>;
   toggleCustomerStatus(id: string, isActive: boolean): Promise<Customer>;
+  getCustomersForPasswordMigration(): Promise<Customer[]>;
+  migrateCustomerPassword(id: string, plainPassword: string): Promise<Customer>;
+  getCustomerLegacy(id: string): Promise<{ plainPassword?: string } | undefined>;
   
   // Property operations
   getProperties(customerId?: string): Promise<Property[]>;
@@ -414,13 +418,14 @@ export class DatabaseStorage implements IStorage {
   async createCustomer(customerData: InsertCustomer & { password?: string }): Promise<Customer> {
     const plainPassword = customerData.password || "default123";
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
+    const encryptedPassword = encryptPasswordForStorage(plainPassword);
     
     const [newCustomer] = await db
       .insert(customers)
       .values({
         ...customerData,
-        password: hashedPassword, // Store bcrypt hashed password
-        plainPassword: plainPassword, // Store plain text copy for admin visibility
+        password: hashedPassword, // Store bcrypt hashed password for authentication
+        encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
       })
       .returning();
     
@@ -444,13 +449,14 @@ export class DatabaseStorage implements IStorage {
   async updateCustomer(id: string, customerData: Partial<InsertCustomer> & { password?: string }): Promise<Customer> {
     let updateData = { ...customerData, updatedAt: new Date() };
     
-    // If password is being updated, hash it and store both versions
+    // If password is being updated, hash it and encrypt it
     if (customerData.password) {
       const hashedPassword = await bcrypt.hash(customerData.password, 10);
+      const encryptedPassword = encryptPasswordForStorage(customerData.password);
       updateData = {
         ...updateData,
-        password: hashedPassword, // Store bcrypt hashed password
-        plainPassword: customerData.password, // Store plain text copy for admin visibility
+        password: hashedPassword, // Store bcrypt hashed password for authentication
+        encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
       };
     }
     
@@ -478,12 +484,13 @@ export class DatabaseStorage implements IStorage {
 
   async resetCustomerPassword(id: string, newPassword: string): Promise<Customer> {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const encryptedPassword = encryptPasswordForStorage(newPassword);
     
     const [customer] = await db
       .update(customers)
       .set({ 
-        password: hashedPassword, // Store bcrypt hashed password
-        plainPassword: newPassword, // Store plain text copy for admin visibility
+        password: hashedPassword, // Store bcrypt hashed password for authentication
+        encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
         updatedAt: new Date() 
       })
       .where(eq(customers.id, id))
@@ -497,6 +504,41 @@ export class DatabaseStorage implements IStorage {
       .set({ isActive, updatedAt: new Date() })
       .where(eq(customers.id, id))
       .returning();
+    return customer;
+  }
+
+  // Migration helper functions for password encryption
+  async getCustomersForPasswordMigration(): Promise<Customer[]> {
+    return await db
+      .select()
+      .from(customers)
+      .where(
+        and(
+          sql`plain_password IS NOT NULL`,
+          sql`encrypted_password IS NULL`
+        )
+      );
+  }
+
+  async migrateCustomerPassword(id: string, plainPassword: string): Promise<Customer> {
+    const encryptedPassword = encryptPasswordForStorage(plainPassword);
+    
+    const [customer] = await db
+      .update(customers)
+      .set({ 
+        encryptedPassword: encryptedPassword,
+        updatedAt: new Date() 
+      })
+      .where(eq(customers.id, id))
+      .returning();
+    return customer;
+  }
+
+  async getCustomerLegacy(id: string): Promise<{ plainPassword?: string } | undefined> {
+    const [customer] = await db
+      .select({ plainPassword: sql<string>`plain_password` })
+      .from(customers)
+      .where(eq(customers.id, id));
     return customer;
   }
 

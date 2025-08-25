@@ -14,7 +14,7 @@ interface Customer {
   mobile: string;
   email?: string;
   password: string;
-  plainPassword?: string; // Plain text copy for admin visibility
+  encryptedPassword?: string; // Encrypted password for secure admin viewing
   isActive: boolean;
 }
 
@@ -32,11 +32,32 @@ export default function PasswordManagementModal({
   onPasswordReset 
 }: PasswordManagementModalProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [decryptedPassword, setDecryptedPassword] = useState<string | null>(null);
+  const [decryptInProgress, setDecryptInProgress] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [isResetting, setIsResetting] = useState(false);
   const { toast } = useToast();
 
   if (!customer) return null;
+
+  const handleDecryptPassword = async () => {
+    if (decryptInProgress) return;
+    
+    setDecryptInProgress(true);
+    try {
+      const response = await apiRequest(`/api/customers/${customer.id}/decrypt-password`);
+      setDecryptedPassword(response.password);
+    } catch (error) {
+      console.error('Failed to decrypt password:', error);
+      toast({
+        title: "Error",
+        description: "Failed to decrypt password",
+        variant: "destructive",
+      });
+    } finally {
+      setDecryptInProgress(false);
+    }
+  };
 
   const validatePassword = (password: string): string | null => {
     if (!password || password.length < 8) {
@@ -147,7 +168,7 @@ export default function PasswordManagementModal({
               <Input
                 id="current-password"
                 type={showPassword ? "text" : "password"}
-                value={customer.plainPassword || customer.password}
+                value={showPassword && decryptedPassword ? decryptedPassword : "•••••••••••"}
                 readOnly
                 className="pr-10 bg-gray-50"
                 data-testid="input-current-password"
@@ -157,10 +178,18 @@ export default function PasswordManagementModal({
                 variant="ghost"
                 size="sm"
                 className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => {
+                  if (!showPassword && !decryptedPassword) {
+                    handleDecryptPassword();
+                  }
+                  setShowPassword(!showPassword);
+                }}
+                disabled={decryptInProgress}
                 data-testid="button-toggle-password-visibility"
               >
-                {showPassword ? (
+                {decryptInProgress ? (
+                  <div className="animate-spin h-4 w-4 border border-gray-400 border-t-transparent rounded-full" />
+                ) : showPassword ? (
                   <EyeOff className="h-4 w-4 text-gray-400" />
                 ) : (
                   <Eye className="h-4 w-4 text-gray-400" />
