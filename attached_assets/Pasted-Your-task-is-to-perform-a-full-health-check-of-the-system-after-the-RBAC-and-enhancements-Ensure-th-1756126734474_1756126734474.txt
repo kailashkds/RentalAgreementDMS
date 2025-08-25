@@ -1,0 +1,103 @@
+Your task is to perform a full health check of the system after the RBAC and enhancements. Ensure that all features, permissions, and database structures are consistent, error-free, and working as intended.
+
+1. Authentication & Login
+
+Verify login using:
+
+Full Name + Password (case-insensitive, trimmed)
+
+Phone Number + Password
+
+Username + Password
+
+Check unique full name enforcement.
+
+Confirm Super Admin (Admin / admin123) login works.
+
+2. User & Role Management
+
+Create user → assign role → confirm permissions apply.
+
+Edit user permissions → verify manual overrides stack on top of role.
+
+Update role permissions → confirm all assigned users inherit updated perms automatically.
+
+Delete user → check cascade delete/foreign key integrity.
+
+List all users → verify roles, permissions, and overrides are correct.
+
+3. Agreement Management
+
+Create new agreement → confirm save works.
+
+Notarize → editing blocked.
+
+Set status = Active → deletion blocked.
+
+Ensure users only see their own agreements unless Super Admin.
+
+Check that Super Admin bypass rules work.
+
+4. PDF System
+
+Generate PDF from wizard → validate formatting and field mappings.
+
+Download PDF from listing → confirm working.
+
+Test multi-language output (English + at least one Indian language).
+
+Verify fonts load correctly.
+
+5. Database Integrity
+
+Ensure all migrations applied successfully.
+
+Check for orphaned records (users without roles, agreements without owners).
+
+Validate foreign keys, constraints, cascade deletes.
+
+Confirm user_permissions table works for overrides.
+
+6. Permission Guards
+
+Attempt restricted route/page → confirm blocked.
+
+Verify UI elements hide/show by permission.
+
+Test API endpoints for unauthorized access (expect rejection).
+
+Compare behavior between limited-role user vs super admin.
+
+7. Audit & Logging
+
+Update role → verify audit log entry created.
+
+Login/logout → confirm recorded.
+
+Agreement create/edit/notarize/delete attempt → check logs.
+
+8. Error Handling & Stability
+
+Invalid login → proper error.
+
+Attempt prohibited action (delete notarized) → correct error.
+
+Bad DB inputs (null, duplicates) → gracefully handled.
+
+Simulate API failure → no raw trace shown.
+
+Stress test: 100+ users and agreements → check performance.
+
+9. Reporting
+
+After checks, provide a structured validation report:
+
+✅ Passed checks
+
+⚠️ Warnings
+
+❌ Failures (with error details)
+
+Suggest fixes for each failure.
+
+⚡ Goal: Confirm that the system is stable, consistent, permission-secure, and production-ready.
