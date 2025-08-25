@@ -691,7 +691,7 @@ export class DatabaseStorage implements IStorage {
       status ? eq(agreements.status, status) : null,
       search ? ilike(agreements.agreementNumber, `%${search}%`) : null,
       dateCondition
-    ].filter(Boolean);
+    ].filter((condition): condition is NonNullable<typeof condition> => Boolean(condition));
 
     const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -1532,7 +1532,8 @@ export class DatabaseStorage implements IStorage {
     if (changedBy) conditions.push(eq(auditLogs.changedBy, changedBy));
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      const whereCondition = conditions.length === 1 ? conditions[0] : and(...conditions);
+      query = query.where(whereCondition);
     }
 
     // Get total count
@@ -1541,7 +1542,8 @@ export class DatabaseStorage implements IStorage {
       .from(auditLogs);
     
     if (conditions.length > 0) {
-      countQuery = countQuery.where(and(...conditions));
+      const whereCondition = conditions.length === 1 ? conditions[0] : and(...conditions);
+      countQuery = countQuery.where(whereCondition);
     }
 
     const [{ total }] = await countQuery;

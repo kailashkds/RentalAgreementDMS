@@ -64,6 +64,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const hashedPassword = await bcrypt.hash("admin123", 10);
       const newAdmin = await storage.createUser({
+        name: "Administrator",
         username: "admin",
         phone: "9999999999",
         firstName: "Administrator",
@@ -1504,13 +1505,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.error("=== UPDATE AGREEMENT ERROR ===");
-      console.error("Error type:", error.constructor.name);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
+      console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);
+      console.error("Error message:", error instanceof Error ? error.message : String(error));
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
       
       res.status(500).json({ 
         message: "Failed to update agreement",
-        error: error.message 
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   });
