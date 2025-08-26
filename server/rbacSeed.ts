@@ -11,6 +11,8 @@ export const PERMISSIONS = {
   AGREEMENT_DELETE_OWN: "agreement.delete.own",
   AGREEMENT_DELETE_ALL: "agreement.delete.all",
   AGREEMENT_NOTARIZE: "agreement.notarize",
+  AGREEMENT_VIEW_NOTARIZED_OWN: "agreement.view.notarized.own",
+  AGREEMENT_VIEW_NOTARIZED_ALL: "agreement.view.notarized.all",
   
   // Download permissions
   DOWNLOAD_AGREEMENT_OWN: "download.agreement.own",
@@ -59,6 +61,7 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.AGREEMENT_EDIT_OWN,
       PERMISSIONS.DOWNLOAD_AGREEMENT_OWN,
       PERMISSIONS.SHARE_AGREEMENT_OWN,
+      PERMISSIONS.AGREEMENT_VIEW_NOTARIZED_OWN,
     ]
   },
   STAFF: {
@@ -75,6 +78,7 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.TEMPLATE_CREATE,
       PERMISSIONS.TEMPLATE_EDIT,
       PERMISSIONS.DASHBOARD_VIEW,
+      PERMISSIONS.AGREEMENT_VIEW_NOTARIZED_ALL,
     ]
   },
   SUPER_ADMIN: {

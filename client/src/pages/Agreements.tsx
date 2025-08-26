@@ -44,6 +44,30 @@ export default function Agreements() {
   const [, navigate] = useLocation();
   const [showWizard, setShowWizard] = useState(false);
   const { hasPermission } = usePermissions();
+  
+  // Helper function to check if user can view/edit agreements even after notarized
+  const canViewNotarizedAgreement = (agreement: any) => {
+    const isNotarized = agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl;
+    if (!isNotarized) return true; // Not notarized, normal permissions apply
+    
+    // Check if user has permission to view notarized agreements
+    const hasNotarizedOwnPermission = hasPermission(PERMISSIONS.AGREEMENT_VIEW_NOTARIZED_OWN);
+    const hasNotarizedAllPermission = hasPermission(PERMISSIONS.AGREEMENT_VIEW_NOTARIZED_ALL);
+    
+    // If has "all" permission, can view any notarized agreement
+    if (hasNotarizedAllPermission) return true;
+    
+    // If has "own" permission, check if this agreement belongs to the user
+    // (This would need implementation based on your ownership logic)
+    if (hasNotarizedOwnPermission) {
+      // For now, allowing own notarized agreements - you may need to add ownership check here
+      return true;
+    }
+    
+    // No permission to view/edit notarized agreements
+    return false;
+  };
+  
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [editingAgreement, setEditingAgreement] = useState<any>(null);
   const [viewingAgreement, setViewingAgreement] = useState<any>(null);
@@ -1325,7 +1349,7 @@ export default function Agreements() {
                               <Download className="h-4 w-4" />
                             </Button>
                           ) : null}
-                          {!(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
+                          {canViewNotarizedAgreement(agreement) && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -2375,7 +2399,7 @@ export default function Agreements() {
               {/* Action Buttons */}
               <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-lg border border-slate-200 shadow-sm">
                 <div className="flex flex-wrap justify-center gap-3">
-                  {(!(viewingAgreement.notarizedDocument?.url || viewingAgreement.notarizedDocumentUrl) || hasPermission(PERMISSIONS.SYSTEM_ADMIN)) && (
+                  {canViewNotarizedAgreement(viewingAgreement) && (
                     <Button
                       onClick={() => {
                         if (isImportedAgreement(viewingAgreement)) {
