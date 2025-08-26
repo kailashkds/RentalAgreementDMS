@@ -208,7 +208,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           type: existingFormData.propertyDetails?.type || "",
           place: existingFormData.propertyDetails?.place || "",
           areaInSqFt: existingFormData.propertyDetails?.areaInSqFt || existingFormData.propertyDetails?.area || "",
-          purpose: existingFormData.propertyDetails?.purpose || "",
+          purpose: existingFormData.propertyDetails?.purpose || "residential",
           furnishedStatus: existingFormData.propertyDetails?.furnishedStatus || existingFormData.propertyDetails?.furnishing || "",
           additionalItems: existingFormData.propertyDetails?.additionalItems || existingFormData.propertyDetails?.description || "",
           address: {
@@ -470,6 +470,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
               city: agreement.propertyDetails?.city || agreement.propertyDetails?.address?.city || "",
               state: agreement.propertyDetails?.state || agreement.propertyDetails?.address?.state || "",
               pincode: agreement.propertyDetails?.pincode || agreement.propertyDetails?.address?.pincode || "",
+              // Ensure purpose field is explicitly preserved
+              purpose: agreement.propertyDetails?.purpose || "residential",
               // Keep nested address structure for compatibility
               address: agreement.propertyDetails?.address || {
                 flatNo: agreement.propertyDetails?.houseNumber || "",
