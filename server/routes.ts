@@ -1662,7 +1662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Download agreement PDF
+  // Download agreement PDF - uses edited content if available, otherwise generates from template
   app.get("/api/agreements/:id/pdf", async (req, res) => {
     try {
       const agreement = await storage.getAgreement(req.params.id);
@@ -1670,17 +1670,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Agreement not found" });
       }
 
-      // Find template for this agreement and generate HTML
-      const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
-      const template = templates.find(t => t.isActive) || templates[0];
+      let processedHtml: string;
       
-      if (!template) {
-        return res.status(404).json({ message: "No PDF template found" });
-      }
+      // Check if there's edited content saved for this agreement
+      if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
+        console.log(`[PDF] Using saved edited content for agreement ${agreement.id}`);
+        processedHtml = agreement.editedHtml;
+      } else {
+        console.log(`[PDF] No edited content found, generating from template for agreement ${agreement.id}`);
+        // Find template for this agreement and generate HTML
+        const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
+        const template = templates.find(t => t.isActive) || templates[0];
+        
+        if (!template) {
+          return res.status(404).json({ message: "No PDF template found" });
+        }
 
-      // Generate PDF HTML content from template
-      const { generatePdfHtml } = await import("./fieldMapping");
-      const processedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
+        // Generate PDF HTML content from template
+        const { generatePdfHtml } = await import("./fieldMapping");
+        processedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
+      }
       
       // Return the HTML for client-side PDF generation
       res.json({
@@ -1691,6 +1700,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating agreement PDF:", error);
       res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
+  // Save edited content for a specific agreement
+  app.post("/api/agreements/:id/save-content", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { editedHtml } = req.body;
+
+      if (!editedHtml || typeof editedHtml !== 'string') {
+        return res.status(400).json({ 
+          message: "Missing or invalid edited content",
+          errorCode: "INVALID_CONTENT",
+          action: "Please provide valid HTML content to save"
+        });
+      }
+
+      // Check if agreement exists
+      const agreement = await storage.getAgreement(id);
+      if (!agreement) {
+        return res.status(404).json({ 
+          message: "Agreement not found",
+          errorCode: "AGREEMENT_NOT_FOUND",
+          action: "Please check the agreement ID and try again"
+        });
+      }
+
+      // Save the edited content to the database
+      await storage.saveEditedContent(id, editedHtml);
+      
+      console.log(`[Save Content] Successfully saved edited content for agreement ${id} (${editedHtml.length} characters)`);
+
+      res.json({
+        message: "Content saved successfully",
+        savedAt: new Date().toISOString(),
+        contentLength: editedHtml.length
+      });
+    } catch (error) {
+      console.error("Error saving edited content:", error);
+      res.status(500).json({ 
+        message: "Failed to save content",
+        errorCode: "SAVE_FAILED",
+        action: "Please try again or contact support if the problem persists"
+      });
+    }
+  });
+
+  // Get edited content for a specific agreement
+  app.get("/api/agreements/:id/edited-content", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const agreement = await storage.getAgreement(id);
+      if (!agreement) {
+        return res.status(404).json({ 
+          message: "Agreement not found",
+          errorCode: "AGREEMENT_NOT_FOUND",
+          action: "Please check the agreement ID and try again"
+        });
+      }
+
+      // Check if there's edited content
+      if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
+        console.log(`[Get Content] Returning saved edited content for agreement ${id} (${agreement.editedHtml.length} characters)`);
+        res.json({
+          hasEdits: true,
+          editedContent: agreement.editedHtml,
+          editedAt: agreement.editedAt,
+          contentSource: 'database'
+        });
+      } else {
+        console.log(`[Get Content] No edited content found for agreement ${id}, generating from template`);
+        // Generate content from template as fallback
+        const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
+        const template = templates.find(t => t.isActive) || templates[0];
+        
+        if (!template) {
+          return res.status(404).json({ 
+            message: "No template found to generate content",
+            errorCode: "TEMPLATE_NOT_FOUND",
+            action: "Please ensure a template is available for this agreement type"
+          });
+        }
+
+        const { generatePdfHtml } = await import("./fieldMapping");
+        const generatedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
+        
+        res.json({
+          hasEdits: false,
+          editedContent: generatedHtml,
+          editedAt: null,
+          contentSource: 'template'
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching edited content:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch content",
+        errorCode: "FETCH_FAILED",
+        action: "Please try again or contact support if the problem persists"
+      });
     }
   });
 

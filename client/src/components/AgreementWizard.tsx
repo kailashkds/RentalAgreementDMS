@@ -992,16 +992,35 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           // Check if there's already saved edited content before regenerating
           console.log(`[Wizard] Checking for existing edited content for agreement ${agreement.id}`);
           
-          // Generate fresh content from template for editing
-          const selectedLanguage = formData.language || 'english';
-          const editorUrl = `/agreement-editor?agreementId=${agreement.id}&agreementNumber=${agreement.agreementNumber}&language=${selectedLanguage}`;
-          window.location.href = editorUrl;
-          
-          toast({
-            title: "Agreement opened for editing",
-            description: `Agreement ${agreement.agreementNumber} ready for editing.`,
-          });
-          return;
+          // Check if there's already saved edited content before regenerating
+          try {
+            const existingContentResponse = await fetch(`/api/agreements/${agreement.id}/edited-content`);
+            
+            if (existingContentResponse.ok) {
+              const existingData = await existingContentResponse.json();
+              
+              // If there's already saved edited content, use that instead of regenerating
+              if (existingData.hasEdits && existingData.editedContent && existingData.editedContent.trim() !== '') {
+                console.log(`[Wizard] Found existing edited content (${existingData.editedContent.length} characters), loading that instead of regenerating`);
+                
+                // Store existing content in session storage for the editor
+                sessionStorage.setItem('editorHtmlContent', existingData.editedContent);
+                
+                // Redirect to editor with existing content
+                const selectedLanguage = formData.language || 'english';
+                const editorUrl = `/agreement-editor?agreementId=${agreement.id}&agreementNumber=${agreement.agreementNumber}&language=${selectedLanguage}`;
+                window.location.href = editorUrl;
+                
+                toast({
+                  title: "Agreement opened for editing",
+                  description: `Agreement ${agreement.agreementNumber} loaded with your previous edits.`,
+                });
+                return; // Exit early to avoid regenerating
+              }
+            }
+          } catch (checkError) {
+            console.log(`[Wizard] Could not check for existing content, will regenerate: ${checkError}`);
+          }
         } else {
           // Create new agreement
           agreement = await finalizeAgreement(formData);
@@ -1055,8 +1074,27 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           // Store HTML content in session storage for the editor
           sessionStorage.setItem('editorHtmlContent', result.html);
           
-          // Store HTML content for the editor
-          console.log(`[Wizard] Generated HTML content for agreement ${agreement.id}`);
+          // CRITICAL: Save the generated HTML content to the database as editedContent
+          try {
+            console.log(`[Wizard] Saving generated HTML content to database for agreement ${agreement.id}`);
+            const saveResponse = await fetch(`/api/agreements/${agreement.id}/save-content`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                editedHtml: result.html
+              })
+            });
+            
+            if (saveResponse.ok) {
+              console.log(`[Wizard] Successfully saved generated content to database`);
+            } else {
+              console.error(`[Wizard] Failed to save generated content to database`);
+            }
+          } catch (saveError) {
+            console.error(`[Wizard] Error saving generated content to database:`, saveError);
+          }
           
           // Redirect to editor instead of generating PDF directly
           const editorUrl = `/agreement-editor?agreementId=${agreement.id}&agreementNumber=${agreement.agreementNumber}&language=${selectedLanguage}`;

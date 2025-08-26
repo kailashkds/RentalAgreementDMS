@@ -47,17 +47,26 @@ export default function AgreementEditor() {
       }
 
       try {
-        // Generate content from template for this agreement
+        // Try to load edited content from database first
         console.log(`[Editor] Loading content for agreement ${agreementId}`);
-        const response = await fetch(`/api/agreements/${agreementId}/pdf`);
+        const response = await fetch(`/api/agreements/${agreementId}/edited-content`);
         
         if (response.ok) {
           const data = await response.json();
-          console.log(`[Editor] Loaded content from template (${data.html?.length || 0} characters)`);
+          console.log(`[Editor] API Response:`, data);
           
-          if (data.html && data.html.trim() !== '') {
-            setHtmlContent(data.html);
+          console.log(`[Editor] Content check - hasEdits: ${data.hasEdits}, contentSource: ${data.contentSource}, content length: ${data.editedContent?.length || 0}`);
+          
+          // Check for actual content, not just hasEdits flag
+          if (data.editedContent && data.editedContent.trim() !== '') {
+            console.log(`[Editor] ✓ LOADING CONTENT from ${data.contentSource || 'unknown source'} (${data.editedContent.length} characters)`);
+            setHtmlContent(data.editedContent);
+            if (data.editedAt) {
+              setLastSaved(new Date(data.editedAt));
+            }
           } else {
+            // This should rarely happen now since the API generates content from template
+            console.log('[Editor] No content returned from API, generating fallback content');
             await generateInitialContent();
           }
         } else {

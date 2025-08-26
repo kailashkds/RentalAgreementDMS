@@ -147,6 +147,9 @@ export interface IStorage {
   renewAgreement(id: string, newStartDate: Date, newEndDate: Date): Promise<Agreement>;
   updateAgreementNotarizedDocument(id: string, notarizedDocData: any): Promise<Agreement>;
   
+  // Edited content operations
+  saveEditedContent(agreementId: string, editedHtml: string): Promise<void>;
+  
   // Dashboard statistics
   getDashboardStats(): Promise<{
     totalAgreements: number;
@@ -1161,6 +1164,23 @@ export class DatabaseStorage implements IStorage {
     }
     
     return updatedAgreement;
+  }
+
+  // Save edited content for a specific agreement
+  async saveEditedContent(agreementId: string, editedHtml: string): Promise<void> {
+    const [updatedAgreement] = await db
+      .update(agreements)
+      .set({ 
+        editedHtml: editedHtml,
+        editedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(agreements.id, agreementId))
+      .returning();
+    
+    if (!updatedAgreement) {
+      throw new Error("Agreement not found");
+    }
   }
 
 
