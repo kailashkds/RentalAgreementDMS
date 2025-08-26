@@ -120,7 +120,7 @@ export default function UserRoleManagement() {
   // User mutations
   const createUserMutation = useMutation({
     mutationFn: (userData: typeof userFormData) => 
-      apiRequest("POST", "/api/unified/users", userData),
+      apiRequest("/api/unified/users", "POST", userData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
       setIsUserModalOpen(false);
@@ -141,7 +141,7 @@ export default function UserRoleManagement() {
 
   const updateUserMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<typeof userFormData> }) => 
-      apiRequest("PUT", `/api/unified/users/${id}`, data),
+      apiRequest(`/api/unified/users/${id}`, "PUT", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
       setIsUserModalOpen(false);
@@ -163,7 +163,7 @@ export default function UserRoleManagement() {
 
   const deleteUserMutation = useMutation({
     mutationFn: (userId: string) => 
-      apiRequest("DELETE", `/api/unified/users/${userId}`),
+      apiRequest(`/api/unified/users/${userId}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
       toast({
@@ -183,7 +183,7 @@ export default function UserRoleManagement() {
   // Role mutations
   const createRoleMutation = useMutation({
     mutationFn: (roleData: typeof roleFormData) => 
-      apiRequest("POST", "/api/unified/roles", roleData),
+      apiRequest("/api/unified/roles", "POST", roleData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/unified/roles"] });
       setIsRoleModalOpen(false);
@@ -204,7 +204,7 @@ export default function UserRoleManagement() {
 
   const updateRoleMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<typeof roleFormData> }) => 
-      apiRequest("PUT", `/api/unified/roles/${id}`, data),
+      apiRequest(`/api/unified/roles/${id}`, "PUT", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/unified/roles"] });
       setIsRoleModalOpen(false);
@@ -226,7 +226,7 @@ export default function UserRoleManagement() {
 
   const deleteRoleMutation = useMutation({
     mutationFn: (roleId: string) => 
-      apiRequest("DELETE", `/api/unified/roles/${roleId}`),
+      apiRequest(`/api/unified/roles/${roleId}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/unified/roles"] });
       toast({
