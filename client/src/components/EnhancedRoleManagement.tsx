@@ -65,6 +65,13 @@ const PERMISSION_CATEGORIES: PermissionCategory[] = [
     allPermissions: ["agreement.view.all", "agreement.edit.all", "agreement.delete.all"],
   },
   {
+    title: "Notarized Agreements",
+    icon: Shield,
+    basePermissions: [],
+    ownPermissions: ["agreement.view.notarized.own", "agreement.edit.notarized.own"],
+    allPermissions: ["agreement.view.notarized.all", "agreement.edit.notarized.all"],
+  },
+  {
     title: "Downloads & Sharing",
     icon: Download,
     basePermissions: [],
