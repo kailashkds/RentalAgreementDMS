@@ -706,6 +706,212 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Unified roles endpoint
+  app.get("/api/unified/roles", requireAuth, async (req, res) => {
+    try {
+      const roles = await storage.getRoles();
+      // Add user count and permissions for each role
+      const rolesWithDetails = await Promise.all(roles.map(async (role) => {
+        const permissions = await storage.getRolePermissions(role.id);
+        const users = await storage.getUsers({ defaultRole: role.name?.toLowerCase().replace(' ', '_') });
+        return {
+          ...role,
+          permissions: permissions.map(p => p.code),
+          userCount: users.users.length
+        };
+      }));
+      res.json(rolesWithDetails);
+    } catch (error) {
+      console.error("Error fetching unified roles:", error);
+      res.status(500).json({ message: "Failed to fetch roles" });
+    }
+  });
+
+  // Unified permissions endpoint
+  app.get("/api/unified/permissions", requireAuth, async (req, res) => {
+    try {
+      const permissions = await storage.getPermissions();
+      // Transform permissions to match frontend expectations
+      const transformedPermissions = permissions.map(permission => ({
+        id: permission.id,
+        name: permission.code,
+        description: permission.description,
+        category: permission.code.split('.')[0] // Extract category from permission code
+      }));
+      res.json(transformedPermissions);
+    } catch (error) {
+      console.error("Error fetching unified permissions:", error);
+      res.status(500).json({ message: "Failed to fetch permissions" });
+    }
+  });
+
+  // Unified role creation endpoint
+  app.post("/api/unified/roles", requireAuth, requirePermission("role.manage"), async (req: any, res) => {
+    try {
+      const { name, description, permissions: permissionCodes = [] } = req.body;
+
+      // Create the role
+      const role = await storage.createRole({ name, description });
+      
+      // Get permission IDs from codes
+      const allPermissions = await storage.getPermissions();
+      const permissionIds = allPermissions
+        .filter(p => permissionCodes.includes(p.code))
+        .map(p => p.id);
+      
+      // Assign permissions to the role
+      for (const permissionId of permissionIds) {
+        await storage.assignPermissionToRole(role.id, permissionId);
+      }
+
+      // Create audit log
+      try {
+        await storage.createAuditLog({
+          action: "role.created",
+          resourceType: "role",
+          resourceId: role.id,
+          changedBy: req.user.claims.sub,
+          diff: {
+            created: {
+              name,
+              description,
+              permissions: permissionCodes,
+            }
+          },
+          metadata: {
+            userAgent: req.headers['user-agent'],
+            ip: req.ip
+          }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
+
+      res.json({
+        ...role,
+        permissions: permissionCodes
+      });
+    } catch (error) {
+      console.error("Error creating unified role:", error);
+      res.status(500).json({ message: "Failed to create role" });
+    }
+  });
+
+  // Unified role update endpoint
+  app.put("/api/unified/roles/:id", requireAuth, requirePermission("role.manage"), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { name, description, permissions: permissionCodes = [] } = req.body;
+
+      // Update role basic info
+      const role = await storage.updateRole(id, { name, description });
+      
+      // Get current permissions
+      const currentPermissions = await storage.getRolePermissions(id);
+      const currentPermissionIds = currentPermissions.map(p => p.id);
+      
+      // Get new permission IDs from codes
+      const allPermissions = await storage.getPermissions();
+      const newPermissionIds = allPermissions
+        .filter(p => permissionCodes.includes(p.code))
+        .map(p => p.id);
+      
+      // Remove permissions that are no longer needed
+      for (const permissionId of currentPermissionIds) {
+        if (!newPermissionIds.includes(permissionId)) {
+          await storage.removePermissionFromRole(id, permissionId);
+        }
+      }
+      
+      // Add new permissions
+      for (const permissionId of newPermissionIds) {
+        if (!currentPermissionIds.includes(permissionId)) {
+          await storage.assignPermissionToRole(id, permissionId);
+        }
+      }
+
+      // Create audit log
+      try {
+        await storage.createAuditLog({
+          action: "role.updated",
+          resourceType: "role",
+          resourceId: id,
+          changedBy: req.user.claims.sub,
+          diff: {
+            updated: {
+              name,
+              description,
+              permissions: permissionCodes,
+            }
+          },
+          metadata: {
+            userAgent: req.headers['user-agent'],
+            ip: req.ip
+          }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
+
+      res.json({
+        ...role,
+        permissions: permissionCodes
+      });
+    } catch (error) {
+      console.error("Error updating unified role:", error);
+      res.status(500).json({ message: "Failed to update role" });
+    }
+  });
+
+  // Unified role deletion endpoint
+  app.delete("/api/unified/roles/:id", requireAuth, requirePermission("role.manage"), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if role has users assigned
+      const role = await storage.getRole(id);
+      if (!role) {
+        return res.status(404).json({ message: "Role not found" });
+      }
+      
+      const users = await storage.getUsers({ defaultRole: role.name?.toLowerCase().replace(' ', '_') });
+      if (users.users.length > 0) {
+        return res.status(400).json({ 
+          message: "Cannot delete role that has users assigned. Please reassign users first." 
+        });
+      }
+
+      await storage.deleteRole(id);
+
+      // Create audit log
+      try {
+        await storage.createAuditLog({
+          action: "role.deleted",
+          resourceType: "role",
+          resourceId: id,
+          changedBy: req.user.claims.sub,
+          diff: {
+            deleted: {
+              name: role.name,
+              description: role.description,
+            }
+          },
+          metadata: {
+            userAgent: req.headers['user-agent'],
+            ip: req.ip
+          }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
+
+      res.json({ message: "Role deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting unified role:", error);
+      res.status(500).json({ message: "Failed to delete role" });
+    }
+  });
+
   // RBAC management endpoints
   app.get("/api/rbac/permissions", requireAuth, async (req, res) => {
     try {
