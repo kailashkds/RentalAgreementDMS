@@ -1773,7 +1773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { mapFormDataToTemplateFields, convertFromTemplateFormat, generatePdfHtml } = await import("./fieldMapping");
       
-      // Debug: Log the agreement structure to see documents
+      // Log agreement structure for debugging
       console.log(`[Debug] Agreement structure for ${id}:`);
       console.log(`  - documents:`, agreement.documents ? Object.keys(agreement.documents) : 'null');
       console.log(`  - ownerDocuments:`, agreement.ownerDocuments ? Object.keys(agreement.ownerDocuments) : 'null');

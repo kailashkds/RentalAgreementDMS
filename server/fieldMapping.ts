@@ -535,8 +535,8 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
   const templateLanguage = language || formData.language || 'english';
   const templateFields: Record<string, string> = {};
 
-  // Debug: Log document fields specifically
-  console.log(`[Field Mapping] Debug - Document fields found:`);
+  // Log document fields for debugging
+  console.log(`[Field Mapping] Document fields found:`);
   const documentMappings = ['documents.ownerAadhar', 'documents.ownerPan', 'documents.tenantAadhar', 'documents.tenantPan', 'documents.propertyDocuments', 'ownerDocuments.aadharUrl', 'ownerDocuments.panUrl', 'tenantDocuments.aadharUrl', 'tenantDocuments.panUrl', 'propertyDocuments.urls'];
   for (const path of documentMappings) {
     const value = getNestedProperty(formData, path);
@@ -606,7 +606,7 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     templateFields['ADDITIONAL_CLAUSES'] = 'No additional clauses specified.';
   }
 
-  // Debug: Check template fields after mapping
+  // Log template fields after mapping
   console.log(`[Field Mapping] Template fields mapped:`);
   const docTemplateFields = ['OWNER_AADHAR_URL', 'OWNER_PAN_URL', 'TENANT_AADHAR_URL', 'TENANT_PAN_URL', 'PROPERTY_DOCUMENTS_URL'];
   for (const field of docTemplateFields) {

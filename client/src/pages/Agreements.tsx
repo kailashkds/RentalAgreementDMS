@@ -38,10 +38,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { LocalFileUploader } from "@/components/LocalFileUploader";
 import { FilePreview } from "@/components/FilePreview";
+import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
 
 export default function Agreements() {
   const [, navigate] = useLocation();
   const [showWizard, setShowWizard] = useState(false);
+  const { hasPermission } = usePermissions();
   const [showImportWizard, setShowImportWizard] = useState(false);
   const [editingAgreement, setEditingAgreement] = useState<any>(null);
   const [viewingAgreement, setViewingAgreement] = useState<any>(null);
@@ -2359,7 +2361,7 @@ export default function Agreements() {
               {/* Action Buttons */}
               <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-lg border border-slate-200 shadow-sm">
                 <div className="flex flex-wrap justify-center gap-3">
-                  {!(viewingAgreement.notarizedDocument?.url || viewingAgreement.notarizedDocumentUrl) && (
+                  {(!(viewingAgreement.notarizedDocument?.url || viewingAgreement.notarizedDocumentUrl) || hasPermission(PERMISSIONS.SYSTEM_ADMIN)) && (
                     <Button
                       onClick={() => {
                         if (isImportedAgreement(viewingAgreement)) {
