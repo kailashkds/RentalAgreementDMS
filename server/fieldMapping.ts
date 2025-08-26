@@ -606,6 +606,20 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     templateFields['ADDITIONAL_CLAUSES'] = 'No additional clauses specified.';
   }
 
+  // Debug: Check template fields after mapping
+  console.log(`[Field Mapping] Template fields mapped:`);
+  const docTemplateFields = ['OWNER_AADHAR_URL', 'OWNER_PAN_URL', 'TENANT_AADHAR_URL', 'TENANT_PAN_URL', 'PROPERTY_DOCUMENTS_URL'];
+  for (const field of docTemplateFields) {
+    if (templateFields[field]) {
+      console.log(`  - ${field}: ${templateFields[field]}`);
+    } else {
+      console.log(`  - ${field}: NOT FOUND`);
+    }
+  }
+  if (templateFields['ADDITIONAL_CLAUSES']) {
+    console.log(`  - ADDITIONAL_CLAUSES: ${templateFields['ADDITIONAL_CLAUSES'].slice(0, 100)}...`);
+  }
+
   // Handle conditional logic for maintenance charge
   // Check both maintenanceCharge and maintenance fields as the form might use either
   const maintenanceCharge = formData.rentalTerms?.maintenanceCharge || formData.rentalTerms?.maintenance;

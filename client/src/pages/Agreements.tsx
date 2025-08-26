@@ -230,7 +230,7 @@ export default function Agreements() {
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + 11);
 
-      await apiRequest("POST", `/api/agreements/${agreementId}/renew`, {
+      await apiRequest(`/api/agreements/${agreementId}/renew`, "POST", {
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0],
       });
@@ -259,7 +259,7 @@ export default function Agreements() {
 
     try {
       console.log(`[Agreements] Attempting to delete agreement ${agreementId}`);
-      await apiRequest("DELETE", `/api/agreements/${agreementId}`);
+      await apiRequest(`/api/agreements/${agreementId}`, "DELETE");
       console.log(`[Agreements] Successfully deleted agreement ${agreementId}`);
 
       queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
