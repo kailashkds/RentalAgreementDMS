@@ -85,6 +85,47 @@ export default function AgreementEditor() {
     loadContent();
   }, [agreementId]);
 
+  // Add effect to refresh content when returning to page (after form edits)
+  useEffect(() => {
+    const handleFocusChange = async () => {
+      if (agreementId && !document.hidden && !isLoading) {
+        console.log('[Editor] Page focused, checking if content needs refresh for updated form data');
+        
+        // Force refresh content to get latest form values
+        try {
+          setIsLoading(true);
+          const response = await apiRequest('GET', `/api/agreements/${agreementId}/edited-content`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Only update if content is different
+            if (data.editedContent && data.editedContent !== htmlContent) {
+              console.log('[Editor] Content updated with latest form data');
+              setHtmlContent(data.editedContent);
+              if (data.editedAt) {
+                setLastSaved(new Date(data.editedAt));
+              }
+            }
+          }
+        } catch (error) {
+          console.error('[Editor] Failed to refresh content:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    // Listen for page focus and visibility changes
+    window.addEventListener('focus', handleFocusChange);
+    document.addEventListener('visibilitychange', handleFocusChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocusChange);
+      document.removeEventListener('visibilitychange', handleFocusChange);
+    };
+  }, [agreementId, htmlContent, isLoading]);
+
   // Function to generate initial content from agreement data
   const generateInitialContent = async () => {
     try {
@@ -542,6 +583,41 @@ export default function AgreementEditor() {
       }
     } else {
       navigate('/agreements');
+    }
+  };
+
+  // Refresh content function to get latest form data
+  const refreshContent = async () => {
+    if (!agreementId) return;
+    
+    try {
+      setIsLoading(true);
+      console.log('[Editor] Manual refresh triggered');
+      
+      const response = await apiRequest('GET', `/api/agreements/${agreementId}/edited-content`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[Editor] Refreshed content with latest form data');
+        setHtmlContent(data.editedContent);
+        if (data.editedAt) {
+          setLastSaved(new Date(data.editedAt));
+        }
+        
+        toast({
+          title: "Content Refreshed",
+          description: "Document updated with latest form data.",
+        });
+      }
+    } catch (error) {
+      console.error('[Editor] Failed to refresh content:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh content. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
