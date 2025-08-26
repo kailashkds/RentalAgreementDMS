@@ -443,7 +443,9 @@ export default function Agreements() {
             city: (document.getElementById('edit-city') as HTMLInputElement)?.value,
             state: (document.getElementById('edit-state') as HTMLInputElement)?.value,
             pincode: (document.getElementById('edit-pincode') as HTMLInputElement)?.value,
-          }
+          },
+          purpose: (document.querySelector('[name="edit-purpose"]') as HTMLSelectElement)?.value || 
+                   editingImportedAgreement.propertyDetails?.purpose || "residential",
         },
         startDate: (document.getElementById('edit-start-date') as HTMLInputElement)?.value,
         endDate: (document.getElementById('edit-end-date') as HTMLInputElement)?.value,
@@ -1675,6 +1677,18 @@ export default function Agreements() {
                         className="mt-1"
                         placeholder="e.g., 380015"
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-purpose">Property Purpose <span className="text-red-500">*</span></Label>
+                      <Select name="edit-purpose" defaultValue={editingImportedAgreement.propertyDetails?.purpose || "residential"}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select property purpose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="residential">Residential</SelectItem>
+                          <SelectItem value="commercial">Commercial</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
