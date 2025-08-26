@@ -181,12 +181,15 @@ export default function UserRoleManagement() {
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: (userId: string) => 
-      apiRequest(`/api/unified/users/${userId}/reset-password`, "PATCH"),
-    onSuccess: () => {
+    mutationFn: async (userId: string) => {
+      const response = await apiRequest(`/api/unified/users/${userId}/reset-password`, "PATCH");
+      return response.json();
+    },
+    onSuccess: (data: { password: string }) => {
       toast({
-        title: "Success",
-        description: "Password reset successfully. New password has been generated.",
+        title: "Password Reset Successful",
+        description: `New password: ${data.password}`,
+        duration: 10000, // Show for 10 seconds so admin can copy it
       });
     },
     onError: (error: any) => {
