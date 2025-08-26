@@ -1163,16 +1163,6 @@ export class DatabaseStorage implements IStorage {
     return updatedAgreement;
   }
 
-  async saveEditedHtml(agreementId: string, editedHtml: string): Promise<void> {
-    await db
-      .update(agreements)
-      .set({
-        editedHtml: editedHtml,
-        editedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(agreements.id, agreementId));
-  }
 
   async getDashboardStats(customerId?: string): Promise<{
     totalAgreements: number;

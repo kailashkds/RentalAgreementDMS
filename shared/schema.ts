@@ -253,8 +253,6 @@ export const agreements: any = pgTable("agreements", {
   notarizedDocument: jsonb("notarized_document").default({}), // Store notarized PDF details
   
   // Edited document content - stores HTML from editor for persistent editing
-  editedHtml: text("edited_html"), // Store edited HTML content from document editor
-  editedAt: timestamp("edited_at"), // Track when document was last edited
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
