@@ -103,7 +103,7 @@ export default function UserRoleManagement() {
   });
 
   // Fetch data
-  const { data: usersData, isLoading: usersLoading } = useQuery<{ users: User[]; total: number }>({
+  const { data: usersData, isLoading: usersLoading, error: usersError } = useQuery<{ users: User[]; total: number }>({
     queryKey: ["/api/unified/users"],
   });
   
@@ -557,7 +557,26 @@ export default function UserRoleManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => {
+                  {usersLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        Loading users...
+                      </TableCell>
+                    </TableRow>
+                  ) : usersError ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-red-600">
+                        Error loading users: {usersError.message}
+                      </TableCell>
+                    </TableRow>
+                  ) : !users || users.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        No users found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    (Array.isArray(users) ? users : []).map((user) => {
                     const userPermissions = getUserPermissions(user);
                     return (
                       <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
@@ -689,7 +708,8 @@ export default function UserRoleManagement() {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
+                  })
+                  )}
                 </TableBody>
               </Table>
             </Card>
