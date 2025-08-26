@@ -80,7 +80,7 @@ export default function Agreements() {
   const [tenantFilter, setTenantFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("agreement_number");
+  const [sortBy, setSortBy] = useState("agreement_number_desc");
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
   const [currentPage, setCurrentPage] = useState(1);
@@ -257,17 +257,29 @@ export default function Agreements() {
     
     const sorted = [...filteredAgreements].sort((a, b) => {
       switch (sortBy) {
-        case "agreement_number":
-          // Sort by agreement number (extracting numeric part)
+        case "agreement_number_desc":
+          // Sort by agreement number descending (newest first)
           const aNum = parseInt(a.agreementNumber?.replace(/[^0-9]/g, '') || '0');
           const bNum = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
-          return bNum - aNum; // Descending order (newest first)
+          return bNum - aNum;
           
-        case "edit_date":
-          // Sort by last updated date
+        case "agreement_number_asc":
+          // Sort by agreement number ascending (oldest first)
+          const aNumAsc = parseInt(a.agreementNumber?.replace(/[^0-9]/g, '') || '0');
+          const bNumAsc = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
+          return aNumAsc - bNumAsc;
+          
+        case "edit_date_desc":
+          // Sort by last updated date descending (most recent first)
           const aDate = new Date(a.updatedAt || a.createdAt);
           const bDate = new Date(b.updatedAt || b.createdAt);
-          return bDate.getTime() - aDate.getTime(); // Descending order (most recent first)
+          return bDate.getTime() - aDate.getTime();
+          
+        case "edit_date_asc":
+          // Sort by last updated date ascending (oldest first)
+          const aDateAsc = new Date(a.updatedAt || a.createdAt);
+          const bDateAsc = new Date(b.updatedAt || b.createdAt);
+          return aDateAsc.getTime() - bDateAsc.getTime();
           
         default:
           return 0;
@@ -999,8 +1011,10 @@ export default function Agreements() {
                 <span>Sort by</span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="agreement_number">Agreement Number</SelectItem>
-                <SelectItem value="edit_date">Last Edit Date</SelectItem>
+                <SelectItem value="agreement_number_desc">Agreement Number (Newest First)</SelectItem>
+                <SelectItem value="agreement_number_asc">Agreement Number (Oldest First)</SelectItem>
+                <SelectItem value="edit_date_desc">Last Edit Date (Recent First)</SelectItem>
+                <SelectItem value="edit_date_asc">Last Edit Date (Oldest First)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1069,7 +1083,7 @@ export default function Agreements() {
                   setTenantFilter("all");
                   setOwnerFilter("all");
                   setDateFilter("all");
-                  setSortBy("agreement_number");
+                  setSortBy("agreement_number_desc");
                   setCustomStartDate(undefined);
                   setCustomEndDate(undefined);
                 }}
@@ -1115,7 +1129,7 @@ export default function Agreements() {
                         setCustomerFilter("all");
                         setTenantFilter("all");
                         setOwnerFilter("all");
-                        setSortBy("agreement_number");
+                        setSortBy("agreement_number_desc");
                         setDateFilter("all");
                         setCustomStartDate(undefined);
                         setCustomEndDate(undefined);
