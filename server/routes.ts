@@ -410,13 +410,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update role if provided
       if (roleId) {
+        // Find role by name if roleId is a role name
+        let actualRoleId = roleId;
+        if (roleId && !roleId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          // roleId is a role name, find the actual ID
+          const roles = await storage.getRoles();
+          const role = roles.find(r => r.name?.toLowerCase().replace(' ', '_') === roleId.toLowerCase());
+          if (role) {
+            actualRoleId = role.id;
+          } else {
+            return res.status(400).json({ message: "Role not found" });
+          }
+        }
+        
         // Remove existing roles
         const currentRoles = await storage.getUserRoles(id);
         for (const role of currentRoles) {
           await storage.removeUserRole(id, role.id);
         }
         // Assign new role
-        await storage.assignUserRole(id, roleId);
+        await storage.assignUserRole(id, actualRoleId);
       }
 
       // Log audit (non-blocking)

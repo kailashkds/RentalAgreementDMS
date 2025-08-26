@@ -180,6 +180,24 @@ export default function UserRoleManagement() {
     },
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: (userId: string) => 
+      apiRequest(`/api/unified/users/${userId}/reset-password`, "PATCH"),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Password reset successfully. New password has been generated.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Role mutations
   const createRoleMutation = useMutation({
     mutationFn: (roleData: typeof roleFormData) => 
@@ -669,10 +687,31 @@ export default function UserRoleManagement() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit User
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Key className="h-4 w-4 mr-2" />
-                                Reset Password
-                              </DropdownMenuItem>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <Key className="h-4 w-4 mr-2" />
+                                    Reset Password
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Reset Password</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to reset this user's password? A new password will be generated and the user will need to be notified.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => resetPasswordMutation.mutate(user.id)}
+                                      disabled={resetPasswordMutation.isPending}
+                                    >
+                                      {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                               <DropdownMenuItem>
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Manage Permissions
