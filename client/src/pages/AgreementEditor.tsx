@@ -137,15 +137,29 @@ export default function AgreementEditor() {
     try {
       setIsSaving(true);
       console.log(`[Editor] Auto-saving content (${content.length} characters)`);
-      await apiRequest('POST', `/api/agreements/${agreementId}/save-content`, {
+      console.log(`[Editor] Saving to agreement ID: ${agreementId}`);
+      console.log(`[Editor] Content preview being saved:`, content.substring(0, 300) + '...');
+      
+      const response = await apiRequest('POST', `/api/agreements/${agreementId}/save-content`, {
         editedHtml: content
       });
       
-      console.log('[Editor] Auto-save successful');
+      console.log('[Editor] Auto-save successful, response:', response);
       setLastSaved(new Date());
       setIsDirty(false);
+      
+      // Show a subtle success indication
+      toast({
+        title: "Auto-saved",
+        description: "Your changes have been automatically saved.",
+      });
     } catch (error) {
       console.error('[Editor] Auto-save failed:', error);
+      toast({
+        title: "Auto-save Failed",
+        description: "Failed to auto-save your changes. Please use the Save button.",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -204,6 +218,7 @@ export default function AgreementEditor() {
       const content = editorRef.current.innerHTML;
       
       console.log(`[Editor] Content changed, length: ${content.length}, will auto-save in 2 seconds`);
+      console.log(`[Editor] Content preview:`, content.substring(0, 200) + '...');
       
       // Save to session storage as backup
       sessionStorage.setItem('editorHtmlContent', content);
