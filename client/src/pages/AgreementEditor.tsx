@@ -186,8 +186,8 @@ export default function AgreementEditor() {
         errorStack: error.stack
       });
       toast({
-        title: "Auto-save Fixed!",
-        description: `Saved ${content.length} characters successfully. Error was: ${error.message}`,
+        title: "Auto-save Failed",
+        description: "Failed to auto-save your changes. Please use the Save button.",
         variant: "destructive",
       });
     } finally {

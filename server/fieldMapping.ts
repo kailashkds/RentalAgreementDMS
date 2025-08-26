@@ -828,6 +828,59 @@ export function processTemplate(htmlTemplate: string, fieldValues: Record<string
 }
 
 /**
+ * Convert HTML content with actual values back to template format with placeholders
+ * This function converts "Shilpa Mevada" back to "{{OWNER_NAME}}"
+ */
+export function convertToTemplateFormat(htmlContent: string, fieldValues: Record<string, string>): string {
+  let templateContent = htmlContent;
+  
+  // Sort field values by length (longest first) to avoid partial replacements
+  const sortedFields = Object.entries(fieldValues)
+    .filter(([_, value]) => value && value.trim() && value !== 'undefined' && value !== 'null')
+    .sort(([_a, a], [_b, b]) => b.length - a.length);
+  
+  // Replace actual values with template placeholders
+  for (const [fieldName, value] of sortedFields) {
+    const trimmedValue = value.trim();
+    if (trimmedValue && trimmedValue.length > 2) { // Avoid replacing very short values that might be common
+      // Skip HTML content and base64 data
+      if (trimmedValue.includes('<') || trimmedValue.startsWith('data:') || trimmedValue.includes('base64')) {
+        continue;
+      }
+      
+      // Escape special regex characters in the value
+      const escapedValue = trimmedValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      // Use word boundaries for more precise matching when appropriate
+      const hasSpaces = trimmedValue.includes(' ');
+      const hasSpecialChars = /[^a-zA-Z0-9\s]/.test(trimmedValue);
+      
+      let regex: RegExp;
+      if (hasSpaces || hasSpecialChars) {
+        // For multi-word values or values with special characters, use exact matching
+        regex = new RegExp(`(?<!\\w)${escapedValue}(?!\\w)`, 'g');
+      } else {
+        // For single words, use word boundaries
+        regex = new RegExp(`\\b${escapedValue}\\b`, 'g');
+      }
+      
+      const placeholder = `{{${fieldName}}}`;
+      templateContent = templateContent.replace(regex, placeholder);
+    }
+  }
+  
+  return templateContent;
+}
+
+/**
+ * Convert template format with placeholders to HTML with actual values for editing
+ * This function converts "{{OWNER_NAME}}" to "Shilpa Mevada"
+ */
+export function convertFromTemplateFormat(htmlTemplate: string, fieldValues: Record<string, string>): string {
+  return processTemplate(htmlTemplate, fieldValues);
+}
+
+/**
  * Convert resolved values back to placeholders for storage
  * This preserves manual edits while allowing dynamic fields to be updated
  */

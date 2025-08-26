@@ -1675,7 +1675,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if there's edited content saved for this agreement
       if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
         console.log(`[PDF] Using saved edited content for agreement ${agreement.id}`);
-        processedHtml = agreement.editedHtml;
+        // The saved content is in template format, so convert it to actual values for PDF
+        const { mapFormDataToTemplateFields, convertFromTemplateFormat } = await import("./fieldMapping");
+        const fieldValues = mapFormDataToTemplateFields(agreement, agreement.language || 'english');
+        processedHtml = convertFromTemplateFormat(agreement.editedHtml, fieldValues);
       } else {
         console.log(`[PDF] No edited content found, generating from template for agreement ${agreement.id}`);
         // Find template for this agreement and generate HTML
@@ -1727,15 +1730,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Save the edited content to the database
-      await storage.saveEditedContent(id, editedHtml);
+      // Convert actual values back to template placeholders before saving
+      const { mapFormDataToTemplateFields, convertToTemplateFormat } = await import("./fieldMapping");
+      const fieldValues = mapFormDataToTemplateFields(agreement, agreement.language || 'english');
+      const templateHtml = convertToTemplateFormat(editedHtml, fieldValues);
       
-      console.log(`[Save Content] Successfully saved edited content for agreement ${id} (${editedHtml.length} characters)`);
+      // Save the template format to the database (with placeholders like {{OWNER_NAME}})
+      await storage.saveEditedContent(id, templateHtml);
+      
+      console.log(`[Save Content] Successfully saved edited content for agreement ${id} (${editedHtml.length} characters -> ${templateHtml.length} template characters)`);
+      console.log(`[Save Content] Template conversion preview:`, templateHtml.substring(0, 200) + '...');
 
       res.json({
         message: "Content saved successfully",
         savedAt: new Date().toISOString(),
-        contentLength: editedHtml.length
+        contentLength: editedHtml.length,
+        templateLength: templateHtml.length
       });
     } catch (error) {
       console.error("Error saving edited content:", error);
@@ -1761,12 +1771,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      const { mapFormDataToTemplateFields, convertFromTemplateFormat, generatePdfHtml } = await import("./fieldMapping");
+      const fieldValues = mapFormDataToTemplateFields(agreement, agreement.language || 'english');
+
       // Check if there's edited content
       if (agreement.editedHtml && agreement.editedHtml.trim() !== '') {
-        console.log(`[Get Content] Returning saved edited content for agreement ${id} (${agreement.editedHtml.length} characters)`);
+        console.log(`[Get Content] Converting saved template content to display format for agreement ${id} (${agreement.editedHtml.length} characters)`);
+        
+        // Convert template placeholders to actual values for editing display
+        const displayHtml = convertFromTemplateFormat(agreement.editedHtml, fieldValues);
+        
         res.json({
           hasEdits: true,
-          editedContent: agreement.editedHtml,
+          editedContent: displayHtml,
           editedAt: agreement.editedAt,
           contentSource: 'database'
         });
@@ -1784,7 +1801,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        const { generatePdfHtml } = await import("./fieldMapping");
         const generatedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
         
         res.json({
