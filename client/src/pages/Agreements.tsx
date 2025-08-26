@@ -80,6 +80,7 @@ export default function Agreements() {
   const [tenantFilter, setTenantFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("agreement_number");
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
   const [currentPage, setCurrentPage] = useState(1);
@@ -249,6 +250,32 @@ export default function Agreements() {
 
     return true;
   }) || [];
+
+  // Sort the filtered agreements
+  const sortedAgreements = React.useMemo(() => {
+    if (!filteredAgreements || filteredAgreements.length === 0) return [];
+    
+    const sorted = [...filteredAgreements].sort((a, b) => {
+      switch (sortBy) {
+        case "agreement_number":
+          // Sort by agreement number (extracting numeric part)
+          const aNum = parseInt(a.agreementNumber?.replace(/[^0-9]/g, '') || '0');
+          const bNum = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
+          return bNum - aNum; // Descending order (newest first)
+          
+        case "edit_date":
+          // Sort by last updated date
+          const aDate = new Date(a.updatedAt || a.createdAt);
+          const bDate = new Date(b.updatedAt || b.createdAt);
+          return bDate.getTime() - aDate.getTime(); // Descending order (most recent first)
+          
+        default:
+          return 0;
+      }
+    });
+    
+    return sorted;
+  }, [filteredAgreements, sortBy]);
 
   const handleRenewAgreement = async (agreementId: string) => {
     try {
@@ -965,6 +992,17 @@ export default function Agreements() {
                 <SelectItem value="custom">Custom Date Range</SelectItem>
               </SelectContent>
             </Select>
+            
+            {/* Sort Filter */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="agreement_number">Agreement Number</SelectItem>
+                <SelectItem value="edit_date">Last Edit Date</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           {/* Custom Date Range Picker */}
@@ -1031,6 +1069,7 @@ export default function Agreements() {
                   setTenantFilter("all");
                   setOwnerFilter("all");
                   setDateFilter("all");
+                  setSortBy("agreement_number");
                   setCustomStartDate(undefined);
                   setCustomEndDate(undefined);
                 }}
@@ -1062,7 +1101,7 @@ export default function Agreements() {
           <div className="overflow-x-auto">
             {isLoading ? (
               <div className="p-6 text-center text-gray-500">Loading agreements...</div>
-            ) : filteredAgreements?.length === 0 ? (
+            ) : sortedAgreements?.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
                 {searchTerm || notaryFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
                   <>
@@ -1076,6 +1115,7 @@ export default function Agreements() {
                         setCustomerFilter("all");
                         setTenantFilter("all");
                         setOwnerFilter("all");
+                        setSortBy("agreement_number");
                         setDateFilter("all");
                         setCustomStartDate(undefined);
                         setCustomEndDate(undefined);
@@ -1099,7 +1139,7 @@ export default function Agreements() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredAgreements?.map((agreement: any, index: number) => (
+                {sortedAgreements?.map((agreement: any, index: number) => (
                   <div key={agreement.id || index} className="border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors group">
                     <div className="flex flex-col lg:flex-row">
                       {/* Details Section */}
