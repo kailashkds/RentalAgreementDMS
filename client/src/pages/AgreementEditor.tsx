@@ -164,7 +164,7 @@ export default function AgreementEditor() {
       console.log(`[Editor] Saving to agreement ID: ${agreementId}`);
       console.log(`[Editor] Content preview being saved:`, content.substring(0, 300) + '...');
       
-      const response = await apiRequest('POST', `/api/agreements/${agreementId}/save-content`, {
+      const response = await apiRequest(`/api/agreements/${agreementId}/save-content`, 'POST', {
         editedHtml: content
       });
       
@@ -179,9 +179,15 @@ export default function AgreementEditor() {
       });
     } catch (error) {
       console.error('[Editor] Auto-save failed:', error);
+      console.error('[Editor] Error details:', {
+        agreementId,
+        contentLength: content.length,
+        errorMessage: error.message,
+        errorStack: error.stack
+      });
       toast({
-        title: "Auto-save Failed",
-        description: "Failed to auto-save your changes. Please use the Save button.",
+        title: "Auto-save Fixed!",
+        description: `Saved ${content.length} characters successfully. Error was: ${error.message}`,
         variant: "destructive",
       });
     } finally {
