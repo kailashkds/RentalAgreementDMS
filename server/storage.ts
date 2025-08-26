@@ -1117,7 +1117,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAgreement(id: string): Promise<void> {
-    await db.delete(agreements).where(eq(agreements.id, id));
+    try {
+      console.log(`[Storage] Attempting to delete agreement ${id} from database`);
+      
+      // First check if the agreement exists
+      const existingAgreement = await this.getAgreement(id);
+      if (!existingAgreement) {
+        throw new Error(`Agreement with id ${id} not found`);
+      }
+      
+      // Delete the agreement
+      const result = await db.delete(agreements).where(eq(agreements.id, id));
+      console.log(`[Storage] Delete result for agreement ${id}:`, result);
+      console.log(`[Storage] Successfully deleted agreement ${id} from database`);
+    } catch (error) {
+      console.error(`[Storage] Error deleting agreement ${id}:`, error);
+      throw error;
+    }
   }
 
   async renewAgreement(id: string, newStartDate: Date, newEndDate: Date): Promise<Agreement> {

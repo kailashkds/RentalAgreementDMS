@@ -258,7 +258,9 @@ export default function Agreements() {
     }
 
     try {
+      console.log(`[Agreements] Attempting to delete agreement ${agreementId}`);
       await apiRequest("DELETE", `/api/agreements/${agreementId}`);
+      console.log(`[Agreements] Successfully deleted agreement ${agreementId}`);
 
       queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
@@ -268,9 +270,31 @@ export default function Agreements() {
         description: "Agreement has been deleted successfully.",
       });
     } catch (error) {
+      console.error('[Agreements] Delete error:', error);
+      
+      // Parse error message from API response
+      let errorMessage = "Failed to delete agreement.";
+      if (error instanceof Error) {
+        try {
+          // Try to parse the error message as JSON
+          const match = error.message.match(/\d{3}: (.+)/);
+          if (match) {
+            const errorData = JSON.parse(match[1]);
+            if (errorData.message) {
+              errorMessage = errorData.message;
+            }
+          } else {
+            errorMessage = error.message;
+          }
+        } catch {
+          // If parsing fails, use the error message as is
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to delete agreement.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

@@ -2019,27 +2019,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/agreements/:id", async (req, res) => {
+  app.delete("/api/agreements/:id", requireAuth, async (req, res) => {
     try {
+      console.log(`[Delete Agreement] Attempting to delete agreement ${req.params.id}`);
+      
       // Check if agreement exists and validate business rules
       const existingAgreement = await storage.getAgreement(req.params.id);
       if (!existingAgreement) {
+        console.log(`[Delete Agreement] Agreement ${req.params.id} not found`);
         return res.status(404).json({ message: "Agreement not found" });
       }
       
+      console.log(`[Delete Agreement] Agreement found, status: ${existingAgreement.status}`);
+      
       // Rule: Active agreements cannot be deleted
       if (existingAgreement.status === "active") {
+        console.log(`[Delete Agreement] Cannot delete active agreement ${req.params.id}`);
         return res.status(400).json({ 
           message: "Cannot delete active agreements. Active agreements are currently in effect and must be terminated first.",
           reason: "active_agreement"
         });
       }
       
+      console.log(`[Delete Agreement] Proceeding to delete agreement ${req.params.id}`);
       await storage.deleteAgreement(req.params.id);
+      console.log(`[Delete Agreement] Successfully deleted agreement ${req.params.id}`);
       res.status(204).send();
     } catch (error) {
-      console.error("Error deleting agreement:", error);
-      res.status(500).json({ message: "Failed to delete agreement" });
+      console.error(`[Delete Agreement] Error deleting agreement ${req.params.id}:`, error);
+      res.status(500).json({ 
+        message: "Failed to delete agreement", 
+        error: error instanceof Error ? error.message : String(error),
+        agreementId: req.params.id
+      });
     }
   });
 
