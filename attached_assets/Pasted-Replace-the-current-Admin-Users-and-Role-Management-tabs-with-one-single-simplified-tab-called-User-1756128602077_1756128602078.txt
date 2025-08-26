@@ -1,0 +1,93 @@
+Replace the current Admin Users and Role Management tabs with one single simplified tab called “User & Role Management”.
+
+📌 Functional Requirements
+
+Unified Tab: "User & Role Management"
+
+Merge "Admin Users" and "Role Management" into one menu item.
+
+The tab opens a dashboard-style page with two sections:
+
+Users
+
+Roles & Permissions
+
+User Management (CRUD)
+
+Add User (with username, email/phone, full name, password, status).
+
+Edit User (update details, reset password, change role).
+
+Activate/Deactivate User.
+
+Delete User (with safety check if linked to agreements).
+
+Assign multiple roles to a user.
+
+Manual permission overrides per user.
+
+Role & Permission Management
+
+Create Role (name + description).
+
+Edit Role (rename, update description).
+
+Assign Permissions to Role (checkbox-style UI).
+
+View role inheritance + permission list in a simple matrix/table.
+
+Delete Role (prevent if assigned to users).
+
+Permissions Visualization
+
+When viewing a user, show:
+
+Inherited Permissions (from role).
+
+Manual Overrides (added/removed individually).
+
+Use badges/icons to clearly show source of each permission.
+
+Simplified UI for Non-Technical Super Admins
+
+Step-by-step guided UI (like a wizard).
+
+Tooltips or info icons (ℹ️) explaining each function.
+
+Clear “+ Add User” and “+ Add Role” buttons.
+
+Use plain language (“Can Edit Agreements” instead of AGREEMENT_EDIT).
+
+Extra Utilities
+
+Bulk Import/Export Users (CSV).
+
+Reset all permissions to default for a role.
+
+Audit Log view (who assigned/removed permissions).
+
+📊 Example Layout (Simplified)
+User & Role Management
+--------------------------------
+[ Users ]    [ Roles & Permissions ]
+
+➤ Users Section:
+  - List of users (Name | Username | Role(s) | Status | Actions)
+  - Actions: [Edit] [Reset Password] [Assign Roles] [Deactivate]
+
+➤ Roles & Permissions Section:
+  - List of roles (Role Name | # of Users | Actions)
+  - Actions: [Edit Permissions] [Assign Users] [Delete Role]
+  - Clicking role → shows permission matrix with checkboxes
+
+🎯 Acceptance Criteria
+
+✅ One single menu item: User & Role Management
+
+✅ All user + role operations possible from this unified page
+
+✅ Non-technical users can easily understand UI
+
+✅ Permissions are clearly visualized (role vs manual)
+
+✅ Role inheritance + manual overrides respected

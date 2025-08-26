@@ -13,14 +13,13 @@ import Customers from "@/pages/Customers";
 import Properties from "@/pages/Properties";
 import CustomerProperties from "@/pages/CustomerProperties";
 import PropertyAgreements from "@/pages/PropertyAgreements";
-import AdminUsers from "@/pages/AdminUsers";
 import SystemSettings from "@/pages/SystemSettings";
 import Profile from "@/pages/Profile";
 import PdfTemplates from "@/pages/PdfTemplates";
 import AgreementEditor from "@/pages/AgreementEditor";
 import AgreementDetail from "@/pages/AgreementDetail";
 import CreateAgreement from "@/pages/CreateAgreement";
-import RoleManagement from "@/pages/RoleManagement";
+import UserRoleManagement from "@/pages/UserRoleManagement";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
@@ -84,8 +83,7 @@ function AuthenticatedRouter() {
       <Route path="/properties" component={Properties} />
       <Route path="/customers/:customerId/properties" component={CustomerProperties} />
       <Route path="/customers/:customerId/properties/:propertyId/agreements" component={PropertyAgreements} />
-      <Route path="/admin/users" component={AdminUsers} />
-      <Route path="/admin/roles" component={RoleManagement} />
+      <Route path="/admin/user-roles" component={UserRoleManagement} />
       <Route path="/settings" component={SystemSettings} />
       <Route path="/profile" component={Profile} />
       <Route path="/pdf-templates" component={() => <ProtectedRoute component={PdfTemplates} />} />
