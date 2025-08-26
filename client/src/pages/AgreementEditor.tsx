@@ -127,6 +127,30 @@ export default function AgreementEditor() {
   useEffect(() => {
     if (editorRef.current && htmlContent && !isLoading) {
       editorRef.current.innerHTML = htmlContent;
+      
+      // Add multiple event listeners to ensure content changes are captured
+      const editor = editorRef.current;
+      
+      const handleChange = () => {
+        console.log('[Editor] Editor content changed via event listener');
+        handleContentChange();
+      };
+      
+      // Add multiple event listeners for better coverage
+      editor.addEventListener('input', handleChange);
+      editor.addEventListener('paste', handleChange);
+      editor.addEventListener('keyup', handleChange);
+      editor.addEventListener('focus', handleChange);
+      editor.addEventListener('blur', handleChange);
+      
+      // Cleanup function
+      return () => {
+        editor.removeEventListener('input', handleChange);
+        editor.removeEventListener('paste', handleChange);
+        editor.removeEventListener('keyup', handleChange);
+        editor.removeEventListener('focus', handleChange);
+        editor.removeEventListener('blur', handleChange);
+      };
     }
   }, [htmlContent, isLoading]);
 
@@ -228,12 +252,12 @@ export default function AgreementEditor() {
         clearTimeout(autoSaveTimeout.current);
       }
       
-      // Auto-save after 2 seconds of inactivity
+      // Auto-save after 1 second of inactivity (reduced from 2 seconds for faster saving)
       if (agreementId && content.trim().length > 0) {
         autoSaveTimeout.current = setTimeout(() => {
           console.log(`[Editor] Auto-save timeout triggered, saving content`);
           autoSave(content);
-        }, 2000);
+        }, 1000);
       }
     }
   };
@@ -581,6 +605,24 @@ export default function AgreementEditor() {
             <Save className="h-4 w-4" />
             {isSaving ? 'Saving...' : 'Save & Continue Later'}
           </Button>
+          
+          <Button 
+            onClick={async () => {
+              if (editorRef.current) {
+                const content = editorRef.current.innerHTML;
+                console.log(`[Editor] IMMEDIATE SAVE triggered (${content.length} characters)`);
+                console.log(`[Editor] Agreement ID: ${agreementId}`);
+                console.log(`[Editor] First 200 chars:`, content.substring(0, 200));
+                await autoSave(content);
+              }
+            }}
+            disabled={isSaving}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            data-testid="immediate-save"
+          >
+            <Save className="h-4 w-4" />
+            {isSaving ? 'Saving...' : 'Test Save Now'}
+          </Button>
         </div>
       </div>
 
@@ -738,7 +780,11 @@ export default function AgreementEditor() {
                   : '"Times New Roman", serif'
               }}
               onInput={handleContentChange}
+              onPaste={handleContentChange}
+              onKeyUp={handleContentChange}
+              onBlur={handleContentChange}
               data-testid="content-editor"
+              suppressContentEditableWarning={true}
             />
             
             <style>{`
