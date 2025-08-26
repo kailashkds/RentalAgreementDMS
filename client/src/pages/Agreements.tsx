@@ -39,6 +39,7 @@ import { useLocation } from "wouter";
 import { LocalFileUploader } from "@/components/LocalFileUploader";
 import { FilePreview } from "@/components/FilePreview";
 import { usePermissions, PERMISSIONS } from "@/hooks/usePermissions";
+import { SensitivePhone, SensitiveAmount, SensitiveAddress, SensitiveAadhar, SensitivePan, SensitiveDocument } from "@/components/SensitiveInfo";
 
 export default function Agreements() {
   const [, navigate] = useLocation();
@@ -1187,21 +1188,21 @@ export default function Agreements() {
                               <span className="font-medium text-gray-600">Customer:</span>
                               <p className="text-gray-900 font-medium">{agreement.customer?.name || "Unknown"}</p>
                               {agreement.customer?.mobile && (
-                                <p className="text-xs text-gray-500 mt-1">{agreement.customer.mobile}</p>
+                                <p className="text-xs text-gray-500 mt-1"><SensitivePhone phoneNumber={agreement.customer.mobile} /></p>
                               )}
                             </div>
                             <div>
                               <span className="font-medium text-gray-600">Landlord:</span>
                               <p className="text-gray-900">{agreement.ownerDetails?.name || 'Not provided'}</p>
                               {agreement.ownerDetails?.mobile && (
-                                <p className="text-xs text-gray-500 mt-1">{agreement.ownerDetails.mobile}</p>
+                                <p className="text-xs text-gray-500 mt-1"><SensitivePhone phoneNumber={agreement.ownerDetails.mobile} /></p>
                               )}
                             </div>
                             <div>
                               <span className="font-medium text-gray-600">Tenant:</span>
                               <p className="text-gray-900">{agreement.tenantDetails?.name || 'Not provided'}</p>
                               {agreement.tenantDetails?.mobile && (
-                                <p className="text-xs text-gray-500 mt-1">{agreement.tenantDetails.mobile}</p>
+                                <p className="text-xs text-gray-500 mt-1"><SensitivePhone phoneNumber={agreement.tenantDetails.mobile} /></p>
                               )}
                             </div>
                           </div>
@@ -1988,7 +1989,7 @@ export default function Agreements() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Mobile</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.customer?.mobile || 'Not provided'}</p>
+                      <p className="mt-1 text-sm text-gray-900"><SensitivePhone phoneNumber={viewingAgreement.customer?.mobile || 'Not provided'} /></p>
                     </div>
                   </div>
                 </div>
@@ -2020,7 +2021,7 @@ export default function Agreements() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Mobile Number</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.ownerDetails?.mobile || 'Not provided'}</p>
+                      <p className="mt-1 text-sm text-gray-900"><SensitivePhone phoneNumber={viewingAgreement.ownerDetails?.mobile || 'Not provided'} /></p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Email Address</label>
@@ -2076,7 +2077,7 @@ export default function Agreements() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Mobile Number</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.tenantDetails?.mobile || 'Not provided'}</p>
+                      <p className="mt-1 text-sm text-gray-900"><SensitivePhone phoneNumber={viewingAgreement.tenantDetails?.mobile || 'Not provided'} /></p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Email Address</label>
@@ -2145,9 +2146,11 @@ export default function Agreements() {
                     <div className="col-span-full">
                       <label className="text-sm font-medium text-slate-700">Property Address</label>
                       <p className="mt-1 text-sm text-gray-900">
-                        {viewingAgreement.propertyDetails?.address ? 
-                          `${viewingAgreement.propertyDetails.address.flatNo || ''}, ${viewingAgreement.propertyDetails.address.society || ''}, ${viewingAgreement.propertyDetails.address.area || ''}, ${viewingAgreement.propertyDetails.address.city || ''}, ${viewingAgreement.propertyDetails.address.state || ''} - ${viewingAgreement.propertyDetails.address.pincode || ''}` 
-                          : 'Not provided'}
+                        <SensitiveAddress 
+                          address={viewingAgreement.propertyDetails?.address ? 
+                            `${viewingAgreement.propertyDetails.address.flatNo || ''}, ${viewingAgreement.propertyDetails.address.society || ''}, ${viewingAgreement.propertyDetails.address.area || ''}, ${viewingAgreement.propertyDetails.address.city || ''}, ${viewingAgreement.propertyDetails.address.state || ''} - ${viewingAgreement.propertyDetails.address.pincode || ''}` 
+                            : 'Not provided'}
+                        />
                       </p>
                     </div>
                   </div>
@@ -2168,11 +2171,11 @@ export default function Agreements() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
                       <label className="text-sm font-medium text-slate-700">Monthly Rent</label>
-                      <p className="mt-1 text-lg text-gray-900 font-bold text-green-600">₹{viewingAgreement.rentalTerms?.monthlyRent || 'Not provided'}</p>
+                      <p className="mt-1 text-lg text-gray-900 font-bold text-green-600"><SensitiveAmount amount={viewingAgreement.rentalTerms?.monthlyRent} /></p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Security Deposit</label>
-                      <p className="mt-1 text-lg text-gray-900 font-bold text-blue-600">₹{viewingAgreement.rentalTerms?.securityDeposit || 'Not provided'}</p>
+                      <p className="mt-1 text-lg text-gray-900 font-bold text-blue-600"><SensitiveAmount amount={viewingAgreement.rentalTerms?.securityDeposit} /></p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Duration</label>
@@ -2516,7 +2519,7 @@ export default function Agreements() {
                     {viewingImportedAgreement.customer.mobile && (
                       <div>
                         <span className="text-sm font-medium text-slate-600">Mobile:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.customer.mobile}</p>
+                        <p className="text-slate-900"><SensitivePhone phoneNumber={viewingImportedAgreement.customer.mobile} /></p>
                       </div>
                     )}
                   </div>
@@ -2539,7 +2542,7 @@ export default function Agreements() {
                     {viewingImportedAgreement.ownerDetails.mobile && (
                       <div>
                         <span className="text-sm font-medium text-slate-600">Mobile:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.ownerDetails.mobile}</p>
+                        <p className="text-slate-900"><SensitivePhone phoneNumber={viewingImportedAgreement.ownerDetails.mobile} /></p>
                       </div>
                     )}
                   </div>
@@ -2562,7 +2565,7 @@ export default function Agreements() {
                     {viewingImportedAgreement.tenantDetails.mobile && (
                       <div>
                         <span className="text-sm font-medium text-slate-600">Mobile:</span>
-                        <p className="text-slate-900">{viewingImportedAgreement.tenantDetails.mobile}</p>
+                        <p className="text-slate-900"><SensitivePhone phoneNumber={viewingImportedAgreement.tenantDetails.mobile} /></p>
                       </div>
                     )}
                   </div>
@@ -2580,12 +2583,14 @@ export default function Agreements() {
                       <div className="md:col-span-2">
                         <span className="text-sm font-medium text-slate-600">Property Address:</span>
                         <p className="text-slate-900">
-                          {[
-                            viewingImportedAgreement.propertyDetails.address.flatNo,
-                            viewingImportedAgreement.propertyDetails.address.society,
-                            viewingImportedAgreement.propertyDetails.address.area,
-                            viewingImportedAgreement.propertyDetails.address.city
-                          ].filter(Boolean).join(', ')}
+                          <SensitiveAddress 
+                            address={[
+                              viewingImportedAgreement.propertyDetails.address.flatNo,
+                              viewingImportedAgreement.propertyDetails.address.society,
+                              viewingImportedAgreement.propertyDetails.address.area,
+                              viewingImportedAgreement.propertyDetails.address.city
+                            ].filter(Boolean).join(', ')}
+                          />
                         </p>
                       </div>
                     )}
@@ -2598,13 +2603,13 @@ export default function Agreements() {
                     {viewingImportedAgreement.rentalTerms?.monthlyRent && (
                       <div>
                         <span className="text-sm font-medium text-slate-600">Monthly Rent:</span>
-                        <p className="text-slate-900">₹{viewingImportedAgreement.rentalTerms.monthlyRent}</p>
+                        <p className="text-slate-900"><SensitiveAmount amount={viewingImportedAgreement.rentalTerms.monthlyRent} /></p>
                       </div>
                     )}
                     {viewingImportedAgreement.rentalTerms?.securityDeposit && (
                       <div>
                         <span className="text-sm font-medium text-slate-600">Security Deposit:</span>
-                        <p className="text-slate-900">₹{viewingImportedAgreement.rentalTerms.securityDeposit}</p>
+                        <p className="text-slate-900"><SensitiveAmount amount={viewingImportedAgreement.rentalTerms.securityDeposit} /></p>
                       </div>
                     )}
                     {(viewingImportedAgreement.startDate || viewingImportedAgreement.endDate) && (

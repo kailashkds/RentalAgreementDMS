@@ -72,6 +72,13 @@ const PERMISSION_CATEGORIES: PermissionCategory[] = [
     allPermissions: ["agreement.view.notarized.all", "agreement.edit.notarized.all"],
   },
   {
+    title: "Sensitive Information",
+    icon: Eye,
+    basePermissions: ["view.sensitive.info"],
+    ownPermissions: [],
+    allPermissions: [],
+  },
+  {
     title: "Downloads & Sharing",
     icon: Download,
     basePermissions: [],

@@ -66,6 +66,13 @@ export function useHasAnyPermission(requiredPermissions: string[]): boolean {
 }
 
 /**
+ * Hook to check if user has permission to view sensitive information
+ */
+export function useHasSensitiveInfoPermission(): boolean {
+  return useHasPermission(PERMISSIONS.VIEW_SENSITIVE_INFO);
+}
+
+/**
  * Permission constants for easy reference
  */
 export const PERMISSIONS = {
@@ -82,6 +89,7 @@ export const PERMISSIONS = {
   AGREEMENT_VIEW_NOTARIZED_ALL: "agreement.view.notarized.all",
   AGREEMENT_EDIT_NOTARIZED_OWN: "agreement.edit.notarized.own",
   AGREEMENT_EDIT_NOTARIZED_ALL: "agreement.edit.notarized.all",
+  VIEW_SENSITIVE_INFO: "view.sensitive.info",
   
   // Download permissions
   DOWNLOAD_AGREEMENT_OWN: "download.agreement.own",

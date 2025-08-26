@@ -15,6 +15,7 @@ export const PERMISSIONS = {
   AGREEMENT_VIEW_NOTARIZED_ALL: "agreement.view.notarized.all",
   AGREEMENT_EDIT_NOTARIZED_OWN: "agreement.edit.notarized.own",
   AGREEMENT_EDIT_NOTARIZED_ALL: "agreement.edit.notarized.all",
+  VIEW_SENSITIVE_INFO: "view.sensitive.info",
   
   // Download permissions
   DOWNLOAD_AGREEMENT_OWN: "download.agreement.own",
@@ -83,6 +84,7 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.DASHBOARD_VIEW,
       PERMISSIONS.AGREEMENT_VIEW_NOTARIZED_ALL,
       PERMISSIONS.AGREEMENT_EDIT_NOTARIZED_ALL,
+      PERMISSIONS.VIEW_SENSITIVE_INFO,
     ]
   },
   SUPER_ADMIN: {
