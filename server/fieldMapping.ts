@@ -345,7 +345,33 @@ function formatStringValue(value: string): string {
     .join(' ');
 }
 
-// Helper function to format date from YYYY-MM-DD to DD-MM-YYYY
+// Helper function to format date from YYYY-MM-DD to readable format like "26th August 2025"
+function formatDateToReadable(dateString: string): string {
+  if (!dateString) return '';
+  
+  // Handle different date formats
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString; // Return original if invalid date
+  
+  const day = date.getDate();
+  const month = date.toLocaleString('en-GB', { month: 'long' });
+  const year = date.getFullYear();
+  
+  // Add ordinal suffix to day
+  const getOrdinalSuffix = (day: number) => {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+  
+  return `${day}${getOrdinalSuffix(day)} ${month} ${year}`;
+}
+
+// Helper function to format date from YYYY-MM-DD to DD-MM-YYYY (for backwards compatibility)
 function formatDateToDDMMYYYY(dateString: string): string {
   if (!dateString) return '';
   
@@ -509,7 +535,15 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
   const templateLanguage = language || formData.language || 'english';
   const templateFields: Record<string, string> = {};
 
-  // Debug logging removed for performance
+  // Debug: Log document fields specifically
+  console.log(`[Field Mapping] Debug - Document fields found:`);
+  const documentMappings = ['documents.ownerAadhar', 'documents.ownerPan', 'documents.tenantAadhar', 'documents.tenantPan', 'documents.propertyDocuments', 'ownerDocuments.aadharUrl', 'ownerDocuments.panUrl', 'tenantDocuments.aadharUrl', 'tenantDocuments.panUrl', 'propertyDocuments.urls'];
+  for (const path of documentMappings) {
+    const value = getNestedProperty(formData, path);
+    if (value) {
+      console.log(`  - ${path}: ${typeof value === 'object' ? JSON.stringify(value) : value}`);
+    }
+  }
   
   // Map all configured fields, handling precedence for granular vs nested
   for (const [formPath, templateField] of Object.entries(FIELD_MAPPINGS)) {
@@ -699,17 +733,15 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     templateFields['MINIMUM_STAY'] = '11 months';
   }
 
-  // Handle agreement date mapping - use createdAt if available, or current date as fallback
+  // Handle agreement date mapping - use readable format like "26th August 2025"
   if (!templateFields['AGREEMENT_DATE']) {
     if (formData.createdAt) {
-      const agreementDate = new Date(formData.createdAt);
-      templateFields['AGREEMENT_DATE'] = agreementDate.toLocaleDateString('en-GB');
+      templateFields['AGREEMENT_DATE'] = formatDateToReadable(formData.createdAt);
     } else if (formData.agreementDate) {
-      const agreementDate = new Date(formData.agreementDate);
-      templateFields['AGREEMENT_DATE'] = agreementDate.toLocaleDateString('en-GB');
+      templateFields['AGREEMENT_DATE'] = formatDateToReadable(formData.agreementDate);
     } else {
       // Fallback to current date
-      templateFields['AGREEMENT_DATE'] = new Date().toLocaleDateString('en-GB');
+      templateFields['AGREEMENT_DATE'] = formatDateToReadable(new Date().toISOString());
     }
   }
 
