@@ -996,7 +996,7 @@ export default function Agreements() {
             {/* Sort Filter */}
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Sort by" />
+                <span>Sort by</span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="agreement_number">Agreement Number</SelectItem>
