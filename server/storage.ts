@@ -905,12 +905,30 @@ export class DatabaseStorage implements IStorage {
     }
     // For no date filter or 'all' filter, dateCondition remains undefined (no date filtering)
     
+    // Build search condition for multiple fields
+    let searchCondition = null;
+    if (search) {
+      const searchTerm = `%${search}%`;
+      searchCondition = or(
+        // Search by agreement number
+        ilike(agreements.agreementNumber, searchTerm),
+        // Search by customer name (via join)
+        ilike(users.name, searchTerm),
+        // Search by owner/landlord details (stored as JSON)
+        ilike(agreements.ownerDetails, searchTerm),
+        // Search by tenant details (stored as JSON)
+        ilike(agreements.tenantDetails, searchTerm),
+        // Search by property details (stored as JSON)
+        ilike(agreements.propertyDetails, searchTerm)
+      );
+    }
+
     // Build conditions array, filtering out undefined values
     const conditions = [
       customerId ? eq(agreements.customerId, customerId) : null,
       propertyId ? eq(agreements.propertyId, propertyId) : null,
       status ? eq(agreements.status, status) : null,
-      search ? ilike(agreements.agreementNumber, `%${search}%`) : null,
+      searchCondition,
       dateCondition
     ].filter((condition): condition is NonNullable<typeof condition> => Boolean(condition));
 
@@ -928,6 +946,7 @@ export class DatabaseStorage implements IStorage {
       db
         .select({ count: count() })
         .from(agreements)
+        .leftJoin(users, eq(agreements.customerId, users.id))
         .where(whereConditions),
     ]);
 
