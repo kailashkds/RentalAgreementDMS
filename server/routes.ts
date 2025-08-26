@@ -1560,16 +1560,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Customer not found" });
       }
 
-      if (!customer.encryptedPassword) {
-        return res.status(400).json({ error: "No encrypted password available" });
-      }
+      let plainTextPassword: string;
 
-      const decryptedPassword = decryptPasswordFromStorage(customer.encryptedPassword);
+      if (customer.encryptedPassword) {
+        // Customer has encrypted password - decrypt it
+        plainTextPassword = decryptPasswordFromStorage(customer.encryptedPassword);
+      } else if (customer.password && !customer.password.startsWith('$2b$')) {
+        // Customer has plain text password (legacy format)
+        plainTextPassword = customer.password;
+      } else {
+        // Customer has hashed password but no encrypted backup
+        return res.status(400).json({ error: "Password is hashed but no encrypted backup available" });
+      }
       
-      res.json({ password: decryptedPassword });
+      res.json({ password: plainTextPassword });
     } catch (error) {
-      console.error("Error decrypting customer password:", error);
-      res.status(500).json({ error: "Failed to decrypt password" });
+      console.error("Error getting customer password:", error);
+      res.status(500).json({ error: "Failed to get password" });
     }
   });
 
