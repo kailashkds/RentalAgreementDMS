@@ -145,10 +145,11 @@ export function EnhancedRoleManagement() {
   // Create role mutation
   const createRoleMutation = useMutation({
     mutationFn: async (data: typeof roleData) => {
-      const role = await apiRequest('/api/rbac/roles', 'POST', {
+      const response = await apiRequest('/api/rbac/roles', 'POST', {
         name: data.name,
         description: data.description,
       });
+      const role = await response.json();
       
       // Assign permissions
       const permissionArray = Array.from(data.permissions);
