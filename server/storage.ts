@@ -914,12 +914,12 @@ export class DatabaseStorage implements IStorage {
         ilike(agreements.agreementNumber, searchTerm),
         // Search by customer name (via join)
         ilike(users.name, searchTerm),
-        // Search by owner/landlord details (stored as JSON)
-        ilike(agreements.ownerDetails, searchTerm),
-        // Search by tenant details (stored as JSON)
-        ilike(agreements.tenantDetails, searchTerm),
-        // Search by property details (stored as JSON)
-        ilike(agreements.propertyDetails, searchTerm)
+        // Search by owner/landlord details (convert JSON to text for search)
+        sql`${agreements.ownerDetails}::text ILIKE ${searchTerm}`,
+        // Search by tenant details (convert JSON to text for search)
+        sql`${agreements.tenantDetails}::text ILIKE ${searchTerm}`,
+        // Search by property details (convert JSON to text for search)
+        sql`${agreements.propertyDetails}::text ILIKE ${searchTerm}`
       );
     }
 
