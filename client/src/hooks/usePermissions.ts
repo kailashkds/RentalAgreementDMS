@@ -80,6 +80,8 @@ export const PERMISSIONS = {
   AGREEMENT_NOTARIZE: "agreement.notarize",
   AGREEMENT_VIEW_NOTARIZED_OWN: "agreement.view.notarized.own",
   AGREEMENT_VIEW_NOTARIZED_ALL: "agreement.view.notarized.all",
+  AGREEMENT_EDIT_NOTARIZED_OWN: "agreement.edit.notarized.own",
+  AGREEMENT_EDIT_NOTARIZED_ALL: "agreement.edit.notarized.all",
   
   // Download permissions
   DOWNLOAD_AGREEMENT_OWN: "download.agreement.own",

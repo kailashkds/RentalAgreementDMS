@@ -45,26 +45,26 @@ export default function Agreements() {
   const [showWizard, setShowWizard] = useState(false);
   const { hasPermission } = usePermissions();
   
-  // Helper function to check if user can view/edit agreements even after notarized
-  const canViewNotarizedAgreement = (agreement: any) => {
+  // Helper function to check if user can edit agreements even after notarized
+  const canEditNotarizedAgreement = (agreement: any) => {
     const isNotarized = agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl;
     if (!isNotarized) return true; // Not notarized, normal permissions apply
     
-    // Check if user has permission to view notarized agreements
-    const hasNotarizedOwnPermission = hasPermission(PERMISSIONS.AGREEMENT_VIEW_NOTARIZED_OWN);
-    const hasNotarizedAllPermission = hasPermission(PERMISSIONS.AGREEMENT_VIEW_NOTARIZED_ALL);
+    // Check if user has permission to edit notarized agreements
+    const hasNotarizedEditOwnPermission = hasPermission(PERMISSIONS.AGREEMENT_EDIT_NOTARIZED_OWN);
+    const hasNotarizedEditAllPermission = hasPermission(PERMISSIONS.AGREEMENT_EDIT_NOTARIZED_ALL);
     
-    // If has "all" permission, can view any notarized agreement
-    if (hasNotarizedAllPermission) return true;
+    // If has "all" permission, can edit any notarized agreement
+    if (hasNotarizedEditAllPermission) return true;
     
     // If has "own" permission, check if this agreement belongs to the user
     // (This would need implementation based on your ownership logic)
-    if (hasNotarizedOwnPermission) {
+    if (hasNotarizedEditOwnPermission) {
       // For now, allowing own notarized agreements - you may need to add ownership check here
       return true;
     }
     
-    // No permission to view/edit notarized agreements
+    // No permission to edit notarized agreements
     return false;
   };
   
@@ -1349,7 +1349,7 @@ export default function Agreements() {
                               <Download className="h-4 w-4" />
                             </Button>
                           ) : null}
-                          {canViewNotarizedAgreement(agreement) && (
+                          {canEditNotarizedAgreement(agreement) && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -2399,7 +2399,7 @@ export default function Agreements() {
               {/* Action Buttons */}
               <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-lg border border-slate-200 shadow-sm">
                 <div className="flex flex-wrap justify-center gap-3">
-                  {canViewNotarizedAgreement(viewingAgreement) && (
+                  {canEditNotarizedAgreement(viewingAgreement) && (
                     <Button
                       onClick={() => {
                         if (isImportedAgreement(viewingAgreement)) {
