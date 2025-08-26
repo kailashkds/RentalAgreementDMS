@@ -1003,6 +1003,10 @@ export async function resolvePlaceholders(htmlContent: string, agreement: any): 
 
 /**
  * Process conditional logic in templates {{#if FIELD_NAME}} content {{/if}}
+ * Supports:
+ * - Basic conditions: {{#if FIELD_NAME}}
+ * - Not equal: {{#if FIELD_NAME != 'value'}}
+ * - Equal: {{#if FIELD_NAME == 'value'}}
  */
 function processConditionalLogic(template: string, fieldValues: Record<string, string>): string {
   let processedTemplate = template;
@@ -1010,15 +1014,42 @@ function processConditionalLogic(template: string, fieldValues: Record<string, s
   // Find all conditional blocks using regex
   const conditionalRegex = /\{\{#if\s+([^}]+)\}\}([\s\S]*?)\{\{\/if\}\}/gi;
   
-  processedTemplate = processedTemplate.replace(conditionalRegex, (match, fieldName, content) => {
-    const trimmedFieldName = fieldName.trim();
-    const fieldValue = fieldValues[trimmedFieldName];
+  processedTemplate = processedTemplate.replace(conditionalRegex, (match, condition, content) => {
+    const trimmedCondition = condition.trim();
     
-    // Show content only if field has a value and is not empty
-    if (fieldValue && fieldValue.trim() && fieldValue !== 'undefined' && fieldValue !== 'null') {
-      return content;
+    // Handle comparison operators
+    if (trimmedCondition.includes('!=')) {
+      const [fieldName, value] = trimmedCondition.split('!=').map((s: string) => s.trim());
+      const cleanFieldName = fieldName.replace(/['"]/g, '');
+      const cleanValue = value.replace(/['"]/g, '');
+      const fieldValue = fieldValues[cleanFieldName];
+      
+      // Show content if field value is NOT equal to the comparison value
+      if (fieldValue !== cleanValue) {
+        return content;
+      } else {
+        return '';
+      }
+    } else if (trimmedCondition.includes('==')) {
+      const [fieldName, value] = trimmedCondition.split('==').map((s: string) => s.trim());
+      const cleanFieldName = fieldName.replace(/['"]/g, '');
+      const cleanValue = value.replace(/['"]/g, '');
+      const fieldValue = fieldValues[cleanFieldName];
+      
+      // Show content if field value IS equal to the comparison value
+      if (fieldValue === cleanValue) {
+        return content;
+      } else {
+        return '';
+      }
     } else {
-      return '';
+      // Basic condition - show content if field has a value and is not empty
+      const fieldValue = fieldValues[trimmedCondition];
+      if (fieldValue && fieldValue.trim() && fieldValue !== 'undefined' && fieldValue !== 'null') {
+        return content;
+      } else {
+        return '';
+      }
     }
   });
   
