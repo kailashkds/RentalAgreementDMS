@@ -103,9 +103,11 @@ export default function UserRoleManagement() {
   });
 
   // Fetch data
-  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+  const { data: usersData, isLoading: usersLoading } = useQuery<{ users: User[]; total: number }>({
     queryKey: ["/api/unified/users"],
   });
+  
+  const users = usersData?.users || [];
 
   const { data: roles = [], isLoading: rolesLoading } = useQuery<Role[]>({
     queryKey: ["/api/unified/roles"],
