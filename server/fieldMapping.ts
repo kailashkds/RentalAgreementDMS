@@ -736,6 +736,21 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     templateFields['PROPERTY_PURPOSE_GUJARATI'] = 'રહેણાંક'; // Default to residential
   }
 
+  // Handle conditional logic for police verification requirement (Point 15 condition)
+  // Check if documents are uploaded (Aadhaar, PAN cards)
+  const hasDocuments = (formData.documents && Object.keys(formData.documents).length > 0) ||
+                      (formData.ownerDocuments && Object.keys(formData.ownerDocuments).length > 0) ||
+                      (formData.tenantDocuments && Object.keys(formData.tenantDocuments).length > 0) ||
+                      (formData.propertyDocuments && Object.keys(formData.propertyDocuments).length > 0);
+  
+  if (hasDocuments) {
+    templateFields['DOCUMENTS_UPLOADED'] = 'true';
+    templateFields['POLICE_VERIFICATION_REQUIRED'] = 'true';
+  } else {
+    templateFields['DOCUMENTS_UPLOADED'] = '';
+    templateFields['POLICE_VERIFICATION_REQUIRED'] = '';
+  }
+
   // Default values for common fields if not provided
   if (!templateFields['TENURE']) {
     templateFields['TENURE'] = '11 Month';

@@ -2227,6 +2227,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agreement = await storage.updateAgreement(req.params.id, agreementData);
       console.log("Agreement updated successfully:", agreement.id);
       
+      // Clear edited content if form data changed to force regeneration with new data
+      // This ensures additional clauses and other dynamic content updates properly
+      if (agreementData.additionalClauses || agreementData.rentalTerms || 
+          agreementData.ownerDetails || agreementData.tenantDetails || 
+          agreementData.propertyDetails) {
+        console.log("Form data changed, clearing edited content to force regeneration");
+        await storage.clearEditedContent(req.params.id);
+      }
+      
       res.json(agreement);
     } catch (error) {
       if (error instanceof z.ZodError) {

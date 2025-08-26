@@ -1199,6 +1199,22 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async clearEditedContent(agreementId: string): Promise<void> {
+    const [updatedAgreement] = await db
+      .update(agreements)
+      .set({ 
+        editedHtml: null,
+        editedAt: null,
+        updatedAt: new Date()
+      })
+      .where(eq(agreements.id, agreementId))
+      .returning();
+    
+    if (!updatedAgreement) {
+      throw new Error("Agreement not found");
+    }
+  }
+
 
   async getDashboardStats(customerId?: string): Promise<{
     totalAgreements: number;
