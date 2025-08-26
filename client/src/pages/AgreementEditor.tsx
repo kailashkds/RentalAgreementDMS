@@ -182,8 +182,8 @@ export default function AgreementEditor() {
       console.error('[Editor] Error details:', {
         agreementId,
         contentLength: content.length,
-        errorMessage: error.message,
-        errorStack: error.stack
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : 'No stack trace'
       });
       toast({
         title: "Auto-save Failed",
