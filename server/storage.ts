@@ -54,7 +54,7 @@ import {
   type InsertAdminUser,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, ilike, desc, and, or, count, sql, gte, lte } from "drizzle-orm";
+import { eq, ilike, desc, asc, and, or, count, sql, gte, lte } from "drizzle-orm";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths } from "date-fns";
 import bcrypt from "bcrypt";
 import { encryptPasswordForStorage, decryptPasswordFromStorage } from "./encryption";
@@ -922,7 +922,7 @@ export class DatabaseStorage implements IStorage {
         .from(agreements)
         .leftJoin(users, eq(agreements.customerId, users.id))
         .where(whereConditions)
-        .orderBy(desc(agreements.createdAt))
+        .orderBy(asc(agreements.endDate))
         .limit(limit)
         .offset(offset),
       db
