@@ -334,7 +334,8 @@ export default function UserRoleManagement() {
   };
 
   const getRoleByName = (roleName: string) => {
-    return roles.find(role => role.name.toLowerCase().replace(' ', '_') === roleName.toLowerCase());
+    if (!roleName) return undefined;
+    return roles.find(role => role.name?.toLowerCase().replace(' ', '_') === roleName.toLowerCase());
   };
 
   const getUserPermissions = (user: User) => {
@@ -502,7 +503,7 @@ export default function UserRoleManagement() {
                             </SelectTrigger>
                             <SelectContent>
                               {roles.map((role) => (
-                                <SelectItem key={role.id} value={role.name.toLowerCase().replace(' ', '_')}>
+                                <SelectItem key={role.id} value={role.name?.toLowerCase().replace(' ', '_') || ''}>
                                   {role.name}
                                 </SelectItem>
                               ))}
@@ -601,7 +602,7 @@ export default function UserRoleManagement() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" data-testid={`badge-role-${user.id}`}>
-                            {user.defaultRole.replace('_', ' ')}
+                            {user.defaultRole?.replace('_', ' ') || 'No Role'}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -837,7 +838,7 @@ export default function UserRoleManagement() {
                           {role.permissions.length} permissions
                         </Badge>
                         <Badge variant="secondary">
-                          {users.filter(u => u.defaultRole === role.name.toLowerCase().replace(' ', '_')).length} users
+                          {users.filter(u => u.defaultRole === role.name?.toLowerCase().replace(' ', '_')).length} users
                         </Badge>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
