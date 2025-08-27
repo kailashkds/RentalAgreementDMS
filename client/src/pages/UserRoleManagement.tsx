@@ -361,6 +361,9 @@ export default function UserRoleManagement() {
   };
 
   const formatPermissionName = (permission: string) => {
+    if (!permission || typeof permission !== 'string') {
+      return 'Unknown Permission';
+    }
     return permission
       .split('.')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -379,12 +382,35 @@ export default function UserRoleManagement() {
     const manualRemoved = user.manualPermissions?.removed || [];
     
     // Remove duplicates from role permissions
-    const uniqueRolePermissions = [...new Set(rolePermissions)];
+    const uniqueRolePermissions = Array.from(new Set(rolePermissions));
+    
+    // Return final list: role permissions minus removed ones, plus manually added ones
+    const finalPermissions = [
+      ...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),
+      ...manualAdded.filter(p => !uniqueRolePermissions.includes(p))
+    ];
+    
+    return Array.from(new Set(finalPermissions)); // Remove any duplicates
+  };
+
+  const getUserPermissionDetails = (user: User) => {
+    // Get permissions from all assigned roles
+    const rolePermissions = user.roles?.flatMap(role => role.permissions || []) || [];
+    const manualAdded = user.manualPermissions?.added || [];
+    const manualRemoved = user.manualPermissions?.removed || [];
+    
+    // Remove duplicates from role permissions
+    const uniqueRolePermissions = Array.from(new Set(rolePermissions));
+    
+    // Return detailed breakdown
+    const inherited = uniqueRolePermissions.filter(p => !manualRemoved.includes(p));
+    const manual = manualAdded.filter(p => !uniqueRolePermissions.includes(p));
+    const total = Array.from(new Set([...inherited, ...manual]));
     
     return {
-      inherited: uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),
-      manual: manualAdded.filter(p => !uniqueRolePermissions.includes(p)),
-      total: [...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded.filter(p => !uniqueRolePermissions.includes(p))]
+      inherited,
+      manual,
+      total
     };
   };
 
@@ -615,7 +641,7 @@ export default function UserRoleManagement() {
                     </TableRow>
                   ) : (
                     (Array.isArray(users) ? users : []).map((user) => {
-                    const userPermissions = getUserPermissions(user);
+                    const userPermissions = getUserPermissionDetails(user);
                     return (
                       <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                         <TableCell>
