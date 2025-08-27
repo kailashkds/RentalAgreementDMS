@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building, MapPin, Eye, Users, FileText } from "lucide-react";
+import { Building, MapPin, Eye, Users, FileText, Edit } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
+import { EditPropertyDialog } from "@/components/EditPropertyDialog";
 
 interface Property {
   id: string;
@@ -38,9 +40,26 @@ interface PropertyWithCustomer extends Property {
 }
 
 export default function Properties() {
-  const { data: properties, isLoading } = useQuery<PropertyWithCustomer[]>({
+  const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+
+  const { data: properties, isLoading, refetch } = useQuery<PropertyWithCustomer[]>({
     queryKey: ['/api/properties/all'],
   });
+
+  const handleEditProperty = (property: PropertyWithCustomer) => {
+    setEditingProperty(property);
+    setShowEditDialog(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setShowEditDialog(false);
+    setEditingProperty(null);
+  };
+
+  const handlePropertyUpdated = () => {
+    refetch();
+  };
 
   if (isLoading) {
     return (
@@ -155,6 +174,15 @@ export default function Properties() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleEditProperty(property)}
+                          data-testid={`button-edit-property-${property.id}`}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
                         <Link href={`/customers/${property.customerId}/properties/${property.id}/agreements`}>
                           <Button size="sm" variant="outline" data-testid={`button-view-agreements-${property.id}`}>
                             <FileText className="h-4 w-4 mr-2" />
@@ -176,6 +204,13 @@ export default function Properties() {
           </Card>
         )}
       </div>
+
+      <EditPropertyDialog
+        open={showEditDialog}
+        onClose={handleCloseEditDialog}
+        property={editingProperty}
+        onPropertyUpdated={handlePropertyUpdated}
+      />
     </AdminLayout>
   );
 }

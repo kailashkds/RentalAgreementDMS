@@ -1905,6 +1905,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/properties/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const currentUser = req.user as any;
+
+      if (!currentUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Get user permissions
+      const userPermissions = await storage.getUserPermissions(currentUser.id);
+      
+      // Check if user can edit properties
+      const canEditAll = userPermissions.includes('customer.edit.all') || userPermissions.includes('customer.manage');
+      
+      if (!canEditAll) {
+        return res.status(403).json({ message: "Insufficient permissions to edit properties" });
+      }
+
+      // Parse and validate the property data
+      const propertyData = insertPropertySchema.omit({ customerId: true }).parse(req.body);
+      
+      // Update the property
+      const updatedProperty = await storage.updateProperty(id, propertyData);
+      
+      if (!updatedProperty) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+
+      res.json(updatedProperty);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid property data", errors: error.errors });
+      }
+      console.error("Error updating property:", error);
+      res.status(500).json({ message: "Failed to update property" });
+    }
+  });
+
   app.get("/api/properties/:propertyId/agreements", async (req, res) => {
     try {
       const { propertyId } = req.params;
