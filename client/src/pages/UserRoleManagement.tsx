@@ -293,7 +293,7 @@ export default function UserRoleManagement() {
       email: user.email || "",
       phone: user.phone || "",
       password: "",
-      roleId: user.defaultRole,
+      roleId: user.defaultRoleId || user.defaultRole, // Use roleId for proper Select mapping
       status: user.status
     });
     setIsUserModalOpen(true);
@@ -524,7 +524,7 @@ export default function UserRoleManagement() {
                             </SelectTrigger>
                             <SelectContent>
                               {roles.map((role) => (
-                                <SelectItem key={role.id} value={role.name?.toLowerCase().replace(' ', '_') || ''}>
+                                <SelectItem key={role.id} value={role.id}>
                                   {role.name}
                                 </SelectItem>
                               ))}
