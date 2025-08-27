@@ -1,0 +1,28 @@
+HOW TO RUN THE COMPLETE PRODUCTION BACKUP:
+
+1. OPEN your production Database Studio (where you are now)
+
+2. LOOK FOR a "Query" or "SQL" tab in the interface
+
+3. COPY AND PASTE each SELECT statement from "complete_production_backup.sql" 
+
+4. RUN them ONE BY ONE and SAVE the results:
+
+   Step 1: Run the table structure query
+   → Save result as: schema_backup_2025-08-27.sql
+
+   Step 2: Run each data query (addresses, customers, agreements, etc.)
+   → Save results as: data_backup_2025-08-27.sql
+
+5. COMBINE everything into one file: complete_production_backup_2025-08-27.sql
+
+THIS WILL GIVE YOU:
+✅ All table structures (CREATE TABLE statements)
+✅ All 133 agreements with full data
+✅ All 8 customers with passwords
+✅ All 5 admin users
+✅ All 50 addresses
+✅ All templates and configurations
+✅ Everything needed to restore your database completely
+
+RESULT: Complete backup file that can recreate your entire production database!
