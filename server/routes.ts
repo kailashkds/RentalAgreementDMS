@@ -2597,14 +2597,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve uploaded files from local uploads folder with proper headers
-  app.get("/uploads/:fileName", (req, res) => {
+  // Serve uploaded files from local uploads folder with proper headers (including subdirectories)
+  app.get("/uploads/*", (req, res) => {
     try {
-      const fileName = req.params.fileName;
-      const filePath = path.join(process.cwd(), 'uploads', fileName);
+      // Extract the full path after /uploads/
+      const requestedPath = req.params['0'] || '';
+      const filePath = path.join(process.cwd(), 'uploads', requestedPath);
       
       // Set proper headers for different file types
-      const ext = path.extname(fileName).toLowerCase();
+      const ext = path.extname(requestedPath).toLowerCase();
       let contentType = 'application/octet-stream';
       
       if (ext === '.jpg' || ext === '.jpeg') {
