@@ -368,8 +368,11 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     const currentFormData = watch(); // Get live form data
     switch (stepNumber) {
       case 1:
-        // Skip validation for step 1 if customer is logged in
-        if (isCustomer) return true;
+        // For customers: only validate language (customerId is auto-set)
+        // For admin/staff: validate both language and customer selection
+        if (isCustomer) {
+          return !!(currentFormData.language); // Only require language for customers
+        }
         return !!(currentFormData.language && currentFormData.customerId && currentFormData.customerId !== "none"); // Require both language and valid customer selection
       case 2:
         return !!(
@@ -607,8 +610,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   };
 
   const prevStep = () => {
-    const minStep = isCustomer ? 2 : 1; // Customers can't go to step 1
-    if (currentStep > minStep) {
+    if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
   };
