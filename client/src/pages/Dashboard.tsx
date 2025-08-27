@@ -39,8 +39,17 @@ export default function Dashboard() {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showSocietyModal, setShowSocietyModal] = useState(false);
   const { hasPermission } = usePermissions();
+
+  // Always call all hooks first - never do early returns before hooks
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
+    queryKey: ["/api/dashboard/stats"],
+  });
+
+  const { data: recentAgreements, isLoading: agreementsLoading } = useAgreements({
+    limit: 5,
+  });
   
-  // Check if user has dashboard access permission
+  // Check permission after all hooks are called
   if (!hasPermission('dashboard.view')) {
     return (
       <AdminLayout title="Access Denied" subtitle="You don't have permission to view the dashboard">
@@ -56,14 +65,6 @@ export default function Dashboard() {
       </AdminLayout>
     );
   }
-
-  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
-    queryKey: ["/api/dashboard/stats"],
-  });
-
-  const { data: recentAgreements, isLoading: agreementsLoading } = useAgreements({
-    limit: 5,
-  });
 
   const statsCards = [
     {
