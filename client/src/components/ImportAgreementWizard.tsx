@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { LocalFileUploader } from "@/components/LocalFileUploader";
 import { FilePreview } from "@/components/FilePreview";
 
@@ -70,7 +71,10 @@ interface ImportAgreementData {
 }
 
 export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreementWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1);
+  const { user } = useAuth();
+  const isCustomer = (user as any)?.defaultRole === 'Customer';
+  
+  const [currentStep, setCurrentStep] = useState(isCustomer ? 2 : 1); // Skip step 1 for customers
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -89,7 +93,11 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   const [documents, setDocuments] = useState<Record<string, string | { filename: string; fileType: string; size: number } | undefined>>({});
 
   const [formData, setFormData] = useState<ImportAgreementData>({
-    customer: { id: "", name: "", mobile: "" },
+    customer: { 
+      id: isCustomer ? (user as any)?.id || "" : "", 
+      name: isCustomer ? (user as any)?.name || "" : "", 
+      mobile: isCustomer ? (user as any)?.mobile || (user as any)?.phone || "" : "" 
+    },
     language: "english",
     ownerDetails: { name: "", mobile: "" },
     tenantDetails: { name: "", mobile: "" },
@@ -122,12 +130,15 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   };
 
   const handlePrevious = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    const minStep = isCustomer ? 2 : 1; // Customers can't go to step 1
+    setCurrentStep(prev => Math.max(prev - 1, minStep));
   };
 
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
+        // Skip validation for step 1 if customer is logged in
+        if (isCustomer) return true;
         return !!(formData.customer.id && formData.language);
       case 2:
         return !!(formData.ownerDetails.name && formData.ownerDetails.mobile);
@@ -1049,7 +1060,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
               type="button"
               variant="outline"
               onClick={handlePrevious}
-              disabled={currentStep === 1}
+              disabled={currentStep === (isCustomer ? 2 : 1)}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Previous

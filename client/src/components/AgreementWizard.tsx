@@ -18,6 +18,7 @@ import CustomerModal from "@/components/CustomerModal";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getTranslation } from "@/lib/i18n";
+import { useAuth } from "@/hooks/useAuth";
 import type { UploadResult } from "@uppy/core";
 import type { OwnerDetails, TenantDetails, PropertyDetails, RentalTerms } from "@shared/schema";
 
@@ -55,7 +56,10 @@ const LANGUAGES = [
 ];
 
 export default function AgreementWizard({ isOpen, onClose, agreementId, editingAgreement }: AgreementWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1);
+  const { user } = useAuth();
+  const isCustomer = (user as any)?.defaultRole === 'Customer';
+  
+  const [currentStep, setCurrentStep] = useState(isCustomer ? 2 : 1); // Skip step 1 for customers
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [documents, setDocuments] = useState<Record<string, string | { filename: string; fileType: string; size: number } | undefined>>({});
   const [addressSearch, setAddressSearch] = useState({
@@ -80,6 +84,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
   const { register, handleSubmit, watch, setValue, reset, trigger, formState: { errors } } = useForm<AgreementFormData>({
     defaultValues: {
+      customerId: isCustomer ? (user as any)?.id : undefined,
       language: "english",
       additionalClauses: [],
       rentalTerms: {
@@ -598,7 +603,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
+    const minStep = isCustomer ? 2 : 1; // Customers can't go to step 1
+    if (currentStep > minStep) {
       setCurrentStep(currentStep - 1);
     }
   };
@@ -2445,7 +2451,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 type="button"
                 variant="outline"
                 onClick={prevStep}
-                disabled={currentStep === 1}
+                disabled={currentStep === (isCustomer ? 2 : 1)}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t("previous")}
