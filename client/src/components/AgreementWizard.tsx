@@ -1437,16 +1437,18 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 <p className="text-xs text-gray-500 mt-1">
                   Select an existing customer to copy their details for the agreement
                 </p>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCustomerModal(true)}
-                  className="mt-2 text-blue-600 hover:text-blue-700"
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  {t("createNewCustomer")}
-                </Button>
+                {!isCustomer && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowCustomerModal(true)}
+                    className="mt-2 text-blue-600 hover:text-blue-700"
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    {t("createNewCustomer")}
+                  </Button>
+                )}
               </div>
 
               <div>
