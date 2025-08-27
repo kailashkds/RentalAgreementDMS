@@ -44,8 +44,9 @@ interface User {
   phone?: string;
   status: string;
   isActive: boolean;
-  defaultRole: string;
-  role: string;
+  defaultRole?: string;
+  role?: string;
+  roles?: Role[]; // Array of assigned roles from the unified system
   permissions?: string[];
   manualPermissions?: {
     added: string[];
@@ -288,11 +289,8 @@ export default function UserRoleManagement() {
   const openEditUser = (user: User) => {
     setEditingUser(user);
     
-    // Find the role ID based on the user's defaultRole name
-    const userRole = roles.find(role => 
-      role.name === user.defaultRole || 
-      role.name?.toLowerCase().replace(' ', '_') === user.defaultRole?.toLowerCase()
-    );
+    // Get the first assigned role for editing (in case user has multiple roles)
+    const userRole = user.roles && user.roles.length > 0 ? user.roles[0] : null;
     
     setUserFormData({
       username: user.username,
@@ -367,15 +365,18 @@ export default function UserRoleManagement() {
   };
 
   const getUserPermissions = (user: User) => {
-    const role = getRoleByName(user.defaultRole);
-    const rolePermissions = role?.permissions || [];
+    // Get permissions from all assigned roles
+    const rolePermissions = user.roles?.flatMap(role => role.permissions || []) || [];
     const manualAdded = user.manualPermissions?.added || [];
     const manualRemoved = user.manualPermissions?.removed || [];
     
+    // Remove duplicates from role permissions
+    const uniqueRolePermissions = [...new Set(rolePermissions)];
+    
     return {
-      inherited: rolePermissions.filter(p => !manualRemoved.includes(p)),
-      manual: manualAdded.filter(p => !rolePermissions.includes(p)),
-      total: [...rolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded.filter(p => !rolePermissions.includes(p))]
+      inherited: uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),
+      manual: manualAdded.filter(p => !uniqueRolePermissions.includes(p)),
+      total: [...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded.filter(p => !uniqueRolePermissions.includes(p))]
     };
   };
 
@@ -629,9 +630,19 @@ export default function UserRoleManagement() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" data-testid={`badge-role-${user.id}`}>
-                            {user.defaultRole?.replace('_', ' ') || 'No Role'}
-                          </Badge>
+                          {user.roles && user.roles.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {user.roles.map((role: any) => (
+                                <Badge key={role.id} variant="outline" data-testid={`badge-role-${user.id}`}>
+                                  {role.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <Badge variant="secondary" data-testid={`badge-role-${user.id}`}>
+                              No Role
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
@@ -887,7 +898,7 @@ export default function UserRoleManagement() {
                           {role.permissions.length} permissions
                         </Badge>
                         <Badge variant="secondary">
-                          {users.filter(u => u.defaultRole === role.name?.toLowerCase().replace(' ', '_')).length} users
+                          {users.filter(u => u.roles?.some(userRole => userRole.id === role.id)).length} users
                         </Badge>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
