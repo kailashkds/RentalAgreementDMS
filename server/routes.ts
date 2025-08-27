@@ -292,9 +292,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unified user management endpoints
-  app.get("/api/unified/users", requireAuth, requirePermission({ permission: "user.view.all" }), async (req: any, res) => {
+  app.get("/api/unified/users", requireAuth, async (req: any, res) => {
     try {
       const { role, status, search, limit, offset } = req.query;
+      
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
+      
+      // Check permissions - Super Admin has full access, others need specific permission
+      if (!isSuperAdmin(req.user)) {
+        const hasPermission = await hasPermissionWithSuperAdminBypass(req.user, 'user.view.all');
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            message: "Insufficient permissions to view users",
+            error: "permission_denied",
+            action: "Contact an administrator for access to user management"
+          });
+        }
+      }
+      
       const result = await storage.getUsersWithRoles({
         role: role as string,
         status: status as string,
@@ -302,6 +318,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         limit: limit ? parseInt(limit as string) : 50,
         offset: offset ? parseInt(offset as string) : 0,
       });
+      
+      console.log(`User listing access: User ${req.user.id} (${req.user.role}) - Super Admin: ${isSuperAdmin(req.user)}`);
       res.json(result);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -313,10 +331,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/unified/users", requireAuth, requirePermission("user.create"), async (req: any, res) => {
+  app.post("/api/unified/users", requireAuth, async (req: any, res) => {
     try {
       const { name, email, username, phone, roleId, password } = req.body;
       
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
+      
+      // Check permissions - Super Admin has full access, others need specific permission
+      if (!isSuperAdmin(req.user)) {
+        const hasPermission = await hasPermissionWithSuperAdminBypass(req.user, 'user.create');
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            message: "Insufficient permissions to create users",
+            error: "permission_denied",
+            action: "Contact an administrator for access to user creation"
+          });
+        }
+      }
+
       // Validate required fields
       if (!name || !roleId) {
         return res.status(400).json({ 
@@ -1496,15 +1529,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/customers", async (req, res) => {
+  app.get("/api/customers", requireAuth, async (req: any, res) => {
     try {
       const { search, limit, offset, activeOnly } = req.query;
+      
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
+      
+      // Check permissions - Super Admin has full access, others need specific permission
+      if (!isSuperAdmin(req.user)) {
+        const hasPermission = await hasPermissionWithSuperAdminBypass(req.user, 'customer.view.all');
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            message: "Insufficient permissions to view customers",
+            error: "permission_denied",
+            action: "Contact an administrator for access to customer management"
+          });
+        }
+      }
+      
       const result = await storage.getCustomers(
         search as string,
         limit ? parseInt(limit as string) : undefined,
         offset ? parseInt(offset as string) : undefined,
         activeOnly === 'true'
       );
+      
+      console.log(`Customer listing access: User ${req.user.id} (${req.user.role}) - Super Admin: ${isSuperAdmin(req.user)}`);
       res.json(result);
     } catch (error) {
       console.error("Error fetching customers:", error);
@@ -1512,12 +1563,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/customers/:id", async (req, res) => {
+  app.get("/api/customers/:id", requireAuth, async (req: any, res) => {
     try {
       const customer = await storage.getCustomer(req.params.id);
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
+
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin, canAccessRecord } = await import('./rbacUtils.js');
+      
+      // Check if user can access this specific customer
+      const accessCheck = await canAccessRecord(
+        req.user,
+        { customerId: customer.id, ownerId: customer.id },
+        'view'
+      );
+      
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ 
+          message: "Insufficient permissions to view this customer",
+          error: "permission_denied",
+          action: "You can only view customers you have permission to access"
+        });
+      }
+      
+      console.log(`Customer detail access: User ${req.user.id} (${req.user.role}) accessing customer ${customer.id} - Super Admin: ${isSuperAdmin(req.user)}`);
       res.json(customer);
     } catch (error) {
       console.error("Error fetching customer:", error);
@@ -1601,13 +1672,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/customers", async (req, res) => {
+  app.post("/api/customers", requireAuth, async (req: any, res) => {
     try {
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
+      
+      // Check permissions - Super Admin has full access, others need specific permission
+      if (!isSuperAdmin(req.user)) {
+        const hasPermission = await hasPermissionWithSuperAdminBypass(req.user, 'customer.create');
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            message: "Insufficient permissions to create customers",
+            error: "permission_denied",
+            action: "Contact an administrator for access to customer creation"
+          });
+        }
+      }
+      
       const customerData = insertCustomerSchema.parse(req.body);
       const customer = await storage.createCustomer({
         ...customerData,
         password: customerData.password || undefined
       });
+      
+      console.log(`Customer creation: User ${req.user.id} (${req.user.role}) created customer ${customer.id} - Super Admin: ${isSuperAdmin(req.user)}`);
       res.status(201).json(customer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1618,14 +1706,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/customers/:id", async (req, res) => {
+  app.put("/api/customers/:id", requireAuth, async (req: any, res) => {
     try {
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin, canAccessRecord } = await import('./rbacUtils.js');
+      
+      // Get customer first to check access
+      const existingCustomer = await storage.getCustomer(req.params.id);
+      if (!existingCustomer) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      
+      // Check if user can edit this specific customer
+      const accessCheck = await canAccessRecord(
+        req.user,
+        { customerId: existingCustomer.id, ownerId: existingCustomer.id },
+        'edit'
+      );
+      
+      if (!accessCheck.allowed) {
+        return res.status(403).json({ 
+          message: "Insufficient permissions to edit this customer",
+          error: "permission_denied",
+          action: "You can only edit customers you have permission to modify"
+        });
+      }
+      
       const customerData = insertCustomerSchema.partial().parse(req.body);
       // Remove null values and convert to correct types
       const cleanData = Object.fromEntries(
         Object.entries(customerData).filter(([_, value]) => value !== null)
       );
       const customer = await storage.updateCustomer(req.params.id, cleanData);
+      
+      console.log(`Customer update: User ${req.user.id} (${req.user.role}) updated customer ${customer.id} - Super Admin: ${isSuperAdmin(req.user)}`);
       res.json(customer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -2120,46 +2234,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId, status, search, dateFilter, startDate, endDate, limit, offset } = req.query;
       
-      // Check if user is a customer based on their role
-      const isCustomer = req.user.role === 'Customer' || req.user.defaultRole === 'Customer';
+      // Get user's data access level using new RBAC utilities
+      const { isSuperAdmin, getDataAccessLevel, applyRoleBasedFiltering } = await import('./rbacUtils.js');
+      const accessLevel = await getDataAccessLevel(req.user);
       
-      // Cache permission checks to avoid repeated database hits
-      const cacheKey = `${req.user.id}_${isCustomer ? 'customer' : 'admin'}_permissions`;
-      let permissions = req.user.cachedPermissions;
-      
-      if (!permissions) {
-        // Check permissions to determine data access level
-        let canViewAllAgreements = false;
-        let canViewOwnAgreements = false;
-        
-        if (isCustomer) {
-          [canViewAllAgreements, canViewOwnAgreements] = await Promise.all([
-            storage.customerHasPermission(req.user.id, 'agreement.view.all'),
-            storage.customerHasPermission(req.user.id, 'agreement.view.own')
-          ]);
-        } else {
-          [canViewAllAgreements, canViewOwnAgreements] = await Promise.all([
-            storage.userHasPermission(req.user.id, 'agreement.view.all'),
-            storage.userHasPermission(req.user.id, 'agreement.view.own')
-          ]);
-        }
-        
-        permissions = { canViewAllAgreements, canViewOwnAgreements };
-        req.user.cachedPermissions = permissions; // Cache for this request
-      }
-      
-      if (!permissions.canViewAllAgreements && !permissions.canViewOwnAgreements) {
+      // Check if user has any permission to view agreements
+      if (!accessLevel.canViewAll && !accessLevel.canViewOwn) {
         return res.status(403).json({ message: "Insufficient permissions to view agreements" });
       }
       
-      // If user can only view own agreements, filter by their ID
-      let finalCustomerId = customerId as string;
-      if (!permissions.canViewAllAgreements && permissions.canViewOwnAgreements) {
-        finalCustomerId = req.user.id; // Filter to only their own agreements
-      }
-      
-      const result = await storage.getAgreements({
-        customerId: finalCustomerId,
+      // Prepare base filters from query parameters
+      const baseFilters = {
+        customerId: customerId as string,
         status: status as string,
         search: search as string,
         dateFilter: dateFilter as string,
@@ -2167,7 +2253,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate: endDate as string,
         limit: limit ? parseInt(limit as string) : undefined,
         offset: offset ? parseInt(offset as string) : undefined,
-      });
+      };
+      
+      // Apply role-based filtering - Super Admin sees all, others get filtered
+      const finalFilters = applyRoleBasedFiltering(baseFilters, accessLevel, req.user);
+      
+      console.log(`Agreement listing access: User ${req.user.id} (${req.user.role}) - Super Admin: ${isSuperAdmin(req.user)}, Can View All: ${accessLevel.canViewAll}, Restricted: ${!!accessLevel.restrictToUserId}`);
+      
+      const result = await storage.getAgreements(finalFilters);
       res.json(result);
     } catch (error) {
       console.error("Error fetching agreements:", error);
@@ -2823,13 +2916,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PDF Template routes
-  app.get("/api/pdf-templates", requireAuth, async (req, res) => {
+  app.get("/api/pdf-templates", requireAuth, async (req: any, res) => {
     try {
       const { documentType, language } = req.query;
+      
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
+      
+      // Check permissions - Super Admin has full access, others need template.manage permission
+      if (!isSuperAdmin(req.user)) {
+        const hasPermission = await hasPermissionWithSuperAdminBypass(req.user, 'template.manage');
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            message: "Insufficient permissions to view templates",
+            error: "permission_denied",
+            action: "Contact an administrator for access to template management"
+          });
+        }
+      }
+      
       const templates = await storage.getPdfTemplates(
         documentType as string,
         language as string
       );
+      
+      console.log(`Template listing access: User ${req.user.id} (${req.user.role}) - Super Admin: ${isSuperAdmin(req.user)}`);
       res.json(templates);
     } catch (error) {
       console.error("Error fetching PDF templates:", error);
@@ -2850,10 +2961,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/pdf-templates", requireAuth, async (req, res) => {
+  app.post("/api/pdf-templates", requireAuth, async (req: any, res) => {
     try {
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
+      
+      // Check permissions - Super Admin has full access, others need template.create permission
+      if (!isSuperAdmin(req.user)) {
+        const hasPermission = await hasPermissionWithSuperAdminBypass(req.user, 'template.create');
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            message: "Insufficient permissions to create templates",
+            error: "permission_denied",
+            action: "Contact an administrator for access to template creation"
+          });
+        }
+      }
+      
       const templateData = insertPdfTemplateSchema.parse(req.body);
       const template = await storage.createPdfTemplate(templateData);
+      
+      console.log(`Template creation: User ${req.user.id} (${req.user.role}) created template ${template.id} - Super Admin: ${isSuperAdmin(req.user)}`);
       res.status(201).json(template);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -2864,10 +2992,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/pdf-templates/:id", requireAuth, async (req, res) => {
+  app.put("/api/pdf-templates/:id", requireAuth, async (req: any, res) => {
     try {
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
+      
+      // Check permissions - Super Admin has full access, others need template.edit permission
+      if (!isSuperAdmin(req.user)) {
+        const hasPermission = await hasPermissionWithSuperAdminBypass(req.user, 'template.edit');
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            message: "Insufficient permissions to edit templates",
+            error: "permission_denied",
+            action: "Contact an administrator for access to template editing"
+          });
+        }
+      }
+      
       const templateData = insertPdfTemplateSchema.partial().parse(req.body);
       const template = await storage.updatePdfTemplate(req.params.id, templateData);
+      
+      console.log(`Template update: User ${req.user.id} (${req.user.role}) updated template ${template.id} - Super Admin: ${isSuperAdmin(req.user)}`);
       res.json(template);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -2878,8 +3023,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/pdf-templates/:id", requireAuth, async (req, res) => {
+  app.delete("/api/pdf-templates/:id", requireAuth, async (req: any, res) => {
     try {
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
+      
+      // Check permissions - Super Admin has full access, others need template.delete permission
+      if (!isSuperAdmin(req.user)) {
+        const hasPermission = await hasPermissionWithSuperAdminBypass(req.user, 'template.delete');
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            message: "Insufficient permissions to delete templates",
+            error: "permission_denied",
+            action: "Contact an administrator for access to template deletion"
+          });
+        }
+      }
+      
+      console.log(`Template deletion: User ${req.user.id} (${req.user.role}) deleted template ${req.params.id} - Super Admin: ${isSuperAdmin(req.user)}`);
       await storage.deletePdfTemplate(req.params.id);
       res.status(204).send();
     } catch (error) {
