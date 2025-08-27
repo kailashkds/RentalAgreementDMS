@@ -59,7 +59,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   const { user } = useAuth();
   const isCustomer = (user as any)?.defaultRole === 'Customer';
   
-  const [currentStep, setCurrentStep] = useState(isCustomer ? 2 : 1); // Skip step 1 for customers
+  const [currentStep, setCurrentStep] = useState(1); // Always start at step 1
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [documents, setDocuments] = useState<Record<string, string | { filename: string; fileType: string; size: number } | undefined>>({});
   const [addressSearch, setAddressSearch] = useState({
@@ -1412,10 +1412,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        // Skip Step 1 completely for customers
-        if (isCustomer) {
-          return null;
-        }
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-800">{t("step1Title")}</h3>
@@ -1428,7 +1424,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   value={watch("customerId") || ""} 
                   onValueChange={(value) => setValue("customerId", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger disabled={isCustomer}>
                     <SelectValue placeholder="Select a customer" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1451,6 +1447,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   size="sm"
                   onClick={() => setShowCustomerModal(true)}
                   className="mt-2 text-blue-600 hover:text-blue-700"
+                  disabled={isCustomer}
                 >
                   <Plus className="mr-1 h-4 w-4" />
                   {t("createNewCustomer")}
@@ -2435,7 +2432,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
               <Progress value={progress} className="mb-4" />
               <div className="flex items-center justify-between text-sm">
                 {STEPS.map((step, index) => {
-                  const stepNumber = isCustomer ? index + 2 : step.id; // Adjust step number display for customers
+                  const stepNumber = step.id; // Use normal step numbering
                   const isActive = stepNumber <= currentStep;
                   return (
                     <div key={step.id} className="flex items-center">
