@@ -106,8 +106,8 @@ export default function Properties() {
                     <tr key={property.id} data-testid={`row-property-${property.id}`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {property.flatNumber}
+                          <div className={`text-sm font-medium ${property.flatNumber ? 'text-gray-900' : 'text-gray-400 italic'}`}>
+                            {property.flatNumber || 'No Property Number'}
                           </div>
                           {property.building && (
                             <div className="text-sm text-gray-500">
@@ -127,11 +127,21 @@ export default function Properties() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
-                          {property.society}
+                        <div className={`text-sm ${property.society ? 'text-gray-900' : 'text-gray-400 italic'}`}>
+                          {property.society || 'No Society/Building Name'}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {property.area}, {property.city}, {property.state} - {property.pincode}
+                          {(() => {
+                            const addressParts = [property.area, property.city, property.state].filter(Boolean);
+                            const addressText = addressParts.join(', ');
+                            const fullAddress = addressText + (property.pincode ? ` - ${property.pincode}` : '');
+                            
+                            if (fullAddress.trim()) {
+                              return fullAddress;
+                            } else {
+                              return <span className="italic text-gray-400">No Address Information</span>;
+                            }
+                          })()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
