@@ -16,6 +16,7 @@ const propertySchema = z.object({
   society: z.string().min(1, "Society/Building name is required"),
   area: z.string().min(1, "Area is required"),
   city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
   pincode: z.string().min(1, "Pincode is required"),
   propertyType: z.enum(["residential", "commercial"]),
 });
@@ -70,6 +71,7 @@ export function EditPropertyDialog({ open, onClose, property, onPropertyUpdated 
       society: "",
       area: "",
       city: "",
+      state: "",
       pincode: "",
       propertyType: "residential",
     },
@@ -83,6 +85,7 @@ export function EditPropertyDialog({ open, onClose, property, onPropertyUpdated 
         society: property.society || "",
         area: property.area || "",
         city: property.city || "",
+        state: property.state || "",
         pincode: property.pincode || "",
         propertyType: (property.propertyType as "residential" | "commercial") || "residential",
       });
@@ -117,6 +120,7 @@ export function EditPropertyDialog({ open, onClose, property, onPropertyUpdated 
       form.setValue('society', society.societyName);
       form.setValue('area', society.area || '');
       form.setValue('city', society.city || '');
+      form.setValue('state', society.state || '');
       form.setValue('pincode', society.pincode || '');
     } else {
       // If no matching society found, just set the building name
@@ -229,19 +233,35 @@ export function EditPropertyDialog({ open, onClose, property, onPropertyUpdated 
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="pincode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pincode *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g., 400058" maxLength={10} data-testid="input-pincode" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>State *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., Maharashtra" data-testid="input-state" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="pincode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pincode *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., 400058" maxLength={10} data-testid="input-pincode" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <FormField

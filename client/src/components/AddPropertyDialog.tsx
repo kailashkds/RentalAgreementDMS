@@ -14,16 +14,12 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 const propertySchema = z.object({
   customerId: z.string(),
   flatNumber: z.string().min(1, "Flat/House number is required"),
-  building: z.string().optional(),
   society: z.string().min(1, "Society/Building name is required"),
   area: z.string().min(1, "Area is required"),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   pincode: z.string().min(1, "Pincode is required"),
-  district: z.string().optional(),
-  landmark: z.string().optional(),
   propertyType: z.enum(["residential", "commercial"]),
-  purpose: z.string().optional(),
 });
 
 type PropertyFormData = z.infer<typeof propertySchema>;
@@ -55,16 +51,12 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
     defaultValues: {
       customerId,
       flatNumber: "",
-      building: "",
       society: "",
       area: "",
       city: "",
       state: "",
       pincode: "",
-      district: "",
-      landmark: "",
       propertyType: "residential",
-      purpose: "",
     },
   });
 
@@ -97,8 +89,6 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
       form.setValue('city', society.city || '');
       form.setValue('state', society.state || '');
       form.setValue('pincode', society.pincode || '');
-      form.setValue('district', society.district || '');
-      form.setValue('landmark', society.landmark || '');
     } else {
       // If no matching society found, just set the building name
       form.setValue('society', selectedBuilding);
@@ -119,66 +109,14 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="flatNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Flat/House Number *</FormLabel>
-                    <FormControl>
-                      <Input {...field} data-testid="input-flat-number" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="building"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Building/Wing</FormLabel>
-                    <FormControl>
-                      <Input {...field} data-testid="input-building" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             <FormField
               control={form.control}
-              name="propertyType"
+              name="flatNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Property Type *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger data-testid="select-property-type">
-                        <SelectValue placeholder="Select property type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="residential">Residential</SelectItem>
-                      <SelectItem value="commercial">Commercial</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="purpose"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Purpose</FormLabel>
+                  <FormLabel>Flat/House Number *</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="e.g., Family, Office, Shop" data-testid="input-purpose" />
+                    <Input {...field} placeholder="e.g., A-101, 123" data-testid="input-flat-number" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -260,7 +198,7 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="state"
@@ -268,7 +206,7 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
                     <FormItem>
                       <FormLabel>State *</FormLabel>
                       <FormControl>
-                        <Input {...field} data-testid="input-state" />
+                        <Input {...field} placeholder="e.g., Maharashtra" data-testid="input-state" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -282,42 +220,36 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
                     <FormItem>
                       <FormLabel>Pincode *</FormLabel>
                       <FormControl>
-                        <Input {...field} data-testid="input-pincode" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="district"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>District</FormLabel>
-                      <FormControl>
-                        <Input {...field} data-testid="input-district" />
+                        <Input {...field} placeholder="e.g., 400058" maxLength={10} data-testid="input-pincode" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-
-              <FormField
-                control={form.control}
-                name="landmark"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Landmark</FormLabel>
-                    <FormControl>
-                      <Input {...field} data-testid="input-landmark" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
+
+            <FormField
+              control={form.control}
+              name="propertyType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Property Type *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-property-type">
+                        <SelectValue placeholder="Select property type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="residential">Residential</SelectItem>
+                      <SelectItem value="commercial">Commercial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="flex justify-end gap-2 pt-4">
               <Button 
