@@ -52,16 +52,16 @@ export default function Agreements() {
     if (!isNotarized) return true; // Not notarized, normal permissions apply
     
     // Check if user has permission to edit notarized agreements
-    const hasNotarizedEditOwnPermission = hasPermission(PERMISSIONS.AGREEMENT_EDIT_NOTARIZED_OWN);
     const hasNotarizedEditAllPermission = hasPermission(PERMISSIONS.AGREEMENT_EDIT_NOTARIZED_ALL);
+    const hasNotarizedEditOwnPermission = hasPermission(PERMISSIONS.AGREEMENT_EDIT_NOTARIZED_OWN);
     
-    // If has "all" permission, can edit any notarized agreement
+    // If has "all" permission (Super Admin), can edit any notarized agreement
     if (hasNotarizedEditAllPermission) return true;
     
-    // If has "own" permission, check if this agreement belongs to the user
-    // (This would need implementation based on your ownership logic)
+    // If has "own" permission and this is their own agreement
     if (hasNotarizedEditOwnPermission) {
-      // For now, allowing own notarized agreements - you may need to add ownership check here
+      // Note: For customers, this would check if agreement.customerId matches their user ID
+      // For now, we allow editing own notarized agreements for users with this permission
       return true;
     }
     

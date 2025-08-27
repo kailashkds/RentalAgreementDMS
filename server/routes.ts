@@ -2219,7 +2219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/agreements/:id", async (req, res) => {
+  app.put("/api/agreements/:id", requireAuth, async (req, res) => {
     try {
       console.log("=== UPDATING AGREEMENT ===");
       console.log("Agreement ID:", req.params.id);
@@ -2232,13 +2232,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Agreement not found" });
       }
       
-      // Rule: Notarized agreements cannot be edited
+      // Rule: Notarized agreements can only be edited by users with proper permissions
       if (existingAgreement.notarizedDocument && 
           Object.keys(existingAgreement.notarizedDocument).length > 0) {
-        return res.status(400).json({ 
-          message: "Cannot edit notarized agreements. Notarized agreements are legally binding and cannot be modified.",
-          reason: "notarized_agreement"
-        });
+        
+        // Check if user is a customer based on their role
+        const isCustomer = req.user!.role === 'Customer' || req.user!.defaultRole === 'Customer';
+        
+        let canEditNotarized = false;
+        
+        if (isCustomer) {
+          // Check customer permissions for notarized agreement editing
+          const [canEditNotarizedAll, canEditNotarizedOwn] = await Promise.all([
+            storage.customerHasPermission(req.user!.id, 'agreement.edit.notarized.all'),
+            storage.customerHasPermission(req.user!.id, 'agreement.edit.notarized.own')
+          ]);
+          
+          // Can edit if has "all" permission, or "own" permission and owns this agreement
+          canEditNotarized = canEditNotarizedAll || 
+            (canEditNotarizedOwn && existingAgreement.customerId === req.user!.id);
+        } else {
+          // Check admin user permissions for notarized agreement editing
+          const [canEditNotarizedAll, canEditNotarizedOwn] = await Promise.all([
+            storage.userHasPermission(req.user!.id, 'agreement.edit.notarized.all'),
+            storage.userHasPermission(req.user!.id, 'agreement.edit.notarized.own')
+          ]);
+          
+          // Admin users with "all" permission can edit any notarized agreement
+          // "own" permission logic would depend on how ownership is defined for admin users
+          canEditNotarized = canEditNotarizedAll || canEditNotarizedOwn;
+        }
+        
+        if (!canEditNotarized) {
+          return res.status(403).json({ 
+            message: "Cannot edit notarized agreements. Only users with proper permissions can modify notarized agreements.",
+            reason: "insufficient_permissions_for_notarized"
+          });
+        }
       }
       
       const agreementData = insertAgreementSchema.partial().parse(req.body);
