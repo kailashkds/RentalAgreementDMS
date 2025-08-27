@@ -1021,14 +1021,14 @@ export default function UserRoleManagement() {
                       <Badge variant="outline" className="text-xs">
                         {categoryPermissions.filter(p => {
                           const userPermissions = getUserPermissions(managingPermissionsUser);
-                          return userPermissions.total.includes(p.name);
+                          return userPermissions.includes(p.name);
                         }).length}/{categoryPermissions.length}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-1 gap-2">
                       {categoryPermissions.map((permission) => {
                         const userPermissions = getUserPermissions(managingPermissionsUser);
-                        const hasPermission = userPermissions.total.includes(permission.name);
+                        const hasPermission = userPermissions.includes(permission.name);
                         const isFromRole = managingPermissionsUser.roles?.[0]?.permissions?.includes(permission.name) || false;
                         const isManuallyAdded = managingPermissionsUser.manualPermissions?.added?.includes(permission.name) || false;
                         const isManuallyRemoved = managingPermissionsUser.manualPermissions?.removed?.includes(permission.name) || false;

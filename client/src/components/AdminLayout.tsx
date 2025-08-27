@@ -39,7 +39,7 @@ const navigation = [
 ];
 
 const settingsNavigation = [
-  { name: "User & Role Management", href: "/admin/user-role-management", icon: Shield },
+  { name: "User & Role Management", href: "/admin/user-roles", icon: Shield },
   { name: "System Settings", href: "/settings", icon: Settings },
   { name: "Profile", href: "/profile", icon: UserCircle },
 ];
@@ -100,7 +100,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
 
   // Filter settings navigation based on permissions
   const filteredSettingsNavigation = settingsNavigation.filter(item => {
-    if (item.href === "/admin/user-role-management") {
+    if (item.href === "/admin/user-roles") {
       return hasPermission('user.manage') || hasPermission('role.manage');
     }
     if (item.href === "/settings") {

@@ -77,7 +77,7 @@ function AuthenticatedRouter() {
       <Route path="/properties" component={Properties} />
       <Route path="/customers/:customerId/properties" component={CustomerProperties} />
       <Route path="/customers/:customerId/properties/:propertyId/agreements" component={PropertyAgreements} />
-      <Route path="/admin/user-role-management" component={UserRoleManagement} />
+      <Route path="/admin/user-roles" component={UserRoleManagement} />
       <Route path="/settings" component={SystemSettings} />
       <Route path="/profile" component={Profile} />
       <Route path="/pdf-templates" component={() => <ProtectedRoute component={PdfTemplates} />} />
