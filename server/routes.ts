@@ -138,7 +138,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       let permissions: string[];
       
-      if (req.user!.userType === 'customer') {
+      // Check if user is a customer based on their role
+      const isCustomer = req.user!.role === 'Customer' || req.user!.defaultRole === 'Customer';
+      
+      if (isCustomer) {
         permissions = await storage.getCustomerPermissions(req.user!.id);
       } else {
         permissions = await storage.getUserPermissions(req.user!.id);
@@ -2117,8 +2120,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId, status, search, dateFilter, startDate, endDate, limit, offset } = req.query;
       
+      // Check if user is a customer based on their role
+      const isCustomer = req.user.role === 'Customer' || req.user.defaultRole === 'Customer';
+      
       // Cache permission checks to avoid repeated database hits
-      const cacheKey = `${req.user.id}_${req.user.userType}_permissions`;
+      const cacheKey = `${req.user.id}_${isCustomer ? 'customer' : 'admin'}_permissions`;
       let permissions = req.user.cachedPermissions;
       
       if (!permissions) {
@@ -2126,7 +2132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let canViewAllAgreements = false;
         let canViewOwnAgreements = false;
         
-        if (req.user.userType === 'customer') {
+        if (isCustomer) {
           [canViewAllAgreements, canViewOwnAgreements] = await Promise.all([
             storage.customerHasPermission(req.user.id, 'agreement.view.all'),
             storage.customerHasPermission(req.user.id, 'agreement.view.own')
