@@ -279,7 +279,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   const t = (key: string) => getTranslation(currentLanguage, key);
   
   // Get dynamic steps for current language
-  const STEPS = getSteps(t);
+  const allSteps = getSteps(t);
+  const STEPS = isCustomer ? allSteps.slice(1) : allSteps; // Remove first step for customers
+  const getActualStepNumber = (displayStep: number) => isCustomer ? displayStep + 1 : displayStep; // Convert display step to actual step
 
   // Helper functions for address autocomplete
   const handleAddressSelect = (addressType: 'owner' | 'tenant' | 'property', address: any) => {
@@ -366,6 +368,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     const currentFormData = watch(); // Get live form data
     switch (stepNumber) {
       case 1:
+        // Skip validation for step 1 if customer is logged in
+        if (isCustomer) return true;
         return !!(currentFormData.language && currentFormData.customerId && currentFormData.customerId !== "none"); // Require both language and valid customer selection
       case 2:
         return !!(
@@ -1408,6 +1412,10 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   const renderStep = () => {
     switch (currentStep) {
       case 1:
+        // Skip Step 1 completely for customers
+        if (isCustomer) {
+          return null;
+        }
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-800">{t("step1Title")}</h3>
@@ -1437,18 +1445,16 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 <p className="text-xs text-gray-500 mt-1">
                   Select an existing customer to copy their details for the agreement
                 </p>
-                {!isCustomer && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowCustomerModal(true)}
-                    className="mt-2 text-blue-600 hover:text-blue-700"
-                  >
-                    <Plus className="mr-1 h-4 w-4" />
-                    {t("createNewCustomer")}
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCustomerModal(true)}
+                  className="mt-2 text-blue-600 hover:text-blue-700"
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  {t("createNewCustomer")}
+                </Button>
               </div>
 
               <div>
@@ -2395,7 +2401,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     }
   };
 
-  const progress = (currentStep / STEPS.length) * 100;
+  const displayStep = isCustomer ? currentStep - 1 : currentStep; // Adjust display step for customers
+  const progress = (displayStep / STEPS.length) * 100;
 
   return (
     <>
@@ -2427,20 +2434,24 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
             <div className="mt-6">
               <Progress value={progress} className="mb-4" />
               <div className="flex items-center justify-between text-sm">
-                {STEPS.map((step) => (
-                  <div key={step.id} className="flex items-center">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${
-                        step.id <= currentStep
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-600 text-gray-300"
-                      }`}
-                    >
-                      {step.id}
+                {STEPS.map((step, index) => {
+                  const stepNumber = isCustomer ? index + 2 : step.id; // Adjust step number display for customers
+                  const isActive = stepNumber <= currentStep;
+                  return (
+                    <div key={step.id} className="flex items-center">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-medium ${
+                          isActive
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-600 text-gray-300"
+                        }`}
+                      >
+                        {stepNumber}
+                      </div>
+                      <span className="ml-2">{step.title}</span>
                     </div>
-                    <span className="ml-2">{step.title}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </DialogHeader>
