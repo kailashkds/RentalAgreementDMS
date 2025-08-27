@@ -43,15 +43,9 @@ function AccessDenied() {
   );
 }
 
-// Protected route wrapper for admin-only pages
+// Protected route wrapper for permission-based pages
 function ProtectedRoute({ component: Component }: { component: () => JSX.Element }) {
-  const { user } = useAuth();
-  const isCustomer = (user as any)?.defaultRole === 'Customer';
-  
-  if (isCustomer) {
-    return <AccessDenied />;
-  }
-  
+  // Remove role-based protection - use component-level permission guards instead
   return <Component />;
 }
 

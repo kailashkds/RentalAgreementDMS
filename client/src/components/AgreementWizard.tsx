@@ -19,6 +19,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getTranslation } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { UploadResult } from "@uppy/core";
 import type { OwnerDetails, TenantDetails, PropertyDetails, RentalTerms } from "@shared/schema";
 
@@ -57,7 +58,10 @@ const LANGUAGES = [
 
 export default function AgreementWizard({ isOpen, onClose, agreementId, editingAgreement }: AgreementWizardProps) {
   const { user } = useAuth();
-  const isCustomer = (user as any)?.defaultRole === 'Customer';
+  const { hasPermission } = usePermissions();
+  
+  // Use permission-based check instead of role check
+  const canViewAllCustomers = hasPermission('customer.view.all') || hasPermission('customer.manage');
   
   const [currentStep, setCurrentStep] = useState(1); // Always start at step 1
   const [showCustomerModal, setShowCustomerModal] = useState(false);
@@ -84,7 +88,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
   const { register, handleSubmit, watch, setValue, reset, trigger, formState: { errors } } = useForm<AgreementFormData>({
     defaultValues: {
-      customerId: isCustomer ? (user as any)?.id : undefined,
+      customerId: !canViewAllCustomers ? (user as any)?.id : undefined,
       language: "english",
       additionalClauses: [],
       rentalTerms: {
@@ -370,7 +374,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       case 1:
         // For customers: only validate language (customerId is auto-set)
         // For admin/staff: validate both language and customer selection
-        if (isCustomer) {
+        if (!canViewAllCustomers) {
           return !!(currentFormData.language); // Only require language for customers
         }
         return !!(currentFormData.language && currentFormData.customerId && currentFormData.customerId !== "none"); // Require both language and valid customer selection
@@ -1431,7 +1435,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   value={watch("customerId") || ""} 
                   onValueChange={(value) => setValue("customerId", value)}
                 >
-                  <SelectTrigger disabled={isCustomer}>
+                  <SelectTrigger disabled={!canViewAllCustomers}>
                     <SelectValue placeholder="Select a customer" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1454,7 +1458,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   size="sm"
                   onClick={() => setShowCustomerModal(true)}
                   className="mt-2 text-blue-600 hover:text-blue-700"
-                  disabled={isCustomer}
+                  disabled={!canViewAllCustomers}
                 >
                   <Plus className="mr-1 h-4 w-4" />
                   {t("createNewCustomer")}
@@ -2467,7 +2471,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 type="button"
                 variant="outline"
                 onClick={prevStep}
-                disabled={currentStep === (isCustomer ? 2 : 1)}
+                disabled={currentStep === (!canViewAllCustomers ? 2 : 1)}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t("previous")}

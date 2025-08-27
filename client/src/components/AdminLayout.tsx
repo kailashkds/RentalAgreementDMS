@@ -49,19 +49,44 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
   
-  // Check if user is a customer (for display purposes)
-  const isCustomer = (user as any)?.defaultRole === 'Customer';
+  // Use permission-based checks instead of role checks
+  // This line is kept for backward compatibility but should use permissions
   
-  // Filter main navigation based on permissions
+  // Filter main navigation based on permissions - STRICT permission-based filtering
   const filteredNavigation = navigation.filter(item => {
-    // Customer management - requires user management permission
+    // Dashboard - requires dashboard.view permission
+    if (item.href === "/") {
+      return hasPermission('dashboard.view');
+    }
+    
+    // Agreements - requires agreement viewing permission
+    if (item.href === "/agreements") {
+      return hasPermission('agreement.view.own') || hasPermission('agreement.view.all');
+    }
+    
+    // Customer management - requires customer management permission
     if (item.href === "/customers") {
-      return hasPermission('user.view.all') || hasPermission('customer.manage');
+      return hasPermission('customer.view.all') || hasPermission('customer.manage');
+    }
+    
+    // Properties - requires property management permission (assuming staff+ access)
+    if (item.href === "/properties") {
+      return hasPermission('system.admin') || hasPermission('customer.manage');
+    }
+    
+    // Documents - requires agreement viewing permission
+    if (item.href === "/documents") {
+      return hasPermission('agreement.view.all') || hasPermission('system.admin');
     }
     
     // PDF Templates - requires template management permission
     if (item.href === "/pdf-templates") {
-      return hasPermission('template.manage') || hasPermission('template.edit');
+      return hasPermission('template.manage') || hasPermission('template.edit') || hasPermission('template.create');
+    }
+    
+    // Societies - requires property management permission (assuming staff+ access)
+    if (item.href === "/societies") {
+      return hasPermission('system.admin') || hasPermission('customer.manage');
     }
     
     // WhatsApp - requires system admin permission
@@ -69,7 +94,8 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       return hasPermission('system.admin');
     }
     
-    return true;
+    // Default: deny access unless explicitly allowed
+    return false;
   });
 
   // Filter settings navigation based on permissions
@@ -167,7 +193,7 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
               <div className="text-sm">
                 <div className="font-medium text-gray-900">{(user as any)?.name || 'User'}</div>
                 <div className="text-gray-500">
-                  {isCustomer ? (user as any)?.mobile : `@${(user as any)?.username || 'admin'}`}
+                  {(user as any)?.mobile || `@${(user as any)?.username || 'admin'}`}
                 </div>
               </div>
             </div>

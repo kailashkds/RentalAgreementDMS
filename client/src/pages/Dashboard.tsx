@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import AgreementWizard from "@/components/AgreementWizard";
 import CustomerModal from "@/components/CustomerModal";
 import SocietyModal from "@/components/SocietyModal";
+import { PermissionGuard } from "@/components/PermissionGuard";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useState } from "react";
 import { Link } from "wouter";
 import {
@@ -36,6 +38,24 @@ export default function Dashboard() {
   const [showAgreementWizard, setShowAgreementWizard] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showSocietyModal, setShowSocietyModal] = useState(false);
+  const { hasPermission } = usePermissions();
+  
+  // Check if user has dashboard access permission
+  if (!hasPermission('dashboard.view')) {
+    return (
+      <AdminLayout title="Access Denied" subtitle="You don't have permission to view the dashboard">
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Access Denied</h2>
+            <p className="text-gray-600 mb-6">You don't have permission to view the dashboard. Please contact your administrator for access.</p>
+            <Link href="/agreements">
+              <Button>Go to Agreements</Button>
+            </Link>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
@@ -128,32 +148,43 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold text-gray-800">Quick Actions</h3>
             </div>
             <div className="p-6 space-y-4">
-              <Button
-                onClick={() => setShowAgreementWizard(true)}
-                className="w-full"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Document
-              </Button>
-              <Button
-                onClick={() => setShowCustomerModal(true)}
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add Client
-              </Button>
-              <Button
-                onClick={() => setShowSocietyModal(true)}
-                variant="outline"
-                className="w-full border-primary text-primary hover:bg-primary hover:text-white"
-              >
-                <Building className="mr-2 h-4 w-4" />
-                Add Location
-              </Button>
-              <Button className="w-full bg-accent hover:bg-accent/90">
-                <Upload className="mr-2 h-4 w-4" />
-                Bulk Import
-              </Button>
+              <PermissionGuard permissions={['agreement.create']}>
+                <Button
+                  onClick={() => setShowAgreementWizard(true)}
+                  className="w-full"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create New Document
+                </Button>
+              </PermissionGuard>
+              
+              <PermissionGuard permissions={['customer.create', 'customer.manage']} requireAll={false}>
+                <Button
+                  onClick={() => setShowCustomerModal(true)}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Client
+                </Button>
+              </PermissionGuard>
+              
+              <PermissionGuard permissions={['system.admin', 'customer.manage']} requireAll={false}>
+                <Button
+                  onClick={() => setShowSocietyModal(true)}
+                  variant="outline"
+                  className="w-full border-primary text-primary hover:bg-primary hover:text-white"
+                >
+                  <Building className="mr-2 h-4 w-4" />
+                  Add Location
+                </Button>
+              </PermissionGuard>
+              
+              <PermissionGuard permission="system.admin">
+                <Button className="w-full bg-accent hover:bg-accent/90">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Bulk Import
+                </Button>
+              </PermissionGuard>
             </div>
           </Card>
         </div>

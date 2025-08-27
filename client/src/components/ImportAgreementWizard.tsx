@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { LocalFileUploader } from "@/components/LocalFileUploader";
 import { FilePreview } from "@/components/FilePreview";
 
@@ -72,9 +73,12 @@ interface ImportAgreementData {
 
 export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreementWizardProps) {
   const { user } = useAuth();
-  const isCustomer = (user as any)?.defaultRole === 'Customer';
+  const { hasPermission } = usePermissions();
   
-  const [currentStep, setCurrentStep] = useState(isCustomer ? 2 : 1); // Skip step 1 for customers
+  // Use permission-based check instead of role check
+  const canViewAllCustomers = hasPermission('customer.view.all') || hasPermission('customer.manage');
+  
+  const [currentStep, setCurrentStep] = useState(!canViewAllCustomers ? 2 : 1); // Skip step 1 for customers
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -94,9 +98,9 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
 
   const [formData, setFormData] = useState<ImportAgreementData>({
     customer: { 
-      id: isCustomer ? (user as any)?.id || "" : "", 
-      name: isCustomer ? (user as any)?.name || "" : "", 
-      mobile: isCustomer ? (user as any)?.mobile || (user as any)?.phone || "" : "" 
+      id: !canViewAllCustomers ? (user as any)?.id || "" : "", 
+      name: !canViewAllCustomers ? (user as any)?.name || "" : "", 
+      mobile: !canViewAllCustomers ? (user as any)?.mobile || (user as any)?.phone || "" : "" 
     },
     language: "english",
     ownerDetails: { name: "", mobile: "" },
@@ -130,7 +134,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   };
 
   const handlePrevious = () => {
-    const minStep = isCustomer ? 2 : 1; // Customers can't go to step 1
+    const minStep = !canViewAllCustomers ? 2 : 1; // Customers can't go to step 1
     setCurrentStep(prev => Math.max(prev - 1, minStep));
   };
 
@@ -138,7 +142,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
     switch (step) {
       case 1:
         // Skip validation for step 1 if customer is logged in
-        if (isCustomer) return true;
+        if (!canViewAllCustomers) return true;
         return !!(formData.customer.id && formData.language);
       case 2:
         return !!(formData.ownerDetails.name && formData.ownerDetails.mobile);
@@ -1060,7 +1064,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
               type="button"
               variant="outline"
               onClick={handlePrevious}
-              disabled={currentStep === (isCustomer ? 2 : 1)}
+              disabled={currentStep === (!canViewAllCustomers ? 2 : 1)}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Previous
