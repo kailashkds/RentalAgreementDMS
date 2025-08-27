@@ -360,8 +360,10 @@ export default function UserRoleManagement() {
     return categorized;
   };
 
-  const formatPermissionName = (permission: string) => {
-    return permission
+  const formatPermissionName = (permission: string | any) => {
+    // Handle case where permission might be an object
+    const permissionString = typeof permission === 'string' ? permission : permission?.name || 'Unknown';
+    return permissionString
       .split('.')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
