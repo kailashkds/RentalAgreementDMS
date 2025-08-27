@@ -361,9 +361,6 @@ export default function UserRoleManagement() {
   };
 
   const formatPermissionName = (permission: string) => {
-    if (!permission || typeof permission !== 'string') {
-      return 'Unknown Permission';
-    }
     return permission
       .split('.')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -382,35 +379,12 @@ export default function UserRoleManagement() {
     const manualRemoved = user.manualPermissions?.removed || [];
     
     // Remove duplicates from role permissions
-    const uniqueRolePermissions = Array.from(new Set(rolePermissions));
-    
-    // Return final list: role permissions minus removed ones, plus manually added ones
-    const finalPermissions = [
-      ...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),
-      ...manualAdded.filter(p => !uniqueRolePermissions.includes(p))
-    ];
-    
-    return Array.from(new Set(finalPermissions)); // Remove any duplicates
-  };
-
-  const getUserPermissionDetails = (user: User) => {
-    // Get permissions from all assigned roles
-    const rolePermissions = user.roles?.flatMap(role => role.permissions || []) || [];
-    const manualAdded = user.manualPermissions?.added || [];
-    const manualRemoved = user.manualPermissions?.removed || [];
-    
-    // Remove duplicates from role permissions
-    const uniqueRolePermissions = Array.from(new Set(rolePermissions));
-    
-    // Return detailed breakdown
-    const inherited = uniqueRolePermissions.filter(p => !manualRemoved.includes(p));
-    const manual = manualAdded.filter(p => !uniqueRolePermissions.includes(p));
-    const total = Array.from(new Set([...inherited, ...manual]));
+    const uniqueRolePermissions = [...new Set(rolePermissions)];
     
     return {
-      inherited,
-      manual,
-      total
+      inherited: uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),
+      manual: manualAdded.filter(p => !uniqueRolePermissions.includes(p)),
+      total: [...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded.filter(p => !uniqueRolePermissions.includes(p))]
     };
   };
 
@@ -641,7 +615,7 @@ export default function UserRoleManagement() {
                     </TableRow>
                   ) : (
                     (Array.isArray(users) ? users : []).map((user) => {
-                    const userPermissions = getUserPermissionDetails(user);
+                    const userPermissions = getUserPermissions(user);
                     return (
                       <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                         <TableCell>
@@ -1047,14 +1021,14 @@ export default function UserRoleManagement() {
                       <Badge variant="outline" className="text-xs">
                         {categoryPermissions.filter(p => {
                           const userPermissions = getUserPermissions(managingPermissionsUser);
-                          return userPermissions.includes(p.name);
+                          return userPermissions.total.includes(p.name);
                         }).length}/{categoryPermissions.length}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-1 gap-2">
                       {categoryPermissions.map((permission) => {
                         const userPermissions = getUserPermissions(managingPermissionsUser);
-                        const hasPermission = userPermissions.includes(permission.name);
+                        const hasPermission = userPermissions.total.includes(permission.name);
                         const isFromRole = managingPermissionsUser.roles?.[0]?.permissions?.includes(permission.name) || false;
                         const isManuallyAdded = managingPermissionsUser.manualPermissions?.added?.includes(permission.name) || false;
                         const isManuallyRemoved = managingPermissionsUser.manualPermissions?.removed?.includes(permission.name) || false;
