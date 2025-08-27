@@ -2053,10 +2053,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Download agreement PDF - uses edited content if available, otherwise generates from template
   app.get("/api/agreements/:id/pdf", async (req, res) => {
     try {
+      console.log(`[PDF Download] Starting PDF generation for agreement: ${req.params.id}`);
+      
       const agreement = await storage.getAgreement(req.params.id);
       if (!agreement) {
-        return res.status(404).json({ message: "Agreement not found" });
+        console.error(`[PDF Download] Agreement not found: ${req.params.id}`);
+        return res.status(404).json({ message: "Agreement not found", agreementId: req.params.id });
       }
+      
+      console.log(`[PDF Download] Found agreement: ${agreement.agreementNumber}, language: ${agreement.language}`);
 
       let processedHtml: string;
       
@@ -2070,12 +2075,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         console.log(`[PDF] No edited content found, generating from template for agreement ${agreement.id}`);
         // Find template for this agreement and generate HTML
+        console.log(`[PDF Download] Searching for templates: type=rental_agreement, language=${agreement.language || 'english'}`);
         const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
+        console.log(`[PDF Download] Found ${templates.length} templates`);
+        
         const template = templates.find(t => t.isActive) || templates[0];
         
         if (!template) {
-          return res.status(404).json({ message: "No PDF template found" });
+          console.error(`[PDF Download] No PDF template found for agreement ${agreement.agreementNumber}, language: ${agreement.language || 'english'}`);
+          return res.status(404).json({ 
+            message: "No PDF template found", 
+            language: agreement.language || 'english',
+            templatesFound: templates.length,
+            agreementNumber: agreement.agreementNumber 
+          });
         }
+        
+        console.log(`[PDF Download] Using template: ${template.name} (active: ${template.isActive})`);
 
         // Generate PDF HTML content from template
         const { generatePdfHtml } = await import("./fieldMapping");
@@ -2602,7 +2618,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Extract the full path after /uploads/
       const requestedPath = req.params['0'] || '';
+      console.log(`[File Serve] Requested file: ${requestedPath}`);
+      
       const filePath = path.join(process.cwd(), 'uploads', requestedPath);
+      console.log(`[File Serve] Full file path: ${filePath}`);
+      
+      // Check if file exists before attempting to serve it
+      if (!fs.existsSync(filePath)) {
+        console.error(`[File Serve] File not found: ${filePath}`);
+        return res.status(404).json({ 
+          error: "File not found", 
+          requestedPath,
+          fullPath: filePath 
+        });
+      }
       
       // Set proper headers for different file types
       const ext = path.extname(requestedPath).toLowerCase();
@@ -2630,10 +2659,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if file exists and serve it
+      console.log(`[File Serve] Serving file: ${filePath} (${contentType})`);
       res.sendFile(filePath, (err) => {
         if (err) {
-          console.error("Error serving file:", err);
-          res.status(404).json({ error: "File not found" });
+          console.error(`[File Serve] Error serving file ${filePath}:`, err);
+          if (!res.headersSent) {
+            res.status(404).json({ 
+              error: "File not found", 
+              filePath: filePath,
+              details: err.message 
+            });
+          }
+        } else {
+          console.log(`[File Serve] Successfully served: ${requestedPath}`);
         }
       });
     } catch (error) {
