@@ -399,7 +399,23 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           currentFormData.tenantDetails?.address?.pincode
         );
       case 4:
-        return !!(
+        // Debug logging for step 4 validation
+        console.log("Step 4 validation debug:", {
+          "propertyDetails.address.flatNo": currentFormData.propertyDetails?.address?.flatNo,
+          "propertyDetails.address.society": currentFormData.propertyDetails?.address?.society,
+          "propertyDetails.address.area": currentFormData.propertyDetails?.address?.area,
+          "propertyDetails.address.city": currentFormData.propertyDetails?.address?.city,
+          "propertyDetails.address.state": currentFormData.propertyDetails?.address?.state,
+          "propertyDetails.address.pincode": currentFormData.propertyDetails?.address?.pincode,
+          "propertyDetails.type": currentFormData.propertyDetails?.type,
+          "rentalTerms.monthlyRent": currentFormData.rentalTerms?.monthlyRent,
+          "rentalTerms.startDate": currentFormData.rentalTerms?.startDate,
+          "rentalTerms.endDate": currentFormData.rentalTerms?.endDate,
+          "rentalTerms.tenure": currentFormData.rentalTerms?.tenure,
+          "rentalTerms.deposit": currentFormData.rentalTerms?.deposit
+        });
+        
+        const isValid = !!(
           currentFormData.propertyDetails?.address?.flatNo &&
           currentFormData.propertyDetails?.address?.society &&
           currentFormData.propertyDetails?.address?.area &&
@@ -413,6 +429,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           currentFormData.rentalTerms?.tenure &&
           currentFormData.rentalTerms?.deposit
         );
+        
+        console.log("Step 4 validation result:", isValid);
+        return isValid;
       case 5:
         return true; // Finalize step doesn't need validation
       default:
