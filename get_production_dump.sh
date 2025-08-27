@@ -3,7 +3,8 @@
 # Run this in your production environment
 
 # Replace with your actual production DATABASE_URL
-PRODUCTION_DB_URL="your_production_database_url_here"
+# Get from your production environment variables or Replit Database tab
+PRODUCTION_DB_URL="${DATABASE_URL}"
 
 # Create timestamp
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
