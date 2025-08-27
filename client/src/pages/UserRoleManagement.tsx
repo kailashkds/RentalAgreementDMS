@@ -379,12 +379,16 @@ export default function UserRoleManagement() {
     const manualRemoved = user.manualPermissions?.removed || [];
     
     // Remove duplicates from role permissions
-    const uniqueRolePermissions = [...new Set(rolePermissions)];
+    const uniqueRolePermissions = Array.from(new Set(rolePermissions));
+    
+    const inherited = uniqueRolePermissions.filter(p => !manualRemoved.includes(p));
+    const manual = manualAdded.filter(p => !uniqueRolePermissions.includes(p));
+    const total = Array.from(new Set([...inherited, ...manual]));
     
     return {
-      inherited: uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),
-      manual: manualAdded.filter(p => !uniqueRolePermissions.includes(p)),
-      total: [...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded.filter(p => !uniqueRolePermissions.includes(p))]
+      inherited,
+      manual,
+      total
     };
   };
 
@@ -1021,14 +1025,14 @@ export default function UserRoleManagement() {
                       <Badge variant="outline" className="text-xs">
                         {categoryPermissions.filter(p => {
                           const userPermissions = getUserPermissions(managingPermissionsUser);
-                          return userPermissions.includes(p.name);
+                          return userPermissions.total.includes(p.name);
                         }).length}/{categoryPermissions.length}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-1 gap-2">
                       {categoryPermissions.map((permission) => {
                         const userPermissions = getUserPermissions(managingPermissionsUser);
-                        const hasPermission = userPermissions.includes(permission.name);
+                        const hasPermission = userPermissions.total.includes(permission.name);
                         const isFromRole = managingPermissionsUser.roles?.[0]?.permissions?.includes(permission.name) || false;
                         const isManuallyAdded = managingPermissionsUser.manualPermissions?.added?.includes(permission.name) || false;
                         const isManuallyRemoved = managingPermissionsUser.manualPermissions?.removed?.includes(permission.name) || false;
