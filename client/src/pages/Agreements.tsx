@@ -1321,17 +1321,21 @@ export default function Agreements() {
                         </div>
                         {/* Action Buttons Grid - Circular buttons like in screenshot */}
                         <div className="grid grid-cols-3 gap-2">
-                            {/* View Button */}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-10 w-10 p-0 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-full border border-gray-200"
-                            onClick={() => isImportedAgreement(agreement) ? setViewingImportedAgreement(agreement) : handleViewAgreement(agreement.id)}
-                            title="View Agreement"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {agreement.status !== "draft" && (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl || isImportedAgreement(agreement)) ? (
+                          {/* View Button - Show only if user has view permission */}
+                          {(hasPermission(PERMISSIONS.AGREEMENT_VIEW_ALL) || hasPermission(PERMISSIONS.AGREEMENT_VIEW_OWN)) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-10 w-10 p-0 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-full border border-gray-200"
+                              onClick={() => isImportedAgreement(agreement) ? setViewingImportedAgreement(agreement) : handleViewAgreement(agreement.id)}
+                              title="View Agreement"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {/* Download Button - Show only if user has download permission */}
+                          {(hasPermission(PERMISSIONS.DOWNLOAD_AGREEMENT_ALL) || hasPermission(PERMISSIONS.DOWNLOAD_AGREEMENT_OWN)) && 
+                           agreement.status !== "draft" && (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl || isImportedAgreement(agreement)) ? (
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button 
@@ -1393,7 +1397,7 @@ export default function Agreements() {
                                 </div>
                               </PopoverContent>
                             </Popover>
-                          ) : agreement.status !== "draft" ? (
+                          ) : (hasPermission(PERMISSIONS.DOWNLOAD_AGREEMENT_ALL) || hasPermission(PERMISSIONS.DOWNLOAD_AGREEMENT_OWN)) && agreement.status !== "draft" ? (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -1404,7 +1408,8 @@ export default function Agreements() {
                               <Download className="h-4 w-4" />
                             </Button>
                           ) : null}
-                          {canEditNotarizedAgreement(agreement) && (
+                          {/* Edit Button - Show only if user has edit permission and can edit this agreement */}
+                          {(hasPermission(PERMISSIONS.AGREEMENT_EDIT_ALL) || hasPermission(PERMISSIONS.AGREEMENT_EDIT_OWN)) && canEditNotarizedAgreement(agreement) && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -1415,7 +1420,8 @@ export default function Agreements() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
-                          {agreement.status === "active" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
+                          {/* Upload Notarized Button - Show only if user has notarize permission */}
+                          {hasPermission(PERMISSIONS.AGREEMENT_NOTARIZE) && agreement.status === "active" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -1429,28 +1435,35 @@ export default function Agreements() {
                           )}
                           {agreement.status !== "draft" && (
                             <>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                disabled={true}
-                                className="h-10 w-10 p-0 text-gray-400 bg-gray-100 rounded-full border border-gray-200 cursor-not-allowed opacity-50"
-                                title="Renew Agreement (Coming Soon)"
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-10 w-10 p-0 text-orange-600 hover:text-orange-900 hover:bg-orange-100 rounded-full border border-gray-200"
-                                onClick={() => handleSendWhatsApp(agreement)}
-                                title="Send WhatsApp"
-                              >
-                                <Send className="h-4 w-4" />
-                              </Button>
+                              {/* Renew Button - Show only if user has edit permission */}
+                              {(hasPermission(PERMISSIONS.AGREEMENT_EDIT_ALL) || hasPermission(PERMISSIONS.AGREEMENT_EDIT_OWN)) && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  disabled={true}
+                                  className="h-10 w-10 p-0 text-gray-400 bg-gray-100 rounded-full border border-gray-200 cursor-not-allowed opacity-50"
+                                  title="Renew Agreement (Coming Soon)"
+                                >
+                                  <RotateCcw className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {/* WhatsApp Send Button - Show only if user has system admin permission */}
+                              {hasPermission(PERMISSIONS.SYSTEM_ADMIN) && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-10 w-10 p-0 text-orange-600 hover:text-orange-900 hover:bg-orange-100 rounded-full border border-gray-200"
+                                  onClick={() => handleSendWhatsApp(agreement)}
+                                  title="Send WhatsApp"
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              )}
                             </>
                           )}
                           
-                          {agreement.status === "draft" && (
+                          {/* Delete Button - Show only if user has delete permission and agreement is draft */}
+                          {(hasPermission(PERMISSIONS.AGREEMENT_DELETE_ALL) || hasPermission(PERMISSIONS.AGREEMENT_DELETE_OWN)) && agreement.status === "draft" && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
