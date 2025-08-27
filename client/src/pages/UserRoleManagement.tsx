@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -81,8 +82,10 @@ export default function UserRoleManagement() {
   const [activeTab, setActiveTab] = useState("users");
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [managingPermissionsUser, setManagingPermissionsUser] = useState<User | null>(null);
   const [showPermissions, setShowPermissions] = useState<string | null>(null);
 
   // User form data
@@ -312,6 +315,11 @@ export default function UserRoleManagement() {
       permissions: role.permissions
     });
     setIsRoleModalOpen(true);
+  };
+
+  const openManagePermissions = (user: User) => {
+    setManagingPermissionsUser(user);
+    setIsPermissionsModalOpen(true);
   };
 
   const handleUserSubmit = (e: React.FormEvent) => {
@@ -733,7 +741,7 @@ export default function UserRoleManagement() {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openManagePermissions(user)}>
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Manage Permissions
                               </DropdownMenuItem>
@@ -969,6 +977,104 @@ export default function UserRoleManagement() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Manage User Permissions Modal */}
+      <Dialog open={isPermissionsModalOpen} onOpenChange={setIsPermissionsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <UserCheck className="h-5 w-5" />
+              <span>Manage Permissions for {managingPermissionsUser?.name}</span>
+            </DialogTitle>
+            <DialogDescription>
+              Manage individual permissions for this user. These permissions will be added to or removed from their role-based permissions.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {managingPermissionsUser && (
+            <div className="space-y-6">
+              {/* Current Role Information */}
+              <Card className="p-4">
+                <h4 className="font-medium mb-2">Current Role & Permissions</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="secondary">{managingPermissionsUser.roles?.[0]?.name || 'No Role'}</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      Base Role: {managingPermissionsUser.roles?.[0]?.permissions?.length || 0} permissions
+                    </span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-green-600">+{managingPermissionsUser.manualPermissions?.added?.length || 0} added</span>
+                    <span className="mx-2">|</span>
+                    <span className="text-red-600">-{managingPermissionsUser.manualPermissions?.removed?.length || 0} removed</span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Permission Categories */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Available Permissions</h4>
+                {Object.entries(getPermissionsByCategory()).map(([category, categoryPermissions]) => (
+                  <Card key={category} className="p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <h5 className="font-medium text-sm">{category.toUpperCase()}</h5>
+                      <Badge variant="outline" className="text-xs">
+                        {categoryPermissions.filter(p => {
+                          const userPermissions = getUserPermissions(managingPermissionsUser);
+                          return userPermissions.includes(p.name);
+                        }).length}/{categoryPermissions.length}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      {categoryPermissions.map((permission) => {
+                        const userPermissions = getUserPermissions(managingPermissionsUser);
+                        const hasPermission = userPermissions.includes(permission.name);
+                        const isFromRole = managingPermissionsUser.roles?.[0]?.permissions?.includes(permission.name) || false;
+                        const isManuallyAdded = managingPermissionsUser.manualPermissions?.added?.includes(permission.name) || false;
+                        const isManuallyRemoved = managingPermissionsUser.manualPermissions?.removed?.includes(permission.name) || false;
+                        
+                        return (
+                          <div key={permission.name} className="flex items-center justify-between p-2 border rounded">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium">{formatPermissionName(permission.name)}</span>
+                                {isFromRole && <Badge variant="outline" className="text-xs">Role</Badge>}
+                                {isManuallyAdded && <Badge variant="default" className="text-xs bg-green-100 text-green-800">+Added</Badge>}
+                                {isManuallyRemoved && <Badge variant="default" className="text-xs bg-red-100 text-red-800">-Removed</Badge>}
+                              </div>
+                              <p className="text-xs text-muted-foreground">{permission.description}</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Switch 
+                                checked={hasPermission}
+                                disabled={permissionsLoading}
+                                onCheckedChange={(checked) => {
+                                  // Here you would implement the logic to add/remove manual permissions
+                                  // This would require an API endpoint for managing user permissions
+                                  console.log(`Toggle permission ${permission.name} for user ${managingPermissionsUser.id}: ${checked}`);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button variant="outline" onClick={() => setIsPermissionsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => setIsPermissionsModalOpen(false)}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
