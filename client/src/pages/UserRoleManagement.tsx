@@ -360,12 +360,10 @@ export default function UserRoleManagement() {
     return categorized;
   };
 
-  const formatPermissionName = (permission: string | any) => {
-    // Handle case where permission might be an object
-    const permissionString = typeof permission === 'string' ? permission : permission?.name || 'Unknown';
-    return permissionString
+  const formatPermissionName = (permission: string) => {
+    return permission
       .split('.')
-      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
 
@@ -376,24 +374,17 @@ export default function UserRoleManagement() {
 
   const getUserPermissions = (user: User) => {
     // Get permissions from all assigned roles
-    const rolePermissions = user.roles?.flatMap(role => {
-      // Handle case where permissions might be objects or strings
-      return (role.permissions || []).map((p: any) => typeof p === 'string' ? p : (p as any)?.name || String(p));
-    }) || [];
-    const manualAdded = (user.manualPermissions?.added || []).map((p: any) => typeof p === 'string' ? p : (p as any)?.name || String(p));
-    const manualRemoved = (user.manualPermissions?.removed || []).map((p: any) => typeof p === 'string' ? p : (p as any)?.name || String(p));
+    const rolePermissions = user.roles?.flatMap(role => role.permissions || []) || [];
+    const manualAdded = user.manualPermissions?.added || [];
+    const manualRemoved = user.manualPermissions?.removed || [];
     
-    // Remove duplicates from role permissions and filter out any undefined/null values
-    const uniqueRolePermissions = Array.from(new Set(rolePermissions.filter(Boolean)));
-    
-    const inherited = uniqueRolePermissions.filter(p => !manualRemoved.includes(p));
-    const manual = manualAdded.filter(p => !uniqueRolePermissions.includes(p) && Boolean(p));
-    const total = Array.from(new Set([...inherited, ...manual].filter(Boolean)));
+    // Remove duplicates from role permissions
+    const uniqueRolePermissions = [...new Set(rolePermissions)];
     
     return {
-      inherited,
-      manual,
-      total
+      inherited: uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),
+      manual: manualAdded.filter(p => !uniqueRolePermissions.includes(p)),
+      total: [...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded.filter(p => !uniqueRolePermissions.includes(p))]
     };
   };
 
