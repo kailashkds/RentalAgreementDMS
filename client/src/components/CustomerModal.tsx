@@ -43,8 +43,15 @@ export default function CustomerModal({ isOpen, onClose, onCustomerCreated }: Cu
     } catch (error: any) {
       let errorMessage = "Failed to create customer.";
       
-      if (error.message.includes("unique constraint")) {
+      // Parse error response for specific error messages
+      if (error.message.includes("mobile number already exists")) {
         errorMessage = "A customer with this mobile number already exists.";
+      } else if (error.message.includes("email address already exists")) {
+        errorMessage = "A customer with this email address already exists.";
+      } else if (error.message.includes("information already exists")) {
+        errorMessage = "A customer with this information already exists.";
+      } else if (error.message.includes("unique constraint")) {
+        errorMessage = "A customer with this mobile number or email already exists.";
       }
       
       toast({

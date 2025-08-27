@@ -1,8 +1,8 @@
 // Emergency Admin User Creation Script
 // Run this in your production environment to create an admin user
 
-const bcrypt = require('bcrypt');
-const { Pool } = require('pg');
+import bcrypt from 'bcrypt';
+import { Pool } from 'pg';
 
 async function createAdminUser() {
   console.log('🚀 Creating emergency admin user...');
