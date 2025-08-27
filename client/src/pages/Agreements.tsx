@@ -1095,18 +1095,24 @@ export default function Agreements() {
               </Button>
             )}
             <div className="flex gap-2">
-              <Button onClick={() => setShowWizard(true)} className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Agreement
-              </Button>
-              <Button 
-                onClick={() => setShowImportWizard(true)}
-                variant="outline"
-                className="border-green-600 text-green-600 hover:bg-green-50"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Import Existing Agreement
-              </Button>
+              {/* Create Agreement Button - Show only if user has create permission */}
+              {hasPermission(PERMISSIONS.AGREEMENT_CREATE) && (
+                <Button onClick={() => setShowWizard(true)} className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Agreement
+                </Button>
+              )}
+              {/* Import Agreement Button - Show only if user has create permission */}
+              {hasPermission(PERMISSIONS.AGREEMENT_CREATE) && (
+                <Button 
+                  onClick={() => setShowImportWizard(true)}
+                  variant="outline"
+                  className="border-green-600 text-green-600 hover:bg-green-50"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import Existing Agreement
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -1142,13 +1148,20 @@ export default function Agreements() {
                   </>
                 ) : (
                   <>
-                    No agreements found. Create your first agreement to get started.
-                    <Button
-                      onClick={() => setShowWizard(true)}
-                      className="ml-2 bg-blue-600 hover:bg-blue-700"
-                    >
-                      Create Agreement
-                    </Button>
+                    No agreements found. 
+                    {hasPermission(PERMISSIONS.AGREEMENT_CREATE) ? (
+                      <>
+                        Create your first agreement to get started.
+                        <Button
+                          onClick={() => setShowWizard(true)}
+                          className="ml-2 bg-blue-600 hover:bg-blue-700"
+                        >
+                          Create Agreement
+                        </Button>
+                      </>
+                    ) : (
+                      "You don't have permission to create agreements."
+                    )}
                   </>
                 )}
               </div>
