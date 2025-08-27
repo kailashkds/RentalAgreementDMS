@@ -287,13 +287,20 @@ export default function UserRoleManagement() {
 
   const openEditUser = (user: User) => {
     setEditingUser(user);
+    
+    // Find the role ID based on the user's defaultRole name
+    const userRole = roles.find(role => 
+      role.name === user.defaultRole || 
+      role.name?.toLowerCase().replace(' ', '_') === user.defaultRole?.toLowerCase()
+    );
+    
     setUserFormData({
       username: user.username,
       name: user.name,
       email: user.email || "",
       phone: user.phone || "",
       password: "",
-      roleId: user.defaultRoleId || user.defaultRole, // Use roleId for proper Select mapping
+      roleId: userRole?.id || "", // Use the actual role ID for proper Select mapping
       status: user.status
     });
     setIsUserModalOpen(true);
