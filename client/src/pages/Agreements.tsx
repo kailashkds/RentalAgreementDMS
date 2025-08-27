@@ -10,6 +10,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { 
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -88,6 +97,56 @@ export default function Agreements() {
   const [uploadingNotarized, setUploadingNotarized] = useState(false);
   const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
   const { toast } = useToast();
+
+  // Reset current page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, notaryFilter, customerFilter, tenantFilter, ownerFilter, dateFilter, sortBy]);
+
+  // Pagination helper function
+  const generatePageNumbers = (currentPage: number, totalPages: number) => {
+    const pages = [];
+    const showPages = 5; // Show 5 page numbers at a time
+    
+    if (totalPages <= showPages) {
+      // Show all pages if total is small
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Calculate start and end pages
+      let startPage = Math.max(1, currentPage - Math.floor(showPages / 2));
+      let endPage = Math.min(totalPages, startPage + showPages - 1);
+      
+      // Adjust if we're near the end
+      if (endPage - startPage < showPages - 1) {
+        startPage = Math.max(1, endPage - showPages + 1);
+      }
+      
+      // Add first page and ellipsis if needed
+      if (startPage > 1) {
+        pages.push(1);
+        if (startPage > 2) {
+          pages.push('...');
+        }
+      }
+      
+      // Add middle pages
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+      
+      // Add ellipsis and last page if needed
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          pages.push('...');
+        }
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
   // Date range calculation helper function
   const getDateRange = (filterType: string) => {
@@ -1497,29 +1556,53 @@ export default function Agreements() {
           </div>
         </Card>
 
-        {/* Pagination */}
+        {/* Enhanced Pagination */}
         {agreementsData && agreementsData.total > 20 && (
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-700">
               Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, agreementsData.total)} of{" "}
               {agreementsData.total} results
             </div>
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage(page => page + 1)}
-                disabled={currentPage * 20 >= agreementsData.total}
-              >
-                Next
-              </Button>
-            </div>
+            
+            <Pagination>
+              <PaginationContent>
+                {/* Previous Button */}
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    data-testid="button-previous-page"
+                  />
+                </PaginationItem>
+                
+                {/* Page Numbers */}
+                {generatePageNumbers(currentPage, Math.ceil(agreementsData.total / 20)).map((page, index) => (
+                  <PaginationItem key={index}>
+                    {page === '...' ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page as number)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                        data-testid={`button-page-${page}`}
+                      >
+                        {page}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                ))}
+                
+                {/* Next Button */}
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => setCurrentPage(page => page + 1)}
+                    className={currentPage * 20 >= agreementsData.total ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    data-testid="button-next-page"
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
       </div>
