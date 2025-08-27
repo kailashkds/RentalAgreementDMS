@@ -400,7 +400,12 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
         );
       case 4:
         return !!(
-          currentFormData.propertyDetails?.address &&
+          currentFormData.propertyDetails?.address?.flatNo &&
+          currentFormData.propertyDetails?.address?.society &&
+          currentFormData.propertyDetails?.address?.area &&
+          currentFormData.propertyDetails?.address?.city &&
+          currentFormData.propertyDetails?.address?.state &&
+          currentFormData.propertyDetails?.address?.pincode &&
           currentFormData.propertyDetails?.type &&
           currentFormData.rentalTerms?.monthlyRent &&
           currentFormData.rentalTerms?.startDate &&
