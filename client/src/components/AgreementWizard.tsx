@@ -280,8 +280,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   
   // Get dynamic steps for current language
   const allSteps = getSteps(t);
-  const STEPS = isCustomer ? allSteps.slice(1) : allSteps; // Remove first step for customers
-  const getActualStepNumber = (displayStep: number) => isCustomer ? displayStep + 1 : displayStep; // Convert display step to actual step
+  const STEPS = allSteps; // Use all steps for everyone (customers now see step 1 too)
+  const getActualStepNumber = (displayStep: number) => displayStep; // No conversion needed anymore
 
   // Helper functions for address autocomplete
   const handleAddressSelect = (addressType: 'owner' | 'tenant' | 'property', address: any) => {
@@ -399,23 +399,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           currentFormData.tenantDetails?.address?.pincode
         );
       case 4:
-        // Debug logging for step 4 validation
-        console.log("Step 4 validation debug:", {
-          "propertyDetails.address.flatNo": currentFormData.propertyDetails?.address?.flatNo,
-          "propertyDetails.address.society": currentFormData.propertyDetails?.address?.society,
-          "propertyDetails.address.area": currentFormData.propertyDetails?.address?.area,
-          "propertyDetails.address.city": currentFormData.propertyDetails?.address?.city,
-          "propertyDetails.address.state": currentFormData.propertyDetails?.address?.state,
-          "propertyDetails.address.pincode": currentFormData.propertyDetails?.address?.pincode,
-          "propertyDetails.type": currentFormData.propertyDetails?.type,
-          "rentalTerms.monthlyRent": currentFormData.rentalTerms?.monthlyRent,
-          "rentalTerms.startDate": currentFormData.rentalTerms?.startDate,
-          "rentalTerms.endDate": currentFormData.rentalTerms?.endDate,
-          "rentalTerms.tenure": currentFormData.rentalTerms?.tenure,
-          "rentalTerms.deposit": currentFormData.rentalTerms?.deposit
-        });
-        
-        const isValid = !!(
+        return !!(
           currentFormData.propertyDetails?.address?.flatNo &&
           currentFormData.propertyDetails?.address?.society &&
           currentFormData.propertyDetails?.address?.area &&
@@ -429,9 +413,6 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           currentFormData.rentalTerms?.tenure &&
           currentFormData.rentalTerms?.deposit
         );
-        
-        console.log("Step 4 validation result:", isValid);
-        return isValid;
       case 5:
         return true; // Finalize step doesn't need validation
       default:
@@ -2424,8 +2405,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     }
   };
 
-  const displayStep = isCustomer ? currentStep - 1 : currentStep; // Adjust display step for customers
-  const progress = (displayStep / STEPS.length) * 100;
+  const progress = (currentStep / STEPS.length) * 100;
 
   return (
     <>
