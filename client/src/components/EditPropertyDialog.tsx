@@ -13,16 +13,11 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const propertySchema = z.object({
   flatNumber: z.string().min(1, "Flat/House number is required"),
-  building: z.string().optional(),
   society: z.string().min(1, "Society/Building name is required"),
   area: z.string().min(1, "Area is required"),
   city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
   pincode: z.string().min(1, "Pincode is required"),
-  district: z.string().optional(),
-  landmark: z.string().optional(),
   propertyType: z.enum(["residential", "commercial"]),
-  purpose: z.string().optional(),
 });
 
 type PropertyFormData = z.infer<typeof propertySchema>;
@@ -72,16 +67,11 @@ export function EditPropertyDialog({ open, onClose, property, onPropertyUpdated 
     resolver: zodResolver(propertySchema),
     defaultValues: {
       flatNumber: "",
-      building: "",
       society: "",
       area: "",
       city: "",
-      state: "",
       pincode: "",
-      district: "",
-      landmark: "",
       propertyType: "residential",
-      purpose: "",
     },
   });
 
@@ -90,16 +80,11 @@ export function EditPropertyDialog({ open, onClose, property, onPropertyUpdated 
     if (property && open) {
       form.reset({
         flatNumber: property.flatNumber || "",
-        building: property.building || "",
         society: property.society || "",
         area: property.area || "",
         city: property.city || "",
-        state: property.state || "",
         pincode: property.pincode || "",
-        district: property.district || "",
-        landmark: property.landmark || "",
         propertyType: (property.propertyType as "residential" | "commercial") || "residential",
-        purpose: property.purpose || "",
       });
     }
   }, [property, open, form]);
@@ -132,10 +117,7 @@ export function EditPropertyDialog({ open, onClose, property, onPropertyUpdated 
       form.setValue('society', society.societyName);
       form.setValue('area', society.area || '');
       form.setValue('city', society.city || '');
-      form.setValue('state', society.state || '');
       form.setValue('pincode', society.pincode || '');
-      form.setValue('district', society.district || '');
-      form.setValue('landmark', society.landmark || '');
     } else {
       // If no matching society found, just set the building name
       form.setValue('society', selectedBuilding);
@@ -158,35 +140,19 @@ export function EditPropertyDialog({ open, onClose, property, onPropertyUpdated 
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="flatNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Flat/House Number *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g., A-101, 123" data-testid="input-flat-number" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="building"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Building/Wing</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g., A Block, Tower 1" data-testid="input-building" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="flatNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Flat/House Number *</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="e.g., A-101, 123" data-testid="input-flat-number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Address Details</h3>
@@ -263,108 +229,42 @@ export function EditPropertyDialog({ open, onClose, property, onPropertyUpdated 
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>State *</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Maharashtra" data-testid="input-state" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="pincode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pincode *</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., 400058" maxLength={10} data-testid="input-pincode" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="district"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>District</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Mumbai Suburban" data-testid="input-district" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="landmark"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Landmark</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Near Metro Station" data-testid="input-landmark" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="pincode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pincode *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g., 400058" maxLength={10} data-testid="input-pincode" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Property Details</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="propertyType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Property Type *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-property-type">
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="residential">Residential</SelectItem>
-                          <SelectItem value="commercial">Commercial</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="purpose"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Purpose</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Family, Business" data-testid="input-purpose" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
+            <FormField
+              control={form.control}
+              name="propertyType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Property Type *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-property-type">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="residential">Residential</SelectItem>
+                      <SelectItem value="commercial">Commercial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button 
