@@ -44,7 +44,7 @@ export const users = pgTable("users", {
   
   // Status and metadata
   isActive: boolean("is_active").default(true),
-  status: varchar("status").default('active'), // active, inactive, suspended
+  status: varchar("status", { length: 20 }).default('active'), // active, inactive, suspended
   defaultRole: varchar("default_role").default('Customer'), // Customer, super_admin, Staff
   permissions: text("permissions").array(), // Legacy permissions array
   createdAt: timestamp("created_at").defaultNow(),

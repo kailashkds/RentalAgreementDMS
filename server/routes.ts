@@ -158,11 +158,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced user creation with auto-generated credentials
+  // Enhanced user creation with auto-generated credentials (UNIFIED VERSION)
   app.post("/api/users/create", requireAuth, async (req, res) => {
     try {
       const { name, userType, roleId } = req.body;
-      
       if (!name || !userType) {
         return res.status(400).json({ 
           message: "Please provide both a name and user type",
@@ -178,40 +177,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate credentials
       const username = generateUsername(name, userType);
       const password = generatePassword(8);
-      const displayId = generateUserDisplayId(userType);
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      let user;
+      // Create user using unified system
+      const user = await storage.createUser({
+        name,
+        username,
+        phone: `999${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`, // Generate 10-digit phone
+        password: hashedPassword,
+        status: 'active',
+        isActive: true,
+      });
       
-      if (userType === "admin") {
-        // Create admin user
-        user = await storage.createAdminUser({
-          username,
-          phone: `generated_${Date.now()}`, // Temporary phone for admin users
-          password: hashedPassword,
-          name,
-          role: "staff",
-          isActive: true,
-        });
-        
-        // Assign role if specified
-        if (roleId) {
-          await storage.assignRoleToUser(user.id, roleId);
-        }
-      } else {
-        // Create customer
-        user = await storage.createCustomer({
-          name,
-          username,
-          mobile: `generated_${Date.now()}`, // Temporary mobile for customers  
-          password: hashedPassword,
-          isActive: true,
-        });
-        
-        // Assign role if specified
-        if (roleId) {
-          await storage.assignRoleToCustomer(user.id, roleId);
-        }
+      // Assign role if specified
+      if (roleId) {
+        await storage.assignUserRole(user.id, roleId);
       }
 
       // Return user info with generated credentials (password only returned once)
@@ -221,13 +201,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: user.name,
           username,
           userType,
-          displayId,
           isActive: user.isActive,
         },
         credentials: {
           username,
           password, // Only returned once for admin to share
-          displayId,
         }
       });
     } catch (error: any) {
@@ -334,7 +312,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/unified/users", requireAuth, async (req: any, res) => {
     try {
       const { name, email, username, phone, roleId, password } = req.body;
-      
       // Use RBAC utilities for permission checking
       const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
       
