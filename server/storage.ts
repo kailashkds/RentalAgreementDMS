@@ -548,8 +548,20 @@ export class DatabaseStorage implements IStorage {
 
   async getCustomerByMobile(mobile: string): Promise<Customer | undefined> {
     try {
-      const [customer] = await db.select().from(customers).where(eq(customers.mobile, mobile));
-      return customer;
+      const [user] = await db.select().from(users).where(and(eq(users.mobile, mobile), eq(users.defaultRole, 'Customer')));
+      if (!user) return undefined;
+      
+      // Convert unified user to customer format
+      return {
+        id: user.id,
+        name: user.name,
+        mobile: user.mobile!,
+        email: user.email,
+        password: user.password,
+        isActive: user.status === 'active',
+        createdAt: user.createdAt!,
+        updatedAt: user.updatedAt!,
+      } as Customer;
     } catch (error) {
       console.error("Error fetching customer by mobile:", error);
       return undefined;
@@ -559,14 +571,18 @@ export class DatabaseStorage implements IStorage {
   async createCustomer(customerData: InsertCustomer & { password?: string }): Promise<Customer> {
     const plainPassword = customerData.password || "default123";
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
-    const encryptedPassword = encryptPasswordForStorage(plainPassword);
     
-    const [newCustomer] = await db
-      .insert(customers)
+    // Create customer in unified users table
+    const [newUser] = await db
+      .insert(users)
       .values({
-        ...customerData,
-        password: hashedPassword, // Store bcrypt hashed password for authentication
-        encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
+        name: customerData.name,
+        mobile: customerData.mobile,
+        email: customerData.email,
+        password: hashedPassword,
+        defaultRole: 'Customer',
+        status: 'active',
+        isActive: true,
       })
       .returning();
     
@@ -574,8 +590,8 @@ export class DatabaseStorage implements IStorage {
     try {
       const [customerRole] = await db.select().from(roles).where(eq(roles.name, "Customer"));
       if (customerRole) {
-        await db.insert(customerRoles).values({
-          customerId: newCustomer.id,
+        await db.insert(userRoles).values({
+          userId: newUser.id,
           roleId: customerRole.id,
         });
       }
@@ -584,29 +600,54 @@ export class DatabaseStorage implements IStorage {
       // Don't fail customer creation if role assignment fails
     }
     
-    return newCustomer;
+    // Convert unified user to customer format for backward compatibility
+    return {
+      id: newUser.id,
+      name: newUser.name,
+      mobile: newUser.mobile!,
+      email: newUser.email,
+      password: newUser.password,
+      isActive: newUser.status === 'active',
+      createdAt: newUser.createdAt!,
+      updatedAt: newUser.updatedAt!,
+    } as Customer;
   }
 
   async updateCustomer(id: string, customerData: Partial<InsertCustomer> & { password?: string }): Promise<Customer> {
-    let updateData = { ...customerData, updatedAt: new Date() };
+    let updateData: any = { updatedAt: new Date() };
     
-    // If password is being updated, hash it and encrypt it
-    if (customerData.password) {
-      const hashedPassword = await bcrypt.hash(customerData.password, 10);
-      const encryptedPassword = encryptPasswordForStorage(customerData.password);
-      updateData = {
-        ...updateData,
-        password: hashedPassword, // Store bcrypt hashed password for authentication
-        encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
-      };
+    // Map customer fields to user fields
+    if (customerData.name) updateData.name = customerData.name;
+    if (customerData.mobile) updateData.mobile = customerData.mobile;
+    if (customerData.email) updateData.email = customerData.email;
+    if (customerData.isActive !== undefined) {
+      updateData.isActive = customerData.isActive;
+      updateData.status = customerData.isActive ? 'active' : 'inactive';
     }
     
-    const [customer] = await db
-      .update(customers)
+    // If password is being updated, hash it
+    if (customerData.password) {
+      const hashedPassword = await bcrypt.hash(customerData.password, 10);
+      updateData.password = hashedPassword;
+    }
+    
+    const [user] = await db
+      .update(users)
       .set(updateData)
-      .where(eq(customers.id, id))
+      .where(and(eq(users.id, id), eq(users.defaultRole, 'Customer')))
       .returning();
-    return customer;
+    
+    // Convert unified user to customer format
+    return {
+      id: user.id,
+      name: user.name,
+      mobile: user.mobile!,
+      email: user.email,
+      password: user.password,
+      isActive: user.status === 'active',
+      createdAt: user.createdAt!,
+      updatedAt: user.updatedAt!,
+    } as Customer;
   }
 
   async deleteCustomer(id: string): Promise<void> {
@@ -620,7 +661,8 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Cannot delete customer with existing agreements');
     }
     
-    await db.delete(customers).where(eq(customers.id, id));
+    // Delete customer from unified users table
+    await db.delete(users).where(and(eq(users.id, id), eq(users.defaultRole, 'Customer')));
   }
 
   async resetCustomerPassword(id: string, newPassword: string): Promise<Customer> {
