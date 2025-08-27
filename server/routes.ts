@@ -1705,14 +1705,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error creating customer:", error);
       
       // Handle specific database errors
-      if (error.code === '23505') { // Unique constraint violation
-        if (error.constraint === 'users_mobile_unique') {
+      if ((error as any).code === '23505') { // Unique constraint violation
+        if ((error as any).constraint === 'users_mobile_unique') {
           return res.status(400).json({ 
             message: "A customer with this mobile number already exists",
             error: "duplicate_mobile"
           });
         }
-        if (error.constraint === 'users_email_unique') {
+        if ((error as any).constraint === 'users_email_unique') {
           return res.status(400).json({ 
             message: "A customer with this email address already exists",
             error: "duplicate_email"

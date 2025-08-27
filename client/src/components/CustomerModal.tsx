@@ -26,7 +26,7 @@ export default function CustomerModal({ isOpen, onClose, onCustomerCreated }: Cu
 
   const onSubmit = async (data: CustomerFormData) => {
     try {
-      const response = await apiRequest("POST", "/api/customers", data);
+      const response = await apiRequest("/api/customers", "POST", data);
       const customer = await response.json();
       
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
