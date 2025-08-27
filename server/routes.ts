@@ -136,7 +136,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get current user's permissions
   app.get("/api/auth/permissions", requireAuth, async (req, res) => {
     try {
-      const permissions = await storage.getUserPermissions(req.user!.id);
+      let permissions: string[];
+      
+      if (req.user!.userType === 'customer') {
+        permissions = await storage.getCustomerPermissions(req.user!.id);
+      } else {
+        permissions = await storage.getUserPermissions(req.user!.id);
+      }
+      
       res.json(permissions);
     } catch (error) {
       console.error("Error fetching user permissions:", error);
