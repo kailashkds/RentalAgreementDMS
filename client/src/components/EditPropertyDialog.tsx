@@ -94,7 +94,7 @@ export function EditPropertyDialog({ open, onClose, property, onPropertyUpdated 
 
   const updatePropertyMutation = useMutation({
     mutationFn: (data: PropertyFormData) => 
-      apiRequest('PUT', `/api/properties/${property?.id}`, data),
+      apiRequest(`/api/properties/${property?.id}`, 'PUT', data),
     onSuccess: () => {
       toast({ 
         title: "Success", 
