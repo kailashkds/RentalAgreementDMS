@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, FileText, Search, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Save, Clock } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { apiRequest } from "@/lib/queryClient";
+import { apiClient } from "@/lib/apiClient";
 
 export default function AgreementEditor() {
   const [location, navigate] = useLocation();
@@ -49,28 +50,21 @@ export default function AgreementEditor() {
       try {
         // Try to load edited content from database first
         console.log(`[Editor] Loading content for agreement ${agreementId}`);
-        const response = await fetch(`/api/agreements/${agreementId}/edited-content`);
+        const data = await apiClient.get(`/api/agreements/${agreementId}/edited-content`);
+        console.log(`[Editor] API Response:`, data);
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`[Editor] API Response:`, data);
-          
-          console.log(`[Editor] Content check - hasEdits: ${data.hasEdits}, contentSource: ${data.contentSource}, content length: ${data.editedContent?.length || 0}`);
-          
-          // Check for actual content, not just hasEdits flag
-          if (data.editedContent && data.editedContent.trim() !== '') {
-            console.log(`[Editor] ✓ LOADING CONTENT from ${data.contentSource || 'unknown source'} (${data.editedContent.length} characters)`);
-            setHtmlContent(data.editedContent);
-            if (data.editedAt) {
-              setLastSaved(new Date(data.editedAt));
-            }
-          } else {
-            // This should rarely happen now since the API generates content from template
-            console.log('[Editor] No content returned from API, generating fallback content');
-            await generateInitialContent();
+        console.log(`[Editor] Content check - hasEdits: ${data.hasEdits}, contentSource: ${data.contentSource}, content length: ${data.editedContent?.length || 0}`);
+        
+        // Check for actual content, not just hasEdits flag
+        if (data.editedContent && data.editedContent.trim() !== '') {
+          console.log(`[Editor] ✓ LOADING CONTENT from ${data.contentSource || 'unknown source'} (${data.editedContent.length} characters)`);
+          setHtmlContent(data.editedContent);
+          if (data.editedAt) {
+            setLastSaved(new Date(data.editedAt));
           }
         } else {
-          console.log(`[Editor] API response not OK: ${response.status}`);
+          // This should rarely happen now since the API generates content from template
+          console.log('[Editor] No content returned from API, generating fallback content');
           await generateInitialContent();
         }
       } catch (error) {
@@ -94,18 +88,14 @@ export default function AgreementEditor() {
         // Force refresh content to get latest form values
         try {
           setIsLoading(true);
-          const response = await apiRequest('GET', `/api/agreements/${agreementId}/edited-content`);
-          
-          if (response.ok) {
-            const data = await response.json();
+          const data = await apiClient.get(`/api/agreements/${agreementId}/edited-content`);
             
-            // Only update if content is different
-            if (data.editedContent && data.editedContent !== htmlContent) {
-              console.log('[Editor] Content updated with latest form data');
-              setHtmlContent(data.editedContent);
-              if (data.editedAt) {
-                setLastSaved(new Date(data.editedAt));
-              }
+          // Only update if content is different
+          if (data.editedContent && data.editedContent !== htmlContent) {
+            console.log('[Editor] Content updated with latest form data');
+            setHtmlContent(data.editedContent);
+            if (data.editedAt) {
+              setLastSaved(new Date(data.editedAt));
             }
           }
         } catch (error) {
@@ -130,12 +120,10 @@ export default function AgreementEditor() {
   const generateInitialContent = async () => {
     try {
       // Generate PDF content which gives us the HTML
-      const pdfResponse = await apiRequest('POST', '/api/agreements/generate-pdf', {
+      const pdfData = await apiClient.post('/api/agreements/generate-pdf', {
         agreementId: agreementId,
         language: language
       });
-      
-      const pdfData = await pdfResponse.json();
       
       if (pdfData && pdfData.html) {
         // Extract content from the generated HTML, removing PDF-specific styles
@@ -205,7 +193,7 @@ export default function AgreementEditor() {
       console.log(`[Editor] Saving to agreement ID: ${agreementId}`);
       console.log(`[Editor] Content preview being saved:`, content.substring(0, 300) + '...');
       
-      const response = await apiRequest(`/api/agreements/${agreementId}/save-content`, 'POST', {
+      const response = await apiClient.post(`/api/agreements/${agreementId}/save-content`, {
         editedHtml: content
       });
       

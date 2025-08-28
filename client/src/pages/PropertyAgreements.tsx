@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, FileText, Calendar, Download, Eye } from "lucide-react";
 import { useState } from "react";
+import { apiClient } from "@/lib/apiClient";
 
 interface Agreement {
   id: string;
@@ -93,16 +94,12 @@ export default function PropertyAgreements() {
       
       console.log('Starting PDF download for agreement:', agreementId);
       
-      const response = await fetch(`/api/agreements/${agreementId}/pdf`);
-      console.log('PDF generation response status:', response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('PDF generation successful, received HTML');
-        
-        // Create a temporary HTML page for printing/PDF generation
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
+      const data = await apiClient.get(`/api/agreements/${agreementId}/pdf`);
+      console.log('PDF generation successful, received HTML');
+      
+      // Create a temporary HTML page for printing/PDF generation
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
           printWindow.document.write(`
             <!DOCTYPE html>
             <html>

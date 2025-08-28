@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAgreements } from "@/hooks/useAgreements";
+import { apiClient } from "@/lib/apiClient";
 import { useState } from "react";
 import { 
   FileSignature, 
@@ -60,37 +61,27 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
         agreementNumber: agreement.agreementNumber
       });
 
-      const response = await fetch('/api/agreements/generate-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ownerDetails: agreement.ownerDetails || {},
-          tenantDetails: agreement.tenantDetails || {},
-          propertyDetails: agreement.propertyDetails || {},
-          rentalTerms: agreement.rentalTerms || {},
-          agreementDate: agreement.agreementDate,
-          createdAt: agreement.createdAt,
-          language: agreement.language || 'english',
-          additionalClauses: agreement.additionalClauses || [],
-          agreementNumber: agreement.agreementNumber,
-          // Include document data for embedding
-          documents: agreement.documents || {},
-          ownerDocuments: agreement.ownerDocuments || {},
-          tenantDocuments: agreement.tenantDocuments || {},
-          propertyDocuments: agreement.propertyDocuments || {}
-        }),
+      const data = await apiClient.post('/api/agreements/generate-pdf', {
+        ownerDetails: agreement.ownerDetails || {},
+        tenantDetails: agreement.tenantDetails || {},
+        propertyDetails: agreement.propertyDetails || {},
+        rentalTerms: agreement.rentalTerms || {},
+        agreementDate: agreement.agreementDate,
+        createdAt: agreement.createdAt,
+        language: agreement.language || 'english',
+        additionalClauses: agreement.additionalClauses || [],
+        agreementNumber: agreement.agreementNumber,
+        // Include document data for embedding
+        documents: agreement.documents || {},
+        ownerDocuments: agreement.ownerDocuments || {},
+        tenantDocuments: agreement.tenantDocuments || {},
+        propertyDocuments: agreement.propertyDocuments || {}
       });
 
-      console.log('PDF generation response status:', response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('PDF generation successful, received HTML');
-        
-        // Create a temporary HTML page for printing/PDF generation
-        const printWindow = window.open('', '_blank');
+      console.log('PDF generation successful, received HTML');
+      
+      // Create a temporary HTML page for printing/PDF generation
+      const printWindow = window.open('', '_blank');
         if (printWindow) {
           printWindow.document.write(`
             <!DOCTYPE html>
@@ -297,11 +288,6 @@ export default function CustomerAgreementsModal({ isOpen, onClose, customer }: C
           title: "Agreement ready",
           description: "Agreement opened in new window for download.",
         });
-      } else {
-        const errorText = await response.text();
-        console.error('PDF generation failed:', response.status, errorText);
-        throw new Error(`Server error: ${response.status} - ${errorText}`);
-      }
     } catch (error) {
       console.error('Download error:', error);
       toast({
