@@ -2342,6 +2342,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agreementData = insertAgreementSchema.parse(req.body);
       console.log("Parsed agreement data:", JSON.stringify(agreementData, null, 2));
       
+      // If this is a draft, check if there's already an existing draft for this customer
+      if (agreementData.status === 'draft' && agreementData.customerId) {
+        console.log("Checking for existing draft for customer:", agreementData.customerId);
+        
+        const existingDrafts = await storage.getAgreements({
+          customerId: agreementData.customerId,
+          status: 'draft',
+          limit: 1
+        });
+        
+        if (existingDrafts.agreements.length > 0) {
+          const existingDraft = existingDrafts.agreements[0];
+          console.log("Found existing draft, updating:", existingDraft.id);
+          
+          // Update the existing draft instead of creating a new one
+          const updatedAgreement = await storage.updateAgreement(existingDraft.id, agreementData);
+          return res.json(updatedAgreement);
+        }
+      }
+      
+      // Create new agreement if no draft exists or status is not draft
       const agreement = await storage.createAgreement(agreementData);
       res.status(201).json(agreement);
     } catch (error) {
