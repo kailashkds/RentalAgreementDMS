@@ -31,22 +31,18 @@ export const users = pgTable("users", {
   
   // Authentication fields
   username: varchar("username", { length: 50 }).unique(), // For admin login
-  phone: varchar("phone", { length: 20 }).unique(), // For admin phone or customer mobile
-  mobile: varchar("mobile", { length: 20 }).unique(), // For customer mobile (alias for phone)
+  mobile: varchar("mobile", { length: 20 }).unique(), // For customer mobile
   password: text("password").notNull(), // Password for login
   
   // Profile fields
   name: text("name").notNull(), // Full name or display name
   email: varchar("email").unique(),
-  firstName: varchar("first_name"), // For OpenID compatibility
-  lastName: varchar("last_name"), // For OpenID compatibility 
   profileImageUrl: varchar("profile_image_url"),
   
   // Status and metadata
   isActive: boolean("is_active").default(true),
   status: varchar("status", { length: 20 }).default('active'), // active, inactive, suspended
   defaultRole: varchar("default_role").default('Customer'), // Customer, super_admin, Staff
-  permissions: text("permissions").array(), // Legacy permissions array
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
