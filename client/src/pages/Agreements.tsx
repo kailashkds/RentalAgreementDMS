@@ -43,6 +43,7 @@ import {
   FileCheck
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiClient } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { LocalFileUploader } from "@/components/LocalFileUploader";
@@ -717,13 +718,8 @@ export default function Agreements() {
       });
 
       // Use the dedicated PDF endpoint that checks for edited content first
-      const response = await fetch(`/api/agreements/${agreement.id}/pdf`);
-
-      console.log('PDF generation response status:', response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('PDF generation successful, received HTML');
+      const data = await apiClient.get(`/api/agreements/${agreement.id}/pdf`);
+      console.log('PDF generation successful, received HTML');
         
         // Create a temporary HTML page for printing/PDF generation
         const printWindow = window.open('', '_blank');
@@ -933,11 +929,6 @@ export default function Agreements() {
           title: "Agreement ready",
           description: "Agreement opened in new window for download.",
         });
-      } else {
-        const errorText = await response.text();
-        console.error('PDF generation failed:', response.status, errorText);
-        throw new Error(`Server error: ${response.status} - ${errorText}`);
-      }
     } catch (error) {
       console.error('Download error:', error);
       toast({
