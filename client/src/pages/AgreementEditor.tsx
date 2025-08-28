@@ -675,24 +675,6 @@ export default function AgreementEditor() {
             <Save className="h-4 w-4" />
             {isSaving ? 'Saving...' : 'Save & Continue Later'}
           </Button>
-          
-          <Button 
-            onClick={async () => {
-              if (editorRef.current) {
-                const content = editorRef.current.innerHTML;
-                console.log(`[Editor] IMMEDIATE SAVE triggered (${content.length} characters)`);
-                console.log(`[Editor] Agreement ID: ${agreementId}`);
-                console.log(`[Editor] First 200 chars:`, content.substring(0, 200));
-                await autoSave(content);
-              }
-            }}
-            disabled={isSaving}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-            data-testid="immediate-save"
-          >
-            <Save className="h-4 w-4" />
-            {isSaving ? 'Saving...' : 'Test Save Now'}
-          </Button>
         </div>
       </div>
 
