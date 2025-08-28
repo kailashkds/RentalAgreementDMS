@@ -300,11 +300,6 @@ export default function PropertyAgreements() {
         } else {
           throw new Error('Could not open print window - popup blocked?');
         }
-      } else {
-        const errorText = await response.text();
-        console.error('PDF generation failed:', response.status, errorText);
-        throw new Error(`Server error: ${response.status} - ${errorText}`);
-      }
     } catch (error) {
       console.error('Download error:', error);
     }
