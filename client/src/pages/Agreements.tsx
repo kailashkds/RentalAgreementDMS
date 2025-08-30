@@ -331,18 +331,6 @@ export default function Agreements() {
           const bNumAsc = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
           return aNumAsc - bNumAsc;
           
-        case "edit_date_desc":
-          // Sort by last updated date descending (most recent first)
-          const aDate = new Date(a.updatedAt || a.createdAt);
-          const bDate = new Date(b.updatedAt || b.createdAt);
-          return bDate.getTime() - aDate.getTime();
-          
-        case "edit_date_asc":
-          // Sort by last updated date ascending (oldest first)
-          const aDateAsc = new Date(a.updatedAt || a.createdAt);
-          const bDateAsc = new Date(b.updatedAt || b.createdAt);
-          return aDateAsc.getTime() - bDateAsc.getTime();
-          
         case "expiry_status_asc":
           // Sort by expiry status ascending (expired first, then expiring soon, then active)
           const getExpiryPriority = (agreement: any) => {
@@ -1121,8 +1109,6 @@ export default function Agreements() {
                 <SelectItem value="agreement_number_asc">Agreement Number (Ascending)</SelectItem>
                 <SelectItem value="expiry_status_asc">Expiry Status (Expired First)</SelectItem>
                 <SelectItem value="expiry_status_desc">Expiry Status (Active First)</SelectItem>
-                <SelectItem value="edit_date_desc">Last Edit Date (Recent First)</SelectItem>
-                <SelectItem value="edit_date_asc">Last Edit Date (Oldest First)</SelectItem>
               </SelectContent>
             </Select>
           </div>
