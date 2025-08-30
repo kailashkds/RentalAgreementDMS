@@ -45,6 +45,7 @@ import {
   type CustomerRole,
   type InsertCustomerRole,
   type RoleWithPermissions,
+  type RoleWithStringPermissions,
   type UserWithRoles,
   type CustomerWithRoles,
   type AuditLog,
@@ -187,7 +188,7 @@ export interface IStorage {
   // User-Role operations
   assignRoleToUser(userId: string, roleId: string): Promise<UserRole>;
   removeRoleFromUser(userId: string, roleId: string): Promise<void>;
-  getUserRoles(userId: string): Promise<RoleWithPermissions[]>;
+  getUserRoles(userId: string): Promise<RoleWithStringPermissions[]>;
   getUserWithRoles(userId: string): Promise<UserWithRoles | undefined>;
   
   // Customer-Role operations
@@ -1686,7 +1687,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(userRoles.userId, userId), eq(userRoles.roleId, roleId)));
   }
 
-  async getUserRoles(userId: string): Promise<RoleWithPermissions[]> {
+  async getUserRoles(userId: string): Promise<RoleWithStringPermissions[]> {
     const result = await db
       .select({
         role: roles,
@@ -1698,7 +1699,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(userRoles.userId, userId));
 
-    const rolesMap = new Map<string, RoleWithPermissions>();
+    const rolesMap = new Map<string, RoleWithStringPermissions>();
     
     for (const row of result) {
       if (!rolesMap.has(row.role.id)) {

@@ -520,8 +520,13 @@ export interface RoleWithPermissions extends Role {
   permissions: Permission[];
 }
 
+// Frontend-specific types with string permissions for easier handling
+export interface RoleWithStringPermissions extends Role {
+  permissions: string[];
+}
+
 export interface UserWithRoles extends User {
-  roles: RoleWithPermissions[];
+  roles: RoleWithStringPermissions[];
 }
 
 export interface CustomerWithRoles extends Customer {
