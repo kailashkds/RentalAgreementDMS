@@ -385,7 +385,7 @@ export default function UserRoleManagement() {
     const manualRemoved = user.manualPermissions?.removed || [];
     
     // Remove duplicates from role permissions
-    const uniqueRolePermissions = [...new Set(rolePermissions)];
+    const uniqueRolePermissions = Array.from(new Set(rolePermissions));
     
     return {
       inherited: uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),

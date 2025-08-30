@@ -1709,7 +1709,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (row.permission) {
-        rolesMap.get(row.role.id)!.permissions.push(row.permission);
+        rolesMap.get(row.role.id)!.permissions.push(row.permission.code);
       }
     }
 
