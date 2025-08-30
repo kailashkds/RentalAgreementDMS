@@ -361,6 +361,12 @@ export default function UserRoleManagement() {
   };
 
   const formatPermissionName = (permission: string) => {
+    // Safety check: ensure permission is a string before calling split
+    if (typeof permission !== 'string') {
+      console.warn('formatPermissionName received non-string:', permission);
+      return String(permission);
+    }
+    
     return permission
       .split('.')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
