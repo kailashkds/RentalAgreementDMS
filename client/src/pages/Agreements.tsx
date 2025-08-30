@@ -22,6 +22,7 @@ import {
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { formatDateToDDMMYYYY, getRelativeDateDescription } from "@/lib/dateUtils";
 import AgreementWizard from "@/components/AgreementWizard";
 import ImportAgreementWizard from "@/components/ImportAgreementWizard";
 import { useAgreements } from "@/hooks/useAgreements";
@@ -1279,7 +1280,7 @@ export default function Agreements() {
                                   const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
                                   
                                   if (startDate && endDate) {
-                                    return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+                                    return `${formatDateToDDMMYYYY(startDate)} - ${formatDateToDDMMYYYY(endDate)}`;
                                   }
                                   return 'Not available';
                                 })()}
@@ -2036,7 +2037,7 @@ export default function Agreements() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Agreement Date</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.agreementDate ? new Date(viewingAgreement.agreementDate).toLocaleDateString() : 'Not set'}</p>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.agreementDate ? formatDateToDDMMYYYY(viewingAgreement.agreementDate) : 'Not set'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Language</label>
@@ -2283,11 +2284,11 @@ export default function Agreements() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Start Date</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.startDate ? new Date(viewingAgreement.rentalTerms.startDate).toLocaleDateString() : 'Not provided'}</p>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.startDate ? formatDateToDDMMYYYY(viewingAgreement.rentalTerms.startDate) : 'Not provided'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">End Date</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.endDate ? new Date(viewingAgreement.rentalTerms.endDate).toLocaleDateString() : 'Not provided'}</p>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.rentalTerms?.endDate ? formatDateToDDMMYYYY(viewingAgreement.rentalTerms.endDate) : 'Not provided'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Due Date</label>
@@ -2716,7 +2717,7 @@ export default function Agreements() {
                       <div className="md:col-span-2">
                         <span className="text-sm font-medium text-slate-600">Agreement Period:</span>
                         <p className="text-slate-900">
-                          {viewingImportedAgreement.startDate || 'N/A'} to {viewingImportedAgreement.endDate || 'N/A'}
+                          {viewingImportedAgreement.startDate ? formatDateToDDMMYYYY(viewingImportedAgreement.startDate) : 'N/A'} to {viewingImportedAgreement.endDate ? formatDateToDDMMYYYY(viewingImportedAgreement.endDate) : 'N/A'}
                         </p>
                       </div>
                     )}
