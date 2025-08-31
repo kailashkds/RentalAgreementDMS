@@ -746,30 +746,31 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   };
 
   const handleSocietySelect = (society: any, fieldPrefix: string) => {
+    // fieldPrefix already includes .address, so we just need to add the field name
     // @ts-ignore - Dynamic field paths for address auto-fill
-    setValue(`${fieldPrefix}.address.society`, society.societyName, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.society`, society.societyName, { shouldValidate: true, shouldDirty: true });
     // @ts-ignore
-    setValue(`${fieldPrefix}.address.area`, society.area, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.area`, society.area, { shouldValidate: true, shouldDirty: true });
     // @ts-ignore
-    setValue(`${fieldPrefix}.address.city`, society.city, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.city`, society.city, { shouldValidate: true, shouldDirty: true });
     // @ts-ignore
-    setValue(`${fieldPrefix}.address.pincode`, society.pincode, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.pincode`, society.pincode, { shouldValidate: true, shouldDirty: true });
     // @ts-ignore
-    setValue(`${fieldPrefix}.address.state`, society.state, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.state`, society.state, { shouldValidate: true, shouldDirty: true });
     
     // Force form to re-render by triggering validation
     // @ts-ignore - Dynamic field paths for address auto-fill
     trigger([
       // @ts-ignore
-      `${fieldPrefix}.address.society`,
+      `${fieldPrefix}.society`,
       // @ts-ignore
-      `${fieldPrefix}.address.area`, 
+      `${fieldPrefix}.area`, 
       // @ts-ignore
-      `${fieldPrefix}.address.city`,
+      `${fieldPrefix}.city`,
       // @ts-ignore
-      `${fieldPrefix}.address.pincode`,
+      `${fieldPrefix}.pincode`,
       // @ts-ignore
-      `${fieldPrefix}.address.state`
+      `${fieldPrefix}.state`
     ]);
     
     setShowSocietySuggestions(false);
