@@ -776,16 +776,9 @@ export default function Agreements() {
                   editingImportedAgreement.agreementPeriod?.tenure || "11_months",
         },
         propertyDetails: {
-          address: {
-            flatNo: (document.getElementById('edit-flat-no') as HTMLInputElement)?.value,
-            society: (document.getElementById('edit-society') as HTMLInputElement)?.value,
-            area: (document.getElementById('edit-area') as HTMLInputElement)?.value,
-            city: (document.getElementById('edit-city') as HTMLInputElement)?.value,
-            state: (document.getElementById('edit-state') as HTMLInputElement)?.value,
-            pincode: (document.getElementById('edit-pincode') as HTMLInputElement)?.value,
-          },
-          purpose: (document.querySelector('[name="edit-purpose"]') as HTMLSelectElement)?.value || 
-                   editingImportedAgreement.propertyDetails?.purpose || "residential",
+          // Keep existing address - don't allow editing for imported documents
+          address: editingImportedAgreement.propertyDetails?.address,
+          purpose: editingImportedAgreement.propertyDetails?.purpose || "residential",
         },
         startDate: (document.getElementById('edit-start-date') as HTMLInputElement)?.value,
         endDate: (document.getElementById('edit-end-date') as HTMLInputElement)?.value,
@@ -1518,33 +1511,54 @@ export default function Agreements() {
                               </p>
                             </div>
                             <div>
-                              <span className="font-medium text-gray-600">Notary Status:</span>
-                              <div className="mt-1">
-                                <span
-                                  className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                                    agreement.status === "draft"
-                                      ? "bg-gray-100 text-gray-800"
-                                      : agreement.notaryStatus === "pending"
-                                      ? "bg-amber-100 text-amber-800"
-                                      : agreement.notaryStatus === "complete"
-                                      ? "bg-green-100 text-green-800"
-                                      : agreement.notaryStatus === "expired"
-                                      ? "bg-red-100 text-red-800"
-                                      : "bg-gray-100 text-gray-800"
-                                  }`}
-                                >
-                                  {agreement.status === "draft"
-                                    ? "Complete First"
-                                    : agreement.notaryStatus === "pending"
-                                    ? "Pending"
-                                    : agreement.notaryStatus === "complete"
-                                    ? "Complete"
-                                    : agreement.notaryStatus === "expired"
-                                    ? "Expired"
-                                    : "Pending"
-                                  }
-                                </span>
-                              </div>
+                              {/* Show Police Verification Status for imported agreements, Notary Status for regular agreements */}
+                              {isImportedAgreement(agreement) ? (
+                                <>
+                                  <span className="font-medium text-gray-600">Police Verification:</span>
+                                  <div className="mt-1">
+                                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                                      agreement.policeVerificationStatus === "done" 
+                                        ? "bg-green-100 text-green-800"
+                                        : agreement.policeVerificationStatus === "not_done"
+                                        ? "bg-gray-100 text-gray-800" 
+                                        : "bg-yellow-100 text-yellow-800"
+                                    }`}>
+                                      {agreement.policeVerificationStatus === "done" ? "Done" : 
+                                       agreement.policeVerificationStatus === "not_done" ? "Not Done" : "Pending"}
+                                    </span>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="font-medium text-gray-600">Notary Status:</span>
+                                  <div className="mt-1">
+                                    <span
+                                      className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                                        agreement.status === "draft"
+                                          ? "bg-gray-100 text-gray-800"
+                                          : agreement.notaryStatus === "pending"
+                                          ? "bg-amber-100 text-amber-800"
+                                          : agreement.notaryStatus === "complete"
+                                          ? "bg-green-100 text-green-800"
+                                          : agreement.notaryStatus === "expired"
+                                          ? "bg-red-100 text-red-800"
+                                          : "bg-gray-100 text-gray-800"
+                                      }`}
+                                    >
+                                      {agreement.status === "draft"
+                                        ? "Complete First"
+                                        : agreement.notaryStatus === "pending"
+                                        ? "Pending"
+                                        : agreement.notaryStatus === "complete"
+                                        ? "Complete"
+                                        : agreement.notaryStatus === "expired"
+                                        ? "Expired"
+                                        : "Pending"
+                                      }
+                                    </span>
+                                  </div>
+                                </>
+                              )}
                             </div>
                             <div>
                               <span className="font-medium text-gray-600">Expiry Status:</span>
@@ -2072,80 +2086,6 @@ export default function Agreements() {
                   </div>
                 </div>
 
-                {/* Property Address */}
-                <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-                  <div className="p-4 border-b border-slate-100 bg-slate-50">
-                    <h3 className="text-lg font-medium text-slate-800">Property Address</h3>
-                  </div>
-                  <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="edit-flat-no">Flat/House No <span className="text-red-500">*</span></Label>
-                      <Input 
-                        id="edit-flat-no"
-                        defaultValue={editingImportedAgreement.propertyDetails?.address?.flatNo || ''}
-                        className="mt-1"
-                        placeholder="e.g., A-101"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-society">Society/Building <span className="text-red-500">*</span></Label>
-                      <Input 
-                        id="edit-society"
-                        defaultValue={editingImportedAgreement.propertyDetails?.address?.society || ''}
-                        className="mt-1"
-                        placeholder="e.g., ABC Apartments"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-area">Area <span className="text-red-500">*</span></Label>
-                      <Input 
-                        id="edit-area"
-                        defaultValue={editingImportedAgreement.propertyDetails?.address?.area || ''}
-                        className="mt-1"
-                        placeholder="e.g., Satellite"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-city">City <span className="text-red-500">*</span></Label>
-                      <Input 
-                        id="edit-city"
-                        defaultValue={editingImportedAgreement.propertyDetails?.address?.city || ''}
-                        className="mt-1"
-                        placeholder="e.g., Ahmedabad"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-state">State <span className="text-red-500">*</span></Label>
-                      <Input 
-                        id="edit-state"
-                        defaultValue={editingImportedAgreement.propertyDetails?.address?.state || ''}
-                        className="mt-1"
-                        placeholder="e.g., Gujarat"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-pincode">Pincode <span className="text-red-500">*</span></Label>
-                      <Input 
-                        id="edit-pincode"
-                        defaultValue={editingImportedAgreement.propertyDetails?.address?.pincode || ''}
-                        className="mt-1"
-                        placeholder="e.g., 380015"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-purpose">Property Purpose <span className="text-red-500">*</span></Label>
-                      <Select name="edit-purpose" defaultValue={editingImportedAgreement.propertyDetails?.purpose || "residential"}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select property purpose" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="residential">Residential</SelectItem>
-                          <SelectItem value="commercial">Commercial</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Upload Documents */}
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm">

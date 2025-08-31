@@ -3006,6 +3006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerName: customer.name,
         language: language,
         status: 'active',
+        notaryStatus: 'complete', // Imported documents already have notarized document
         policeVerificationStatus: policeVerificationStatus || 'pending',
         isImported: isImported || true, // Mark as imported agreement
         ownerDetails: ownerDetails,
