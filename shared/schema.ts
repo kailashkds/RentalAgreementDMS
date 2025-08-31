@@ -213,15 +213,6 @@ export const agreements: any = pgTable("agreements", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Agreement templates for different languages
-export const agreementTemplates = pgTable("agreement_templates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  language: varchar("language", { length: 20 }).notNull(),
-  templateContent: text("template_content").notNull(),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-});
 
 
 
@@ -348,10 +339,6 @@ export const insertAgreementSchema = createInsertSchema(agreements).omit({
   rentalTerms: z.any().optional(),
 });
 
-export const insertAgreementTemplateSchema = createInsertSchema(agreementTemplates).omit({
-  id: true,
-  createdAt: true,
-});
 
 
 
@@ -379,13 +366,6 @@ export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type Property = typeof properties.$inferSelect;
 export type InsertAgreement = z.infer<typeof insertAgreementSchema>;
 export type Agreement = typeof agreements.$inferSelect;
-export type InsertAgreementTemplate = z.infer<typeof insertAgreementTemplateSchema>;
-export type AgreementTemplate = typeof agreementTemplates.$inferSelect;
-export type InsertPdfTemplate = z.infer<typeof insertPdfTemplateSchema>;
-export type PdfTemplate = typeof pdfTemplates.$inferSelect;
-
-export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
-export type AdminUser = typeof adminUsers.$inferSelect;
 
 // RBAC Insert Schemas
 export const insertPermissionSchema = createInsertSchema(permissions).omit({

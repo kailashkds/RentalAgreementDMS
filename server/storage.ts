@@ -3,7 +3,6 @@ import {
   properties,
   addresses,
   agreements,
-  agreementTemplates,
   permissions,
   roles,
   rolePermissions as rolePermissionsTable,
@@ -21,8 +20,6 @@ import {
   type InsertAddress,
   type Agreement,
   type InsertAgreement,
-  type AgreementTemplate,
-  type InsertAgreementTemplate,
   type Permission,
   type InsertPermission,
   type Role,
@@ -85,23 +82,9 @@ export interface IStorage {
   saveAddress(address: InsertAddress): Promise<Address>;
   incrementAddressUsage(addressId: string): Promise<void>;
   
-  // PDF Template operations
-  getPdfTemplates(documentType?: string, language?: string): Promise<PdfTemplate[]>;
-  getPdfTemplate(id: string): Promise<PdfTemplate | undefined>;
-  createPdfTemplate(template: InsertPdfTemplate): Promise<PdfTemplate>;
-  updatePdfTemplate(id: string, template: Partial<InsertPdfTemplate>): Promise<PdfTemplate>;
-  deletePdfTemplate(id: string): Promise<void>;
   
 
   
-  // Admin user operations (DEPRECATED - use unified user operations)
-  getAdminUsers(): Promise<AdminUser[]>;
-  getAdminUser(id: string): Promise<AdminUser | undefined>;
-  getAdminUserByMobile(mobile: string): Promise<AdminUser | undefined>;
-  getAdminUserByUsername(username: string): Promise<AdminUser | undefined>;
-  createAdminUser(userData: InsertAdminUser): Promise<AdminUser>;
-  updateAdminUser(id: string, user: Partial<InsertAdminUser>): Promise<AdminUser>;
-  deleteAdminUser(id: string): Promise<void>;
   
   // Unified user role operations
   assignUserRole(userId: string, roleId: string): Promise<void>;
@@ -138,9 +121,6 @@ export interface IStorage {
     totalCustomers: number;
   }>;
   
-  // Agreement templates
-  getAgreementTemplates(language?: string): Promise<AgreementTemplate[]>;
-  createAgreementTemplate(template: InsertAgreementTemplate): Promise<AgreementTemplate>;
   
   // RBAC operations
   // Permission operations
@@ -1439,104 +1419,11 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getAgreementTemplates(language?: string): Promise<AgreementTemplate[]> {
-    const whereConditions = and(
-      eq(agreementTemplates.isActive, true),
-      language ? eq(agreementTemplates.language, language) : undefined
-    );
-
-    return db
-      .select()
-      .from(agreementTemplates)
-      .where(whereConditions)
-      .orderBy(agreementTemplates.name);
-  }
-
-  // Admin user operations
-  async getAdminUsers(): Promise<AdminUser[]> {
-    return db.select().from(adminUsers).orderBy(adminUsers.createdAt);
-  }
-
-  async getAdminUser(id: string): Promise<AdminUser | undefined> {
-    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.id, id));
-    return user;
-  }
-
-  async getAdminUserByMobile(mobile: string): Promise<AdminUser | undefined> {
-    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.mobile, mobile));
-    return user;
-  }
-
-  async getAdminUserByUsername(username: string): Promise<AdminUser | undefined> {
-    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.username, username));
-    return user;
-  }
-
-  async createAdminUser(userData: InsertAdminUser): Promise<AdminUser> {
-    const [user] = await db.insert(adminUsers).values(userData).returning();
-    return user;
-  }
-
-  async updateAdminUser(id: string, userData: Partial<InsertAdminUser>): Promise<AdminUser> {
-    const [user] = await db
-      .update(adminUsers)
-      .set({ ...userData, updatedAt: new Date() })
-      .where(eq(adminUsers.id, id))
-      .returning();
-    return user;
-  }
-
-  async deleteAdminUser(id: string): Promise<void> {
-    await db.delete(adminUsers).where(eq(adminUsers.id, id));
-  }
-
-  // PDF Template operations
-  async getPdfTemplates(documentType?: string, language?: string): Promise<PdfTemplate[]> {
-    const whereConditions = and(
-      eq(pdfTemplates.isActive, true),
-      documentType ? eq(pdfTemplates.documentType, documentType) : undefined,
-      language ? eq(pdfTemplates.language, language) : undefined
-    );
-
-    return db
-      .select()
-      .from(pdfTemplates)
-      .where(whereConditions)
-      .orderBy(pdfTemplates.createdAt);
-  }
-
-  async getPdfTemplate(id: string): Promise<PdfTemplate | undefined> {
-    const [template] = await db.select().from(pdfTemplates).where(eq(pdfTemplates.id, id));
-    return template;
-  }
-
-  async createPdfTemplate(templateData: InsertPdfTemplate): Promise<PdfTemplate> {
-    const [template] = await db.insert(pdfTemplates).values(templateData).returning();
-    return template;
-  }
-
-  async updatePdfTemplate(id: string, templateData: Partial<InsertPdfTemplate>): Promise<PdfTemplate> {
-    const [template] = await db
-      .update(pdfTemplates)
-      .set({ ...templateData, updatedAt: new Date() })
-      .where(eq(pdfTemplates.id, id))
-      .returning();
-    return template;
-  }
-
-  async deletePdfTemplate(id: string): Promise<void> {
-    await db.update(pdfTemplates).set({ isActive: false }).where(eq(pdfTemplates.id, id));
-  }
 
 
 
-  async createAgreementTemplate(templateData: InsertAgreementTemplate): Promise<AgreementTemplate> {
-    const [template] = await db
-      .insert(agreementTemplates)
-      .values(templateData)
-      .returning();
-    return template;
-  }
+
+
 
   // Address operations for intelligent autocomplete
   async searchAddresses(search: string, limit: number = 10): Promise<Address[]> {
