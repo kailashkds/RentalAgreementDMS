@@ -40,8 +40,8 @@ export default function CustomerProperties() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { hasPermission } = usePermissions();
   
-  // Check if user can view properties
-  const canViewProperties = hasPermission('customer.manage') || hasPermission('system.admin') || hasPermission('customer.view.all');
+  // Check if user can view properties - customers can view their own properties, admins can view all
+  const canViewProperties = hasPermission('customer.manage') || hasPermission('system.admin') || hasPermission('customer.view.all') || hasPermission('agreement.view.own');
 
   const { data: customer, isLoading: customerLoading } = useQuery<Customer>({
     queryKey: [`/api/customers/${customerId}`],

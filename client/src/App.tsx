@@ -12,6 +12,7 @@ import Agreements from "@/pages/Agreements";
 import NotarizedDocuments from "@/pages/NotarizedDocuments";
 import Customers from "@/pages/Customers";
 import Properties from "@/pages/Properties";
+import MyProperties from "@/pages/MyProperties";
 import CustomerProperties from "@/pages/CustomerProperties";
 import PropertyAgreements from "@/pages/PropertyAgreements";
 import SystemSettings from "@/pages/SystemSettings";
@@ -79,6 +80,7 @@ function AuthenticatedRouter() {
       <Route path="/notarized-documents" component={NotarizedDocuments} />
       <Route path="/customers" component={Customers} />
       <Route path="/properties" component={Properties} />
+      <Route path="/my-properties" component={MyProperties} />
       <Route path="/customers/:customerId/properties" component={CustomerProperties} />
       <Route path="/customers/:customerId/properties/:propertyId/agreements" component={PropertyAgreements} />
       <Route path="/admin/user-role-management" component={UserRoleManagement} />
