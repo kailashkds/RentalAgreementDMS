@@ -223,6 +223,7 @@ export class DatabaseStorage implements IStorage {
         .update(agreements)
         .set({ 
           status: 'expired',
+          notaryStatus: 'expired', // Also update notary status to expired
           updatedAt: new Date()
         })
         .where(
@@ -237,7 +238,7 @@ export class DatabaseStorage implements IStorage {
 
       const updatedCount = result.length;
       if (updatedCount > 0) {
-        console.log(`✅ Auto-updated ${updatedCount} agreements to 'expired' status`);
+        console.log(`✅ Auto-updated ${updatedCount} agreements and notary statuses to 'expired'`);
       }
       
       return updatedCount;

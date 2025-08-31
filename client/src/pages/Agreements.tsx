@@ -1380,22 +1380,26 @@ export default function Agreements() {
                               <div className="mt-1">
                                 <span
                                   className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                                    agreement.status === "draft"
+                                    agreement.notaryStatus === "draft"
                                       ? "bg-gray-100 text-gray-800"
-                                      : agreement.status === "active"
-                                      ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                        ? "bg-green-100 text-green-800"
-                                        : "bg-amber-100 text-amber-800"
-                                      : "bg-blue-100 text-blue-800"
+                                      : agreement.notaryStatus === "pending"
+                                      ? "bg-amber-100 text-amber-800"
+                                      : agreement.notaryStatus === "complete"
+                                      ? "bg-green-100 text-green-800"
+                                      : agreement.notaryStatus === "expired"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-gray-100 text-gray-800"
                                   }`}
                                 >
-                                  {agreement.status === "draft"
+                                  {agreement.notaryStatus === "draft"
                                     ? "Draft"
-                                    : agreement.status === "active"
-                                    ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
-                                      ? "Complete"
-                                      : "Pending"
-                                    : "Active"
+                                    : agreement.notaryStatus === "pending"
+                                    ? "Pending"
+                                    : agreement.notaryStatus === "complete"
+                                    ? "Complete"
+                                    : agreement.notaryStatus === "expired"
+                                    ? "Expired"
+                                    : "Pending"
                                   }
                                 </span>
                               </div>
