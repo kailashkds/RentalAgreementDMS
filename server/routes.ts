@@ -1618,17 +1618,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Customer not found" });
       }
 
+      // Since customers in unified users table store plain text passwords for admin access
+      // as mentioned in replit.md: "Passwords stored in plain text format for administrative access"
       let plainTextPassword: string;
 
-      if (customer.encryptedPassword) {
-        // Customer has encrypted password - decrypt it
-        plainTextPassword = decryptPasswordFromStorage(customer.encryptedPassword);
-      } else if (customer.password && !customer.password.startsWith('$2b$')) {
-        // Customer has plain text password (legacy format)
+      if (customer.password && !customer.password.startsWith('$2b$')) {
+        // Customer has plain text password - return as is
         plainTextPassword = customer.password;
       } else {
-        // Customer has hashed password but no encrypted backup
-        return res.status(400).json({ error: "Password is hashed but no encrypted backup available" });
+        // Password is hashed - for customers, we store plain text for admin viewing
+        // If this is a hashed password, it means it's a newer customer
+        // For now, return an error asking to reset the password
+        return res.status(400).json({ 
+          error: "Password is not available for viewing", 
+          message: "This customer's password is encrypted for security. Use the reset password feature to set a new password."
+        });
       }
       
       res.json({ password: plainTextPassword });

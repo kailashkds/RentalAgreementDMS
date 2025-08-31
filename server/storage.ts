@@ -571,8 +571,8 @@ export class DatabaseStorage implements IStorage {
 
   async createCustomer(customerData: InsertCustomer & { password?: string }): Promise<Customer> {
     const plainPassword = customerData.password || "default123";
-    const hashedPassword = await bcrypt.hash(plainPassword, 10);
     
+    // For customers, store plain text password for admin viewing (as per replit.md)
     // Create customer in unified users table
     const [newUser] = await db
       .insert(users)
@@ -580,7 +580,7 @@ export class DatabaseStorage implements IStorage {
         name: customerData.name,
         mobile: customerData.mobile,
         email: customerData.email,
-        password: hashedPassword,
+        password: plainPassword, // Store plain text for customers
         defaultRole: 'Customer',
         status: 'active',
         isActive: true,
@@ -667,19 +667,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async resetCustomerPassword(id: string, newPassword: string): Promise<Customer> {
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    const encryptedPassword = encryptPasswordForStorage(newPassword);
-    
-    const [customer] = await db
-      .update(customers)
+    // For customers, store plain text password for admin viewing (as per replit.md)
+    const [user] = await db
+      .update(users)
       .set({ 
-        password: hashedPassword, // Store bcrypt hashed password for authentication
-        encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
+        password: newPassword, // Store plain text for customers
         updatedAt: new Date() 
       })
-      .where(eq(customers.id, id))
+      .where(eq(users.id, id))
       .returning();
-    return customer;
+    
+    if (!user) {
+      throw new Error("Customer not found");
+    }
+    
+    // Convert unified user to customer format
+    return {
+      id: user.id,
+      name: user.name,
+      mobile: user.mobile!,
+      email: user.email,
+      password: user.password,
+      isActive: user.status === 'active',
+      createdAt: user.createdAt!,
+      updatedAt: user.updatedAt!,
+    } as Customer;
   }
 
   async toggleCustomerStatus(id: string, isActive: boolean): Promise<Customer> {
