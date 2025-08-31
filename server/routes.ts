@@ -87,20 +87,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: String(error) });
     }
   });
-  // Dashboard stats
+  // Dashboard stats - accessible to all authenticated users
   app.get("/api/dashboard/stats", requireAuth, async (req: any, res) => {
     try {
       // Check permissions to determine data access level
       const canViewAllAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.all');
       const canViewOwnAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.own');
       
-      if (!canViewAllAgreements && !canViewOwnAgreements) {
-        return res.status(403).json({ 
-          message: "You don't have permission to view the dashboard",
-          error: "dashboard_access_denied",
-          action: "Contact an administrator to request dashboard access permissions"
-        });
-      }
+      // Dashboard is now accessible to all authenticated users
+      // Data will be filtered based on user's permissions below
       
       // If user can only view own agreements, filter stats by their ID
       const userId = (!canViewAllAgreements && canViewOwnAgreements) ? req.user.id : undefined;
@@ -2355,10 +2350,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { isSuperAdmin, getDataAccessLevel, applyRoleBasedFiltering } = await import('./rbacUtils.js');
       const accessLevel = await getDataAccessLevel(req.user);
       
-      // Check if user has any permission to view agreements
-      if (!accessLevel.canViewAll && !accessLevel.canViewOwn) {
-        return res.status(403).json({ message: "Insufficient permissions to view agreements" });
-      }
+      // Agreements are now accessible to all authenticated users
+      // Data will be filtered based on user's permissions below
       
       // Prepare base filters from query parameters
       const baseFilters = {

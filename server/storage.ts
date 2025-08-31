@@ -1684,7 +1684,6 @@ export class DatabaseStorage implements IStorage {
   async deleteRole(id: string): Promise<void> {
     await db.delete(rolePermissionsTable).where(eq(rolePermissionsTable.roleId, id));
     await db.delete(userRoles).where(eq(userRoles.roleId, id));
-    await db.delete(customerRoles).where(eq(customerRoles.roleId, id));
     await db.delete(roles).where(eq(roles.id, id));
   }
 
@@ -1782,12 +1781,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Customer-Role operations
-  async assignRoleToCustomer(customerId: string, roleId: string): Promise<CustomerRole> {
+  async assignRoleToCustomer(customerId: string, roleId: string): Promise<UserRole> {
     // Check if role is already assigned to avoid duplicate key errors
     const existing = await db
       .select()
-      .from(customerRoles)
-      .where(and(eq(customerRoles.customerId, customerId), eq(customerRoles.roleId, roleId)))
+      .from(userRoles)
+      .where(and(eq(userRoles.userId, customerId), eq(userRoles.roleId, roleId)))
       .limit(1);
     
     if (existing.length > 0) {
@@ -1795,16 +1794,16 @@ export class DatabaseStorage implements IStorage {
     }
     
     const [customerRole] = await db
-      .insert(customerRoles)
-      .values({ customerId, roleId })
+      .insert(userRoles)
+      .values({ userId: customerId, roleId })
       .returning();
     return customerRole;
   }
 
   async removeRoleFromCustomer(customerId: string, roleId: string): Promise<void> {
     await db
-      .delete(customerRoles)
-      .where(and(eq(customerRoles.customerId, customerId), eq(customerRoles.roleId, roleId)));
+      .delete(userRoles)
+      .where(and(eq(userRoles.userId, customerId), eq(userRoles.roleId, roleId)));
   }
 
   async getCustomerRoles(customerId: string): Promise<RoleWithPermissions[]> {
@@ -1813,11 +1812,11 @@ export class DatabaseStorage implements IStorage {
         role: roles,
         permission: permissions,
       })
-      .from(customerRoles)
-      .innerJoin(roles, eq(customerRoles.roleId, roles.id))
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
       .leftJoin(rolePermissionsTable, eq(roles.id, rolePermissionsTable.roleId))
       .leftJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
-      .where(eq(customerRoles.customerId, customerId));
+      .where(eq(userRoles.userId, customerId));
 
     const rolesMap = new Map<string, RoleWithPermissions>();
     
@@ -1837,7 +1836,7 @@ export class DatabaseStorage implements IStorage {
     return Array.from(rolesMap.values());
   }
 
-  async getCustomerWithRoles(customerId: string): Promise<CustomerWithRoles | undefined> {
+  async getCustomerWithRoles(customerId: string): Promise<UserWithRoles | undefined> {
     const customer = await this.getCustomer(customerId);
     if (!customer) return undefined;
 
@@ -1864,10 +1863,10 @@ export class DatabaseStorage implements IStorage {
   async customerHasPermission(customerId: string, permissionCode: string): Promise<boolean> {
     const result = await db
       .select({ count: count() })
-      .from(customerRoles)
-      .innerJoin(rolePermissionsTable, eq(customerRoles.roleId, rolePermissionsTable.roleId))
+      .from(userRoles)
+      .innerJoin(rolePermissionsTable, eq(userRoles.roleId, rolePermissionsTable.roleId))
       .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
-      .where(and(eq(customerRoles.customerId, customerId), eq(permissions.code, permissionCode)));
+      .where(and(eq(userRoles.userId, customerId), eq(permissions.code, permissionCode)));
 
     return result[0].count > 0;
   }
@@ -1980,10 +1979,10 @@ export class DatabaseStorage implements IStorage {
   async getCustomerPermissions(customerId: string): Promise<string[]> {
     const result = await db
       .select({ code: permissions.code })
-      .from(customerRoles)
-      .innerJoin(rolePermissionsTable, eq(customerRoles.roleId, rolePermissionsTable.roleId))
+      .from(userRoles)
+      .innerJoin(rolePermissionsTable, eq(userRoles.roleId, rolePermissionsTable.roleId))
       .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
-      .where(eq(customerRoles.customerId, customerId));
+      .where(eq(userRoles.userId, customerId));
 
     return result.map(row => row.code);
   }
