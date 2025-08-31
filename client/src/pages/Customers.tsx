@@ -29,6 +29,7 @@ import {
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function Customers() {
   const [showModal, setShowModal] = useState(false);
@@ -39,6 +40,10 @@ export default function Customers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
+  const { hasPermission } = usePermissions();
+  
+  // Check if user can view properties
+  const canViewProperties = hasPermission('customer.manage') || hasPermission('system.admin') || hasPermission('customer.view.all');
 
   const { data: customersData, isLoading } = useCustomers({
     search: searchTerm,
@@ -176,9 +181,11 @@ export default function Customers() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Contact
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Properties
-                    </th>
+                    {canViewProperties && (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Properties
+                      </th>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
@@ -224,18 +231,20 @@ export default function Customers() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Link href={`/customers/${customer.id}/properties`}>
-                          <Button
-                            variant="ghost"
-                            className="flex items-center text-sm text-gray-900 hover:text-blue-600 p-0 h-auto"
-                            data-testid={`button-view-properties-${customer.id}`}
-                          >
-                            <Building className="h-4 w-4 mr-2 text-gray-400" />
-                            View Properties
-                          </Button>
-                        </Link>
-                      </td>
+                      {canViewProperties && (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Link href={`/customers/${customer.id}/properties`}>
+                            <Button
+                              variant="ghost"
+                              className="flex items-center text-sm text-gray-900 hover:text-blue-600 p-0 h-auto"
+                              data-testid={`button-view-properties-${customer.id}`}
+                            >
+                              <Building className="h-4 w-4 mr-2 text-gray-400" />
+                              View Properties
+                            </Button>
+                          </Link>
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
