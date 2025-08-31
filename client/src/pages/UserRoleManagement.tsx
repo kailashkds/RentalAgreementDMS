@@ -87,6 +87,8 @@ export default function UserRoleManagement() {
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [managingPermissionsUser, setManagingPermissionsUser] = useState<User | null>(null);
   const [showPermissions, setShowPermissions] = useState<string | null>(null);
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
+  const [selectedUserPermissions, setSelectedUserPermissions] = useState<any>(null);
 
   // User form data
   const [userFormData, setUserFormData] = useState({
@@ -663,10 +665,16 @@ export default function UserRoleManagement() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setShowPermissions(showPermissions === user.id ? null : user.id)}
+                              onClick={() => {
+                                setSelectedUserPermissions({
+                                  user: user,
+                                  permissions: userPermissions
+                                });
+                                setPermissionsDialogOpen(true);
+                              }}
                               data-testid={`button-show-permissions-${user.id}`}
                             >
-                              {showPermissions === user.id ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              <Eye className="h-4 w-4" />
                               <span className="ml-1">{userPermissions.total.length}</span>
                             </Button>
                             {userPermissions.manual.length > 0 && (
@@ -675,32 +683,6 @@ export default function UserRoleManagement() {
                               </Badge>
                             )}
                           </div>
-                          {showPermissions === user.id && (
-                            <div className="mt-2 p-2 bg-muted rounded text-xs space-y-1">
-                              <div>
-                                <strong>Inherited ({userPermissions.inherited.length}):</strong>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {userPermissions.inherited.map(permission => (
-                                    <Badge key={permission} variant="outline" className="text-xs">
-                                      {formatPermissionName(permission)}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                              {userPermissions.manual.length > 0 && (
-                                <div>
-                                  <strong>Manual ({userPermissions.manual.length}):</strong>
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {userPermissions.manual.map(permission => (
-                                      <Badge key={permission} variant="default" className="text-xs">
-                                        {formatPermissionName(permission)}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </TableCell>
                         <TableCell>
                           <Badge 
@@ -1077,6 +1059,61 @@ export default function UserRoleManagement() {
             </Button>
             <Button onClick={() => setIsPermissionsModalOpen(false)}>
               Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permissions Popup Dialog */}
+      <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>User Permissions - {selectedUserPermissions?.user?.name}</DialogTitle>
+            <DialogDescription>
+              View all permissions for this user. Permissions are inherited from roles and can be manually added.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedUserPermissions && (
+            <div className="space-y-4">
+              {/* Inherited Permissions */}
+              <div>
+                <h4 className="font-medium mb-2">Inherited from Roles ({selectedUserPermissions.permissions.inherited.length})</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedUserPermissions.permissions.inherited.map((permission: string) => (
+                    <Badge key={permission} variant="outline" className="text-xs">
+                      {formatPermissionName(permission)}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Manual Permissions */}
+              {selectedUserPermissions.permissions.manual.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Manually Added ({selectedUserPermissions.permissions.manual.length})</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedUserPermissions.permissions.manual.map((permission: string) => (
+                      <Badge key={permission} variant="default" className="text-xs bg-green-100 text-green-800">
+                        {formatPermissionName(permission)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Total Summary */}
+              <div className="border-t pt-4">
+                <div className="text-sm text-muted-foreground">
+                  Total Permissions: {selectedUserPermissions.permissions.total.length}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setPermissionsDialogOpen(false)}>
+              Close
             </Button>
           </div>
         </DialogContent>
