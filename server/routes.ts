@@ -1398,42 +1398,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId } = req.params;
       const { permissionId } = req.body;
+      console.log(`🔧 DEBUG: Adding permission override for user ${userId}, permission ${permissionId}`);
       
       if (!permissionId) {
+        console.log(`❌ Permission ID is required`);
         return res.status(400).json({ message: "Permission ID is required" });
       }
       
       // Check if user exists
       const user = await storage.getUser(userId);
       if (!user) {
+        console.log(`❌ User not found: ${userId}`);
         return res.status(404).json({ message: "User not found" });
       }
+      console.log(`✅ User found: ${user.name}`);
       
       // Get all user permissions to determine the action
       const userPermissions = await storage.getUserPermissionsWithSources(userId);
       const rolePermissions = userPermissions.filter(p => p.source === 'role');
+      console.log(`📊 User has ${userPermissions.length} total permissions, ${rolePermissions.length} from roles`);
       
       // Find the permission
       const permission = await storage.getPermission(permissionId);
       if (!permission) {
+        console.log(`❌ Permission not found: ${permissionId}`);
         return res.status(404).json({ message: "Permission not found" });
       }
+      console.log(`✅ Permission found: ${permission.code}`);
       
       // Check if user has this permission from roles
       const hasFromRole = rolePermissions.some(p => p.code === permission.code);
+      console.log(`🔍 User has permission '${permission.code}' from role: ${hasFromRole}`);
       
       if (hasFromRole) {
         // User has this permission from role, so we need to REMOVE the removal
         // (i.e., restore the role-based permission)
+        console.log(`🔄 Removing permission removal to restore role-based permission`);
         await storage.removeUserPermissionRemoval(userId, permissionId);
+        console.log(`✅ Permission removal removed successfully`);
       } else {
         // User doesn't have this permission from role, so we ADD it manually
+        console.log(`➕ Adding manual permission override`);
         await storage.addUserPermissionOverride(userId, permissionId, req.user.id);
+        console.log(`✅ Manual permission override added successfully`);
       }
       
       res.json({ message: "Permission override updated successfully" });
     } catch (error) {
-      console.error("Error updating user permission override:", error);
+      console.error("❌ Error updating user permission override:", error);
       res.status(500).json({ message: "Failed to update permission override" });
     }
   });
@@ -1441,37 +1453,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/unified/users/:userId/permission-overrides/:permissionId", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { userId, permissionId } = req.params;
+      console.log(`🔧 DEBUG: Removing permission override for user ${userId}, permission ${permissionId}`);
       
       // Check if user exists
       const user = await storage.getUser(userId);
       if (!user) {
+        console.log(`❌ User not found: ${userId}`);
         return res.status(404).json({ message: "User not found" });
       }
+      console.log(`✅ User found: ${user.name}`);
       
       // Get all user permissions to determine the action
       const userPermissions = await storage.getUserPermissionsWithSources(userId);
       const rolePermissions = userPermissions.filter(p => p.source === 'role');
+      console.log(`📊 User has ${userPermissions.length} total permissions, ${rolePermissions.length} from roles`);
       
       // Find the permission
       const permission = await storage.getPermission(permissionId);
       if (!permission) {
+        console.log(`❌ Permission not found: ${permissionId}`);
         return res.status(404).json({ message: "Permission not found" });
       }
+      console.log(`✅ Permission found: ${permission.code}`);
       
       // Check if user has this permission from roles
       const hasFromRole = rolePermissions.some(p => p.code === permission.code);
+      console.log(`🔍 User has permission '${permission.code}' from role: ${hasFromRole}`);
       
       if (hasFromRole) {
         // User has this permission from role, so we REMOVE it by adding a removal
+        console.log(`➖ Adding permission removal for role-based permission`);
         await storage.addUserPermissionRemoval(userId, permissionId, req.user.id);
+        console.log(`✅ Permission removal added successfully`);
       } else {
         // User has this permission manually, so we REMOVE the manual override
+        console.log(`🗑️ Removing manual permission override`);
         await storage.removeUserPermissionOverride(userId, permissionId);
+        console.log(`✅ Manual permission override removed successfully`);
       }
       
       res.json({ message: "Permission override removed successfully" });
     } catch (error) {
-      console.error("Error removing user permission override:", error);
+      console.error("❌ Error removing user permission override:", error);
       res.status(500).json({ message: "Failed to remove permission override" });
     }
   });
