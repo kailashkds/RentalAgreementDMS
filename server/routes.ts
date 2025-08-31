@@ -1393,7 +1393,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User Permission Override Management
+  // User Permission Override Management - Add debugging middleware
+  app.use("/api/unified/users/:userId/permission-overrides*", (req, res, next) => {
+    console.log(`🌐 ROUTE DEBUG: ${req.method} ${req.originalUrl}`);
+    console.log(`🌐 Params:`, req.params);
+    console.log(`🌐 Body:`, req.body);
+    next();
+  });
+
   app.post("/api/unified/users/:userId/permission-overrides", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { userId } = req.params;
