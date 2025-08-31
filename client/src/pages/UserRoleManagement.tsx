@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { 
   Shield, 
@@ -77,6 +78,7 @@ interface Permission {
 
 export default function UserRoleManagement() {
   const { user: currentUser } = useAuth();
+  const { hasPermission } = usePermissions();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -811,7 +813,7 @@ export default function UserRoleManagement() {
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Manage Permissions
                               </DropdownMenuItem>
-                              {userPermissions.includes('user.status.change') && (
+                              {hasPermission('user.status.change') && (
                                 <DropdownMenuItem 
                                   onClick={() => toggleUserStatusMutation.mutate({ 
                                     userId: user.id, 
