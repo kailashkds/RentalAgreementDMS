@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, FileText, Calendar, Download, Eye } from "lucide-react";
 import { useState } from "react";
 import { apiClient } from "@/lib/apiClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Agreement {
   id: string;
@@ -55,6 +56,7 @@ interface Customer {
 export default function PropertyAgreements() {
   const { customerId, propertyId } = useParams();
   const [selectedAgreement, setSelectedAgreement] = useState<Agreement | null>(null);
+  const { toast } = useToast();
 
   const { data: customer } = useQuery<Customer>({
     queryKey: [`/api/customers/${customerId}`],
