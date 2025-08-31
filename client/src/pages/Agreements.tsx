@@ -141,6 +141,16 @@ export default function Agreements() {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, notaryFilter, customerFilter, tenantFilter, ownerFilter, dateFilter, sortBy]);
 
+  // Auto-adjust current page when total agreements change to ensure we don't exceed max pages
+  React.useEffect(() => {
+    if (agreementsData?.total) {
+      const maxPages = Math.ceil(agreementsData.total / 25);
+      if (currentPage > maxPages) {
+        setCurrentPage(maxPages);
+      }
+    }
+  }, [agreementsData?.total, currentPage]);
+
   // Pagination helper function
   const generatePageNumbers = (currentPage: number, totalPages: number) => {
     const pages = [];
@@ -1676,53 +1686,56 @@ export default function Agreements() {
           </div>
         </Card>
 
-        {/* Enhanced Pagination */}
-        {agreementsData && agreementsData.total > 25 && (
+        {/* Enhanced Dynamic Pagination */}
+        {agreementsData && agreementsData.total > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-700">
               Showing {((currentPage - 1) * 25) + 1} to {Math.min(currentPage * 25, agreementsData.total)} of{" "}
               {agreementsData.total} results
             </div>
             
-            <Pagination>
-              <PaginationContent>
-                {/* Previous Button */}
-                <PaginationItem>
-                  <PaginationPrevious 
-                    onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
-                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    data-testid="button-previous-page"
-                  />
-                </PaginationItem>
-                
-                {/* Page Numbers */}
-                {generatePageNumbers(currentPage, Math.ceil(agreementsData.total / 25)).map((page, index) => (
-                  <PaginationItem key={index}>
-                    {page === '...' ? (
-                      <PaginationEllipsis />
-                    ) : (
-                      <PaginationLink
-                        onClick={() => setCurrentPage(page as number)}
-                        isActive={currentPage === page}
-                        className="cursor-pointer"
-                        data-testid={`button-page-${page}`}
-                      >
-                        {page}
-                      </PaginationLink>
-                    )}
+            {/* Only show pagination controls if there are multiple pages */}
+            {Math.ceil(agreementsData.total / 25) > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  {/* Previous Button */}
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      data-testid="button-previous-page"
+                    />
                   </PaginationItem>
-                ))}
-                
-                {/* Next Button */}
-                <PaginationItem>
-                  <PaginationNext 
-                    onClick={() => setCurrentPage(page => page + 1)}
-                    className={currentPage * 25 >= agreementsData.total ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                    data-testid="button-next-page"
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+                  
+                  {/* Page Numbers */}
+                  {generatePageNumbers(currentPage, Math.ceil(agreementsData.total / 25)).map((page, index) => (
+                    <PaginationItem key={index}>
+                      {page === '...' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page as number)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                          data-testid={`button-page-${page}`}
+                        >
+                          {page}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  
+                  {/* Next Button */}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(page => page + 1)}
+                      className={currentPage * 25 >= agreementsData.total ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      data-testid="button-next-page"
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
           </div>
         )}
       </div>
