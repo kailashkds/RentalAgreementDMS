@@ -680,7 +680,35 @@ export default function Agreements() {
           });
         }
 
-        // Invalidate cache to refresh data
+        // Update the cache directly for immediate UI update
+        queryClient.setQueryData(["/api/agreements"], (oldData: any) => {
+          if (oldData && oldData.agreements) {
+            return {
+              ...oldData,
+              agreements: oldData.agreements.map((agreement: any) => 
+                agreement.id === agreementId 
+                  ? { 
+                      ...agreement, 
+                      policeVerificationStatus: "done",
+                      documents: {
+                        ...agreement.documents,
+                        policeVerificationDocument: {
+                          filename: result.filename,
+                          originalName: result.originalName,
+                          uploadDate: result.uploadDate,
+                          size: result.size,
+                          url: result.url
+                        }
+                      }
+                    }
+                  : agreement
+              )
+            };
+          }
+          return oldData;
+        });
+
+        // Also invalidate cache to ensure fresh data on next load
         queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
 
         toast({
