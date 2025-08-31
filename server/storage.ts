@@ -1336,6 +1336,7 @@ export class DatabaseStorage implements IStorage {
       .update(agreements)
       .set({ 
         notarizedDocument: notarizedDocData,
+        notaryStatus: 'complete', // Update notary status to complete when document is uploaded
         updatedAt: new Date()
       })
       .where(eq(agreements.id, id))

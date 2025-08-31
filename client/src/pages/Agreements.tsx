@@ -1610,7 +1610,7 @@ export default function Agreements() {
                             </Button>
                           )}
                           {/* Upload Notarized Button - Show only if user has notarize permission */}
-                          {hasPermission(PERMISSIONS.AGREEMENT_NOTARIZE) && agreement.status === "active" && agreement.notaryStatus === "pending" && (
+                          {hasPermission(PERMISSIONS.AGREEMENT_NOTARIZE) && agreement.status === "active" && agreement.notaryStatus === "pending" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
