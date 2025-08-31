@@ -89,6 +89,12 @@ export default function UserRoleManagement() {
   const [showPermissions, setShowPermissions] = useState<string | null>(null);
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [selectedUserPermissions, setSelectedUserPermissions] = useState<any>(null);
+  
+  // Local state for pending permission changes (before saving)
+  const [pendingPermissionChanges, setPendingPermissionChanges] = useState<{
+    toAdd: string[]; // permission IDs to add
+    toRemove: string[]; // permission IDs to remove
+  }>({ toAdd: [], toRemove: [] });
 
   // User form data
   const [userFormData, setUserFormData] = useState({
@@ -270,40 +276,40 @@ export default function UserRoleManagement() {
     },
   });
 
-  // Permission override mutations
-  const addPermissionOverrideMutation = useMutation({
-    mutationFn: ({ userId, permissionId }: { userId: string; permissionId: string }) => 
-      apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId }),
+  // Batch save mutation for all permission changes
+  const savePermissionChangesMutation = useMutation({
+    mutationFn: async ({ userId, changes }: { userId: string; changes: typeof pendingPermissionChanges }) => {
+      const promises = [];
+      
+      // Add permissions
+      for (const permissionId of changes.toAdd) {
+        promises.push(
+          apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId })
+        );
+      }
+      
+      // Remove permissions
+      for (const permissionId of changes.toRemove) {
+        promises.push(
+          apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, "DELETE")
+        );
+      }
+      
+      await Promise.all(promises);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      setPendingPermissionChanges({ toAdd: [], toRemove: [] }); // Reset pending changes
+      setIsPermissionsModalOpen(false);
       toast({
         title: "Success",
-        description: "Permission added successfully",
+        description: "Permissions updated successfully",
       });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to add permission",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const removePermissionOverrideMutation = useMutation({
-    mutationFn: ({ userId, permissionId }: { userId: string; permissionId: string }) => 
-      apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, "DELETE"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
-      toast({
-        title: "Success",
-        description: "Permission removed successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove permission",
+        description: error.message || "Failed to update permissions",
         variant: "destructive",
       });
     },
@@ -360,6 +366,7 @@ export default function UserRoleManagement() {
 
   const openManagePermissions = (user: User) => {
     setManagingPermissionsUser(user);
+    setPendingPermissionChanges({ toAdd: [], toRemove: [] }); // Reset pending changes
     setIsPermissionsModalOpen(true);
   };
 
@@ -388,6 +395,23 @@ export default function UserRoleManagement() {
         ? prev.permissions.filter(p => p !== permission)
         : [...prev.permissions, permission]
     }));
+  };
+
+  // Helper function to get effective permission state including pending changes
+  const getEffectivePermissionState = (permission: Permission) => {
+    if (!managingPermissionsUser) return false;
+    
+    const userPermissions = getUserPermissions(managingPermissionsUser);
+    const currentlyHasPermission = userPermissions.total.includes(permission.name);
+    
+    // Check if this permission is in pending changes
+    const isPendingAdd = pendingPermissionChanges.toAdd.includes(permission.id);
+    const isPendingRemove = pendingPermissionChanges.toRemove.includes(permission.id);
+    
+    // Calculate effective state
+    if (isPendingAdd) return true;
+    if (isPendingRemove) return false;
+    return currentlyHasPermission;
   };
 
   const getPermissionsByCategory = () => {
@@ -1055,10 +1079,16 @@ export default function UserRoleManagement() {
                     <div className="grid grid-cols-1 gap-2">
                       {categoryPermissions.map((permission) => {
                         const userPermissions = getUserPermissions(managingPermissionsUser);
-                        const hasPermission = userPermissions.total.includes(permission.name);
+                        const currentlyHasPermission = userPermissions.total.includes(permission.name);
+                        const effectiveState = getEffectivePermissionState(permission);
                         const isFromRole = managingPermissionsUser.roles?.[0]?.permissions?.includes(permission.name) || false;
                         const isManuallyAdded = managingPermissionsUser.manualPermissions?.added?.includes(permission.name) || false;
                         const isManuallyRemoved = managingPermissionsUser.manualPermissions?.removed?.includes(permission.name) || false;
+                        
+                        // Check if there are pending changes for this permission
+                        const isPendingAdd = pendingPermissionChanges.toAdd.includes(permission.id);
+                        const isPendingRemove = pendingPermissionChanges.toRemove.includes(permission.id);
+                        const hasPendingChanges = isPendingAdd || isPendingRemove;
                         
                         return (
                           <div key={permission.name} className="flex items-center justify-between p-2 border rounded">
@@ -1068,27 +1098,39 @@ export default function UserRoleManagement() {
                                 {isFromRole && <Badge variant="outline" className="text-xs">Role</Badge>}
                                 {isManuallyAdded && <Badge variant="default" className="text-xs bg-green-100 text-green-800">+Added</Badge>}
                                 {isManuallyRemoved && <Badge variant="default" className="text-xs bg-red-100 text-red-800">-Removed</Badge>}
+                                {isPendingAdd && <Badge variant="default" className="text-xs bg-blue-100 text-blue-800">Pending +</Badge>}
+                                {isPendingRemove && <Badge variant="default" className="text-xs bg-orange-100 text-orange-800">Pending -</Badge>}
                               </div>
                               <p className="text-xs text-muted-foreground">{permission.description}</p>
                             </div>
                             <div className="flex items-center space-x-2">
                               <Switch 
-                                checked={hasPermission}
-                                disabled={permissionsLoading || addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
+                                checked={effectiveState}
+                                disabled={permissionsLoading || savePermissionChangesMutation.isPending}
                                 onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    // Add permission
-                                    addPermissionOverrideMutation.mutate({
-                                      userId: managingPermissionsUser.id,
-                                      permissionId: permission.id
-                                    });
-                                  } else {
-                                    // Remove permission
-                                    removePermissionOverrideMutation.mutate({
-                                      userId: managingPermissionsUser.id,
-                                      permissionId: permission.id
-                                    });
-                                  }
+                                  setPendingPermissionChanges(prev => {
+                                    const newChanges = { ...prev };
+                                    
+                                    if (checked) {
+                                      // User wants to enable this permission
+                                      // Remove from toRemove if it's there
+                                      newChanges.toRemove = newChanges.toRemove.filter(id => id !== permission.id);
+                                      // Add to toAdd if not currently having permission
+                                      if (!currentlyHasPermission && !newChanges.toAdd.includes(permission.id)) {
+                                        newChanges.toAdd.push(permission.id);
+                                      }
+                                    } else {
+                                      // User wants to disable this permission
+                                      // Remove from toAdd if it's there
+                                      newChanges.toAdd = newChanges.toAdd.filter(id => id !== permission.id);
+                                      // Add to toRemove if currently having permission
+                                      if (currentlyHasPermission && !newChanges.toRemove.includes(permission.id)) {
+                                        newChanges.toRemove.push(permission.id);
+                                      }
+                                    }
+                                    
+                                    return newChanges;
+                                  });
                                 }}
                               />
                             </div>
@@ -1106,8 +1148,20 @@ export default function UserRoleManagement() {
             <Button variant="outline" onClick={() => setIsPermissionsModalOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => setIsPermissionsModalOpen(false)}>
-              Save Changes
+            <Button 
+              onClick={() => {
+                if (managingPermissionsUser && (pendingPermissionChanges.toAdd.length > 0 || pendingPermissionChanges.toRemove.length > 0)) {
+                  savePermissionChangesMutation.mutate({
+                    userId: managingPermissionsUser.id,
+                    changes: pendingPermissionChanges
+                  });
+                } else {
+                  setIsPermissionsModalOpen(false);
+                }
+              }}
+              disabled={savePermissionChangesMutation.isPending}
+            >
+              {savePermissionChangesMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </DialogContent>
