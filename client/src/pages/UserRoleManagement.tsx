@@ -1093,11 +1093,14 @@ export default function UserRoleManagement() {
                                 {(() => {
                                   // Smart badge logic: if both added and removed, they cancel out
                                   if (isManuallyAdded && isManuallyRemoved) {
-                                    // Both actions cancel out - show original state (Role if from role, nothing if not)
+                                    // Both actions cancel out - show original state
                                     if (isFromRole) {
+                                      // Originally from role, removed, then added back = Role
                                       return <Badge variant="outline" className="text-xs">Role</Badge>;
+                                    } else {
+                                      // Originally not from role, added, then removed = nothing (back to original state)
+                                      return null;
                                     }
-                                    return null; // No badge if not from role originally
                                   }
                                   
                                   // Show individual states
