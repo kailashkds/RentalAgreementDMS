@@ -89,6 +89,7 @@ export default function Agreements() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [notaryFilter, setNotaryFilter] = useState("all");
+  const [policeVerificationFilter, setPoliceVerificationFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("all");
   const [tenantFilter, setTenantFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
@@ -139,7 +140,7 @@ export default function Agreements() {
   // Reset current page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, notaryFilter, customerFilter, tenantFilter, ownerFilter, dateFilter, sortBy]);
+  }, [searchTerm, statusFilter, notaryFilter, policeVerificationFilter, customerFilter, tenantFilter, ownerFilter, dateFilter, sortBy]);
 
   // Pagination helper function
   const generatePageNumbers = (currentPage: number, totalPages: number) => {
@@ -330,6 +331,18 @@ export default function Agreements() {
           : "pending"
         : "n_a";
       if (notaryStatus !== notaryFilter) return false;
+    }
+
+    // Filter by police verification status (only for imported agreements)
+    if (policeVerificationFilter && policeVerificationFilter !== "all") {
+      // Only filter imported agreements by police verification
+      if (isImportedAgreement(agreement)) {
+        const policeStatus = agreement.policeVerificationStatus || "to_be_done";
+        if (policeStatus !== policeVerificationFilter) return false;
+      } else {
+        // For non-imported agreements, exclude them when filtering by police verification
+        return false;
+      }
     }
 
     // Filter by customer name
@@ -1132,6 +1145,19 @@ export default function Agreements() {
                 <SelectItem value="complete_first">Complete First</SelectItem>
               </SelectContent>
             </Select>
+            
+            {/* Police Verification Filter */}
+            <Select value={policeVerificationFilter} onValueChange={setPoliceVerificationFilter}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="All Police" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Police</SelectItem>
+                <SelectItem value="yes">Verified</SelectItem>
+                <SelectItem value="no">Not Required</SelectItem>
+                <SelectItem value="to_be_done">Pending</SelectItem>
+              </SelectContent>
+            </Select>
             {/* Show customer filter only for admins/staff who can view all agreements */}
             {hasPermission(PERMISSIONS.AGREEMENT_VIEW_ALL) && (
               <Combobox
@@ -1258,13 +1284,14 @@ export default function Agreements() {
             </div>
           )}
           <div className="flex justify-between items-center w-full">
-            {(notaryFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || searchTerm || (statusFilter && statusFilter !== "all")) && (
+            {(notaryFilter !== "all" || policeVerificationFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || searchTerm || (statusFilter && statusFilter !== "all")) && (
               <Button
                 variant="outline"
                 onClick={() => {
                   setSearchTerm("");
                   setStatusFilter("all");
                   setNotaryFilter("all");
+                  setPoliceVerificationFilter("all");
                   setCustomerFilter("all");
                   setTenantFilter("all");
                   setOwnerFilter("all");
@@ -1309,7 +1336,7 @@ export default function Agreements() {
               <div className="p-6 text-center text-gray-500">Loading agreements...</div>
             ) : sortedAgreements?.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
-                {searchTerm || notaryFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
+                {searchTerm || notaryFilter !== "all" || policeVerificationFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
                   <>
                     No agreements found matching your criteria.
                     <Button
@@ -1318,6 +1345,7 @@ export default function Agreements() {
                         setSearchTerm("");
                         setStatusFilter("all");
                         setNotaryFilter("all");
+                        setPoliceVerificationFilter("all");
                         setCustomerFilter("all");
                         setTenantFilter("all");
                         setOwnerFilter("all");
@@ -1494,6 +1522,25 @@ export default function Agreements() {
                                 })()}
                               </div>
                             </div>
+                            
+                            {/* Police Verification Status - Only for imported agreements */}
+                            {isImportedAgreement(agreement) && (
+                              <div>
+                                <span className="font-medium text-gray-600">Police Verification:</span>
+                                <div className="mt-1">
+                                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                                    agreement.policeVerificationStatus === "yes" 
+                                      ? "bg-green-100 text-green-800"
+                                      : agreement.policeVerificationStatus === "no"
+                                      ? "bg-gray-100 text-gray-800" 
+                                      : "bg-yellow-100 text-yellow-800"
+                                  }`}>
+                                    {agreement.policeVerificationStatus === "yes" ? "Verified" : 
+                                     agreement.policeVerificationStatus === "no" ? "Not Required" : "Pending"}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                           
                           <div>
