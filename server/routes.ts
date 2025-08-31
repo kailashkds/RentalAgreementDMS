@@ -2972,13 +2972,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         propertyAddress,
         notarizedDocumentUrl,
         policeVerificationDocumentUrl,
+        policeVerificationStatus,
         status,
         isImported
       } = req.body;
 
       // Validate required fields
-      if (!notarizedDocumentUrl || !policeVerificationDocumentUrl) {
-        return res.status(400).json({ error: 'Both notarized agreement and police verification document URLs are required' });
+      if (!notarizedDocumentUrl) {
+        return res.status(400).json({ error: 'Notarized agreement document is required' });
+      }
+
+      // Only require police verification document if status is "yes"
+      if (policeVerificationStatus === "yes" && !policeVerificationDocumentUrl) {
+        return res.status(400).json({ error: 'Police verification document is required when status is marked as "Yes"' });
       }
 
       if (!customer?.id || !ownerDetails?.name || !tenantDetails?.name) {
@@ -2998,6 +3004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerName: customer.name,
         language: language,
         status: 'active',
+        policeVerificationStatus: policeVerificationStatus || 'to_be_done',
         ownerDetails: ownerDetails,
         tenantDetails: tenantDetails,
         propertyDetails: {
@@ -3034,7 +3041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           uploadDate: new Date().toISOString(),
           url: notarizedDocumentUrl
         },
-        documents: {
+        documents: policeVerificationDocumentUrl ? {
           policeVerificationDocument: {
             filename: "police_verification.pdf",
             originalName: "Police Verification Certificate",
@@ -3043,7 +3050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             uploadDate: new Date().toISOString(),
             url: policeVerificationDocumentUrl
           }
-        }
+        } : {}
       };
 
       // Validate the data using the insert schema
