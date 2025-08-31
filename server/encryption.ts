@@ -20,7 +20,7 @@ export function encryptPassword(password: string): {
   try {
     const iv = crypto.randomBytes(16);
     const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
-    const cipher = crypto.createCipherGCM('aes-256-gcm', key, iv);
+    const cipher = crypto.createCipher('aes-256-gcm', key);
     
     let encrypted = cipher.update(password, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -48,8 +48,9 @@ export function encryptPassword(password: string): {
  */
 export function decryptPassword(encryptedData: string, iv: string, tag: string): string {
   try {
+    // Try new decryption method first
     const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
-    const decipher = crypto.createDecipherGCM('aes-256-gcm', key, Buffer.from(iv, 'hex'));
+    const decipher = crypto.createDecipher('aes-256-gcm', key);
     decipher.setAuthTag(Buffer.from(tag, 'hex'));
     
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
@@ -57,8 +58,21 @@ export function decryptPassword(encryptedData: string, iv: string, tag: string):
     
     return decrypted;
   } catch (error) {
-    console.error('Decryption error:', error);
-    throw new Error('Failed to decrypt password');
+    console.error('New decryption failed, trying legacy method:', error);
+    
+    // Fallback to old decryption method for backward compatibility
+    try {
+      const legacyDecipher = crypto.createDecipher(ALGORITHM, ENCRYPTION_KEY);
+      legacyDecipher.setAuthTag(Buffer.from(tag, 'hex'));
+      
+      let legacyDecrypted = legacyDecipher.update(encryptedData, 'hex', 'utf8');
+      legacyDecrypted += legacyDecipher.final('utf8');
+      
+      return legacyDecrypted;
+    } catch (legacyError) {
+      console.error('Legacy decryption also failed:', legacyError);
+      throw new Error('Failed to decrypt password');
+    }
   }
 }
 
