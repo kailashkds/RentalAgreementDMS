@@ -66,8 +66,8 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.SHARE_AGREEMENT_OWN,
       PERMISSIONS.AGREEMENT_VIEW_NOTARIZED_OWN,
       PERMISSIONS.AGREEMENT_CREATE,
-      PERMISSIONS.VIEW_SENSITIVE_INFO,
       // Note: AGREEMENT_EDIT_NOTARIZED_OWN removed - only Super Admin can edit notarized agreements
+      // Note: VIEW_SENSITIVE_INFO removed - customers don't need access to sensitive information
     ]
   },
   STAFF: {
