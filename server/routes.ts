@@ -695,44 +695,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/unified/users/:id/permission-overrides/:permissionId", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
-    try {
-      const { id, permissionId } = req.params;
-      
-      // Check if user exists
-      const user = await storage.getUser(id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Check if permission exists
-      const permission = await storage.getPermission(permissionId);
-      if (!permission) {
-        return res.status(404).json({ message: "Permission not found" });
-      }
-
-      await storage.removeUserPermissionOverride(id, permissionId);
-
-      // Log audit (non-blocking)
-      try {
-        await storage.createAuditLog({
-          action: 'user.permission_override_removed',
-          resourceType: 'user',
-          resourceId: id,
-          changedBy: req.user.id,
-          diff: { permissionOverride: { removed: permission.code } },
-          metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
-        });
-      } catch (auditError) {
-        console.warn("Failed to create audit log:", auditError);
-      }
-
-      res.json({ message: "Permission override removed successfully" });
-    } catch (error) {
-      console.error("Error removing permission override:", error);
-      res.status(500).json({ message: "Failed to remove permission override" });
-    }
-  });
 
   // Unified roles endpoint
   app.get("/api/unified/roles", requireAuth, async (req, res) => {
