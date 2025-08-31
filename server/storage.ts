@@ -1,21 +1,17 @@
 import {
   users,
-  customers,
   properties,
   societies,
   addresses,
   agreements,
   agreementTemplates,
-  pdfTemplates,
   permissions,
   roles,
   rolePermissions as rolePermissionsTable,
   userRoles,
-  customerRoles,
   userPermissions,
   auditLogs,
 
-  adminUsers,
   type User,
   type UpsertUser,
   type Customer,
@@ -30,8 +26,6 @@ import {
   type InsertAgreement,
   type AgreementTemplate,
   type InsertAgreementTemplate,
-  type PdfTemplate,
-  type InsertPdfTemplate,
   type Permission,
   type InsertPermission,
   type Role,
@@ -42,17 +36,12 @@ import {
   type InsertUserRole,
   type UserPermission,
   type InsertUserPermission,
-  type CustomerRole,
-  type InsertCustomerRole,
   type RoleWithPermissions,
   type RoleWithStringPermissions,
   type UserWithRoles,
-  type CustomerWithRoles,
   type AuditLog,
   type InsertAuditLog,
 
-  type AdminUser,
-  type InsertAdminUser,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, ilike, desc, asc, and, or, count, sql, gte, lte } from "drizzle-orm";

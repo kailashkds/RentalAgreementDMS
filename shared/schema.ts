@@ -106,29 +106,7 @@ export const userPermissions = pgTable("user_permissions", {
   createdBy: varchar("created_by").references(() => users.id), // Who assigned this override
 });
 
-// DEPRECATED: customerRoles is merged into userRoles
-// This table will be dropped after data migration
-export const customerRoles = pgTable("customer_roles", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  customerId: varchar("customer_id").references(() => customers.id, { onDelete: 'cascade' }).notNull(),
-  roleId: varchar("role_id").references(() => roles.id, { onDelete: 'cascade' }).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
 
-// DEPRECATED: customers table is merged into users
-// This table will be dropped after data migration
-export const customers = pgTable("customers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  username: varchar("username").unique(),
-  mobile: varchar("mobile", { length: 20 }).notNull().unique(),
-  email: varchar("email"),
-  password: text("password"), // bcrypt hashed password for authentication
-  encryptedPassword: text("encrypted_password"), // Encrypted password for admin viewing
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
 
 // Properties table for user property management
 export const properties = pgTable("properties", {
@@ -159,19 +137,6 @@ export const properties = pgTable("properties", {
   addressIdx: index("property_address_idx").on(table.society, table.area, table.city),
 }));
 
-// DEPRECATED: adminUsers table is merged into users
-// This table will be dropped after data migration
-export const adminUsers = pgTable("admin_users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: varchar("username", { length: 50 }).notNull().unique(),
-  phone: varchar("phone", { length: 15 }).notNull().unique(),
-  password: text("password").notNull(),
-  name: text("name").notNull(),
-  role: varchar("role", { length: 20 }).notNull().default("admin"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
 
 // Societies table for address autocomplete
 export const societies = pgTable("societies", {
@@ -267,28 +232,10 @@ export const agreementTemplates = pgTable("agreement_templates", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// PDF Templates for dynamic document generation
-export const pdfTemplates = pgTable("pdf_templates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  documentType: text("document_type").notNull(), // 'rental_agreement', 'promissory_note', etc.
-  language: varchar("language", { length: 20 }).notNull(),
-  htmlTemplate: text("html_template").notNull(), // WYSIWYG HTML content
-  dynamicFields: jsonb("dynamic_fields").notNull().default('[]'), // Array of field configurations
-  conditionalRules: jsonb("conditional_rules").notNull().default('[]'), // Conditional display rules
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
 
 
 
 // Relations
-export const customersRelations = relations(customers, ({ many }) => ({
-  properties: many(properties),
-  agreements: many(agreements),
-  customerRoles: many(customerRoles),
-}));
 
 // RBAC Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -305,7 +252,6 @@ export const permissionsRelations = relations(permissions, ({ many }) => ({
 export const rolesRelations = relations(roles, ({ many }) => ({
   rolePermissions: many(rolePermissions),
   userRoles: many(userRoles),
-  customerRoles: many(customerRoles), // Will be deprecated after migration
 }));
 
 export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
@@ -345,16 +291,6 @@ export const userPermissionsRelations = relations(userPermissions, ({ one }) => 
   }),
 }));
 
-export const customerRolesRelations = relations(customerRoles, ({ one }) => ({
-  customer: one(customers, {
-    fields: [customerRoles.customerId],
-    references: [customers.id],
-  }),
-  role: one(roles, {
-    fields: [customerRoles.roleId],
-    references: [roles.id],
-  }),
-}));
 
 export const propertiesRelations = relations(properties, ({ one, many }) => ({
   user: one(users, {
@@ -390,11 +326,6 @@ export const agreementsRelations = relations(agreements, ({ one, many }) => ({
 }));
 
 // Insert schemas
-export const insertCustomerSchema = createInsertSchema(customers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
 
 export const insertSocietySchema = createInsertSchema(societies).omit({
   id: true,
@@ -435,24 +366,14 @@ export const insertAgreementTemplateSchema = createInsertSchema(agreementTemplat
   createdAt: true,
 });
 
-export const insertPdfTemplateSchema = createInsertSchema(pdfTemplates).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
 
 
 
-export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
-export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+// Customer type is now handled through the users table with Customer role
 // Customer type is now based on users table with Customer role
 export interface Customer {
   id: string;
@@ -508,10 +429,6 @@ export const insertUserPermissionSchema = createInsertSchema(userPermissions).om
   createdAt: true,
 });
 
-export const insertCustomerRoleSchema = createInsertSchema(customerRoles).omit({
-  id: true,
-  createdAt: true,
-});
 
 // RBAC Types
 export type InsertPermission = z.infer<typeof insertPermissionSchema>;
@@ -524,8 +441,6 @@ export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
 export type UserRole = typeof userRoles.$inferSelect;
 export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
 export type UserPermission = typeof userPermissions.$inferSelect;
-export type InsertCustomerRole = z.infer<typeof insertCustomerRoleSchema>;
-export type CustomerRole = typeof customerRoles.$inferSelect;
 
 // Extended RBAC types for API responses
 export interface RoleWithPermissions extends Role {

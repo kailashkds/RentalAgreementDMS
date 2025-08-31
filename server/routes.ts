@@ -7,7 +7,7 @@ import { ObjectPermission } from "./objectAcl";
 import { mapFormDataToTemplateFields, generatePdfHtml, convertPdfToImages } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
 import { requirePermission } from "./rbacMiddleware";
-import { insertCustomerSchema, insertSocietySchema, insertPropertySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
+import { insertSocietySchema, insertPropertySchema, insertAgreementSchema } from "@shared/schema";
 import { directFileUpload } from "./directFileUpload";
 import { upload, getFileInfo, deleteFile, readFileAsBase64 } from "./localFileUpload";
 import { seedRBAC, assignDefaultRoleToUser, assignDefaultRoleToCustomer } from "./rbacSeed";
@@ -1667,7 +1667,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const customerData = insertCustomerSchema.parse(req.body);
+      // Create customer data schema dynamically since we moved to unified users table
+      const customerDataSchema = z.object({
+        name: z.string().min(1),
+        mobile: z.string().min(10),
+        email: z.string().email().optional(),
+        password: z.string().optional()
+      });
+      const customerData = customerDataSchema.parse(req.body);
       const customer = await storage.createCustomer({
         ...customerData,
         password: customerData.password || undefined
@@ -1732,7 +1739,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const customerData = insertCustomerSchema.partial().parse(req.body);
+      // Create customer data schema dynamically since we moved to unified users table
+      const customerDataSchema = z.object({
+        name: z.string().min(1).optional(),
+        mobile: z.string().min(10).optional(),
+        email: z.string().email().optional(),
+        password: z.string().optional()
+      });
+      const customerData = customerDataSchema.parse(req.body);
       // Remove null values and convert to correct types
       const cleanData = Object.fromEntries(
         Object.entries(customerData).filter(([_, value]) => value !== null)
@@ -3077,7 +3091,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const templateData = insertPdfTemplateSchema.parse(req.body);
+      // Use agreement templates instead of deprecated PDF templates
+      const templateDataSchema = z.object({
+        name: z.string().min(1),
+        language: z.string(),
+        templateContent: z.string(),
+        isActive: z.boolean().optional()
+      });
+      const templateData = templateDataSchema.parse(req.body);
       const template = await storage.createPdfTemplate(templateData);
       
       console.log(`Template creation: User ${req.user.id} (${req.user.role}) created template ${template.id} - Super Admin: ${isSuperAdmin(req.user)}`);
@@ -3108,7 +3129,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const templateData = insertPdfTemplateSchema.partial().parse(req.body);
+      // Use agreement templates instead of deprecated PDF templates
+      const templateDataSchema = z.object({
+        name: z.string().min(1).optional(),
+        language: z.string().optional(),
+        templateContent: z.string().optional(),
+        isActive: z.boolean().optional()
+      });
+      const templateData = templateDataSchema.parse(req.body);
       const template = await storage.updatePdfTemplate(req.params.id, templateData);
       
       console.log(`Template update: User ${req.user.id} (${req.user.role}) updated template ${template.id} - Super Admin: ${isSuperAdmin(req.user)}`);
