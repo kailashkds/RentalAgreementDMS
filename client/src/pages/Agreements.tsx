@@ -1166,14 +1166,14 @@ export default function Agreements() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Dates</SelectItem>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                <SelectItem value="today">Expiring Today</SelectItem>
+                <SelectItem value="tomorrow">Expiring Tomorrow</SelectItem>
                 <SelectItem value="thisWeek">Expiring This Week</SelectItem>
                 <SelectItem value="thisMonth">Expiring This Month</SelectItem>
                 <SelectItem value="next3Months">Expiring in 3 Months</SelectItem>
-                <SelectItem value="next6Months">Next 6 Months</SelectItem>
-                <SelectItem value="thisYear">This Year</SelectItem>
-                <SelectItem value="custom">Custom Date Range</SelectItem>
+                <SelectItem value="next6Months">Expiring in 6 Months</SelectItem>
+                <SelectItem value="thisYear">Expiring This Year</SelectItem>
+                <SelectItem value="custom">Custom Expiry Range</SelectItem>
               </SelectContent>
             </Select>
             
