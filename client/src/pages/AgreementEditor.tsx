@@ -623,81 +623,86 @@ export default function AgreementEditor() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            onClick={goBack}
-            className="flex items-center gap-2"
-            data-testid="back-button"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Agreements
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Agreement Editor</h1>
-            <p className="text-muted-foreground">Agreement #{agreementNumber}</p>
-            {lastSaved && (
-              <p className="text-xs text-green-600 flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                Last saved: {lastSaved.toLocaleString()}
-              </p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-none">
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+            <Button 
+              variant="ghost" 
+              onClick={goBack}
+              className="flex items-center gap-2 shrink-0"
+              data-testid="back-button"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back to Agreements</span>
+              <span className="sm:hidden">Back</span>
+            </Button>
+            <div className="w-full sm:w-auto">
+              <h1 className="text-xl sm:text-2xl font-bold">Agreement Editor</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">Agreement #{agreementNumber}</p>
+              {lastSaved && (
+                <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                  <Clock className="h-3 w-3" />
+                  Last saved: {lastSaved.toLocaleString()}
+                </p>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+            {isSaving && (
+              <div className="text-sm text-blue-600 font-medium flex items-center gap-1">
+                <Clock className="h-4 w-4 animate-spin" />
+                <span className="hidden sm:inline">Auto-saving...</span>
+                <span className="sm:hidden">Saving...</span>
+              </div>
             )}
+            {isDirty && !isSaving && (
+              <div className="text-sm text-orange-600 font-medium">
+                • Unsaved changes
+              </div>
+            )}
+            {!isDirty && lastSaved && !isSaving && (
+              <div className="text-sm text-green-600 font-medium">
+                ✓ All changes saved
+              </div>
+            )}
+            
+            <Button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 w-full sm:w-auto"
+              variant="outline"
+              data-testid="save-continue"
+            >
+              <Save className="h-4 w-4" />
+              <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save & Continue Later'}</span>
+              <span className="sm:hidden">{isSaving ? 'Saving...' : 'Save'}</span>
+            </Button>
           </div>
         </div>
-        
-        <div className="flex items-center gap-3">
-          {isSaving && (
-            <div className="text-sm text-blue-600 font-medium flex items-center gap-1">
-              <Clock className="h-4 w-4 animate-spin" />
-              Auto-saving...
-            </div>
-          )}
-          {isDirty && !isSaving && (
-            <div className="text-sm text-orange-600 font-medium">
-              • Unsaved changes
-            </div>
-          )}
-          {!isDirty && lastSaved && !isSaving && (
-            <div className="text-sm text-green-600 font-medium">
-              ✓ All changes saved
-            </div>
-          )}
-          
-          <Button 
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2"
-            variant="outline"
-            data-testid="save-continue"
-          >
-            <Save className="h-4 w-4" />
-            {isSaving ? 'Saving...' : 'Save & Continue Later'}
-          </Button>
-        </div>
-      </div>
 
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Document Editor</span>
-              <Button 
-                onClick={generatePDF}
-                disabled={isGeneratingPdf}
-                className="flex items-center gap-2"
-                data-testid="generate-pdf"
-              >
-                <FileText className="h-4 w-4" />
-                {isGeneratingPdf ? 'Generating...' : 'Generate PDF'}
-              </Button>
-            </CardTitle>
-            
-            {/* Formatting Toolbar */}
-            <div className="flex items-center gap-2 p-3 border rounded-md bg-gray-50">
-              {/* Text Formatting */}
-              <div className="flex items-center gap-1 border-r pr-2">
+        <div className="space-y-4 sm:space-y-6">
+          <Card className="shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <span className="text-lg sm:text-xl">Document Editor</span>
+                <Button 
+                  onClick={generatePDF}
+                  disabled={isGeneratingPdf}
+                  className="flex items-center gap-2 w-full sm:w-auto"
+                  data-testid="generate-pdf"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span className="hidden sm:inline">{isGeneratingPdf ? 'Generating...' : 'Generate PDF'}</span>
+                  <span className="sm:hidden">{isGeneratingPdf ? 'Generating...' : 'PDF'}</span>
+                </Button>
+              </CardTitle>
+              
+              {/* Formatting Toolbar */}
+              <div className="flex flex-wrap items-center gap-2 p-2 sm:p-3 border rounded-md bg-gray-50 overflow-x-auto">
+                {/* Text Formatting */}
+                <div className="flex items-center gap-1 border-r pr-2 shrink-0">
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -821,7 +826,7 @@ export default function AgreementEditor() {
             <div
               ref={editorRef}
               contentEditable
-              className="min-h-[600px] p-4 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="min-h-[400px] sm:min-h-[600px] lg:min-h-[700px] p-3 sm:p-4 lg:p-6 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white overflow-auto resize-none text-sm sm:text-base"
               style={{
                 fontFamily: language === 'gujarati' 
                   ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif'
@@ -829,7 +834,10 @@ export default function AgreementEditor() {
                   ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
                   : language === 'tamil'
                   ? '"Noto Sans Tamil", "Lohit Tamil", system-ui, Arial, sans-serif'
-                  : '"Times New Roman", serif'
+                  : '"Times New Roman", serif',
+                maxWidth: '100%',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word'
               }}
               onInput={handleContentChange}
               onPaste={handleContentChange}
@@ -845,6 +853,47 @@ export default function AgreementEditor() {
                 font-family: 'Times New Roman', serif;
                 line-height: 1.6;
                 color: #000;
+                max-width: 100%;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+              }
+              
+              /* Responsive adjustments */
+              @media (max-width: 640px) {
+                .editor-content {
+                  font-size: 14px;
+                  line-height: 1.5;
+                }
+                
+                .editor-content h1 {
+                  font-size: 18pt;
+                }
+                
+                .editor-content h2 {
+                  font-size: 16pt;
+                }
+                
+                .editor-content h3 {
+                  font-size: 14pt;
+                }
+              }
+              
+              @media (min-width: 641px) and (max-width: 1024px) {
+                .editor-content {
+                  font-size: 15px;
+                }
+                
+                .editor-content h1 {
+                  font-size: 20pt;
+                }
+                
+                .editor-content h2 {
+                  font-size: 17pt;
+                }
+                
+                .editor-content h3 {
+                  font-size: 15pt;
+                }
               }
               
               .editor-content p {
@@ -950,6 +999,7 @@ export default function AgreementEditor() {
           </CardContent>
         </Card>
       </div>
+    </div>
     </div>
   );
 }
