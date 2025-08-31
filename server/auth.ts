@@ -304,12 +304,12 @@ export async function setupAuth(app: Express) {
       
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      const newUser = await storage.createAdminUser({
+      const newUser = await storage.createUser({
         username,
-        phone,
+        mobile: phone,
         password: hashedPassword,
         name,
-        role,
+        defaultRole: role,
       });
       
       const { password: _, ...userWithoutPassword } = newUser;
@@ -356,8 +356,9 @@ export async function setupAuth(app: Express) {
         });
       }
       
-      const users = await storage.getAdminUsers();
-      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+      const usersData = await storage.getUsers({ defaultRole: "super_admin" });
+      const users = usersData.users;
+      const usersWithoutPasswords = users.map(({ password, ...user }: any) => user);
       res.json(usersWithoutPasswords);
     } catch (error) {
       console.error("Get admin users error:", error);

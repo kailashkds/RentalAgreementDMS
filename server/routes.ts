@@ -33,8 +33,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adminUser: adminUser ? { 
           id: adminUser.id, 
           username: adminUser.username, 
-          phone: adminUser.phone, 
-          name: `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() 
+          mobile: adminUser.mobile, 
+          name: adminUser.name
         } : null,
         totalAdmins: allAdmins.users.length,
         environment: process.env.NODE_ENV || 'development'
@@ -58,8 +58,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Admin already exists", 
           admin: { 
             username: existingAdmin.username, 
-            phone: existingAdmin.phone, 
-            name: `${existingAdmin.firstName || ''} ${existingAdmin.lastName || ''}`.trim() 
+            mobile: existingAdmin.mobile, 
+            name: existingAdmin.name
           } 
         });
       }
@@ -68,9 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newAdmin = await storage.createUser({
         name: "Administrator",
         username: "admin",
-        phone: "9999999999",
-        firstName: "Administrator",
-        lastName: null,
+        mobile: "9999999999",
         password: hashedPassword,
         defaultRole: "super_admin",
         status: "active"
@@ -80,8 +78,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Admin created successfully", 
         admin: { 
           username: newAdmin.username, 
-          phone: newAdmin.phone, 
-          name: `${newAdmin.firstName || ''} ${newAdmin.lastName || ''}`.trim() 
+          mobile: newAdmin.mobile, 
+          name: newAdmin.name
         } 
       });
     } catch (error) {
@@ -179,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser({
         name,
         username,
-        phone: `999${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`, // Generate 10-digit phone
+        mobile: `999${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`, // Generate 10-digit mobile
         password: hashedPassword,
         status: 'active',
         isActive: true,
@@ -229,13 +227,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user exists
-      const userToDelete = await storage.getAdminUser(id);
+      const userToDelete = await storage.getUser(id);
       if (!userToDelete) {
         return res.status(404).json({ message: "User not found" });
       }
       
       // Delete the user
-      await storage.deleteAdminUser(id);
+      await storage.deleteUser(id);
       res.status(204).send();
     } catch (error) {
       console.error("Delete admin user error:", error);

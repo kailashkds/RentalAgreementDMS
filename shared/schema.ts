@@ -201,6 +201,9 @@ export const agreements: any = pgTable("agreements", {
   // Notary status tracking - automatically updates to 'expired' when agreement expires
   notaryStatus: varchar("notary_status", { length: 20 }).default("pending"), // pending, complete, draft, expired
   
+  // Police verification status tracking
+  policeVerificationStatus: varchar("police_verification_status", { length: 20 }).default("to_be_done"), // yes, no, to_be_done
+  
   // Relationship tracking
   parentAgreementId: varchar("parent_agreement_id"),
   renewedFromId: varchar("renewed_from_id"),
