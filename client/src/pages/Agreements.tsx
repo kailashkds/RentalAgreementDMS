@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -1111,45 +1112,51 @@ export default function Agreements() {
                 <SelectItem value="complete_first">Complete First</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={customerFilter} onValueChange={setCustomerFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="All Customers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Customers</SelectItem>
-                {uniqueCustomers.map((customer) => (
-                  <SelectItem key={customer} value={customer}>
-                    {customer}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={tenantFilter} onValueChange={setTenantFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="All Tenants" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Tenants</SelectItem>
-                {uniqueTenants.map((tenant) => (
-                  <SelectItem key={tenant} value={tenant}>
-                    {tenant}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="All Owners" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Owners</SelectItem>
-                {uniqueOwners.map((owner) => (
-                  <SelectItem key={owner} value={owner}>
-                    {owner}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={[
+                { value: "all", label: "All Customers" },
+                ...uniqueCustomers.map((customer) => ({
+                  value: customer,
+                  label: customer
+                }))
+              ]}
+              value={customerFilter}
+              onValueChange={setCustomerFilter}
+              placeholder="All Customers"
+              emptyMessage="No customers found..."
+              className="w-full sm:w-48"
+              allowCustom={false}
+            />
+            <Combobox
+              options={[
+                { value: "all", label: "All Tenants" },
+                ...uniqueTenants.map((tenant) => ({
+                  value: tenant,
+                  label: tenant
+                }))
+              ]}
+              value={tenantFilter}
+              onValueChange={setTenantFilter}
+              placeholder="All Tenants"
+              emptyMessage="No tenants found..."
+              className="w-full sm:w-48"
+              allowCustom={false}
+            />
+            <Combobox
+              options={[
+                { value: "all", label: "All Owners" },
+                ...uniqueOwners.map((owner) => ({
+                  value: owner,
+                  label: owner
+                }))
+              ]}
+              value={ownerFilter}
+              onValueChange={setOwnerFilter}
+              placeholder="All Owners"
+              emptyMessage="No owners found..."
+              className="w-full sm:w-48"
+              allowCustom={false}
+            />
             
             {/* Date Filter */}
             <Select value={dateFilter} onValueChange={setDateFilter}>
