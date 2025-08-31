@@ -1628,24 +1628,6 @@ export default function Agreements() {
                               </p>
                             </div>
                             
-                            {/* Police Verification Status - aligned on the same line for imported agreements */}
-                            {isImportedAgreement(agreement) && (
-                              <div className="flex-shrink-0">
-                                <span className="font-medium text-gray-600">Police Verification:</span>
-                                <div className="mt-1">
-                                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                                    agreement.policeVerificationStatus === "done" 
-                                      ? "bg-green-100 text-green-800"
-                                      : agreement.policeVerificationStatus === "not_done"
-                                      ? "bg-gray-100 text-gray-800" 
-                                      : "bg-yellow-100 text-yellow-800"
-                                  }`}>
-                                    {agreement.policeVerificationStatus === "done" ? "Done" : 
-                                     agreement.policeVerificationStatus === "not_done" ? "Not Done" : "Pending"}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
