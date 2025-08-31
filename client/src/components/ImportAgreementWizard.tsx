@@ -965,9 +965,9 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="yes">Yes - Police verification done</SelectItem>
-                      <SelectItem value="no">No - Police verification not required</SelectItem>
-                      <SelectItem value="to_be_done">To be done - Police verification pending</SelectItem>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                      <SelectItem value="to_be_done">Pending</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-gray-500">
