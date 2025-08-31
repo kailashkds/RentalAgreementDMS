@@ -276,8 +276,8 @@ export default function Agreements() {
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
     ...dateParams,
-    limit: 20,
-    offset: (currentPage - 1) * 20,
+    limit: 25,
+    offset: (currentPage - 1) * 25,
   });
 
   // Extract unique values for dropdown options
@@ -1677,10 +1677,10 @@ export default function Agreements() {
         </Card>
 
         {/* Enhanced Pagination */}
-        {agreementsData && agreementsData.total > 20 && (
+        {agreementsData && agreementsData.total > 25 && (
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, agreementsData.total)} of{" "}
+              Showing {((currentPage - 1) * 25) + 1} to {Math.min(currentPage * 25, agreementsData.total)} of{" "}
               {agreementsData.total} results
             </div>
             
@@ -1696,7 +1696,7 @@ export default function Agreements() {
                 </PaginationItem>
                 
                 {/* Page Numbers */}
-                {generatePageNumbers(currentPage, Math.ceil(agreementsData.total / 20)).map((page, index) => (
+                {generatePageNumbers(currentPage, Math.ceil(agreementsData.total / 25)).map((page, index) => (
                   <PaginationItem key={index}>
                     {page === '...' ? (
                       <PaginationEllipsis />
@@ -1717,7 +1717,7 @@ export default function Agreements() {
                 <PaginationItem>
                   <PaginationNext 
                     onClick={() => setCurrentPage(page => page + 1)}
-                    className={currentPage * 20 >= agreementsData.total ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={currentPage * 25 >= agreementsData.total ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     data-testid="button-next-page"
                   />
                 </PaginationItem>
