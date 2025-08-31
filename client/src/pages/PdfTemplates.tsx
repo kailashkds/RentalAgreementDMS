@@ -423,11 +423,40 @@ export default function PdfTemplates() {
           onClose={() => setShowEditor(false)}
           onSave={(templateData) => {
             if (selectedTemplate) {
-              updateTemplate({ id: selectedTemplate.id, data: templateData });
+              updateTemplate({ id: selectedTemplate.id, data: templateData }, {
+                onSuccess: () => {
+                  toast({
+                    title: "Success",
+                    description: "Template updated successfully",
+                  });
+                  setShowEditor(false);
+                },
+                onError: (error: Error) => {
+                  toast({
+                    title: "Error", 
+                    description: error.message,
+                    variant: "destructive",
+                  });
+                },
+              });
             } else {
-              createTemplate(templateData);
+              createTemplate(templateData, {
+                onSuccess: () => {
+                  toast({
+                    title: "Success",
+                    description: "Template created successfully",
+                  });
+                  setShowEditor(false);
+                },
+                onError: (error: Error) => {
+                  toast({
+                    title: "Error",
+                    description: error.message, 
+                    variant: "destructive",
+                  });
+                },
+              });
             }
-            setShowEditor(false);
           }}
         />
       )}

@@ -303,10 +303,6 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
     }
 
     onSave(formData);
-    toast({
-      title: "Success",
-      description: template ? "Template updated successfully" : "Template created successfully",
-    });
   };
 
   const insertDynamicField = (fieldKey: string) => {
