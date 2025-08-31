@@ -1770,7 +1770,7 @@ export default function Agreements() {
                               disabled={uploadingPoliceVerification}
                               title="Upload Police Verification Certificate"
                             >
-                              <FileCheck className="h-4 w-4" />
+                              <Upload className="h-4 w-4" />
                             </Button>
                           )}
                           {agreement.status !== "draft" && (
