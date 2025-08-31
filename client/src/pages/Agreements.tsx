@@ -366,10 +366,10 @@ export default function Agreements() {
     const sorted = [...filteredAgreements].sort((a, b) => {
       switch (sortBy) {
         case "agreement_number_desc":
-          // Sort by agreement number descending (newest first)
-          const aNum = parseInt(a.agreementNumber?.replace(/[^0-9]/g, '') || '0');
-          const bNum = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
-          return bNum - aNum;
+          // Sort by creation date descending (newest first) - this shows truly newest agreements
+          const aDate = new Date(a.createdAt || 0).getTime();
+          const bDate = new Date(b.createdAt || 0).getTime();
+          return bDate - aDate;
           
         case "agreement_number_asc":
           // Sort by agreement number ascending (oldest first)
