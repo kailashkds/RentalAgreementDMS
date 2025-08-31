@@ -1111,7 +1111,7 @@ export default function Agreements() {
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex flex-col justify-between items-start gap-4">
-          <div className="flex flex-col lg:flex-row gap-4 w-full">
+          <div className="flex flex-wrap gap-4 w-full">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
