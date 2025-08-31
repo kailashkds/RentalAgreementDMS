@@ -314,6 +314,7 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ 
         password: hashedPassword,
+        encryptedPassword: encryptedPassword,
         updatedAt: new Date() 
       })
       .where(eq(users.id, id))
@@ -499,6 +500,7 @@ export class DatabaseStorage implements IStorage {
           mobile: user.mobile,
           email: user.email,
           password: user.password,
+          encryptedPassword: user.encryptedPassword,
           isActive: user.status === 'active',
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
@@ -520,10 +522,11 @@ export class DatabaseStorage implements IStorage {
     // Convert unified user to customer format
     return {
       id: user.id,
-      name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      name: user.name,
       mobile: user.mobile!,
       email: user.email,
       password: user.password,
+      encryptedPassword: user.encryptedPassword,
       isActive: user.status === 'active',
       createdAt: user.createdAt!,
       updatedAt: user.updatedAt!,
@@ -537,10 +540,11 @@ export class DatabaseStorage implements IStorage {
     // Convert unified user to customer format
     return {
       id: user.id,
-      name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      name: user.name,
       mobile: user.mobile!,
       email: user.email,
       password: user.password,
+      encryptedPassword: user.encryptedPassword,
       isActive: user.status === 'active',
       createdAt: user.createdAt!,
       updatedAt: user.updatedAt!,
@@ -571,8 +575,9 @@ export class DatabaseStorage implements IStorage {
 
   async createCustomer(customerData: InsertCustomer & { password?: string }): Promise<Customer> {
     const plainPassword = customerData.password || "default123";
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+    const encryptedPassword = encryptPasswordForStorage(plainPassword);
     
-    // For customers, store plain text password for admin viewing (as per replit.md)
     // Create customer in unified users table
     const [newUser] = await db
       .insert(users)
@@ -580,7 +585,8 @@ export class DatabaseStorage implements IStorage {
         name: customerData.name,
         mobile: customerData.mobile,
         email: customerData.email,
-        password: plainPassword, // Store plain text for customers
+        password: hashedPassword, // Store hashed password for authentication
+        encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
         defaultRole: 'Customer',
         status: 'active',
         isActive: true,
@@ -667,11 +673,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async resetCustomerPassword(id: string, newPassword: string): Promise<Customer> {
-    // For customers, store plain text password for admin viewing (as per replit.md)
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const encryptedPassword = encryptPasswordForStorage(newPassword);
+    
     const [user] = await db
       .update(users)
       .set({ 
-        password: newPassword, // Store plain text for customers
+        password: hashedPassword, // Store hashed password for authentication
+        encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
         updatedAt: new Date() 
       })
       .where(eq(users.id, id))

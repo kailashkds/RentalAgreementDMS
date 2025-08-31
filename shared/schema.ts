@@ -32,7 +32,8 @@ export const users = pgTable("users", {
   // Authentication fields
   username: varchar("username", { length: 50 }).unique(), // For admin login
   mobile: varchar("mobile", { length: 20 }).unique(), // For customer mobile
-  password: text("password").notNull(), // Password for login
+  password: text("password").notNull(), // Hashed password for login
+  encryptedPassword: text("encrypted_password"), // Encrypted password for admin viewing
   
   // Profile fields
   name: text("name").notNull(), // Full name or display name
@@ -452,7 +453,18 @@ export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
-export type Customer = typeof customers.$inferSelect;
+// Customer type is now based on users table with Customer role
+export interface Customer {
+  id: string;
+  name: string;
+  mobile: string;
+  email?: string | null;
+  password?: string | null;
+  encryptedPassword?: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 export type InsertSociety = z.infer<typeof insertSocietySchema>;
 export type Society = typeof societies.$inferSelect;
 export type InsertAddress = z.infer<typeof insertAddressSchema>;
