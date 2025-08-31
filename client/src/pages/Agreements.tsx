@@ -1761,12 +1761,7 @@ export default function Agreements() {
                             </Button>
                           )}
                           {/* Upload Police Verification Button - Show for imported agreements with pending police verification */}
-                          {(() => {
-                            const isImported = isImportedAgreement(agreement);
-                            const isPending = agreement.policeVerificationStatus !== "done";
-                            console.log(`Agreement ${agreement.agreementNumber}: isImported=${isImported}, policeVerificationStatus=${agreement.policeVerificationStatus}, isPending=${isPending}`);
-                            return isImported && isPending;
-                          })() && (
+                          {isImportedAgreement(agreement) && agreement.policeVerificationStatus !== "done" && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
