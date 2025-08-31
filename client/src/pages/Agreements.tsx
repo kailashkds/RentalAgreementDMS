@@ -1742,8 +1742,8 @@ export default function Agreements() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
-                          {/* Upload Notarized Button - Show only if user has notarize permission */}
-                          {hasPermission(PERMISSIONS.AGREEMENT_NOTARIZE) && agreement.status === "active" && agreement.notaryStatus === "pending" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
+                          {/* Upload Notarized Button - Show only for regular agreements (not imported) with notarize permission */}
+                          {hasPermission(PERMISSIONS.AGREEMENT_NOTARIZE) && !isImportedAgreement(agreement) && agreement.status === "active" && agreement.notaryStatus === "pending" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
