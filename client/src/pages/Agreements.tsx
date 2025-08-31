@@ -1760,8 +1760,8 @@ export default function Agreements() {
                               <Upload className="h-4 w-4" />
                             </Button>
                           )}
-                          {/* Upload Police Verification Button - Show for imported agreements with pending police verification */}
-                          {isImportedAgreement(agreement) && agreement.policeVerificationStatus !== "done" && (
+                          {/* Upload Police Verification Button - Show for imported agreements with pending or not_done police verification */}
+                          {isImportedAgreement(agreement) && (agreement.policeVerificationStatus === "pending" || agreement.policeVerificationStatus === "not_done") && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
