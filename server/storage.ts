@@ -82,6 +82,10 @@ export interface IStorage {
   saveAddress(address: InsertAddress): Promise<Address>;
   incrementAddressUsage(addressId: string): Promise<void>;
   
+  // PDF Template operations (minimal for agreement generation)
+  getPdfTemplates(documentType?: string, language?: string): Promise<any[]>;
+  getPdfTemplate(id: string): Promise<any | undefined>;
+  
   
 
   
@@ -1417,6 +1421,20 @@ export class DatabaseStorage implements IStorage {
       expiringSoon: expiringSoon[0].count,
       totalCustomers: totalCustomers[0].count,
     };
+  }
+
+  // Minimal PDF Template operations for agreement generation
+  async getPdfTemplates(documentType?: string, language?: string): Promise<any[]> {
+    // Return empty array since the system uses hardcoded templates
+    // This prevents the error while maintaining compatibility
+    console.log(`[PDF Templates] Called getPdfTemplates with documentType: ${documentType}, language: ${language}`);
+    return [];
+  }
+
+  async getPdfTemplate(id: string): Promise<any | undefined> {
+    // Return undefined since we don't store PDF templates in database anymore
+    console.log(`[PDF Templates] Called getPdfTemplate with id: ${id}`);
+    return undefined;
   }
 
 
