@@ -543,7 +543,17 @@ export default function Agreements() {
 
 
 
-  const handleViewAgreement = (agreementId: string) => {
+  const handleViewAgreement = async (agreementId: string) => {
+    // Automatically update expired status when viewing agreements
+    try {
+      await apiRequest('/api/agreements/update-expired', 'POST');
+      // Invalidate cache to refresh agreement data
+      queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
+    } catch (error) {
+      console.log('Auto status update failed:', error);
+      // Don't show error to user, just continue with viewing
+    }
+    
     const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
     if (agreement) {
       setViewingAgreement(agreement);
@@ -1113,46 +1123,37 @@ export default function Agreements() {
               </SelectContent>
             </Select>
             <Combobox
-              options={[
-                { value: "all", label: "All Customers" },
-                ...uniqueCustomers.map((customer) => ({
-                  value: customer,
-                  label: customer
-                }))
-              ]}
-              value={customerFilter}
-              onValueChange={setCustomerFilter}
-              placeholder="All Customers"
+              options={uniqueCustomers.map((customer) => ({
+                value: customer,
+                label: customer
+              }))}
+              value={customerFilter === "all" ? "" : customerFilter}
+              onValueChange={(value) => setCustomerFilter(value || "all")}
+              placeholder="Filter by Customer"
               emptyMessage="No customers found..."
               className="w-full sm:w-48"
               allowCustom={false}
             />
             <Combobox
-              options={[
-                { value: "all", label: "All Tenants" },
-                ...uniqueTenants.map((tenant) => ({
-                  value: tenant,
-                  label: tenant
-                }))
-              ]}
-              value={tenantFilter}
-              onValueChange={setTenantFilter}
-              placeholder="All Tenants"
+              options={uniqueTenants.map((tenant) => ({
+                value: tenant,
+                label: tenant
+              }))}
+              value={tenantFilter === "all" ? "" : tenantFilter}
+              onValueChange={(value) => setTenantFilter(value || "all")}
+              placeholder="Filter by Tenant"
               emptyMessage="No tenants found..."
               className="w-full sm:w-48"
               allowCustom={false}
             />
             <Combobox
-              options={[
-                { value: "all", label: "All Owners" },
-                ...uniqueOwners.map((owner) => ({
-                  value: owner,
-                  label: owner
-                }))
-              ]}
-              value={ownerFilter}
-              onValueChange={setOwnerFilter}
-              placeholder="All Owners"
+              options={uniqueOwners.map((owner) => ({
+                value: owner,
+                label: owner
+              }))}
+              value={ownerFilter === "all" ? "" : ownerFilter}
+              onValueChange={(value) => setOwnerFilter(value || "all")}
+              placeholder="Filter by Owner"
               emptyMessage="No owners found..."
               className="w-full sm:w-48"
               allowCustom={false}
@@ -1282,18 +1283,6 @@ export default function Agreements() {
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   Import Existing Agreement
-                </Button>
-              )}
-              {/* Update Expired Status Button - Show only if user has edit all permission */}
-              {hasPermission(PERMISSIONS.AGREEMENT_EDIT_ALL) && (
-                <Button 
-                  onClick={handleUpdateExpiredAgreements}
-                  variant="outline" 
-                  className="border-orange-600 text-orange-600 hover:bg-orange-50"
-                  data-testid="button-update-expired"
-                >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Update Expired Status
                 </Button>
               )}
             </div>
