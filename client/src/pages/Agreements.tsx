@@ -1523,9 +1523,30 @@ export default function Agreements() {
                               </div>
                             </div>
                             
-                            {/* Police Verification Status - Only for imported agreements */}
+                          </div>
+                          
+                          {/* Property Address and Police Verification on same line */}
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <span className="font-medium text-gray-600">Property Address:</span>
+                              <p className="text-gray-900">
+                                {(() => {
+                                  const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
+                                  if (propertyAddr) {
+                                    return [
+                                      propertyAddr.flatNo,
+                                      propertyAddr.society,
+                                      propertyAddr.area,
+                                      propertyAddr.city
+                                    ].filter(Boolean).join(', ');
+                                  }
+                                  return 'Not available';
+                                })()}
+                              </p>
+                            </div>
+                            {/* Police Verification Status - Only for imported agreements, positioned on right */}
                             {isImportedAgreement(agreement) && (
-                              <div>
+                              <div className="flex-shrink-0 ml-4">
                                 <span className="font-medium text-gray-600">Police Verification:</span>
                                 <div className="mt-1">
                                   <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
@@ -1541,24 +1562,6 @@ export default function Agreements() {
                                 </div>
                               </div>
                             )}
-                          </div>
-                          
-                          <div>
-                            <span className="font-medium text-gray-600">Property Address:</span>
-                            <p className="text-gray-900">
-                              {(() => {
-                                const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
-                                if (propertyAddr) {
-                                  return [
-                                    propertyAddr.flatNo,
-                                    propertyAddr.society,
-                                    propertyAddr.area,
-                                    propertyAddr.city
-                                  ].filter(Boolean).join(', ');
-                                }
-                                return 'Not available';
-                              })()}
-                            </p>
                           </div>
                         </div>
                       </div>
