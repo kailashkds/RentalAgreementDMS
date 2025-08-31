@@ -90,6 +90,12 @@ export default function UserRoleManagement() {
   const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
   const [selectedUserPermissions, setSelectedUserPermissions] = useState<any>(null);
   
+  // Password reset dialog state
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [currentPassword, setCurrentPassword] = useState<string | null>(null);
+  const [isLoadingCurrentPassword, setIsLoadingCurrentPassword] = useState(false);
+  
   // Local state for pending permission changes (before saving)
   const [pendingPermissionChanges, setPendingPermissionChanges] = useState<{
     toAdd: string[]; // permission IDs to add
@@ -198,15 +204,8 @@ export default function UserRoleManagement() {
       return response.json();
     },
     onSuccess: (data: { currentPassword: string | null; newPassword: string }) => {
-      const currentPasswordText = data.currentPassword 
-        ? `Current password: ${data.currentPassword}\n` 
-        : "Current password: Not available\n";
-      
-      toast({
-        title: "Password Reset Successful",
-        description: `${currentPasswordText}New password: ${data.newPassword}`,
-        duration: 15000, // Show for 15 seconds so admin can copy both passwords
-      });
+      // Update the current password display with the new password
+      setCurrentPassword(data.newPassword);
       queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
     },
     onError: (error: any) => {
@@ -373,6 +372,23 @@ export default function UserRoleManagement() {
     setManagingPermissionsUser(user);
     setPendingPermissionChanges({ toAdd: [], toRemove: [] }); // Reset pending changes
     setIsPermissionsModalOpen(true);
+  };
+
+  const openResetPasswordDialog = async (user: User) => {
+    setResetPasswordUser(user);
+    setCurrentPassword(null);
+    setIsLoadingCurrentPassword(true);
+    setResetPasswordDialogOpen(true);
+    
+    try {
+      // Fetch current password without resetting
+      const data = await apiRequest(`/api/unified/users/${user.id}/current-password`);
+      setCurrentPassword(data.currentPassword || "Unable to decrypt current password");
+    } catch (error) {
+      setCurrentPassword("Error loading current password");
+    } finally {
+      setIsLoadingCurrentPassword(false);
+    }
   };
 
   const handleUserSubmit = (e: React.FormEvent) => {
@@ -767,31 +783,10 @@ export default function UserRoleManagement() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit User
                               </DropdownMenuItem>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                    <Key className="h-4 w-4 mr-2" />
-                                    Reset Password
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Reset Password</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to reset this user's password? A new password will be generated and the user will need to be notified.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => resetPasswordMutation.mutate(user.id)}
-                                      disabled={resetPasswordMutation.isPending}
-                                    >
-                                      {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                              <DropdownMenuItem onClick={() => openResetPasswordDialog(user)}>
+                                <Key className="h-4 w-4 mr-2" />
+                                Reset Password
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openManagePermissions(user)}>
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Manage Permissions
@@ -1241,6 +1236,53 @@ export default function UserRoleManagement() {
           <div className="flex justify-end pt-4">
             <Button onClick={() => setPermissionsDialogOpen(false)}>
               Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Reset Dialog */}
+      <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Current password for user: {resetPasswordUser?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="current-password">Current Password</Label>
+              <div className="relative">
+                <Input
+                  id="current-password"
+                  type="text"
+                  value={currentPassword || ""}
+                  readOnly
+                  className="bg-gray-50"
+                  placeholder={isLoadingCurrentPassword ? "Loading..." : "No password available"}
+                />
+                {isLoadingCurrentPassword && (
+                  <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button variant="outline" onClick={() => setResetPasswordDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (resetPasswordUser) {
+                  resetPasswordMutation.mutate(resetPasswordUser.id);
+                }
+              }}
+              disabled={resetPasswordMutation.isPending}
+            >
+              {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
             </Button>
           </div>
         </DialogContent>

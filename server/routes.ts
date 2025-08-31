@@ -576,6 +576,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current password (for display before reset)
+  app.get("/api/unified/users/:id/current-password", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get current user data to decrypt current password
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      let currentPassword = null;
+      try {
+        // Try to decrypt the current password if it exists
+        if (user.encryptedPassword) {
+          const { decryptPasswordFromStorage } = await import('./encryption');
+          currentPassword = decryptPasswordFromStorage(user.encryptedPassword);
+        }
+      } catch (decryptError) {
+        console.warn("Failed to decrypt current password:", decryptError);
+        currentPassword = "Unable to decrypt current password";
+      }
+      
+      res.json({ currentPassword });
+    } catch (error) {
+      console.error("Error getting current password:", error);
+      res.status(500).json({ message: "Failed to get current password" });
+    }
+  });
+
   app.patch("/api/unified/users/:id/reset-password", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
