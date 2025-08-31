@@ -197,12 +197,17 @@ export default function UserRoleManagement() {
       const response = await apiRequest(`/api/unified/users/${userId}/reset-password`, "PATCH");
       return response.json();
     },
-    onSuccess: (data: { password: string }) => {
+    onSuccess: (data: { currentPassword: string | null; newPassword: string }) => {
+      const currentPasswordText = data.currentPassword 
+        ? `Current password: ${data.currentPassword}\n` 
+        : "Current password: Not available\n";
+      
       toast({
         title: "Password Reset Successful",
-        description: `New password: ${data.password}`,
-        duration: 10000, // Show for 10 seconds so admin can copy it
+        description: `${currentPasswordText}New password: ${data.newPassword}`,
+        duration: 15000, // Show for 15 seconds so admin can copy both passwords
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
     },
     onError: (error: any) => {
       toast({

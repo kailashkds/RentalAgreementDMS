@@ -581,6 +581,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { newPassword } = req.body;
       
+      // Get current user data to decrypt current password
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      let currentPassword = null;
+      try {
+        // Try to decrypt the current password if it exists
+        if (user.encryptedPassword) {
+          const { decryptPasswordFromStorage } = await import('./encryption');
+          currentPassword = decryptPasswordFromStorage(user.encryptedPassword);
+        }
+      } catch (decryptError) {
+        console.warn("Failed to decrypt current password:", decryptError);
+        currentPassword = "Unable to decrypt current password";
+      }
+      
       const finalPassword = newPassword || generatePassword();
       await storage.resetUserPassword(id, finalPassword);
 
@@ -597,7 +615,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn("Failed to create audit log:", auditError);
       }
 
-      res.json({ password: finalPassword });
+      res.json({ 
+        currentPassword: currentPassword,
+        newPassword: finalPassword 
+      });
     } catch (error) {
       console.error("Error resetting user password:", error);
       res.status(500).json({ message: "Failed to reset password" });
