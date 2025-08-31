@@ -1090,9 +1090,30 @@ export default function UserRoleManagement() {
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
                                 <span className="text-sm font-medium">{formatPermissionName(permission.name)}</span>
-                                {isFromRole && <Badge variant="outline" className="text-xs">Role</Badge>}
-                                {isManuallyAdded && <Badge variant="default" className="text-xs bg-green-100 text-green-800">+Added</Badge>}
-                                {isManuallyRemoved && <Badge variant="default" className="text-xs bg-red-100 text-red-800">-Removed</Badge>}
+                                {(() => {
+                                  // Smart badge logic: if both added and removed, they cancel out
+                                  if (isManuallyAdded && isManuallyRemoved) {
+                                    // Both actions cancel out - show original state (Role if from role, nothing if not)
+                                    if (isFromRole) {
+                                      return <Badge variant="outline" className="text-xs">Role</Badge>;
+                                    }
+                                    return null; // No badge if not from role originally
+                                  }
+                                  
+                                  // Show individual states
+                                  const badges = [];
+                                  if (isFromRole && !isManuallyRemoved) {
+                                    badges.push(<Badge key="role" variant="outline" className="text-xs">Role</Badge>);
+                                  }
+                                  if (isManuallyAdded && !isManuallyRemoved) {
+                                    badges.push(<Badge key="added" variant="default" className="text-xs bg-green-100 text-green-800">+Added</Badge>);
+                                  }
+                                  if (isManuallyRemoved && !isManuallyAdded) {
+                                    badges.push(<Badge key="removed" variant="default" className="text-xs bg-red-100 text-red-800">-Removed</Badge>);
+                                  }
+                                  
+                                  return badges;
+                                })()}
                                 {isPendingAdd && <Badge variant="default" className="text-xs bg-blue-100 text-blue-800">Pending +</Badge>}
                                 {isPendingRemove && <Badge variant="default" className="text-xs bg-orange-100 text-orange-800">Pending -</Badge>}
                               </div>
