@@ -1075,8 +1075,8 @@ export default function Agreements() {
 
   // Helper function to check if agreement is imported
   const isImportedAgreement = (agreement: any) => {
-    // Only imported agreements have police verification documents
-    return agreement?.documents?.policeVerificationDocument?.url;
+    // Check if agreement is marked as imported (new field)
+    return agreement?.isImported === true;
   };
 
   const getStatusBadge = (status: string | undefined) => {

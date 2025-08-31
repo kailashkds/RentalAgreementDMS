@@ -204,6 +204,9 @@ export const agreements: any = pgTable("agreements", {
   // Police verification status tracking
   policeVerificationStatus: varchar("police_verification_status", { length: 20 }).default("to_be_done"), // yes, no, to_be_done
   
+  // Import tracking - to distinguish imported vs generated agreements
+  isImported: boolean("is_imported").default(false), // true for imported agreements, false for generated ones
+  
   // Relationship tracking
   parentAgreementId: varchar("parent_agreement_id"),
   renewedFromId: varchar("renewed_from_id"),

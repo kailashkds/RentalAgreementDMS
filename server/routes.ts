@@ -3007,6 +3007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         language: language,
         status: 'active',
         policeVerificationStatus: policeVerificationStatus || 'to_be_done',
+        isImported: isImported || true, // Mark as imported agreement
         ownerDetails: ownerDetails,
         tenantDetails: tenantDetails,
         propertyDetails: {
