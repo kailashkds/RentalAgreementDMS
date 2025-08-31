@@ -30,6 +30,7 @@ import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 
 export default function Customers() {
   const [showModal, setShowModal] = useState(false);
@@ -257,7 +258,7 @@ export default function Customers() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(customer.createdAt).toLocaleDateString()}
+                        {formatDateToDDMMYYYY(customer.createdAt)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <TooltipProvider>

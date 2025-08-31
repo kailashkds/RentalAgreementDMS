@@ -7,6 +7,7 @@ import { ArrowLeft, FileText, Calendar, Download, Eye } from "lucide-react";
 import { useState } from "react";
 import { apiClient } from "@/lib/apiClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 
 interface Agreement {
   id: string;
@@ -86,7 +87,7 @@ export default function PropertyAgreements() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    return formatDateToDDMMYYYY(dateString);
   };
 
   const handleDownloadPdf = async (agreementId: string) => {

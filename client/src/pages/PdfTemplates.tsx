@@ -15,6 +15,7 @@ import { usePdfTemplates } from "@/hooks/usePdfTemplates";
 import PdfTemplateEditor from "@/components/PdfTemplateEditor";
 import AdminLayout from "@/components/AdminLayout";
 import type { PdfTemplate } from "@shared/schema";
+import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 
 const DOCUMENT_TYPES = [
   { value: "rental_agreement", label: "Rental Agreement" },
@@ -376,7 +377,7 @@ export default function PdfTemplates() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {template.createdAt ? new Date(template.createdAt).toLocaleDateString() : '-'}
+                      {template.createdAt ? formatDateToDDMMYYYY(template.createdAt) : '-'}
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">

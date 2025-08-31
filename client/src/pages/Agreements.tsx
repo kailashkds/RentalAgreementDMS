@@ -2329,11 +2329,11 @@ export default function Agreements() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Created At</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.createdAt ? new Date(viewingAgreement.createdAt).toLocaleString() : 'Not available'}</p>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.createdAt ? formatDateToDDMMYYYY(viewingAgreement.createdAt) : 'Not available'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Last Updated</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.updatedAt ? new Date(viewingAgreement.updatedAt).toLocaleString() : 'Not available'}</p>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.updatedAt ? formatDateToDDMMYYYY(viewingAgreement.updatedAt) : 'Not available'}</p>
                     </div>
                   </div>
                 </div>

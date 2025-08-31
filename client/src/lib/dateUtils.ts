@@ -5,16 +5,16 @@
 
 // DD MM YYYY format constants
 export const DATE_FORMATS = {
-  DD_MM_YYYY: 'DD MM YYYY',
-  DD_MM_YYYY_DISPLAY: 'DD MM YYYY',
+  DD_MM_YYYY: 'DD/MM/YYYY',
+  DD_MM_YYYY_DISPLAY: 'DD/MM/YYYY',
   DD_MM_YYYY_INPUT: 'DD-MM-YYYY',
   DD_MM_YYYY_SHORT: 'DD/MM/YYYY'
 } as const;
 
 /**
- * Convert date to DD MM YYYY format
+ * Convert date to DD/MM/YYYY format
  */
-export function formatDateToDDMMYYYY(dateInput: string | Date, separator: string = ' '): string {
+export function formatDateToDDMMYYYY(dateInput: string | Date, separator: string = '/'): string {
   if (!dateInput) return '';
   
   try {
@@ -31,15 +31,15 @@ export function formatDateToDDMMYYYY(dateInput: string | Date, separator: string
     
     return `${day}${separator}${month}${separator}${year}`;
   } catch (error) {
-    console.error('Error formatting date to DD MM YYYY:', error);
+    console.error('Error formatting date to DD/MM/YYYY:', error);
     return '';
   }
 }
 
 /**
- * Convert DD MM YYYY string back to Date object
+ * Convert DD/MM/YYYY string back to Date object
  */
-export function parseDDMMYYYYToDate(dateString: string, separator: string = ' '): Date | null {
+export function parseDDMMYYYYToDate(dateString: string, separator: string = '/'): Date | null {
   if (!dateString) return null;
   
   try {
@@ -59,7 +59,7 @@ export function parseDDMMYYYYToDate(dateString: string, separator: string = ' ')
     
     return date;
   } catch (error) {
-    console.error('Error parsing DD MM YYYY date:', error);
+    console.error('Error parsing DD/MM/YYYY date:', error);
     return null;
   }
 }
@@ -87,9 +87,9 @@ export function formatDateForInput(dateInput: string | Date): string {
 }
 
 /**
- * Convert HTML input date (YYYY-MM-DD) to DD MM YYYY display format
+ * Convert HTML input date (YYYY-MM-DD) to DD/MM/YYYY display format
  */
-export function formatInputDateToDisplay(inputDate: string, separator: string = ' '): string {
+export function formatInputDateToDisplay(inputDate: string, separator: string = '/'): string {
   if (!inputDate) return '';
   
   try {
@@ -102,9 +102,9 @@ export function formatInputDateToDisplay(inputDate: string, separator: string = 
 }
 
 /**
- * Get current date in DD MM YYYY format
+ * Get current date in DD/MM/YYYY format
  */
-export function getCurrentDateDDMMYYYY(separator: string = ' '): string {
+export function getCurrentDateDDMMYYYY(separator: string = '/'): string {
   return formatDateToDDMMYYYY(new Date(), separator);
 }
 
@@ -155,12 +155,12 @@ export function isValidDate(dateInput: string | Date): boolean {
 }
 
 /**
- * Convert various date formats to DD MM YYYY
+ * Convert various date formats to DD/MM/YYYY
  */
-export function normalizeDateFormat(dateInput: string | Date, separator: string = ' '): string {
+export function normalizeDateFormat(dateInput: string | Date, separator: string = '/'): string {
   if (!dateInput) return '';
   
-  // If it's already in DD MM YYYY format, return as is
+  // If it's already in DD/MM/YYYY format, return as is
   if (typeof dateInput === 'string') {
     const ddmmyyyyPattern = /^\d{2}[\s\-\/]\d{2}[\s\-\/]\d{4}$/;
     if (ddmmyyyyPattern.test(dateInput)) {

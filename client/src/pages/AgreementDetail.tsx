@@ -7,6 +7,7 @@ import { ArrowLeft, FileText, Download, Eye, Upload, Calendar, MapPin, User, Dol
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 
 interface Agreement {
   id: string;
@@ -62,7 +63,7 @@ export default function AgreementDetail() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    return formatDateToDDMMYYYY(dateString);
   };
 
   const handleDownloadPdf = async () => {

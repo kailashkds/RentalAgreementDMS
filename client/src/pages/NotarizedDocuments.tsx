@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 
 export default function NotarizedDocuments() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -321,7 +322,7 @@ export default function NotarizedDocuments() {
                             <div>
                               <span className="font-medium text-gray-700">Agreement Date:</span>
                               <p className="text-gray-900">
-                                {agreement.agreementDate ? new Date(agreement.agreementDate).toLocaleDateString() : 'Not set'}
+                                {agreement.agreementDate ? formatDateToDDMMYYYY(agreement.agreementDate) : 'Not set'}
                               </p>
                             </div>
                             <div>
@@ -332,7 +333,7 @@ export default function NotarizedDocuments() {
                               <div>
                                 <span className="font-medium text-gray-700">Notarized On:</span>
                                 <p className="text-gray-900">
-                                  {new Date(agreement.notarizedDocument.uploadDate).toLocaleDateString()}
+                                  {formatDateToDDMMYYYY(agreement.notarizedDocument.uploadDate)}
                                 </p>
                               </div>
                             )}

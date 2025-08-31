@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { PermissionGuard } from "./PermissionGuard";
+import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 import { 
   User, 
   Shield, 
@@ -561,7 +562,7 @@ export function UnifiedUserManagement() {
                       {getStatusBadge(user.isActive, user.status)}
                     </TableCell>
                     <TableCell>
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {formatDateToDDMMYYYY(user.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
