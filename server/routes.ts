@@ -2982,10 +2982,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Notarized agreement document is required' });
       }
 
-      // Only require police verification document if status is "yes"
+      // Police verification document is compulsory ONLY when status is "yes"
       if (policeVerificationStatus === "yes" && !policeVerificationDocumentUrl) {
-        return res.status(400).json({ error: 'Police verification document is required when status is marked as "Yes"' });
+        return res.status(400).json({ error: 'Police verification document is compulsory when status is "Yes"' });
       }
+
+      // For "no" and "pending" status, document upload is optional during import but can be uploaded later
 
       if (!customer?.id || !ownerDetails?.name || !tenantDetails?.name) {
         return res.status(400).json({ error: 'Customer, owner, and tenant details are required' });

@@ -971,9 +971,9 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-gray-500">
-                    {formData.policeVerificationStatus === "yes" && "You will be asked to upload the police verification document in the next step."}
-                    {formData.policeVerificationStatus === "no" && "Police verification document upload will be skipped."}
-                    {formData.policeVerificationStatus === "to_be_done" && "You can upload the police verification document later."}
+                    {formData.policeVerificationStatus === "yes" && "Document upload is compulsory during import."}
+                    {formData.policeVerificationStatus === "no" && "Status will be set to 'No'. Document can be uploaded later if needed."}
+                    {formData.policeVerificationStatus === "to_be_done" && "Status will be set to 'Pending'. Document can be uploaded later."}
                   </p>
                 </div>
               </div>
@@ -1079,9 +1079,9 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-800">
                   <strong>Note:</strong> Notarized agreement is required. 
-                  {formData.policeVerificationStatus === "yes" && "Police verification document is required since status is marked as 'Yes'. "}
-                  {formData.policeVerificationStatus === "no" && "Police verification document is not required since status is marked as 'No'. "}
-                  {formData.policeVerificationStatus === "to_be_done" && "Police verification document is optional since status is marked as 'To be done'. "}
+                  {formData.policeVerificationStatus === "yes" && "Police verification document is compulsory for 'Yes' status. "}
+                  {formData.policeVerificationStatus === "no" && "Police verification status set to 'No' - document can be uploaded later. "}
+                  {formData.policeVerificationStatus === "to_be_done" && "Police verification status set to 'Pending' - document can be uploaded later. "}
                   The agreement will be saved as "Active" status once imported.
                 </p>
               </div>
