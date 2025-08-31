@@ -196,12 +196,12 @@ export async function setupAuth(app: Express) {
         });
       }
       
-      if (!user.isActive) {
+      if (!user.isActive || user.status === 'inactive') {
         console.log('❌ Login failed: user inactive');
         return res.status(401).json({ 
-          message: "Your account has been deactivated",
+          message: "Contact administrator for re-activating your account",
           error: "account_inactive", 
-          action: "Contact an administrator to reactivate your account"
+          action: "Your account is currently inactive. Please contact an administrator to reactivate your account."
         });
       }
       

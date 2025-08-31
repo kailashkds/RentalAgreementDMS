@@ -34,7 +34,8 @@ import {
   Download,
   Upload,
   RefreshCw,
-  UserCheck
+  UserCheck,
+  UserX
 } from "lucide-react";
 
 interface User {
@@ -212,6 +213,25 @@ export default function UserRoleManagement() {
       toast({
         title: "Error",
         description: error.message || "Failed to reset password",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: ({ userId, isActive }: { userId: string; isActive: boolean }) =>
+      apiRequest(`/api/unified/users/${userId}/toggle-status`, "PATCH", { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      toast({
+        title: "Success",
+        description: "User status updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user status",
         variant: "destructive",
       });
     },
@@ -791,6 +811,27 @@ export default function UserRoleManagement() {
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Manage Permissions
                               </DropdownMenuItem>
+                              {userPermissions.includes('user.status.change') && (
+                                <DropdownMenuItem 
+                                  onClick={() => toggleUserStatusMutation.mutate({ 
+                                    userId: user.id, 
+                                    isActive: !user.isActive 
+                                  })}
+                                  data-testid={`button-toggle-status-${user.id}`}
+                                >
+                                  {user.isActive ? (
+                                    <>
+                                      <UserX className="h-4 w-4 mr-2" />
+                                      Deactivate User
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserCheck className="h-4 w-4 mr-2" />
+                                      Activate User
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                              )}
                               {(currentUser as any)?.id !== user.id && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>

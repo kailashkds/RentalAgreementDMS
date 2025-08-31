@@ -31,6 +31,7 @@ export const PERMISSIONS = {
   USER_CREATE: "user.create",
   USER_EDIT_ALL: "user.edit.all",
   USER_DELETE_ALL: "user.delete.all",
+  USER_STATUS_CHANGE: "user.status.change",
   
   // Role management permissions
   ROLE_MANAGE: "role.manage",

@@ -705,7 +705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/unified/users/:id/toggle-status", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
+  app.patch("/api/unified/users/:id/toggle-status", requireAuth, requirePermission({ permission: "user.status.change" }), async (req: any, res) => {
     try {
       const { id } = req.params;
       const { isActive } = req.body;
