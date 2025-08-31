@@ -102,6 +102,7 @@ export default function UserRoleManagement() {
   // Role users management dialog state
   const [manageUsersDialogOpen, setManageUsersDialogOpen] = useState(false);
   const [selectedRoleForUsers, setSelectedRoleForUsers] = useState<Role | null>(null);
+  const [roleAssignments, setRoleAssignments] = useState<{[userId: string]: boolean}>({});
   
   // Local state for pending permission changes (before saving)
   const [pendingPermissionChanges, setPendingPermissionChanges] = useState<{
@@ -345,6 +346,49 @@ export default function UserRoleManagement() {
     },
   });
 
+  // Bulk role assignment mutation
+  const assignRolesMutation = useMutation({
+    mutationFn: async ({ roleId, userAssignments }: { roleId: string; userAssignments: {[userId: string]: boolean} }) => {
+      const promises = [];
+      
+      for (const [userId, shouldHaveRole] of Object.entries(userAssignments)) {
+        const user = users.find(u => u.id === userId);
+        if (!user) continue;
+        
+        const currentlyHasRole = user.role === roleId;
+        
+        if (shouldHaveRole && !currentlyHasRole) {
+          // Assign role to user
+          promises.push(
+            apiRequest(`/api/unified/users/${userId}`, "PATCH", { role: roleId })
+          );
+        } else if (!shouldHaveRole && currentlyHasRole) {
+          // Remove role from user (set to default or null)
+          promises.push(
+            apiRequest(`/api/unified/users/${userId}`, "PATCH", { role: null })
+          );
+        }
+      }
+      
+      await Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      setManageUsersDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Role assignments updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update role assignments",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Helper functions
   const resetUserForm = () => {
     setUserFormData({
@@ -402,6 +446,12 @@ export default function UserRoleManagement() {
 
   const openManageRoleUsers = (role: Role) => {
     setSelectedRoleForUsers(role);
+    // Initialize checkbox states based on current role assignments
+    const initialAssignments: {[userId: string]: boolean} = {};
+    users.forEach(user => {
+      initialAssignments[user.id] = user.role === role.id;
+    });
+    setRoleAssignments(initialAssignments);
     setManageUsersDialogOpen(true);
   };
 
@@ -1059,7 +1109,7 @@ This change takes effect immediately but can be reversed by reactivating the use
                           {role.permissions.length} permissions
                         </Badge>
                         <Badge variant="secondary">
-                          {users.filter(u => u.roles?.some(userRole => userRole.id === role.id)).length} users
+                          {users.filter(u => u.role === role.id).length} users
                         </Badge>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -1074,7 +1124,7 @@ This change takes effect immediately but can be reversed by reactivating the use
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openManageRoleUsers(role)}>
                               <Users className="h-4 w-4 mr-2" />
-                              Manage Users ({role.userCount || 0})
+                              Manage Users ({users.filter(u => u.role === role.id).length})
                             </DropdownMenuItem>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -1461,76 +1511,115 @@ This change takes effect immediately but can be reversed by reactivating the use
           <DialogHeader>
             <DialogTitle>Manage Users - Role: {selectedRoleForUsers?.name}</DialogTitle>
             <DialogDescription>
-              Users assigned to the {selectedRoleForUsers?.name} role ({selectedRoleForUsers?.userCount || 0} total)
+              All users in the system - check/uncheck to assign/remove from this role
             </DialogDescription>
           </DialogHeader>
           
           {selectedRoleForUsers && (
             <div className="space-y-4">
-              {/* Users Table */}
+              {/* All Users with Checkboxes */}
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <input
+                          type="checkbox"
+                          checked={usersData?.users.every(user => roleAssignments[user.id]) || false}
+                          onChange={(e) => {
+                            const newAssignments = {...roleAssignments};
+                            usersData?.users.forEach(user => {
+                              newAssignments[user.id] = e.target.checked;
+                            });
+                            setRoleAssignments(newAssignments);
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                      </TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Username</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Current Role</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {usersData?.users
-                      .filter(user => user.roleId === selectedRoleForUsers.id)
-                      .map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{user.username}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={user.isActive ? "default" : "secondary"}
-                              className={user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
-                            >
-                              {user.isActive ? "Active" : "Inactive"}
+                    {usersData?.users?.map((user) => (
+                      <TableRow key={user.id} className={roleAssignments[user.id] ? "bg-blue-50" : ""}>
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={roleAssignments[user.id] || false}
+                            onChange={(e) => {
+                              setRoleAssignments(prev => ({
+                                ...prev,
+                                [user.id]: e.target.checked
+                              }));
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.username}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          {user.role ? (
+                            <Badge variant="outline">
+                              {roles.find(r => r.id === user.role)?.name || "Unknown Role"}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => openEditUser(user)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit User
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => openManagePermissions(user)}>
-                                  <Settings className="h-4 w-4 mr-2" />
-                                  Manage Permissions
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                          ) : (
+                            <span className="text-gray-500">No Role</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={user.isActive ? "default" : "secondary"}
+                            className={user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                          >
+                            {user.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
                 
-                {usersData?.users.filter(user => user.roleId === selectedRoleForUsers.id).length === 0 && (
+                {!usersData?.users || usersData.users.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    No users assigned to this role
+                    No users found
+                  </div>
+                ) : (
+                  <div className="p-4 bg-gray-50 text-sm text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Total users: {usersData.users.length}</span>
+                      <span>Selected: {Object.values(roleAssignments).filter(Boolean).length}</span>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           )}
           
-          <div className="flex justify-end pt-4">
-            <Button onClick={() => setManageUsersDialogOpen(false)}>
-              Close
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setManageUsersDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (selectedRoleForUsers) {
+                  assignRolesMutation.mutate({
+                    roleId: selectedRoleForUsers.id,
+                    userAssignments: roleAssignments
+                  });
+                }
+              }}
+              disabled={assignRolesMutation.isPending}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              {assignRolesMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </DialogContent>
