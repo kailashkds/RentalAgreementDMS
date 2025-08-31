@@ -270,6 +270,45 @@ export default function UserRoleManagement() {
     },
   });
 
+  // Permission override mutations
+  const addPermissionOverrideMutation = useMutation({
+    mutationFn: ({ userId, permissionId }: { userId: string; permissionId: string }) => 
+      apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      toast({
+        title: "Success",
+        description: "Permission added successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add permission",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removePermissionOverrideMutation = useMutation({
+    mutationFn: ({ userId, permissionId }: { userId: string; permissionId: string }) => 
+      apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      toast({
+        title: "Success",
+        description: "Permission removed successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove permission",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Helper functions
   const resetUserForm = () => {
     setUserFormData({
@@ -1035,11 +1074,21 @@ export default function UserRoleManagement() {
                             <div className="flex items-center space-x-2">
                               <Switch 
                                 checked={hasPermission}
-                                disabled={permissionsLoading}
+                                disabled={permissionsLoading || addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
                                 onCheckedChange={(checked) => {
-                                  // Here you would implement the logic to add/remove manual permissions
-                                  // This would require an API endpoint for managing user permissions
-                                  console.log(`Toggle permission ${permission.name} for user ${managingPermissionsUser.id}: ${checked}`);
+                                  if (checked) {
+                                    // Add permission
+                                    addPermissionOverrideMutation.mutate({
+                                      userId: managingPermissionsUser.id,
+                                      permissionId: permission.id
+                                    });
+                                  } else {
+                                    // Remove permission
+                                    removePermissionOverrideMutation.mutate({
+                                      userId: managingPermissionsUser.id,
+                                      permissionId: permission.id
+                                    });
+                                  }
                                 }}
                               />
                             </div>
