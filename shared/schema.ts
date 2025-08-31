@@ -106,6 +106,15 @@ export const userPermissions = pgTable("user_permissions", {
   createdBy: varchar("created_by").references(() => users.id), // Who assigned this override
 });
 
+// Track permission removals (permissions taken away from role)
+export const userPermissionRemovals = pgTable("user_permission_removals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  permissionId: varchar("permission_id").references(() => permissions.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdBy: varchar("created_by").references(() => users.id), // Who removed this permission
+});
+
 
 
 // Properties table for user property management
@@ -233,6 +242,7 @@ export const pdfTemplates = pgTable("pdf_templates", {
 export const usersRelations = relations(users, ({ many }) => ({
   userRoles: many(userRoles),
   userPermissions: many(userPermissions),
+  userPermissionRemovals: many(userPermissionRemovals),
   properties: many(properties),
   agreements: many(agreements),
 }));
@@ -279,6 +289,21 @@ export const userPermissionsRelations = relations(userPermissions, ({ one }) => 
   }),
   createdByUser: one(users, {
     fields: [userPermissions.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const userPermissionRemovalsRelations = relations(userPermissionRemovals, ({ one }) => ({
+  user: one(users, {
+    fields: [userPermissionRemovals.userId],
+    references: [users.id],
+  }),
+  permission: one(permissions, {
+    fields: [userPermissionRemovals.permissionId],
+    references: [permissions.id],
+  }),
+  createdByUser: one(users, {
+    fields: [userPermissionRemovals.createdBy],
     references: [users.id],
   }),
 }));
@@ -404,6 +429,11 @@ export const insertUserPermissionSchema = createInsertSchema(userPermissions).om
   createdAt: true,
 });
 
+export const insertUserPermissionRemovalSchema = createInsertSchema(userPermissionRemovals).omit({
+  id: true,
+  createdAt: true,
+});
+
 
 // RBAC Types
 export type InsertPermission = z.infer<typeof insertPermissionSchema>;
@@ -416,6 +446,8 @@ export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
 export type UserRole = typeof userRoles.$inferSelect;
 export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
 export type UserPermission = typeof userPermissions.$inferSelect;
+export type InsertUserPermissionRemoval = z.infer<typeof insertUserPermissionRemovalSchema>;
+export type UserPermissionRemoval = typeof userPermissionRemovals.$inferSelect;
 
 // Extended RBAC types for API responses
 export interface RoleWithPermissions extends Role {
