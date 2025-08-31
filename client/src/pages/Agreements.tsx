@@ -1412,7 +1412,7 @@ export default function Agreements() {
                               <div className="mt-1">
                                 <span
                                   className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                                    agreement.notaryStatus === "draft"
+                                    agreement.status === "draft"
                                       ? "bg-gray-100 text-gray-800"
                                       : agreement.notaryStatus === "pending"
                                       ? "bg-amber-100 text-amber-800"
@@ -1423,8 +1423,8 @@ export default function Agreements() {
                                       : "bg-gray-100 text-gray-800"
                                   }`}
                                 >
-                                  {agreement.notaryStatus === "draft"
-                                    ? "Draft"
+                                  {agreement.status === "draft"
+                                    ? "Complete First"
                                     : agreement.notaryStatus === "pending"
                                     ? "Pending"
                                     : agreement.notaryStatus === "complete"
@@ -1610,7 +1610,7 @@ export default function Agreements() {
                             </Button>
                           )}
                           {/* Upload Notarized Button - Show only if user has notarize permission */}
-                          {hasPermission(PERMISSIONS.AGREEMENT_NOTARIZE) && agreement.status === "active" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
+                          {hasPermission(PERMISSIONS.AGREEMENT_NOTARIZE) && agreement.status === "active" && agreement.notaryStatus === "pending" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
