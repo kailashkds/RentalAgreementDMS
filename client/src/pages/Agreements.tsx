@@ -1763,7 +1763,7 @@ export default function Agreements() {
                           {/* Upload Police Verification Button - Show for imported agreements with pending police verification */}
                           {(() => {
                             const isImported = isImportedAgreement(agreement);
-                            const isPending = agreement.policeVerificationStatus === "pending";
+                            const isPending = agreement.policeVerificationStatus !== "done";
                             console.log(`Agreement ${agreement.agreementNumber}: isImported=${isImported}, policeVerificationStatus=${agreement.policeVerificationStatus}, isPending=${isPending}`);
                             return isImported && isPending;
                           })() && (
