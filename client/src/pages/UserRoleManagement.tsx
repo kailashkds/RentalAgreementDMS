@@ -43,6 +43,7 @@ interface User {
   name: string;
   email?: string;
   phone?: string;
+  mobile?: string; // Database field name
   status: string;
   isActive: boolean;
   defaultRole?: string;
@@ -301,7 +302,7 @@ export default function UserRoleManagement() {
       username: user.username,
       name: user.name,
       email: user.email || "",
-      phone: user.phone || "",
+      phone: user.mobile || user.phone || "", // Use mobile field from database
       password: "",
       roleId: userRole?.id || "", // Use the actual role ID for proper Select mapping
       status: user.status
@@ -642,7 +643,7 @@ export default function UserRoleManagement() {
                         <TableCell>
                           <div className="text-sm">
                             {user.email && <div>{user.email}</div>}
-                            {user.phone && <div className="text-muted-foreground">{user.phone}</div>}
+                            {(user.mobile || user.phone) && <div className="text-muted-foreground">{user.mobile || user.phone}</div>}
                           </div>
                         </TableCell>
                         <TableCell>

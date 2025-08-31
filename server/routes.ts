@@ -350,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         email,
         username: finalUsername,
-        phone,
+        mobile: phone, // Map phone to mobile field
         password: hashedPassword,
         status: 'active',
         isActive: true,
@@ -423,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         email,
         username,
-        phone,
+        mobile: phone, // Map phone to mobile field
         status,
         isActive,
       });
