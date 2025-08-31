@@ -1,7 +1,6 @@
 import {
   users,
   properties,
-  societies,
   addresses,
   agreements,
   agreementTemplates,
@@ -18,8 +17,6 @@ import {
   type InsertCustomer,
   type Property,
   type InsertProperty,
-  type Society,
-  type InsertSociety,
   type Address,
   type InsertAddress,
   type Agreement,
@@ -83,12 +80,6 @@ export interface IStorage {
   findOrCreatePropertyForAgreement(customerId: string, propertyDetails: any): Promise<Property>;
   getAllPropertiesWithCustomers(): Promise<any[]>;
   
-  // Society operations
-  getSocieties(search?: string, limit?: number): Promise<Society[]>;
-  getSociety(id: string): Promise<Society | undefined>;
-  createSociety(society: InsertSociety): Promise<Society>;
-  updateSociety(id: string, society: Partial<InsertSociety>): Promise<Society>;
-  deleteSociety(id: string): Promise<void>;
   
   // Address operations for intelligent autocomplete
   searchAddresses(search: string, limit?: number): Promise<Address[]>;

@@ -7,7 +7,7 @@ import { ObjectPermission } from "./objectAcl";
 import { mapFormDataToTemplateFields, generatePdfHtml, convertPdfToImages } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
 import { requirePermission } from "./rbacMiddleware";
-import { insertSocietySchema, insertPropertySchema, insertAgreementSchema } from "@shared/schema";
+import { insertPropertySchema, insertAgreementSchema } from "@shared/schema";
 import { directFileUpload } from "./directFileUpload";
 import { upload, getFileInfo, deleteFile, readFileAsBase64 } from "./localFileUpload";
 import { seedRBAC, assignDefaultRoleToUser, assignDefaultRoleToCustomer } from "./rbacSeed";
