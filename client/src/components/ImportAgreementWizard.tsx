@@ -276,7 +276,10 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         description: "The existing agreement has been added to your database",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
+      // Force complete cache refresh
+      await queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/agreements"] });
+      
       onClose();
     } catch (error) {
       console.error('Error importing agreement:', error);
