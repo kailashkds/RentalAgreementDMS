@@ -202,7 +202,7 @@ export const agreements: any = pgTable("agreements", {
   notaryStatus: varchar("notary_status", { length: 20 }).default("pending"), // pending, complete, draft, expired
   
   // Police verification status tracking
-  policeVerificationStatus: varchar("police_verification_status", { length: 20 }).default("to_be_done"), // yes, no, to_be_done
+  policeVerificationStatus: varchar("police_verification_status", { length: 20 }).default("pending"), // done, not_done, pending
   
   // Import tracking - to distinguish imported vs generated agreements
   isImported: boolean("is_imported").default(false), // true for imported agreements, false for generated ones

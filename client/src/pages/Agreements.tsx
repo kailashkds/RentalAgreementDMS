@@ -337,7 +337,7 @@ export default function Agreements() {
     if (policeVerificationFilter && policeVerificationFilter !== "all") {
       // Only filter imported agreements by police verification
       if (isImportedAgreement(agreement)) {
-        const policeStatus = agreement.policeVerificationStatus || "to_be_done";
+        const policeStatus = agreement.policeVerificationStatus || "pending";
         if (policeStatus !== policeVerificationFilter) return false;
       } else {
         // For non-imported agreements, exclude them when filtering by police verification
@@ -1153,9 +1153,9 @@ export default function Agreements() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Police</SelectItem>
-                <SelectItem value="yes">Verified</SelectItem>
-                <SelectItem value="no">Not Required</SelectItem>
-                <SelectItem value="to_be_done">Pending</SelectItem>
+                <SelectItem value="done">Done</SelectItem>
+                <SelectItem value="not_done">Not Done</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
               </SelectContent>
             </Select>
             {/* Show customer filter only for admins/staff who can view all agreements */}
@@ -1529,14 +1529,14 @@ export default function Agreements() {
                                 <span className="font-medium text-gray-600">Police Verification:</span>
                                 <div className="mt-1">
                                   <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                                    agreement.policeVerificationStatus === "yes" 
+                                    agreement.policeVerificationStatus === "done" 
                                       ? "bg-green-100 text-green-800"
-                                      : agreement.policeVerificationStatus === "no"
+                                      : agreement.policeVerificationStatus === "not_done"
                                       ? "bg-gray-100 text-gray-800" 
                                       : "bg-yellow-100 text-yellow-800"
                                   }`}>
-                                    {agreement.policeVerificationStatus === "yes" ? "Verified" : 
-                                     agreement.policeVerificationStatus === "no" ? "Not Required" : "Pending"}
+                                    {agreement.policeVerificationStatus === "done" ? "Done" : 
+                                     agreement.policeVerificationStatus === "not_done" ? "Not Done" : "Pending"}
                                   </span>
                                 </div>
                               </div>

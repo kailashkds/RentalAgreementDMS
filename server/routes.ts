@@ -2983,8 +2983,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Police verification document is compulsory ONLY when status is "yes"
-      if (policeVerificationStatus === "yes" && !policeVerificationDocumentUrl) {
-        return res.status(400).json({ error: 'Police verification document is compulsory when status is "Yes"' });
+      if (policeVerificationStatus === "done" && !policeVerificationDocumentUrl) {
+        return res.status(400).json({ error: 'Police verification document is compulsory when status is "Done"' });
       }
 
       // For "no" and "pending" status, document upload is optional during import but can be uploaded later
@@ -3006,7 +3006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerName: customer.name,
         language: language,
         status: 'active',
-        policeVerificationStatus: policeVerificationStatus || 'to_be_done',
+        policeVerificationStatus: policeVerificationStatus || 'pending',
         isImported: isImported || true, // Mark as imported agreement
         ownerDetails: ownerDetails,
         tenantDetails: tenantDetails,
