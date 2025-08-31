@@ -3326,7 +3326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templateDataSchema = z.object({
         name: z.string().min(1),
         language: z.string(),
-        templateContent: z.string(),
+        htmlTemplate: z.string(),
         isActive: z.boolean().optional()
       });
       const templateData = templateDataSchema.parse(req.body);
@@ -3364,7 +3364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const templateDataSchema = z.object({
         name: z.string().min(1).optional(),
         language: z.string().optional(),
-        templateContent: z.string().optional(),
+        htmlTemplate: z.string().optional(),
         isActive: z.boolean().optional()
       });
       const templateData = templateDataSchema.parse(req.body);
