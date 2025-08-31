@@ -593,6 +593,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (user.encryptedPassword) {
           const { decryptPasswordFromStorage } = await import('./encryption');
           currentPassword = decryptPasswordFromStorage(user.encryptedPassword);
+        } else if (user.password) {
+          // User has a hashed password but no encrypted version
+          currentPassword = "Password is hashed and cannot be decrypted. Please reset to generate a new password.";
+        } else {
+          currentPassword = "No password set for this user";
         }
       } catch (decryptError) {
         console.warn("Failed to decrypt current password:", decryptError);
