@@ -44,7 +44,7 @@ export default function Properties() {
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   const { data: properties, isLoading, refetch } = useQuery<PropertyWithCustomer[]>({
-    queryKey: ['/api/properties/all'],
+    queryKey: ['/api/properties'],
   });
 
   const handleEditProperty = (property: PropertyWithCustomer) => {
@@ -63,14 +63,14 @@ export default function Properties() {
 
   if (isLoading) {
     return (
-      <AdminLayout title="Properties" subtitle="Manage all properties">
+      <AdminLayout title="Properties" subtitle="View and manage properties">
         <div className="p-6">Loading...</div>
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout title="Properties" subtitle="Manage all properties across customers">
+    <AdminLayout title="Properties" subtitle="View and manage properties">
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold" data-testid="text-properties-count">

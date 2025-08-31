@@ -31,7 +31,6 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Agreements", href: "/agreements", icon: FileSignature },
   { name: "Customers", href: "/customers", icon: Users },
-  { name: "My Properties", href: "/my-properties", icon: MapPin },
   { name: "Properties", href: "/properties", icon: MapPin },
   { name: "Documents", href: "/documents", icon: FolderOpen },
   { name: "PDF Templates", href: "/pdf-templates", icon: FileText },
@@ -70,14 +69,9 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       return hasPermission('customer.view.all') || hasPermission('customer.manage');
     }
     
-    // My Properties - customers can view their own properties
-    if (item.href === "/my-properties") {
-      return hasPermission('agreement.view.own');
-    }
-    
-    // Properties - requires property management permission (assuming staff+ access)
+    // Properties - accessible to customers (their own) and admins (all properties)
     if (item.href === "/properties") {
-      return hasPermission('system.admin') || hasPermission('customer.manage');
+      return hasPermission('agreement.view.own') || hasPermission('customer.manage') || hasPermission('system.admin');
     }
     
     // Documents - requires agreement viewing permission
