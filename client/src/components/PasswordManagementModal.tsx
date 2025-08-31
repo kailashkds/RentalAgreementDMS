@@ -45,13 +45,33 @@ export default function PasswordManagementModal({
     
     setDecryptInProgress(true);
     try {
-      const response = await apiRequest(`/api/customers/${customer.id}/decrypt-password`);
-      setDecryptedPassword(response.password);
+      const response = await apiRequest(`/api/customers/${customer.id}/password-info`);
+      
+      if (response.canView && response.password) {
+        setDecryptedPassword(response.password);
+        toast({
+          title: "Password Retrieved",
+          description: "Password successfully decrypted and displayed",
+        });
+      } else if (response.hasPassword && !response.canView) {
+        toast({
+          title: "Cannot View Password",
+          description: "Password exists but cannot be decrypted. Please reset the password to set a new one.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "No Password Available",
+          description: "No password found for this customer. Please set a new password.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
-      console.error('Failed to decrypt password:', error);
+      console.error('Failed to get password info:', error);
+      const errorMessage = error?.response?.data?.error || "Failed to retrieve password information";
       toast({
         title: "Error",
-        description: "Failed to decrypt password",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

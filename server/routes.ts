@@ -1609,8 +1609,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Decrypt customer password for admin viewing (Protected endpoint)
-  app.get("/api/customers/:id/decrypt-password", requireAuth, requirePermission("customer.edit.all"), async (req, res) => {
+  // Get customer password info for admin viewing (Protected endpoint)
+  app.get("/api/customers/:id/password-info", requireAuth, requirePermission("customer.edit.all"), async (req, res) => {
     try {
       const customer = await storage.getCustomer(req.params.id);
       
@@ -1618,24 +1618,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Customer not found" });
       }
 
-      let plainTextPassword: string;
+      let passwordInfo = {
+        hasPassword: false,
+        password: null,
+        isEncrypted: false,
+        canView: false,
+        lastResetDate: null
+      };
 
-      // Check if user has encrypted password stored for admin viewing
+      // Try to get password from various sources
       if (customer.encryptedPassword) {
-        // Customer has encrypted password - decrypt it
-        plainTextPassword = decryptPasswordFromStorage(customer.encryptedPassword);
-      } else {
-        // No encrypted password available
-        return res.status(400).json({ 
-          error: "Password is not available for viewing", 
-          message: "No encrypted password backup available. Use the reset password feature to set a new password."
-        });
+        try {
+          // Try to decrypt the password
+          const plainTextPassword = decryptPasswordFromStorage(customer.encryptedPassword);
+          passwordInfo = {
+            hasPassword: true,
+            password: plainTextPassword,
+            isEncrypted: true,
+            canView: true,
+            lastResetDate: customer.updatedAt
+          };
+        } catch (decryptError) {
+          console.log("Decryption failed, checking for fallback options");
+          // If decryption fails, still provide info that password exists but can't be viewed
+          passwordInfo = {
+            hasPassword: true,
+            password: null,
+            isEncrypted: true,
+            canView: false,
+            lastResetDate: customer.updatedAt
+          };
+        }
       }
-      
-      res.json({ password: plainTextPassword });
+
+      res.json(passwordInfo);
     } catch (error) {
-      console.error("Error getting customer password:", error);
-      res.status(500).json({ error: "Failed to get password" });
+      console.error("Error getting customer password info:", error);
+      res.status(500).json({ error: "Failed to get password information" });
     }
   });
 
