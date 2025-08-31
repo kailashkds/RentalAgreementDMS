@@ -821,29 +821,29 @@ export class DatabaseStorage implements IStorage {
     return customer;
   }
 
-  // Society operations - now returns addresses with society field
+  // Society operations - queries the societies table for address autofill
   async getSocieties(search?: string, limit = 100): Promise<any[]> {
     const whereConditions = search
       ? or(
-          ilike(addresses.society, `%${search}%`),
-          ilike(addresses.area, `%${search}%`),
-          ilike(addresses.city, `%${search}%`)
+          ilike(societies.societyName, `%${search}%`),
+          ilike(societies.area, `%${search}%`),
+          ilike(societies.city, `%${search}%`)
         )
       : undefined;
 
     const results = await db
       .select({
-        id: addresses.id,
-        societyName: addresses.society,
-        area: addresses.area,
-        city: addresses.city,
-        state: addresses.state,
-        district: addresses.district,
-        pincode: addresses.pincode
+        id: societies.id,
+        societyName: societies.societyName,
+        area: societies.area,
+        city: societies.city,
+        state: societies.state,
+        district: societies.district,
+        pincode: societies.pincode
       })
-      .from(addresses)
+      .from(societies)
       .where(whereConditions)
-      .orderBy(addresses.society)
+      .orderBy(societies.societyName)
       .limit(limit);
 
     return results;
