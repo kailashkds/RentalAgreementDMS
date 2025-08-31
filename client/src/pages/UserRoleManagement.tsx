@@ -455,7 +455,7 @@ export default function UserRoleManagement() {
     return {
       inherited: uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),
       manual: manualAdded.filter(p => !uniqueRolePermissions.includes(p)),
-      total: [...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded.filter(p => !uniqueRolePermissions.includes(p))]
+      total: [...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded]
     };
   };
 
@@ -740,11 +740,6 @@ export default function UserRoleManagement() {
                               <Eye className="h-4 w-4" />
                               <span className="ml-1">{userPermissions.total.length}</span>
                             </Button>
-                            {userPermissions.manual.length > 0 && (
-                              <Badge variant="secondary" className="text-xs">
-                                +{userPermissions.manual.length} manual
-                              </Badge>
-                            )}
                           </div>
                         </TableCell>
                         <TableCell>
