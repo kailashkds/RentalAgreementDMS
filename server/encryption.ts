@@ -20,7 +20,7 @@ export function encryptPassword(password: string): {
   try {
     const iv = crypto.randomBytes(16);
     const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
-    const cipher = crypto.createCipher('aes-256-gcm', key);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
     
     let encrypted = cipher.update(password, 'utf8', 'hex');
     encrypted += cipher.final('hex');
@@ -50,7 +50,7 @@ export function decryptPassword(encryptedData: string, iv: string, tag: string):
   try {
     // Try new decryption method first
     const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
-    const decipher = crypto.createDecipher('aes-256-gcm', key);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'hex'));
     decipher.setAuthTag(Buffer.from(tag, 'hex'));
     
     let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
