@@ -92,7 +92,7 @@ export default function Agreements() {
   const [tenantFilter, setTenantFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("agreement_number_desc");
+  const [sortBy, setSortBy] = useState("expiry_status");
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
   const [currentPage, setCurrentPage] = useState(1);
@@ -393,6 +393,41 @@ export default function Agreements() {
           
           return aPriority - bPriority;
           
+        case "expiry_status":
+          // Sort by expiry urgency (expiring soon first, then later dates, expired at end)
+          const getExpiryUrgency = (agreement: any) => {
+            // Check agreement status first - if already expired, put at end
+            if (agreement.status === 'expired') return 1000; // Expired - lowest priority (at end)
+            
+            const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+            if (!endDate) return 999; // No expiry date - second lowest priority
+            
+            const today = new Date();
+            const expiry = new Date(endDate);
+            const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilExpiry < 0) return 1000; // Expired by date - lowest priority (at end)
+            if (daysUntilExpiry === 0) return 1; // Expires today - highest priority
+            if (daysUntilExpiry === 1) return 2; // Expires tomorrow
+            if (daysUntilExpiry <= 7) return 3; // Expires this week
+            if (daysUntilExpiry <= 30) return 4; // Expires this month
+            if (daysUntilExpiry <= 90) return 5; // Expires in 3 months
+            
+            return daysUntilExpiry; // Return days for further dates
+          };
+          
+          const aUrgency = getExpiryUrgency(a);
+          const bUrgency = getExpiryUrgency(b);
+          
+          if (aUrgency === bUrgency) {
+            // If same urgency, sort by expiry date (closest first)
+            const aEndDate = new Date(a.rentalTerms?.endDate || a.endDate || 0);
+            const bEndDate = new Date(b.rentalTerms?.endDate || b.endDate || 0);
+            return aEndDate.getTime() - bEndDate.getTime();
+          }
+          
+          return aUrgency - bUrgency;
+
         case "expiry_status_desc":
           // Sort by expiry status descending (active first, then expiring soon, then expired)
           const getExpiryPriorityDesc = (agreement: any) => {
@@ -1140,8 +1175,9 @@ export default function Agreements() {
                 <span>Sort by</span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="agreement_number_desc">Agreement Number (Descending)</SelectItem>
-                <SelectItem value="agreement_number_asc">Agreement Number (Ascending)</SelectItem>
+                <SelectItem value="expiry_status">By Expiry Priority (Default)</SelectItem>
+                <SelectItem value="agreement_number_desc">Agreement Number (Newest First)</SelectItem>
+                <SelectItem value="agreement_number_asc">Agreement Number (Oldest First)</SelectItem>
                 <SelectItem value="expiry_status_asc">Expiry Status (Expired First)</SelectItem>
                 <SelectItem value="expiry_status_desc">Expiry Status (Active First)</SelectItem>
               </SelectContent>
@@ -1212,7 +1248,7 @@ export default function Agreements() {
                   setTenantFilter("all");
                   setOwnerFilter("all");
                   setDateFilter("all");
-                  setSortBy("agreement_number_desc");
+                  setSortBy("expiry_status");
                   setCustomStartDate(undefined);
                   setCustomEndDate(undefined);
                 }}
@@ -1276,7 +1312,7 @@ export default function Agreements() {
                         setCustomerFilter("all");
                         setTenantFilter("all");
                         setOwnerFilter("all");
-                        setSortBy("agreement_number_desc");
+                        setSortBy("expiry_status");
                         setDateFilter("all");
                         setCustomStartDate(undefined);
                         setCustomEndDate(undefined);
