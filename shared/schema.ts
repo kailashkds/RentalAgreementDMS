@@ -429,6 +429,10 @@ export interface RoleWithStringPermissions extends Role {
 
 export interface UserWithRoles extends User {
   roles: RoleWithStringPermissions[];
+  manualPermissions?: {
+    added: string[]; // Permission codes that were manually added
+    removed: string[]; // Permission codes that were manually removed
+  };
 }
 
 export interface CustomerWithRoles extends Customer {

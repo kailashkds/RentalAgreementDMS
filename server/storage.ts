@@ -390,13 +390,25 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(whereConditions);
 
-    // Get roles for each user
+    // Get roles and manual permissions for each user
     const usersWithRoles = await Promise.all(
       usersResult.map(async (user) => {
         const userRoles = await this.getUserRoles(user.id);
+        
+        // Get manual permission overrides (only added permissions for now)
+        const manualPermissionOverrides = await db
+          .select({ code: permissions.code })
+          .from(userPermissions)
+          .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
+          .where(eq(userPermissions.userId, user.id));
+        
         return {
           ...user,
           roles: userRoles,
+          manualPermissions: {
+            added: manualPermissionOverrides.map(p => p.code),
+            removed: [] // Not implemented yet - would need separate table
+          }
         };
       })
     );
