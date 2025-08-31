@@ -608,16 +608,42 @@ export default function Agreements() {
               uploadDate: result.uploadDate,
               size: result.size,
               url: result.url
-            }
+            },
+            notaryStatus: "done" // Update notary status immediately
           });
         }
+
+        // IMMEDIATE CACHE UPDATE: Update agreements list with new notary status
+        queryClient.setQueryData(['/api/agreements'], (oldData: any) => {
+          if (oldData && oldData.agreements) {
+            return {
+              ...oldData,
+              agreements: oldData.agreements.map((agreement: any) =>
+                agreement.id === agreementId
+                  ? {
+                      ...agreement,
+                      notaryStatus: "done",
+                      notarizedDocument: {
+                        filename: result.filename,
+                        originalName: result.originalName,
+                        uploadDate: result.uploadDate,
+                        size: result.size,
+                        url: result.url
+                      }
+                    }
+                  : agreement
+              ),
+            };
+          }
+          return oldData;
+        });
 
         // Invalidate cache to refresh data
         queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
 
         toast({
           title: "Notarized Document Uploaded",
-          description: `Successfully uploaded ${result.originalName}`,
+          description: `Successfully uploaded ${result.originalName}. Status updated to Done!`,
         });
       } else {
         const errorData = await response.json();
