@@ -1861,6 +1861,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties", requireAuth, async (req, res) => {
     try {
       const currentUser = req.user as any;
+      const { customerId } = req.query; // Get customerId from query parameters
       
       if (!currentUser) {
         return res.status(401).json({ message: "User not found" });
@@ -1872,14 +1873,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user can view all properties or only their own
       const canViewAll = userPermissions.includes('agreement.view.all') || userPermissions.includes('customer.view.all');
       
-      if (canViewAll) {
-        // Admin/Staff can see all properties
-        const properties = await storage.getAllPropertiesWithCustomers();
-        res.json(properties);
+      // If a specific customerId is requested
+      if (customerId) {
+        // Check if admin/staff can view this customer's properties, or if customer is viewing their own
+        if (canViewAll || currentUser.id === customerId) {
+          const properties = await storage.getProperties(customerId as string);
+          res.json(properties);
+        } else {
+          return res.status(403).json({ message: "Insufficient permissions to view this customer's properties" });
+        }
       } else {
-        // Customer can only see their own properties
-        const properties = await storage.getProperties(currentUser.id);
-        res.json(properties);
+        // No specific customer requested - use original logic
+        if (canViewAll) {
+          // Admin/Staff can see all properties
+          const properties = await storage.getAllPropertiesWithCustomers();
+          res.json(properties);
+        } else {
+          // Customer can only see their own properties
+          const properties = await storage.getProperties(currentUser.id);
+          res.json(properties);
+        }
       }
     } catch (error) {
       console.error("Error fetching properties:", error);
