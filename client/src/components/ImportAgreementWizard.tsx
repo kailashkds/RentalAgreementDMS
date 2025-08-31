@@ -432,13 +432,17 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
       console.log("Customer lookup error:", error);
       if (error instanceof Error && error.message.includes('404')) {
         console.log(`No existing customer found for ${searchType}: ${searchTerm}`);
+        // Silent fail for 404 - this is normal when typing new names
       } else {
         console.error("Customer lookup error:", error);
-        toast({
-          title: "Lookup Failed",
-          description: "Could not check for existing customer details",
-          variant: "destructive",
-        });
+        // Only show error toast for actual network/server errors, not missing customers
+        if (!(error instanceof Error && error.message.includes('404'))) {
+          toast({
+            title: "Lookup Error", 
+            description: "Unable to search existing customers",
+            variant: "destructive",
+          });
+        }
       }
     }
   };
