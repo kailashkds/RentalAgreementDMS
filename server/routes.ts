@@ -1996,14 +1996,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const agreementData = req.body;
       const language = agreementData.language || 'english';
       
-      // Find a default template for rental agreements (fallback to minimal template)
+      // Find a default template for rental agreements
       const templates = await storage.getPdfTemplates('rental_agreement', language);
-      const template = templates.find(t => t.isActive) || templates[0] || {
-        id: 'default-rental-agreement',
-        name: 'Default Rental Agreement',
-        isActive: true,
-        htmlTemplate: '<div style="font-family: Arial, sans-serif; padding: 20px;"><h1>Rental Agreement</h1><p>Owner: {{OWNER_NAME}}</p><p>Tenant: {{TENANT_NAME}}</p><p>Property: {{PROPERTY_FULL_ADDRESS}}</p><p>Monthly Rent: {{MONTHLY_RENT}}</p><p>Security Deposit: {{SECURITY_DEPOSIT}}</p></div>'
-      };
+      const template = templates.find(t => t.isActive) || templates[0]; // Use first active or first available template
+      
+      if (!template) {
+        console.error(`No PDF template found for rental agreements in language: ${language}`);
+        return res.status(404).json({ 
+          message: "No PDF template found for rental agreements",
+          language: language,
+          availableTemplates: templates.map(t => ({ id: t.id, name: t.name, active: t.isActive }))
+        });
+      }
 
       // Ensure all required fields have default values
       const safeAgreementData = {
@@ -2061,14 +2065,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Find template for this agreement and generate HTML
       const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
-      const template = templates.find(t => t.isActive) || templates[0] || {
-        id: 'default-rental-agreement',
-        name: 'Default Rental Agreement',
-        isActive: true,
-        htmlTemplate: '<div style="font-family: Arial, sans-serif; padding: 20px;"><h1>Rental Agreement</h1><p>Owner: {{OWNER_NAME}}</p><p>Tenant: {{TENANT_NAME}}</p><p>Property: {{PROPERTY_FULL_ADDRESS}}</p><p>Monthly Rent: {{MONTHLY_RENT}}</p><p>Security Deposit: {{SECURITY_DEPOSIT}}</p></div>'
-      };
+      const template = templates.find(t => t.isActive) || templates[0];
       
-      if (!template?.htmlTemplate) {
+      if (!template) {
         return res.status(404).json({ message: "No PDF template found" });
       }
 
@@ -3084,8 +3083,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Return empty array since templates are now handled by fallback logic
-      const templates = [];
+      const templates = await storage.getPdfTemplates(
+        documentType as string,
+        language as string
+      );
       
       console.log(`Template listing access: User ${req.user.id} (${req.user.role}) - Super Admin: ${isSuperAdmin(req.user)}`);
       res.json(templates);
@@ -3097,8 +3098,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/pdf-templates/:id", requireAuth, async (req, res) => {
     try {
-      // PDF templates are no longer stored in database
-      return res.status(404).json({ message: "PDF template not found - templates are now hardcoded" });
+      const template = await storage.getPdfTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ message: "PDF template not found" });
+      }
+      res.json(template);
     } catch (error) {
       console.error("Error fetching PDF template:", error);
       res.status(500).json({ message: "Failed to fetch PDF template" });
@@ -3130,9 +3134,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: z.boolean().optional()
       });
       const templateData = templateDataSchema.parse(req.body);
-      // PDF templates are no longer stored in database
-      console.log(`Template creation attempt: User ${req.user.id} (${req.user.role}) - Super Admin: ${isSuperAdmin(req.user)}`);
-      return res.status(501).json({ message: "PDF template creation is no longer supported - templates are now hardcoded" });
+      const template = await storage.createPdfTemplate(templateData);
+      
+      console.log(`Template creation: User ${req.user.id} (${req.user.role}) created template ${template.id} - Super Admin: ${isSuperAdmin(req.user)}`);
+      res.status(201).json(template);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid template data", errors: error.errors });
@@ -3167,9 +3172,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: z.boolean().optional()
       });
       const templateData = templateDataSchema.parse(req.body);
-      // PDF templates are no longer stored in database
-      console.log(`Template update attempt: User ${req.user.id} (${req.user.role}) - Super Admin: ${isSuperAdmin(req.user)}`);
-      return res.status(501).json({ message: "PDF template editing is no longer supported - templates are now hardcoded" });
+      const template = await storage.updatePdfTemplate(req.params.id, templateData);
+      if (!template) {
+        return res.status(404).json({ message: "PDF template not found" });
+      }
+      
+      console.log(`Template update: User ${req.user.id} (${req.user.role}) updated template ${template.id} - Super Admin: ${isSuperAdmin(req.user)}`);
+      res.json(template);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid template data", errors: error.errors });
@@ -3196,9 +3205,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // PDF templates are no longer stored in database
-      console.log(`Template deletion attempt: User ${req.user.id} (${req.user.role}) - Super Admin: ${isSuperAdmin(req.user)}`);
-      return res.status(501).json({ message: "PDF template deletion is no longer supported - templates are now hardcoded" });
+      const deleted = await storage.deletePdfTemplate(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "PDF template not found" });
+      }
+      
+      console.log(`Template deletion: User ${req.user.id} (${req.user.role}) deleted template ${req.params.id} - Super Admin: ${isSuperAdmin(req.user)}`);
+      res.status(204).send();
     } catch (error) {
       console.error("Error deleting PDF template:", error);
       res.status(500).json({ message: "Failed to delete PDF template" });

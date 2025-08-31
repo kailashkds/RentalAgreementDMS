@@ -9,6 +9,7 @@ import {
   userRoles,
   userPermissions,
   auditLogs,
+  pdfTemplates,
 
   type User,
   type UpsertUser,
@@ -35,6 +36,8 @@ import {
   type UserWithRoles,
   type AuditLog,
   type InsertAuditLog,
+  type PdfTemplate,
+  type InsertPdfTemplate,
 
 } from "@shared/schema";
 import { db } from "./db";
@@ -82,9 +85,12 @@ export interface IStorage {
   saveAddress(address: InsertAddress): Promise<Address>;
   incrementAddressUsage(addressId: string): Promise<void>;
   
-  // PDF Template operations (minimal for agreement generation)
-  getPdfTemplates(documentType?: string, language?: string): Promise<any[]>;
-  getPdfTemplate(id: string): Promise<any | undefined>;
+  // PDF Template operations (full CRUD)
+  getPdfTemplates(documentType?: string, language?: string): Promise<PdfTemplate[]>;
+  getPdfTemplate(id: string): Promise<PdfTemplate | undefined>;
+  createPdfTemplate(template: InsertPdfTemplate): Promise<PdfTemplate>;
+  updatePdfTemplate(id: string, template: Partial<InsertPdfTemplate>): Promise<PdfTemplate | undefined>;
+  deletePdfTemplate(id: string): Promise<boolean>;
   
   
 
@@ -1423,18 +1429,55 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  // Minimal PDF Template operations for agreement generation
-  async getPdfTemplates(documentType?: string, language?: string): Promise<any[]> {
-    // Return empty array since the system uses hardcoded templates
-    // This prevents the error while maintaining compatibility
-    console.log(`[PDF Templates] Called getPdfTemplates with documentType: ${documentType}, language: ${language}`);
-    return [];
+  // Full PDF Template CRUD operations
+  async getPdfTemplates(documentType?: string, language?: string): Promise<PdfTemplate[]> {
+    let query = db.select().from(pdfTemplates);
+    
+    const conditions = [];
+    if (documentType) {
+      conditions.push(eq(pdfTemplates.documentType, documentType));
+    }
+    if (language) {
+      conditions.push(eq(pdfTemplates.language, language));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    const templates = await query.orderBy(desc(pdfTemplates.isActive), desc(pdfTemplates.createdAt));
+    console.log(`[PDF Templates] Found ${templates.length} templates for documentType: ${documentType}, language: ${language}`);
+    return templates;
   }
 
-  async getPdfTemplate(id: string): Promise<any | undefined> {
-    // Return undefined since we don't store PDF templates in database anymore
-    console.log(`[PDF Templates] Called getPdfTemplate with id: ${id}`);
-    return undefined;
+  async getPdfTemplate(id: string): Promise<PdfTemplate | undefined> {
+    const [template] = await db.select().from(pdfTemplates).where(eq(pdfTemplates.id, id));
+    console.log(`[PDF Templates] Retrieved template ${id}:`, template ? 'found' : 'not found');
+    return template || undefined;
+  }
+
+  async createPdfTemplate(template: InsertPdfTemplate): Promise<PdfTemplate> {
+    const [newTemplate] = await db.insert(pdfTemplates).values(template).returning();
+    console.log(`[PDF Templates] Created template ${newTemplate.id}: ${newTemplate.name}`);
+    return newTemplate;
+  }
+
+  async updatePdfTemplate(id: string, template: Partial<InsertPdfTemplate>): Promise<PdfTemplate | undefined> {
+    const [updatedTemplate] = await db
+      .update(pdfTemplates)
+      .set({ ...template, updatedAt: new Date() })
+      .where(eq(pdfTemplates.id, id))
+      .returning();
+    
+    console.log(`[PDF Templates] Updated template ${id}:`, updatedTemplate ? 'success' : 'not found');
+    return updatedTemplate || undefined;
+  }
+
+  async deletePdfTemplate(id: string): Promise<boolean> {
+    const result = await db.delete(pdfTemplates).where(eq(pdfTemplates.id, id));
+    const deleted = result.rowCount && result.rowCount > 0;
+    console.log(`[PDF Templates] Deleted template ${id}:`, deleted ? 'success' : 'not found');
+    return deleted || false;
   }
 
 

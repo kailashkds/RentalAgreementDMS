@@ -213,9 +213,19 @@ export const agreements: any = pgTable("agreements", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-
-
-
+// PDF Templates table - for storing agreement templates
+export const pdfTemplates = pgTable("pdf_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  documentType: varchar("document_type", { length: 100 }).notNull().default("rental_agreement"),
+  language: varchar("language", { length: 50 }).notNull().default("english"),
+  htmlTemplate: text("html_template").notNull(), // The HTML template content
+  isActive: boolean("is_active").default(true),
+  version: integer("version").default(1),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
 // Relations
 
@@ -536,3 +546,14 @@ export interface AgreementDocuments {
 // Audit Log types
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+// PDF Template types and schemas
+export type PdfTemplate = typeof pdfTemplates.$inferSelect;
+export type InsertPdfTemplate = typeof pdfTemplates.$inferInsert;
+
+// Create Zod schemas for validation
+export const insertPdfTemplateSchema = createInsertSchema(pdfTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
