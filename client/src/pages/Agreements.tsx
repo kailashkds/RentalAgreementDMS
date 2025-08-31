@@ -99,6 +99,7 @@ export default function Agreements() {
   const [customEndDate, setCustomEndDate] = useState<Date>();
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadingNotarized, setUploadingNotarized] = useState(false);
+  const [uploadingPoliceVerification, setUploadingPoliceVerification] = useState(false);
   const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
   const { toast } = useToast();
 
@@ -642,6 +643,74 @@ export default function Agreements() {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         handleUploadNotarizedDocument(agreementId, file);
+      }
+    };
+    input.click();
+  };
+
+  const handleUploadPoliceVerificationDocument = async (agreementId: string, file: File) => {
+    setUploadingPoliceVerification(true);
+    try {
+      const formData = new FormData();
+      formData.append('policeVerificationDocument', file);
+
+      const response = await fetch(`/api/agreements/${agreementId}/upload-police-verification`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update the viewing agreement with the new police verification document data
+        if (viewingAgreement && viewingAgreement.id === agreementId) {
+          setViewingAgreement({
+            ...viewingAgreement,
+            documents: {
+              ...viewingAgreement.documents,
+              policeVerificationDocument: {
+                filename: result.filename,
+                originalName: result.originalName,
+                uploadDate: result.uploadDate,
+                size: result.size,
+                url: result.url
+              }
+            },
+            policeVerificationStatus: "done" // Update status to done after upload
+          });
+        }
+
+        // Invalidate cache to refresh data
+        queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
+
+        toast({
+          title: "Police Verification Document Uploaded",
+          description: `Successfully uploaded ${result.originalName}`,
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload police verification document');
+      }
+    } catch (error) {
+      console.error('Police verification upload error:', error);
+      toast({
+        title: "Upload Error",
+        description: error instanceof Error ? error.message : "Failed to upload police verification document.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingPoliceVerification(false);
+    }
+  };
+
+  const handlePoliceVerificationUploadFromTable = (agreementId: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.jpg,.jpeg,.png';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        handleUploadPoliceVerificationDocument(agreementId, file);
       }
     };
     input.click();
@@ -1681,6 +1750,19 @@ export default function Agreements() {
                               title="Upload Notarized Document"
                             >
                               <Upload className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {/* Upload Police Verification Button - Show only for imported agreements with pending police verification */}
+                          {isImportedAgreement(agreement) && agreement.policeVerificationStatus === "pending" && !(agreement.documents?.policeVerificationDocument?.url) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-10 w-10 p-0 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-100 rounded-full border border-gray-200"
+                              onClick={() => handlePoliceVerificationUploadFromTable(agreement.id)}
+                              disabled={uploadingPoliceVerification}
+                              title="Upload Police Verification Certificate"
+                            >
+                              <FileCheck className="h-4 w-4" />
                             </Button>
                           )}
                           {agreement.status !== "draft" && (

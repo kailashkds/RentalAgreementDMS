@@ -69,7 +69,7 @@
     "express": "^4.21.2",
     "express-session": "^1.18.1",
     "framer-motion": "^11.13.1",
-    "google-auth-library": "^10.2.1",
+    "google-auth-library": "^10.3.0",
     "html-docx-js": "^0.3.1",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",

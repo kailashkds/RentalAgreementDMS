@@ -3144,6 +3144,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload police verification document endpoint
+  app.post('/api/agreements/:agreementId/upload-police-verification', upload.single('policeVerificationDocument'), async (req, res) => {
+    try {
+      const { agreementId } = req.params;
+      
+      if (!req.file) {
+        return res.status(400).json({ error: 'No police verification document uploaded' });
+      }
+
+      // Validate file type (PDF, JPG, JPEG, PNG)
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({ error: 'Only PDF, JPG, JPEG, and PNG files are allowed for police verification documents' });
+      }
+
+      const agreement = await storage.getAgreement(agreementId);
+      if (!agreement) {
+        return res.status(404).json({ error: 'Agreement not found' });
+      }
+
+      // Create a proper naming convention: AGR-XXXX-police-verification-YYYY-MM-DD
+      const currentDate = new Date().toISOString().split('T')[0];
+      const fileExtension = req.file.originalname.split('.').pop();
+      const policeVerificationFileName = `${agreement.agreementNumber}-police-verification-${currentDate}.${fileExtension}`;
+      const policeVerificationFilePath = path.join('uploads', 'police-verification', policeVerificationFileName);
+      
+      // Create police verification directory if it doesn't exist
+      const policeVerificationDir = path.join(process.cwd(), 'uploads', 'police-verification');
+      if (!fs.existsSync(policeVerificationDir)) {
+        fs.mkdirSync(policeVerificationDir, { recursive: true });
+      }
+
+      // Move file to proper location with proper name
+      const finalPath = path.join(process.cwd(), 'uploads', 'police-verification', policeVerificationFileName);
+      fs.renameSync(req.file.path, finalPath);
+      
+      // Update agreement with police verification document details and status
+      const policeVerificationDocData = {
+        filename: policeVerificationFileName,
+        originalName: req.file.originalname,
+        uploadDate: new Date().toISOString(),
+        url: `/uploads/police-verification/${policeVerificationFileName}`,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      };
+      
+      // Update the agreement's documents and police verification status
+      const currentDocuments = agreement.documents || {};
+      await storage.updateAgreement(agreementId, {
+        documents: {
+          ...currentDocuments,
+          policeVerificationDocument: policeVerificationDocData
+        },
+        policeVerificationStatus: 'done' // Update status to done after upload
+      });
+
+      console.log(`[Police Verification Upload] Document uploaded for agreement ${agreement.agreementNumber}: ${policeVerificationFileName}`);
+      
+      res.json({
+        success: true,
+        message: 'Police verification document uploaded successfully',
+        filename: policeVerificationFileName,
+        originalName: req.file.originalname,
+        url: `/uploads/police-verification/${policeVerificationFileName}`,
+        size: req.file.size,
+        uploadDate: policeVerificationDocData.uploadDate
+      });
+
+    } catch (error) {
+      console.error('[Police Verification Upload] Error:', error);
+      res.status(500).json({ error: 'Failed to upload police verification document' });
+    }
+  });
+
   // Get notarized document for an agreement
   app.get('/api/agreements/:agreementId/notarized-document', async (req, res) => {
     try {
