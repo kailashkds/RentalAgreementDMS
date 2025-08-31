@@ -1122,18 +1122,21 @@ export default function Agreements() {
                 <SelectItem value="complete_first">Complete First</SelectItem>
               </SelectContent>
             </Select>
-            <Combobox
-              options={uniqueCustomers.map((customer) => ({
-                value: customer,
-                label: customer
-              }))}
-              value={customerFilter === "all" ? "" : customerFilter}
-              onValueChange={(value) => setCustomerFilter(value || "all")}
-              placeholder="Filter by Customer"
-              emptyMessage="No customers found..."
-              className="w-full sm:w-48"
-              allowCustom={false}
-            />
+            {/* Show customer filter only for admins/staff who can view all agreements */}
+            {hasPermission(PERMISSIONS.AGREEMENT_VIEW_ALL) && (
+              <Combobox
+                options={uniqueCustomers.map((customer) => ({
+                  value: customer,
+                  label: customer
+                }))}
+                value={customerFilter === "all" ? "" : customerFilter}
+                onValueChange={(value) => setCustomerFilter(value || "all")}
+                placeholder="Filter by Customer"
+                emptyMessage="No customers found..."
+                className="w-full sm:w-48"
+                allowCustom={false}
+              />
+            )}
             <Combobox
               options={uniqueTenants.map((tenant) => ({
                 value: tenant,
