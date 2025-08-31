@@ -390,8 +390,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (error.detail?.includes('username')) {
           return res.status(400).json({ message: "Username already exists" });
         }
-        if (error.detail?.includes('phone') || error.detail?.includes('mobile')) {
-          return res.status(400).json({ message: "Phone number already exists" });
+        if (error.detail?.includes('mobile')) {
+          return res.status(400).json({ message: "Mobile number already exists" });
         }
       }
       
@@ -410,7 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/unified/users/:id", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { name, email, username, phone, status, isActive, roleId } = req.body;
+      const { name, email, username, mobile, status, isActive, roleId } = req.body;
       
       // Get existing user
       const existingUser = await storage.getUser(id);
@@ -423,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         email,
         username,
-        mobile: phone, // Map phone to mobile field
+        mobile,
         status,
         isActive,
       });
@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           changedBy: req.user.id,
           diff: { 
             before: existingUser, 
-            after: { name, email, username, phone, status, isActive, roleId } 
+            after: { name, email, username, mobile, status, isActive, roleId } 
           },
           metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
         });
@@ -489,11 +489,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             action: "Choose a different username"
           });
         }
-        if (error.detail?.includes('phone') || error.detail?.includes('mobile')) {
+        if (error.detail?.includes('mobile')) {
           return res.status(400).json({ 
-            message: "This phone number is already registered",
-            error: "duplicate_phone",
-            action: "Use a different phone number or check if this user already exists"
+            message: "This mobile number is already registered",
+            error: "duplicate_mobile",
+            action: "Use a different mobile number or check if this user already exists"
           });
         }
       }

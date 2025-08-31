@@ -42,8 +42,7 @@ interface User {
   username: string;
   name: string;
   email?: string;
-  phone?: string;
-  mobile?: string; // Database field name
+  mobile?: string;
   status: string;
   isActive: boolean;
   defaultRole?: string;
@@ -96,7 +95,7 @@ export default function UserRoleManagement() {
     username: "",
     name: "",
     email: "",
-    phone: "",
+    mobile: "",
     password: "",
     roleId: "",
     status: "active"
@@ -277,7 +276,7 @@ export default function UserRoleManagement() {
       username: "",
       name: "",
       email: "",
-      phone: "",
+      mobile: "",
       password: "",
       roleId: "",
       status: "active"
@@ -302,7 +301,7 @@ export default function UserRoleManagement() {
       username: user.username,
       name: user.name,
       email: user.email || "",
-      phone: user.mobile || user.phone || "", // Use mobile field from database
+      mobile: user.mobile || "",
       password: "",
       roleId: userRole?.id || "", // Use the actual role ID for proper Select mapping
       status: user.status
@@ -511,13 +510,13 @@ export default function UserRoleManagement() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="phone">Phone</Label>
+                          <Label htmlFor="mobile">Mobile Number</Label>
                           <Input
-                            id="phone"
-                            data-testid="input-phone"
-                            value={userFormData.phone}
-                            onChange={(e) => setUserFormData(prev => ({ ...prev, phone: e.target.value }))}
-                            placeholder="Enter phone"
+                            id="mobile"
+                            data-testid="input-mobile"
+                            value={userFormData.mobile}
+                            onChange={(e) => setUserFormData(prev => ({ ...prev, mobile: e.target.value }))}
+                            placeholder="Enter mobile number"
                           />
                         </div>
                       </div>
@@ -643,7 +642,7 @@ export default function UserRoleManagement() {
                         <TableCell>
                           <div className="text-sm">
                             {user.email && <div>{user.email}</div>}
-                            {(user.mobile || user.phone) && <div className="text-muted-foreground">{user.mobile || user.phone}</div>}
+                            {user.mobile && <div className="text-muted-foreground">{user.mobile}</div>}
                           </div>
                         </TableCell>
                         <TableCell>

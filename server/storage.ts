@@ -52,7 +52,6 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByFullName(fullName: string): Promise<User | undefined>;
   getUserByMobile(mobile: string): Promise<User | undefined>;
-  getUserByPhone(phone: string): Promise<User | undefined>;
   createUser(user: Omit<UpsertUser, 'id'>): Promise<User>;
   updateUser(id: string, user: Partial<UpsertUser>): Promise<User>;
   deleteUser(id: string): Promise<void>;
@@ -98,7 +97,7 @@ export interface IStorage {
   // Admin user operations (DEPRECATED - use unified user operations)
   getAdminUsers(): Promise<AdminUser[]>;
   getAdminUser(id: string): Promise<AdminUser | undefined>;
-  getAdminUserByPhone(phone: string): Promise<AdminUser | undefined>;
+  getAdminUserByMobile(mobile: string): Promise<AdminUser | undefined>;
   getAdminUserByUsername(username: string): Promise<AdminUser | undefined>;
   createAdminUser(userData: InsertAdminUser): Promise<AdminUser>;
   updateAdminUser(id: string, user: Partial<InsertAdminUser>): Promise<AdminUser>;
@@ -302,8 +301,8 @@ export class DatabaseStorage implements IStorage {
     } as User;
   }
 
-  async getUserByPhone(phone: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.mobile, phone));
+  async getUserByMobile(mobile: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.mobile, mobile));
     return user;
   }
 
@@ -375,7 +374,7 @@ export class DatabaseStorage implements IStorage {
           ilike(users.name, `%${filters.search}%`),
           ilike(users.email, `%${filters.search}%`),
           ilike(users.username, `%${filters.search}%`),
-          ilike(users.phone, `%${filters.search}%`)
+          ilike(users.mobile, `%${filters.search}%`)
         )
       );
     }
@@ -1463,8 +1462,8 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getAdminUserByPhone(phone: string): Promise<AdminUser | undefined> {
-    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.phone, phone));
+  async getAdminUserByMobile(mobile: string): Promise<AdminUser | undefined> {
+    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.mobile, mobile));
     return user;
   }
 
