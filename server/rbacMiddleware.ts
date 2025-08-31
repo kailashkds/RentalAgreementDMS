@@ -380,5 +380,4 @@ export const PERMISSIONS = {
   
   // System permissions
   SYSTEM_ADMIN: "system.admin",
-  DASHBOARD_VIEW: "dashboard.view",
 } as const;

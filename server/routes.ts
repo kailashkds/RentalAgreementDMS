@@ -1194,7 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: "customer-template",
           name: "Customer Template",
           description: "Basic customer access with own-only permissions",
-          permissions: ["agreement.view.own", "download.agreement.own", "dashboard.view"]
+          permissions: ["agreement.view.own", "download.agreement.own"]
         },
         {
           id: "staff-template", 
@@ -1203,7 +1203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           permissions: [
             "agreement.view.all", "agreement.create", "agreement.edit.own", "agreement.notarize",
             "download.agreement.all", "share.agreement.all", "customer.view.all",
-            "template.create", "template.edit", "dashboard.view"
+            "template.create", "template.edit"
           ]
         },
         {
