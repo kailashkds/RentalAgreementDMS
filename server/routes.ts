@@ -576,6 +576,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Migrate all users to have encrypted passwords
+  app.post("/api/admin/migrate-user-passwords", requireAuth, requirePermission({ permission: "system.admin" }), async (req: any, res) => {
+    try {
+      const usersToMigrate = await storage.getUsers({ hasEncryptedPassword: false });
+      const results = [];
+      
+      for (const user of usersToMigrate.users) {
+        try {
+          // Generate a new password for this user
+          const newPassword = generatePassword(12);
+          
+          // Reset the user's password (this will create both hashed and encrypted versions)
+          await storage.resetUserPassword(user.id, newPassword);
+          
+          results.push({
+            userId: user.id,
+            name: user.name,
+            username: user.username,
+            newPassword: newPassword,
+            success: true
+          });
+        } catch (error) {
+          results.push({
+            userId: user.id,
+            name: user.name,
+            username: user.username,
+            error: error.message,
+            success: false
+          });
+        }
+      }
+      
+      res.json({
+        message: "Password migration completed",
+        totalUsers: usersToMigrate.users.length,
+        successful: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length,
+        results: results
+      });
+    } catch (error) {
+      console.error("Error migrating user passwords:", error);
+      res.status(500).json({ message: "Failed to migrate user passwords" });
+    }
+  });
+
   // Get current password (for display before reset)
   app.get("/api/unified/users/:id/current-password", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {

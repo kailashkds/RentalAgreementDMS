@@ -44,7 +44,7 @@ import {
 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, ilike, desc, asc, and, or, count, sql, gte, lte } from "drizzle-orm";
+import { eq, ilike, desc, asc, and, or, count, sql, gte, lte, isNull, isNotNull } from "drizzle-orm";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths } from "date-fns";
 import bcrypt from "bcrypt";
 import { encryptPasswordForStorage, decryptPasswordFromStorage } from "./encryption";
@@ -441,6 +441,7 @@ export class DatabaseStorage implements IStorage {
     search?: string; 
     status?: string; 
     defaultRole?: string; 
+    hasEncryptedPassword?: boolean;
     limit?: number; 
     offset?: number; 
   }): Promise<{ users: User[]; total: number }> {
@@ -464,6 +465,14 @@ export class DatabaseStorage implements IStorage {
     
     if (filters?.defaultRole) {
       conditions.push(eq(users.defaultRole, filters.defaultRole));
+    }
+    
+    if (filters?.hasEncryptedPassword !== undefined) {
+      if (filters.hasEncryptedPassword) {
+        conditions.push(isNotNull(users.encryptedPassword));
+      } else {
+        conditions.push(isNull(users.encryptedPassword));
+      }
     }
     
     const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
