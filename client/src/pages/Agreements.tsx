@@ -205,17 +205,17 @@ export default function Agreements() {
           end: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000 - 1) 
         };
       case "thisWeek":
-        const startOfWeek = new Date(startOfToday);
-        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
-        return { start: startOfWeek, end: endOfWeek };
+        // Show agreements expiring within the next 7 days from today
+        const weekEnd = new Date(startOfToday);
+        weekEnd.setDate(startOfToday.getDate() + 7);
+        weekEnd.setHours(23, 59, 59, 999);
+        return { start: startOfToday, end: weekEnd };
       case "thisMonth":
-        const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
-        const endOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth() + 1, 0);
-        endOfMonth.setHours(23, 59, 59, 999);
-        return { start: startOfMonth, end: endOfMonth };
+        // Show agreements expiring within the next 30 days from today
+        const monthEnd = new Date(startOfToday);
+        monthEnd.setDate(startOfToday.getDate() + 30);
+        monthEnd.setHours(23, 59, 59, 999);
+        return { start: startOfToday, end: monthEnd };
       case "next3Months":
         const next3MonthsEnd = new Date(startOfToday);
         next3MonthsEnd.setMonth(next3MonthsEnd.getMonth() + 3);
@@ -1168,9 +1168,9 @@ export default function Agreements() {
                 <SelectItem value="all">All Dates</SelectItem>
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="tomorrow">Tomorrow</SelectItem>
-                <SelectItem value="thisWeek">This Week</SelectItem>
-                <SelectItem value="thisMonth">This Month</SelectItem>
-                <SelectItem value="next3Months">Next 3 Months</SelectItem>
+                <SelectItem value="thisWeek">Expiring This Week</SelectItem>
+                <SelectItem value="thisMonth">Expiring This Month</SelectItem>
+                <SelectItem value="next3Months">Expiring in 3 Months</SelectItem>
                 <SelectItem value="next6Months">Next 6 Months</SelectItem>
                 <SelectItem value="thisYear">This Year</SelectItem>
                 <SelectItem value="custom">Custom Date Range</SelectItem>
