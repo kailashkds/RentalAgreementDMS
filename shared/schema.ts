@@ -186,7 +186,7 @@ export const agreements: any = pgTable("agreements", {
   endDate: date("end_date").notNull(),
   agreementDate: date("agreement_date").notNull(),
   
-  // Status tracking
+  // Status tracking - automatically updates to 'expired' when endDate passes
   status: varchar("status", { length: 20 }).notNull().default("draft"), // draft, active, expired, renewed, terminated
   
   // Relationship tracking

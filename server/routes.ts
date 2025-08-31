@@ -2298,6 +2298,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual expiry update endpoint
+  app.post("/api/agreements/update-expired", requireAuth, requirePermission('agreement.edit.all'), async (req, res) => {
+    try {
+      const updatedCount = await storage.updateExpiredAgreements();
+      res.json({ 
+        message: `Updated ${updatedCount} expired agreements`,
+        updatedCount 
+      });
+    } catch (error) {
+      console.error("Error updating expired agreements:", error);
+      res.status(500).json({ error: "Failed to update expired agreements" });
+    }
+  });
+
   // Agreement routes
   app.get("/api/agreements", requireAuth, async (req: any, res) => {
     try {

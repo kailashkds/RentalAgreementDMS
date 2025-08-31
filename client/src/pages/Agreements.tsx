@@ -100,6 +100,41 @@ export default function Agreements() {
   const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
   const { toast } = useToast();
 
+  // Handle updating expired agreements manually
+  const handleUpdateExpiredAgreements = async () => {
+    try {
+      const response = await fetch('/api/agreements/update-expired', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.updatedCount > 0) {
+        toast({
+          title: "Status Updated",
+          description: `Updated ${data.updatedCount} expired agreements to 'expired' status`,
+        });
+        // Refresh the agreements list
+        queryClient.invalidateQueries({ queryKey: ['/api/agreements'] });
+      } else {
+        toast({
+          title: "No Updates Needed",
+          description: "All agreements are already up to date",
+        });
+      }
+    } catch (error) {
+      console.error('Error updating expired agreements:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update expired agreements",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Reset current page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
@@ -1204,6 +1239,18 @@ export default function Agreements() {
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   Import Existing Agreement
+                </Button>
+              )}
+              {/* Update Expired Status Button - Show only if user has edit all permission */}
+              {hasPermission(PERMISSIONS.AGREEMENT_EDIT_ALL) && (
+                <Button 
+                  onClick={handleUpdateExpiredAgreements}
+                  variant="outline" 
+                  className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                  data-testid="button-update-expired"
+                >
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Update Expired Status
                 </Button>
               )}
             </div>

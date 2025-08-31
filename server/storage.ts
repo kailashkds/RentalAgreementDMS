@@ -204,6 +204,48 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  
+  // Auto-update expired agreements on startup and periodically
+  constructor() {
+    this.updateExpiredAgreements();
+    // Run every 24 hours to update expired agreements
+    setInterval(() => {
+      this.updateExpiredAgreements();
+    }, 24 * 60 * 60 * 1000);
+  }
+
+  // Update agreements that have passed their expiry date to 'expired' status
+  async updateExpiredAgreements(): Promise<number> {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+      
+      const result = await db
+        .update(agreements)
+        .set({ 
+          status: 'expired',
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            // Agreement end date is before today
+            sql`${agreements.endDate} < ${today}`,
+            // Current status is active (don't update already expired or draft agreements)
+            eq(agreements.status, 'active')
+          )
+        )
+        .returning({ id: agreements.id });
+
+      const updatedCount = result.length;
+      if (updatedCount > 0) {
+        console.log(`✅ Auto-updated ${updatedCount} agreements to 'expired' status`);
+      }
+      
+      return updatedCount;
+    } catch (error) {
+      console.error('❌ Error updating expired agreements:', error);
+      return 0;
+    }
+  }
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -727,45 +769,105 @@ export class DatabaseStorage implements IStorage {
     return customer;
   }
 
-  // Society operations
-  async getSocieties(search?: string, limit = 100): Promise<Society[]> {
+  // Society operations - now returns addresses with society field
+  async getSocieties(search?: string, limit = 100): Promise<any[]> {
     const whereConditions = search
       ? or(
-          ilike(societies.societyName, `%${search}%`),
-          ilike(societies.area, `%${search}%`),
-          ilike(societies.city, `%${search}%`)
+          ilike(addresses.society, `%${search}%`),
+          ilike(addresses.area, `%${search}%`),
+          ilike(addresses.city, `%${search}%`)
         )
       : undefined;
 
-    return db
-      .select()
-      .from(societies)
+    const results = await db
+      .select({
+        id: addresses.id,
+        societyName: addresses.society,
+        area: addresses.area,
+        city: addresses.city,
+        state: addresses.state,
+        district: addresses.district,
+        pincode: addresses.pincode
+      })
+      .from(addresses)
       .where(whereConditions)
-      .orderBy(societies.societyName)
+      .orderBy(addresses.society)
       .limit(limit);
+
+    return results;
   }
 
-  async getSociety(id: string): Promise<Society | undefined> {
-    const [society] = await db.select().from(societies).where(eq(societies.id, id));
-    return society;
+  async getSociety(id: string): Promise<any | undefined> {
+    const [address] = await db.select().from(addresses).where(eq(addresses.id, id));
+    if (!address) return undefined;
+    
+    return {
+      id: address.id,
+      societyName: address.society,
+      area: address.area,
+      city: address.city,
+      state: address.state,
+      district: address.district,
+      pincode: address.pincode
+    };
   }
 
-  async createSociety(societyData: InsertSociety): Promise<Society> {
-    const [society] = await db.insert(societies).values(societyData).returning();
-    return society;
+  // Note: Society create/update/delete operations have been migrated to address management
+  // These methods are kept for API compatibility but redirect to address operations
+  async createSociety(societyData: any): Promise<any> {
+    const addressData = {
+      flatNumber: '',
+      building: '',
+      society: societyData.societyName || societyData.society,
+      area: societyData.area,
+      city: societyData.city,
+      state: societyData.state,
+      district: societyData.district,
+      pincode: societyData.pincode,
+      landmark: ''
+    };
+    
+    const [address] = await db.insert(addresses).values(addressData).returning();
+    return {
+      id: address.id,
+      societyName: address.society,
+      area: address.area,
+      city: address.city,
+      state: address.state,
+      district: address.district,
+      pincode: address.pincode
+    };
   }
 
-  async updateSociety(id: string, societyData: Partial<InsertSociety>): Promise<Society> {
-    const [society] = await db
-      .update(societies)
-      .set(societyData)
-      .where(eq(societies.id, id))
+  async updateSociety(id: string, societyData: any): Promise<any> {
+    const updateData = {
+      society: societyData.societyName || societyData.society,
+      area: societyData.area,
+      city: societyData.city,
+      state: societyData.state,
+      district: societyData.district,
+      pincode: societyData.pincode
+    };
+    
+    const [address] = await db
+      .update(addresses)
+      .set(updateData)
+      .where(eq(addresses.id, id))
       .returning();
-    return society;
+      
+    return {
+      id: address.id,
+      societyName: address.society,
+      area: address.area,
+      city: address.city,
+      state: address.state,
+      district: address.district,
+      pincode: address.pincode
+    };
   }
 
   async deleteSociety(id: string): Promise<void> {
-    await db.delete(societies).where(eq(societies.id, id));
+    await db.delete(addresses).where(eq(addresses.id, id));
   }
 
   // Property operations
