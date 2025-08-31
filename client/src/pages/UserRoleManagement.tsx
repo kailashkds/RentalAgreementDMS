@@ -404,7 +404,8 @@ export default function UserRoleManagement() {
     
     try {
       // Fetch current password without resetting
-      const data = await apiRequest(`/api/unified/users/${user.id}/current-password`);
+      const response = await apiRequest(`/api/unified/users/${user.id}/current-password`, "GET");
+      const data = await response.json();
       setCurrentPassword(data.currentPassword || "Unable to decrypt current password");
     } catch (error) {
       setCurrentPassword("Error loading current password");
@@ -805,34 +806,79 @@ export default function UserRoleManagement() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit User
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openResetPasswordDialog(user)}>
-                                <Key className="h-4 w-4 mr-2" />
-                                Reset Password
-                              </DropdownMenuItem>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <Key className="h-4 w-4 mr-2" />
+                                    Reset Password
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Reset User Password</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to reset the password for <strong>{user.name}</strong>? 
+                                      A new random password will be generated and the current password will be lost.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => openResetPasswordDialog(user)}
+                                      className="bg-orange-600 text-white hover:bg-orange-700"
+                                    >
+                                      Reset Password
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                               <DropdownMenuItem onClick={() => openManagePermissions(user)}>
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Manage Permissions
                               </DropdownMenuItem>
                               {hasPermission('user.status.change') && (
-                                <DropdownMenuItem 
-                                  onClick={() => toggleUserStatusMutation.mutate({ 
-                                    userId: user.id, 
-                                    isActive: !user.isActive 
-                                  })}
-                                  data-testid={`button-toggle-status-${user.id}`}
-                                >
-                                  {user.isActive ? (
-                                    <>
-                                      <UserX className="h-4 w-4 mr-2" />
-                                      Deactivate User
-                                    </>
-                                  ) : (
-                                    <>
-                                      <UserCheck className="h-4 w-4 mr-2" />
-                                      Activate User
-                                    </>
-                                  )}
-                                </DropdownMenuItem>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} data-testid={`button-toggle-status-${user.id}`}>
+                                      {user.isActive ? (
+                                        <>
+                                          <UserX className="h-4 w-4 mr-2" />
+                                          Deactivate User
+                                        </>
+                                      ) : (
+                                        <>
+                                          <UserCheck className="h-4 w-4 mr-2" />
+                                          Activate User
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        {user.isActive ? "Deactivate User" : "Activate User"}
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        {user.isActive 
+                                          ? `Are you sure you want to deactivate ${user.name}? They will lose access to the system immediately.`
+                                          : `Are you sure you want to activate ${user.name}? They will regain access to the system.`
+                                        }
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => toggleUserStatusMutation.mutate({ 
+                                          userId: user.id, 
+                                          isActive: !user.isActive 
+                                        })}
+                                        className={user.isActive ? "bg-orange-600 text-white hover:bg-orange-700" : "bg-green-600 text-white hover:bg-green-700"}
+                                      >
+                                        {user.isActive ? "Deactivate" : "Activate"}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               )}
                               {(currentUser as any)?.id !== user.id && (
                                 <AlertDialog>
@@ -1008,14 +1054,55 @@ export default function UserRoleManagement() {
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Role
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Users className="h-4 w-4 mr-2" />
-                              Manage Users
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <RefreshCw className="h-4 w-4 mr-2" />
-                              Reset Permissions
-                            </DropdownMenuItem>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <Users className="h-4 w-4 mr-2" />
+                                  Manage Users
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Manage Users for Role: {role.name}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will show all users assigned to this role. Users assigned: {role.userCount || 0}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Close</AlertDialogCancel>
+                                  <AlertDialogAction>View Users</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  Reset Permissions
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Reset Role Permissions</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to reset all permissions for the role "{role.name}"? 
+                                    This will remove all permissions and set the role to have no access rights.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-orange-600 text-white hover:bg-orange-700"
+                                    onClick={() => {
+                                      setRoleFormData(prev => ({ ...prev, permissions: [] }));
+                                      updateRoleMutation.mutate({ id: role.id, data: { ...role, permissions: [] } });
+                                    }}
+                                  >
+                                    Reset Permissions
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -1210,21 +1297,56 @@ export default function UserRoleManagement() {
             <Button variant="outline" onClick={() => setIsPermissionsModalOpen(false)}>
               Cancel
             </Button>
-            <Button 
-              onClick={() => {
-                if (managingPermissionsUser && (pendingPermissionChanges.toAdd.length > 0 || pendingPermissionChanges.toRemove.length > 0)) {
-                  savePermissionChangesMutation.mutate({
-                    userId: managingPermissionsUser.id,
-                    changes: pendingPermissionChanges
-                  });
-                } else {
-                  setIsPermissionsModalOpen(false);
-                }
-              }}
-              disabled={savePermissionChangesMutation.isPending}
-            >
-              {savePermissionChangesMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
+            {(pendingPermissionChanges.toAdd.length > 0 || pendingPermissionChanges.toRemove.length > 0) ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button disabled={savePermissionChangesMutation.isPending}>
+                    {savePermissionChangesMutation.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Permission Changes</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      You are about to change permissions for <strong>{managingPermissionsUser?.name}</strong>:
+                      {pendingPermissionChanges.toAdd.length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-green-600">Adding {pendingPermissionChanges.toAdd.length} permissions</span>
+                        </div>
+                      )}
+                      {pendingPermissionChanges.toRemove.length > 0 && (
+                        <div className="mt-1">
+                          <span className="text-red-600">Removing {pendingPermissionChanges.toRemove.length} permissions</span>
+                        </div>
+                      )}
+                      <div className="mt-2 text-sm text-gray-600">
+                        These changes will take effect immediately and may affect the user's access to system features.
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        if (managingPermissionsUser) {
+                          savePermissionChangesMutation.mutate({
+                            userId: managingPermissionsUser.id,
+                            changes: pendingPermissionChanges
+                          });
+                        }
+                      }}
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      Apply Changes
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <Button onClick={() => setIsPermissionsModalOpen(false)}>
+                Close
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
