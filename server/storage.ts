@@ -1138,7 +1138,7 @@ export class DatabaseStorage implements IStorage {
         .from(agreements)
         .leftJoin(users, eq(agreements.customerId, users.id))
         .where(whereConditions)
-        .orderBy(asc(agreements.endDate))
+        .orderBy(desc(agreements.createdAt))
         .limit(limit)
         .offset(offset),
       db
