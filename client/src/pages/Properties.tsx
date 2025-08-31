@@ -55,11 +55,6 @@ export default function Properties() {
     enabled: !!user, // Only run query when user is authenticated
   });
 
-  console.log('Properties Query - User:', user);
-  console.log('Properties Query - Error:', error);
-  console.log('Properties Query - Loading:', isLoading);
-  console.log('Properties Query - Data:', properties);
-
   const handleEditProperty = (property: PropertyWithCustomer) => {
     setEditingProperty(property);
     setShowEditDialog(true);

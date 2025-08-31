@@ -1430,40 +1430,55 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="customerId">{t("selectCustomer")} <span className="text-red-500">*</span></Label>
-                <Select 
-                  {...register("customerId", { required: "Customer selection is required" })}
-                  value={watch("customerId") || ""} 
-                  onValueChange={(value) => setValue("customerId", value)}
-                >
-                  <SelectTrigger disabled={!canViewAllCustomers}>
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customersData?.customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name} - {customer.mobile}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.customerId && (
-                  <p className="text-sm text-red-600 mt-1">{errors.customerId.message}</p>
+                <Label htmlFor="customerId">
+                  {canViewAllCustomers ? t("selectCustomer") : "Customer"} <span className="text-red-500">*</span>
+                </Label>
+                {canViewAllCustomers ? (
+                  <>
+                    <Select 
+                      {...register("customerId", { required: "Customer selection is required" })}
+                      value={watch("customerId") || ""} 
+                      onValueChange={(value) => setValue("customerId", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a customer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customersData?.customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name} - {customer.mobile}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.customerId && (
+                      <p className="text-sm text-red-600 mt-1">{errors.customerId.message}</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Select an existing customer to copy their details for the agreement
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowCustomerModal(true)}
+                      className="mt-2 text-blue-600 hover:text-blue-700"
+                    >
+                      <Plus className="mr-1 h-4 w-4" />
+                      {t("createNewCustomer")}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                      <div className="text-sm font-medium text-gray-900">{(user as any)?.name}</div>
+                      <div className="text-sm text-gray-500">{(user as any)?.mobile}</div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Creating agreement for your account
+                    </p>
+                  </>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
-                  Select an existing customer to copy their details for the agreement
-                </p>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCustomerModal(true)}
-                  className="mt-2 text-blue-600 hover:text-blue-700"
-                  disabled={!canViewAllCustomers}
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  {t("createNewCustomer")}
-                </Button>
               </div>
 
               <div>

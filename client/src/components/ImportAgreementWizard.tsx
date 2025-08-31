@@ -549,34 +549,46 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="customerId">Select Customer <span className="text-red-500">*</span></Label>
-                  <Select
-                    value={formData.customer.id || ""}
-                    onValueChange={(value) => {
-                      const selectedCustomer = customers.find((c: any) => c.id === value);
-                      setFormData(prev => ({
-                        ...prev,
-                        customer: {
-                          id: value,
-                          name: selectedCustomer ? selectedCustomer.name : "",
-                          mobile: selectedCustomer ? selectedCustomer.mobile : ""
-                        }
-                      }));
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.filter((customer: any) => customer.id && customer.id.trim() !== '').map((customer: any) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name} - {customer.mobile}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="customerId">
+                    {canViewAllCustomers ? "Select Customer" : "Customer"} <span className="text-red-500">*</span>
+                  </Label>
+                  {canViewAllCustomers ? (
+                    <Select
+                      value={formData.customer.id || ""}
+                      onValueChange={(value) => {
+                        const selectedCustomer = customers.find((c: any) => c.id === value);
+                        setFormData(prev => ({
+                          ...prev,
+                          customer: {
+                            id: value,
+                            name: selectedCustomer ? selectedCustomer.name : "",
+                            mobile: selectedCustomer ? selectedCustomer.mobile : ""
+                          }
+                        }));
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a customer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.filter((customer: any) => customer.id && customer.id.trim() !== '').map((customer: any) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name} - {customer.mobile}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                      <div className="text-sm font-medium text-gray-900">{formData.customer.name}</div>
+                      <div className="text-sm text-gray-500">{formData.customer.mobile}</div>
+                    </div>
+                  )}
                   <p className="text-xs text-gray-500 mt-1">
-                    Select an existing customer to import agreement for
+                    {canViewAllCustomers 
+                      ? "Select an existing customer to import agreement for"
+                      : "Importing agreement for your account"
+                    }
                   </p>
                 </div>
 
