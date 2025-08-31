@@ -141,16 +141,6 @@ export default function Agreements() {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, notaryFilter, customerFilter, tenantFilter, ownerFilter, dateFilter, sortBy]);
 
-  // Auto-adjust current page when total agreements change to ensure we don't exceed max pages
-  React.useEffect(() => {
-    if (agreementsData?.total) {
-      const maxPages = Math.ceil(agreementsData.total / 25);
-      if (currentPage > maxPages) {
-        setCurrentPage(maxPages);
-      }
-    }
-  }, [agreementsData?.total, currentPage]);
-
   // Pagination helper function
   const generatePageNumbers = (currentPage: number, totalPages: number) => {
     const pages = [];
@@ -289,6 +279,16 @@ export default function Agreements() {
     limit: 25,
     offset: (currentPage - 1) * 25,
   });
+
+  // Auto-adjust current page when total agreements change to ensure we don't exceed max pages
+  React.useEffect(() => {
+    if (agreementsData?.total) {
+      const maxPages = Math.ceil(agreementsData.total / 25);
+      if (currentPage > maxPages) {
+        setCurrentPage(maxPages);
+      }
+    }
+  }, [agreementsData?.total, currentPage]);
 
   // Extract unique values for dropdown options
   const uniqueCustomers = React.useMemo(() => {
