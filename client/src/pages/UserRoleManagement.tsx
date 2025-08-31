@@ -99,6 +99,10 @@ export default function UserRoleManagement() {
   const [currentPassword, setCurrentPassword] = useState<string | null>(null);
   const [isLoadingCurrentPassword, setIsLoadingCurrentPassword] = useState(false);
   
+  // Role users management dialog state
+  const [manageUsersDialogOpen, setManageUsersDialogOpen] = useState(false);
+  const [selectedRoleForUsers, setSelectedRoleForUsers] = useState<Role | null>(null);
+  
   // Local state for pending permission changes (before saving)
   const [pendingPermissionChanges, setPendingPermissionChanges] = useState<{
     toAdd: string[]; // permission IDs to add
@@ -394,6 +398,11 @@ export default function UserRoleManagement() {
     setManagingPermissionsUser(user);
     setPendingPermissionChanges({ toAdd: [], toRemove: [] }); // Reset pending changes
     setIsPermissionsModalOpen(true);
+  };
+
+  const openManageRoleUsers = (role: Role) => {
+    setSelectedRoleForUsers(role);
+    setManageUsersDialogOpen(true);
   };
 
   const openResetPasswordDialog = async (user: User) => {
@@ -860,7 +869,16 @@ export default function UserRoleManagement() {
                                       </AlertDialogTitle>
                                       <AlertDialogDescription>
                                         {user.isActive 
-                                          ? `Are you sure you want to deactivate ${user.name}? They will lose access to the system immediately.`
+                                          ? `Are you sure you want to deactivate ${user.name}? 
+                                          
+⚠️ WARNING: This action will:
+• Immediately revoke all system access
+• Prevent login to admin panel and customer portal
+• Block all document creation and management
+• Disable any automated processes for this user
+• User will receive no notification of deactivation
+
+This change takes effect immediately but can be reversed by reactivating the user.`
                                           : `Are you sure you want to activate ${user.name}? They will regain access to the system.`
                                         }
                                       </AlertDialogDescription>
@@ -1054,26 +1072,10 @@ export default function UserRoleManagement() {
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Role
                             </DropdownMenuItem>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <Users className="h-4 w-4 mr-2" />
-                                  Manage Users
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Manage Users for Role: {role.name}</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    This will show all users assigned to this role. Users assigned: {role.userCount || 0}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Close</AlertDialogCancel>
-                                  <AlertDialogAction>View Users</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <DropdownMenuItem onClick={() => openManageRoleUsers(role)}>
+                              <Users className="h-4 w-4 mr-2" />
+                              Manage Users ({role.userCount || 0})
+                            </DropdownMenuItem>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -1448,6 +1450,87 @@ export default function UserRoleManagement() {
               disabled={resetPasswordMutation.isPending}
             >
               {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Users for Role Dialog */}
+      <Dialog open={manageUsersDialogOpen} onOpenChange={setManageUsersDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Users - Role: {selectedRoleForUsers?.name}</DialogTitle>
+            <DialogDescription>
+              Users assigned to the {selectedRoleForUsers?.name} role ({selectedRoleForUsers?.userCount || 0} total)
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedRoleForUsers && (
+            <div className="space-y-4">
+              {/* Users Table */}
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usersData?.users
+                      .filter(user => user.roleId === selectedRoleForUsers.id)
+                      .map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.username}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={user.isActive ? "default" : "secondary"}
+                              className={user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                            >
+                              {user.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEditUser(user)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit User
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openManagePermissions(user)}>
+                                  <Settings className="h-4 w-4 mr-2" />
+                                  Manage Permissions
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+                
+                {usersData?.users.filter(user => user.roleId === selectedRoleForUsers.id).length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No users assigned to this role
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setManageUsersDialogOpen(false)}>
+              Close
             </Button>
           </div>
         </DialogContent>
