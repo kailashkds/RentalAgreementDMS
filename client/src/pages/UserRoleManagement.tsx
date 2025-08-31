@@ -355,17 +355,17 @@ export default function UserRoleManagement() {
         const user = users.find(u => u.id === userId);
         if (!user) continue;
         
-        const currentlyHasRole = user.role === roleId;
+        const currentlyHasRole = user.roles?.some(r => r.id === roleId) || false;
         
         if (shouldHaveRole && !currentlyHasRole) {
           // Assign role to user
           promises.push(
-            apiRequest(`/api/unified/users/${userId}`, "PATCH", { role: roleId })
+            apiRequest(`/api/rbac/assign-user-role`, "POST", { userId, roleId })
           );
         } else if (!shouldHaveRole && currentlyHasRole) {
-          // Remove role from user (set to default or null)
+          // Remove role from user
           promises.push(
-            apiRequest(`/api/unified/users/${userId}`, "PATCH", { role: null })
+            apiRequest(`/api/rbac/remove-user-role`, "DELETE", { userId, roleId })
           );
         }
       }
@@ -449,7 +449,7 @@ export default function UserRoleManagement() {
     // Initialize checkbox states based on current role assignments
     const initialAssignments: {[userId: string]: boolean} = {};
     users.forEach(user => {
-      initialAssignments[user.id] = user.role === role.id;
+      initialAssignments[user.id] = user.roles?.some(r => r.id === role.id) || false;
     });
     setRoleAssignments(initialAssignments);
     setManageUsersDialogOpen(true);
@@ -1109,7 +1109,7 @@ This change takes effect immediately but can be reversed by reactivating the use
                           {role.permissions.length} permissions
                         </Badge>
                         <Badge variant="secondary">
-                          {users.filter(u => u.role === role.id).length} users
+                          {users.filter(u => u.roles?.some(r => r.id === role.id)).length} users
                         </Badge>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -1124,7 +1124,7 @@ This change takes effect immediately but can be reversed by reactivating the use
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openManageRoleUsers(role)}>
                               <Users className="h-4 w-4 mr-2" />
-                              Manage Users ({users.filter(u => u.role === role.id).length})
+                              Manage Users ({users.filter(u => u.roles?.some(r => r.id === role.id)).length})
                             </DropdownMenuItem>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -1563,10 +1563,14 @@ This change takes effect immediately but can be reversed by reactivating the use
                         <TableCell>{user.username}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
-                          {user.role ? (
-                            <Badge variant="outline">
-                              {roles.find(r => r.id === user.role)?.name || "Unknown Role"}
-                            </Badge>
+                          {user.roles && user.roles.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {user.roles.map(userRole => (
+                                <Badge key={userRole.id} variant="outline" className="text-xs">
+                                  {userRole.name}
+                                </Badge>
+                              ))}
+                            </div>
                           ) : (
                             <span className="text-gray-500">No Role</span>
                           )}
