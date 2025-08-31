@@ -524,11 +524,32 @@ export class DatabaseStorage implements IStorage {
 
   // Customer operations - use unified users table instead
   async getCustomers(search?: string, limit = 50, offset = 0, activeOnly = false): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }> {
-    // Simple query without complex conditions for now
+    // Build where conditions
+    const conditions = [eq(users.defaultRole, 'Customer')];
+    
+    // Add search functionality
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim().toLowerCase()}%`;
+      conditions.push(
+        or(
+          ilike(users.name, searchTerm),
+          ilike(users.mobile, searchTerm),
+          ilike(users.email, searchTerm)
+        )
+      );
+    }
+    
+    // Add active only filter
+    if (activeOnly) {
+      conditions.push(eq(users.status, 'active'));
+    }
+    
+    const whereConditions = and(...conditions);
+
     const usersResult = await db
       .select()
       .from(users)
-      .where(eq(users.defaultRole, 'Customer'))
+      .where(whereConditions)
       .orderBy(desc(users.createdAt))
       .limit(limit)
       .offset(offset);
@@ -536,7 +557,7 @@ export class DatabaseStorage implements IStorage {
     const totalResult = await db
       .select({ count: count() })
       .from(users)
-      .where(eq(users.defaultRole, 'Customer'));
+      .where(whereConditions);
 
     // For each user, get their agreement count  
     const customersWithCounts = await Promise.all(
