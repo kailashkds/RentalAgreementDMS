@@ -2,6 +2,7 @@ import {
   users,
   properties,
   addresses,
+  societies,
   agreements,
   permissions,
   roles,
@@ -14,12 +15,12 @@ import {
 
   type User,
   type UpsertUser,
-  type Customer,
-  type InsertCustomer,
   type Property,
   type InsertProperty,
   type Address,
   type InsertAddress,
+  type Society,
+  type InsertSociety,
   type Agreement,
   type InsertAgreement,
   type Permission,
@@ -64,8 +65,8 @@ export interface IStorage {
   getCustomers(search?: string, limit?: number, offset?: number, activeOnly?: boolean): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }>;
   getCustomer(id: string): Promise<Customer | undefined>;
   getCustomerByMobile(mobile: string): Promise<Customer | undefined>;
-  createCustomer(customer: InsertCustomer & { password?: string | null }): Promise<Customer>;
-  updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer>;
+  createCustomer(customer: any): Promise<Customer>;
+  updateCustomer(id: string, customer: Partial<any>): Promise<Customer>;
   deleteCustomer(id: string): Promise<void>;
   resetCustomerPassword(id: string, newPassword: string): Promise<Customer>;
   toggleCustomerStatus(id: string, isActive: boolean): Promise<Customer>;
@@ -87,6 +88,10 @@ export interface IStorage {
   searchAddresses(search: string, limit?: number): Promise<Address[]>;
   saveAddress(address: InsertAddress): Promise<Address>;
   incrementAddressUsage(addressId: string): Promise<void>;
+  
+  // Society operations for address autocomplete
+  getSocieties(search?: string, limit?: number): Promise<any[]>;
+  createSociety(societyData: any): Promise<any>;
   
   // PDF Template operations (full CRUD)
   getPdfTemplates(documentType?: string, language?: string): Promise<PdfTemplate[]>;
@@ -292,11 +297,6 @@ export class DatabaseStorage implements IStorage {
       ...user,
       role: user.defaultRole || 'Customer'
     } as User;
-  }
-
-  async getUserByMobile(mobile: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.mobile, mobile));
-    return user;
   }
 
   async createUser(userData: Omit<UpsertUser, 'id'>): Promise<User> {

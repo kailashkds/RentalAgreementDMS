@@ -146,7 +146,18 @@ export const properties = pgTable("properties", {
   addressIdx: index("property_address_idx").on(table.society, table.area, table.city),
 }));
 
-
+// Societies table for address autocomplete
+export const societies = pgTable("societies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  societyName: text("society_name").notNull(),
+  area: text("area").notNull(),
+  district: text("district").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  pincode: varchar("pincode", { length: 10 }).notNull(),
+  landmark: text("landmark"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 // Address database for intelligent autocomplete
 export const addresses = pgTable("addresses", {
@@ -351,6 +362,11 @@ export const agreementsRelations = relations(agreements, ({ one, many }) => ({
 // Insert schemas
 
 
+export const insertSocietySchema = createInsertSchema(societies).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertAddressSchema = createInsertSchema(addresses).omit({
   id: true,
   createdAt: true,
@@ -405,6 +421,8 @@ export type InsertAddress = z.infer<typeof insertAddressSchema>;
 export type Address = typeof addresses.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type Property = typeof properties.$inferSelect;
+export type InsertSociety = z.infer<typeof insertSocietySchema>;
+export type Society = typeof societies.$inferSelect;
 export type InsertAgreement = z.infer<typeof insertAgreementSchema>;
 export type Agreement = typeof agreements.$inferSelect;
 
