@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import type { Address } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
@@ -942,6 +943,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (auditError) {
         console.warn("Failed to create audit log:", auditError);
+      }
+
+      // Broadcast permission updates to all users with this role
+      if ((httpServer as any).broadcastPermissionUpdate) {
+        await (httpServer as any).broadcastPermissionUpdate(id, role.name);
       }
 
       res.json({
@@ -3555,6 +3561,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Setup WebSocket server for real-time updates
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    clientTracking: true 
+  });
+  
+  // Store user sessions for targeted updates
+  const userSessions = new Map<string, WebSocket[]>();
+  
+  wss.on('connection', async (ws, req) => {
+    console.log('🔌 WebSocket client connected');
+    
+    // Handle authentication and user session tracking
+    ws.on('message', async (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        
+        if (message.type === 'auth') {
+          const userId = message.userId;
+          if (userId) {
+            // Track user connection
+            if (!userSessions.has(userId)) {
+              userSessions.set(userId, []);
+            }
+            userSessions.get(userId)!.push(ws);
+            
+            // Send initial permissions
+            try {
+              const permissions = await storage.getUserPermissions(userId);
+              ws.send(JSON.stringify({
+                type: 'permissions_update',
+                permissions: permissions
+              }));
+            } catch (error) {
+              console.error('Error fetching user permissions:', error);
+            }
+            
+            console.log(`👤 User ${userId} authenticated via WebSocket`);
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+    
+    ws.on('close', () => {
+      // Clean up user sessions when connection closes
+      for (const [userId, connections] of userSessions.entries()) {
+        const index = connections.indexOf(ws);
+        if (index !== -1) {
+          connections.splice(index, 1);
+          if (connections.length === 0) {
+            userSessions.delete(userId);
+          }
+          break;
+        }
+      }
+      console.log('🔌 WebSocket client disconnected');
+    });
+    
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+  });
+  
+  // Broadcast permission updates to all affected users
+  async function broadcastPermissionUpdate(roleId: string, roleName: string) {
+    try {
+      // Get all users with this role
+      const usersWithRole = await storage.getUsersByRoleId(roleId);
+      
+      for (const user of usersWithRole) {
+        const userConnections = userSessions.get(user.id);
+        if (userConnections && userConnections.length > 0) {
+          // Get updated permissions for this user
+          const updatedPermissions = await storage.getUserPermissions(user.id);
+          
+          const updateMessage = JSON.stringify({
+            type: 'permissions_update',
+            permissions: updatedPermissions,
+            reason: `Role "${roleName}" permissions updated`,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Send to all connections for this user
+          userConnections.forEach(ws => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(updateMessage);
+            }
+          });
+          
+          console.log(`📡 Broadcasted permission update to user ${user.id} (role: ${roleName})`);
+        }
+      }
+    } catch (error) {
+      console.error('Error broadcasting permission update:', error);
+    }
+  }
+  
+  // Make broadcast function available globally
+  (httpServer as any).broadcastPermissionUpdate = broadcastPermissionUpdate;
+  
   return httpServer;
 }
 

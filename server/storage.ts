@@ -437,6 +437,16 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  async getUsersByRoleId(roleId: string): Promise<User[]> {
+    const usersResult = await db
+      .select()
+      .from(users)
+      .innerJoin(userRoles, eq(users.id, userRoles.userId))
+      .where(eq(userRoles.roleId, roleId));
+    
+    return usersResult.map(result => result.users);
+  }
+
   async getUsers(filters?: { 
     search?: string; 
     status?: string; 
