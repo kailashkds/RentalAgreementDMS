@@ -1313,20 +1313,30 @@ export class DatabaseStorage implements IStorage {
         break;
     }
 
-    // Build the base query
-    let query = db
-      .select()
-      .from(agreements)
-      .leftJoin(users, eq(agreements.customerId, users.id))
-      .where(whereConditions);
+    // Build the base query with conditional ordering
+    let query;
     
-    // Apply ordering
     if (Array.isArray(orderByClause)) {
-      query = query.orderBy(...orderByClause.filter(clause => clause !== undefined));
+      query = db
+        .select()
+        .from(agreements)
+        .leftJoin(users, eq(agreements.customerId, users.id))
+        .where(whereConditions)
+        .orderBy(...orderByClause.filter(clause => clause !== undefined));
     } else if (orderByClause) {
-      query = query.orderBy(orderByClause);
+      query = db
+        .select()
+        .from(agreements)
+        .leftJoin(users, eq(agreements.customerId, users.id))
+        .where(whereConditions)
+        .orderBy(orderByClause);
     } else {
-      query = query.orderBy(desc(agreements.createdAt));
+      query = db
+        .select()
+        .from(agreements)
+        .leftJoin(users, eq(agreements.customerId, users.id))
+        .where(whereConditions)
+        .orderBy(desc(agreements.createdAt));
     }
     
     const [agreementsResult, totalResult] = await Promise.all([
