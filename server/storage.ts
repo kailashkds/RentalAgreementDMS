@@ -1306,17 +1306,20 @@ export class DatabaseStorage implements IStorage {
         break;
       case "expiry_status":
       default:
-        // Default expiry urgency sorting (expired documents last but in sequential order)
-        console.log('📊 Using default expiry_status - expired documents last but in sequential order');
+        // Default expiry urgency sorting - active first (less time to more time), expired last (recent to old)
+        console.log('📊 Using default sorting - active (less time to more time), expired last (recent to old)');
         orderByClause = [
-          // Put expired documents at the end, nulls at the very end
+          // Group: 0=active, 1=expired, 2=null dates
           sql`CASE 
             WHEN ${agreements.endDate} IS NULL THEN 2
             WHEN ${agreements.endDate} < CURRENT_DATE THEN 1
             ELSE 0
           END`,
-          // Sort by date: active ascending (fewer days first), expired descending (recently expired first)
-          desc(agreements.endDate)
+          // Within each group: active ascending (less time first), expired descending (recently expired first)
+          sql`CASE 
+            WHEN ${agreements.endDate} < CURRENT_DATE THEN -${agreements.endDate}
+            ELSE ${agreements.endDate}
+          END`
         ];
         break;
     }
