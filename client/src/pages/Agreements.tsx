@@ -307,7 +307,16 @@ export default function Agreements() {
     // Filter by police verification status
     if (policeFilter && policeFilter !== "all") {
       const hasPoliceVerification = agreement.documents?.policeVerificationDocument?.url;
-      const policeStatus = hasPoliceVerification ? "verified" : "not_verified";
+      let policeStatus;
+      
+      if (hasPoliceVerification) {
+        policeStatus = "done";
+      } else if (agreement.status === "draft") {
+        policeStatus = "pending";
+      } else {
+        policeStatus = "not_done";
+      }
+      
       if (policeStatus !== policeFilter) return false;
     }
 
@@ -1084,8 +1093,9 @@ export default function Agreements() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Police</SelectItem>
-                <SelectItem value="verified">Verified</SelectItem>
-                <SelectItem value="not_verified">Not Verified</SelectItem>
+                <SelectItem value="done">Done</SelectItem>
+                <SelectItem value="not_done">Not Done</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
               </SelectContent>
             </Select>
             <Combobox
