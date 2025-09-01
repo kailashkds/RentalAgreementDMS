@@ -12,6 +12,7 @@ interface UseAgreementsOptions {
   policeVerificationFilter?: string;
   tenantFilter?: string;
   ownerFilter?: string;
+  sortBy?: string;
   limit?: number;
   offset?: number;
 }
@@ -22,7 +23,7 @@ interface AgreementsResponse {
 }
 
 export function useAgreements(options: UseAgreementsOptions = {}) {
-  const { customerId, status, search, dateFilter, startDate, endDate, notaryFilter, policeVerificationFilter, tenantFilter, ownerFilter, limit = 50, offset = 0 } = options;
+  const { customerId, status, search, dateFilter, startDate, endDate, notaryFilter, policeVerificationFilter, tenantFilter, ownerFilter, sortBy, limit = 50, offset = 0 } = options;
   
   const params = new URLSearchParams();
   if (customerId && customerId.trim() !== "") params.append('customerId', customerId);
@@ -49,11 +50,14 @@ export function useAgreements(options: UseAgreementsOptions = {}) {
   if (ownerFilter && ownerFilter.trim() !== "" && ownerFilter !== "all") {
     params.append('ownerFilter', ownerFilter);
   }
+  if (sortBy && sortBy.trim() !== "") {
+    params.append('sortBy', sortBy);
+  }
   params.append('limit', limit.toString());
   params.append('offset', offset.toString());
 
   return useQuery<AgreementsResponse>({
-    queryKey: ["/api/agreements", customerId, status, search, dateFilter || null, startDate || null, endDate || null, notaryFilter || null, policeVerificationFilter || null, tenantFilter || null, ownerFilter || null, limit, offset],
+    queryKey: ["/api/agreements", customerId, status, search, dateFilter || null, startDate || null, endDate || null, notaryFilter || null, policeVerificationFilter || null, tenantFilter || null, ownerFilter || null, sortBy || null, limit, offset],
     queryFn: async () => {
       // Add cache buster to force fresh data
       params.append('_t', Date.now().toString());

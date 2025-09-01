@@ -292,6 +292,7 @@ export default function Agreements() {
     policeVerificationFilter: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
     tenantFilter: tenantFilter === "all" ? "" : tenantFilter,
     ownerFilter: ownerFilter === "all" ? "" : ownerFilter,
+    sortBy: sortBy,
     ...dateParams,
     limit: 25,
     offset: (currentPage - 1) * 25,
@@ -319,131 +320,8 @@ export default function Agreements() {
   const uniqueTenants = uniqueTenantsData || [];
   const uniqueOwners = uniqueOwnersData || [];
 
-  // All filtering is now handled server-side - no client-side filtering needed!
-  const filteredAgreements = agreementsData?.agreements || [];
-
-  // Sort the filtered agreements
-  const sortedAgreements = React.useMemo(() => {
-    if (!filteredAgreements || filteredAgreements.length === 0) return [];
-    
-    const sorted = [...filteredAgreements].sort((a, b) => {
-      switch (sortBy) {
-        case "agreement_number_desc":
-          // Sort by agreement number descending (highest number first)
-          const aNum = parseInt(a.agreementNumber?.replace(/[^0-9]/g, '') || '0');
-          const bNum = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
-          return bNum - aNum;
-          
-        case "agreement_number_asc":
-          // Sort by agreement number ascending (oldest first)
-          const aNumAsc = parseInt(a.agreementNumber?.replace(/[^0-9]/g, '') || '0');
-          const bNumAsc = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
-          return aNumAsc - bNumAsc;
-          
-        case "expiry_status_asc":
-          // Sort by expiry status ascending (expiring soon first, then active, then expired at end)
-          const getExpiryPriority = (agreement: any) => {
-            const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-            if (!endDate) return 1; // No expiry date - middle priority (active)
-            
-            const today = new Date();
-            const expiry = new Date(endDate);
-            const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            
-            if (daysUntilExpiry < 0) return 2; // Expired - lowest priority (at end)
-            if (daysUntilExpiry <= 30) return 0; // Expiring soon - highest priority
-            return 1; // Active - middle priority
-          };
-          
-          const aPriority = getExpiryPriority(a);
-          const bPriority = getExpiryPriority(b);
-          
-          if (aPriority === bPriority) {
-            // If same status, handle sorting within each group
-            if (aPriority === 2) {
-              // For expired agreements: sort by expiry date DESC (most recently expired first)
-              const aEndDate = new Date(a.rentalTerms?.endDate || a.endDate || 0);
-              const bEndDate = new Date(b.rentalTerms?.endDate || b.endDate || 0);
-              return bEndDate.getTime() - aEndDate.getTime(); // Reverse order for expired
-            } else {
-              // For active/expiring agreements: sort by expiry date ASC (closest expiry first)
-              const aEndDate = new Date(a.rentalTerms?.endDate || a.endDate || 0);
-              const bEndDate = new Date(b.rentalTerms?.endDate || b.endDate || 0);
-              return aEndDate.getTime() - bEndDate.getTime();
-            }
-          }
-          
-          return aPriority - bPriority;
-          
-        case "expiry_status":
-          // Sort by expiry urgency (expiring soon first, then later dates, expired at end)
-          const getExpiryUrgency = (agreement: any) => {
-            // Check agreement status first - if already expired, put at end
-            if (agreement.status === 'expired') return 1000; // Expired - lowest priority (at end)
-            
-            const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-            if (!endDate) return 999; // No expiry date - second lowest priority
-            
-            const today = new Date();
-            const expiry = new Date(endDate);
-            const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            
-            if (daysUntilExpiry < 0) return 1000; // Expired by date - lowest priority (at end)
-            if (daysUntilExpiry === 0) return 1; // Expires today - highest priority
-            if (daysUntilExpiry === 1) return 2; // Expires tomorrow
-            if (daysUntilExpiry <= 7) return 3; // Expires this week
-            if (daysUntilExpiry <= 30) return 4; // Expires this month
-            if (daysUntilExpiry <= 90) return 5; // Expires in 3 months
-            
-            return daysUntilExpiry; // Return days for further dates
-          };
-          
-          const aUrgency = getExpiryUrgency(a);
-          const bUrgency = getExpiryUrgency(b);
-          
-          if (aUrgency === bUrgency) {
-            // If same urgency, sort by expiry date (closest first)
-            const aEndDate = new Date(a.rentalTerms?.endDate || a.endDate || 0);
-            const bEndDate = new Date(b.rentalTerms?.endDate || b.endDate || 0);
-            return aEndDate.getTime() - bEndDate.getTime();
-          }
-          
-          return aUrgency - bUrgency;
-
-        case "expiry_status_desc":
-          // Sort by expiry status descending (active first, then expiring soon, then expired)
-          const getExpiryPriorityDesc = (agreement: any) => {
-            const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-            if (!endDate) return 0; // No expiry date - highest priority
-            
-            const today = new Date();
-            const expiry = new Date(endDate);
-            const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            
-            if (daysUntilExpiry < 0) return 3; // Expired - lowest priority
-            if (daysUntilExpiry <= 30) return 2; // Expiring soon
-            return 1; // Active
-          };
-          
-          const aPriorityDesc = getExpiryPriorityDesc(a);
-          const bPriorityDesc = getExpiryPriorityDesc(b);
-          
-          if (aPriorityDesc === bPriorityDesc) {
-            // If same status, sort by expiry date (farthest first)
-            const aEndDateDesc = new Date(a.rentalTerms?.endDate || a.endDate || 0);
-            const bEndDateDesc = new Date(b.rentalTerms?.endDate || b.endDate || 0);
-            return bEndDateDesc.getTime() - aEndDateDesc.getTime();
-          }
-          
-          return aPriorityDesc - bPriorityDesc;
-          
-        default:
-          return 0;
-      }
-    });
-    
-    return sorted;
-  }, [filteredAgreements, sortBy]);
+  // All filtering AND sorting is now handled server-side - no client-side processing needed!
+  const sortedAgreements = agreementsData?.agreements || [];
 
   const handleRenewAgreement = async (agreementId: string) => {
     try {
@@ -1256,7 +1134,7 @@ export default function Agreements() {
               />
             )}
             <Combobox
-              options={uniqueTenants.map((tenant) => ({
+              options={uniqueTenants.map((tenant: string) => ({
                 value: tenant,
                 label: tenant
               }))}
@@ -1268,7 +1146,7 @@ export default function Agreements() {
               allowCustom={false}
             />
             <Combobox
-              options={uniqueOwners.map((owner) => ({
+              options={uniqueOwners.map((owner: string) => ({
                 value: owner,
                 label: owner
               }))}

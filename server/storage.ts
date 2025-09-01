@@ -1131,10 +1131,11 @@ export class DatabaseStorage implements IStorage {
     policeVerificationFilter?: string;
     tenantFilter?: string;
     ownerFilter?: string;
+    sortBy?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ agreements: Agreement[]; total: number }> {
-    const { customerId, propertyId, status, search, dateFilter, startDate, endDate, notaryFilter, policeVerificationFilter, tenantFilter, ownerFilter, limit = 50, offset = 0 } = filters || {};
+    const { customerId, propertyId, status, search, dateFilter, startDate, endDate, notaryFilter, policeVerificationFilter, tenantFilter, ownerFilter, sortBy, limit = 50, offset = 0 } = filters || {};
     
     // console.log(`[Date Filter Debug] Received parameters:`, { dateFilter, startDate, endDate }); // Removed for performance
     
@@ -1261,15 +1262,86 @@ export class DatabaseStorage implements IStorage {
 
     const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
 
+    // Build order by clause based on sortBy parameter
+    let orderByClause;
+    
+    switch (sortBy) {
+      case "agreement_number_desc":
+        // Sort by agreement number descending
+        orderByClause = desc(agreements.agreementNumber);
+        break;
+      case "agreement_number_asc":
+        // Sort by agreement number ascending
+        orderByClause = asc(agreements.agreementNumber);
+        break;
+      case "expiry_status_asc":
+        // Sort by expiry status: expiring soon first, then active, then expired at end
+        // Within expired group: most recently expired first
+        orderByClause = [
+          // Priority: 0=expiring soon, 1=active, 2=expired
+          sql`CASE 
+            WHEN ${agreements.endDate} IS NULL THEN 1
+            WHEN ${agreements.endDate} < CURRENT_DATE THEN 2
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 0
+            ELSE 1
+          END`,
+          // Within each group, handle sorting appropriately
+          sql`CASE 
+            WHEN ${agreements.endDate} < CURRENT_DATE THEN ${agreements.endDate} DESC
+            ELSE ${agreements.endDate} ASC
+          END`
+        ];
+        break;
+      case "expiry_status_desc":
+        // Sort by expiry status descending (active first, then expiring soon, then expired)
+        orderByClause = [
+          sql`CASE 
+            WHEN ${agreements.endDate} IS NULL THEN 0
+            WHEN ${agreements.endDate} < CURRENT_DATE THEN 2
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 1
+            ELSE 0
+          END`,
+          desc(agreements.endDate)
+        ];
+        break;
+      case "expiry_status":
+      default:
+        // Default expiry urgency sorting (expiring soon first, then later dates, expired at end)
+        orderByClause = [
+          sql`CASE 
+            WHEN ${agreements.status} = 'expired' THEN 1000
+            WHEN ${agreements.endDate} IS NULL THEN 999
+            WHEN ${agreements.endDate} < CURRENT_DATE THEN 1000
+            WHEN ${agreements.endDate} = CURRENT_DATE THEN 1
+            WHEN ${agreements.endDate} = CURRENT_DATE + INTERVAL '1 day' THEN 2
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '7 days' THEN 3
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 4
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '90 days' THEN 5
+            ELSE EXTRACT(days FROM ${agreements.endDate} - CURRENT_DATE)
+          END`,
+          asc(agreements.endDate)
+        ];
+        break;
+    }
+
+    // Build the base query
+    let query = db
+      .select()
+      .from(agreements)
+      .leftJoin(users, eq(agreements.customerId, users.id))
+      .where(whereConditions);
+    
+    // Apply ordering
+    if (Array.isArray(orderByClause)) {
+      query = query.orderBy(...orderByClause.filter(clause => clause !== undefined));
+    } else if (orderByClause) {
+      query = query.orderBy(orderByClause);
+    } else {
+      query = query.orderBy(desc(agreements.createdAt));
+    }
+    
     const [agreementsResult, totalResult] = await Promise.all([
-      db
-        .select()
-        .from(agreements)
-        .leftJoin(users, eq(agreements.customerId, users.id))
-        .where(whereConditions)
-        .orderBy(desc(agreements.createdAt))
-        .limit(limit)
-        .offset(offset),
+      query.limit(limit).offset(offset),
       db
         .select({ count: count() })
         .from(agreements)

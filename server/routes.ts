@@ -2565,7 +2565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agreement routes
   app.get("/api/agreements", requireAuth, async (req: any, res) => {
     try {
-      const { customerId, status, search, dateFilter, startDate, endDate, notaryFilter, policeVerificationFilter, tenantFilter, ownerFilter, limit, offset } = req.query;
+      const { customerId, status, search, dateFilter, startDate, endDate, notaryFilter, policeVerificationFilter, tenantFilter, ownerFilter, sortBy, limit, offset } = req.query;
       
       // Get user's data access level using new RBAC utilities
       const { isSuperAdmin, getDataAccessLevel, applyRoleBasedFiltering } = await import('./rbacUtils.js');
@@ -2586,6 +2586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         policeVerificationFilter: policeVerificationFilter as string,
         tenantFilter: tenantFilter as string,
         ownerFilter: ownerFilter as string,
+        sortBy: sortBy as string,
         limit: limit ? parseInt(limit as string) : undefined,
         offset: offset ? parseInt(offset as string) : undefined,
       };
