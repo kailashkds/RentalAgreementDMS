@@ -27,6 +27,7 @@ import { formatDateToDDMMYYYY, getRelativeDateDescription } from "@/lib/dateUtil
 import AgreementWizard from "@/components/AgreementWizard";
 import ImportAgreementWizard from "@/components/ImportAgreementWizard";
 import { useAgreements } from "@/hooks/useAgreements";
+import { useCustomers } from "@/hooks/useCustomers";
 import {
   Plus,
   Search,
@@ -90,7 +91,7 @@ export default function Agreements() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [notaryFilter, setNotaryFilter] = useState("all");
   const [policeVerificationFilter, setPoliceVerificationFilter] = useState("all");
-  const [customerFilter, setCustomerFilter] = useState("all");
+  const [customerFilter, setCustomerFilter] = useState("all"); // Store customer ID for filtering
   const [tenantFilter, setTenantFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
@@ -274,9 +275,13 @@ export default function Agreements() {
 
   const dateParams = calculateDateRange();
   
+  // Fetch all customers for the dropdown filter
+  const { data: customersData } = useCustomers({ limit: 1000, activeOnly: false });
+  
   const { data: agreementsData, isLoading } = useAgreements({
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
+    customerId: customerFilter === "all" ? "" : customerFilter,
     ...dateParams,
     limit: 25,
     offset: (currentPage - 1) * 25,
@@ -292,15 +297,13 @@ export default function Agreements() {
     }
   }, [agreementsData?.total, currentPage]);
 
-  // Extract unique values for dropdown options
-  const uniqueCustomers = React.useMemo(() => {
-    const customers = agreementsData?.agreements
-      ?.map((agreement: any) => agreement.customer?.name)
-      .filter((name: string) => name && name.trim() !== '')
-      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
-      .sort() || [];
-    return customers;
-  }, [agreementsData?.agreements]);
+  // Extract unique values for dropdown options - customers now come from separate API call
+  const allCustomersForFilter = React.useMemo(() => {
+    return customersData?.customers?.map(customer => ({
+      id: customer.id,
+      name: customer.name
+    })).sort((a, b) => a.name.localeCompare(b.name)) || [];
+  }, [customersData?.customers]);
 
   const uniqueTenants = React.useMemo(() => {
     const tenants = agreementsData?.agreements
@@ -346,13 +349,7 @@ export default function Agreements() {
       }
     }
 
-    // Filter by customer name
-    if (customerFilter && customerFilter !== "all") {
-      const customerName = agreement.customer?.name || '';
-      if (customerName !== customerFilter) {
-        return false;
-      }
-    }
+    // Customer filtering is now handled server-side via useAgreements hook
 
     // Filter by tenant name
     if (tenantFilter && tenantFilter !== "all") {
@@ -1286,9 +1283,9 @@ export default function Agreements() {
             {/* Show customer filter only for admins/staff who can view all agreements */}
             {hasPermission(PERMISSIONS.AGREEMENT_VIEW_ALL) && (
               <Combobox
-                options={uniqueCustomers.map((customer) => ({
-                  value: customer,
-                  label: customer
+                options={allCustomersForFilter.map((customer) => ({
+                  value: customer.id,
+                  label: customer.name
                 }))}
                 value={customerFilter === "all" ? "" : customerFilter}
                 onValueChange={(value) => setCustomerFilter(value || "all")}
