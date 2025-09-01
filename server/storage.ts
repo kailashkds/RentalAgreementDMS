@@ -1315,10 +1315,10 @@ export class DatabaseStorage implements IStorage {
             WHEN ${agreements.endDate} < CURRENT_DATE THEN 1
             ELSE 0
           END`,
-          // Within each group: active ascending (less time first), expired descending (recently expired first)
+          // Sort by end date - active ascending, expired descending
           sql`CASE 
-            WHEN ${agreements.endDate} < CURRENT_DATE THEN -${agreements.endDate}
-            ELSE ${agreements.endDate}
+            WHEN ${agreements.endDate} >= CURRENT_DATE THEN ${agreements.endDate}
+            ELSE '9999-12-31'::date - ${agreements.endDate}
           END`
         ];
         break;
