@@ -1252,8 +1252,6 @@ export class DatabaseStorage implements IStorage {
       customerId ? eq(agreements.customerId, customerId) : null,
       propertyId ? eq(agreements.propertyId, propertyId) : null,
       status ? eq(agreements.status, status) : null,
-      // Default filter: exclude drafts unless specifically requested
-      !status ? not(eq(agreements.status, "draft")) : null,
       searchCondition,
       dateCondition,
       notaryCondition,
