@@ -695,40 +695,67 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCustomer(id: string, customerData: Partial<InsertCustomer> & { password?: string }): Promise<Customer> {
-    let updateData: any = { updatedAt: new Date() };
-    
-    // Map customer fields to user fields
-    if (customerData.name) updateData.name = customerData.name;
-    if (customerData.mobile) updateData.mobile = customerData.mobile;
-    if (customerData.email) updateData.email = customerData.email;
-    if (customerData.isActive !== undefined) {
-      updateData.isActive = customerData.isActive;
-      updateData.status = customerData.isActive ? 'active' : 'inactive';
+    try {
+      // First check if customer exists
+      const existingUser = await db.select().from(users).where(and(eq(users.id, id), eq(users.defaultRole, 'Customer'))).limit(1);
+      if (existingUser.length === 0) {
+        throw new Error("Customer not found");
+      }
+
+      let updateData: any = { updatedAt: new Date() };
+      
+      // Map customer fields to user fields
+      if (customerData.name) updateData.name = customerData.name;
+      if (customerData.mobile) updateData.mobile = customerData.mobile;
+      if (customerData.email) updateData.email = customerData.email;
+      if (customerData.isActive !== undefined) {
+        updateData.isActive = customerData.isActive;
+        updateData.status = customerData.isActive ? 'active' : 'inactive';
+      }
+      
+      // If password is being updated, hash it
+      if (customerData.password) {
+        const hashedPassword = await bcrypt.hash(customerData.password, 10);
+        updateData.password = hashedPassword;
+      }
+      
+      const [user] = await db
+        .update(users)
+        .set(updateData)
+        .where(and(eq(users.id, id), eq(users.defaultRole, 'Customer')))
+        .returning();
+      
+      if (!user) {
+        throw new Error("Customer not found after update");
+      }
+      
+      // Convert unified user to customer format
+      return {
+        id: user.id,
+        name: user.name,
+        mobile: user.mobile!,
+        email: user.email,
+        password: user.password,
+        isActive: user.status === 'active',
+        createdAt: user.createdAt!,
+        updatedAt: user.updatedAt!,
+      } as Customer;
+    } catch (error) {
+      console.error("Error in updateCustomer:", error);
+      
+      // Check for specific database constraint errors
+      if (error instanceof Error && error.message.includes('duplicate key value')) {
+        if (error.message.includes('mobile')) {
+          throw new Error("Mobile number already exists");
+        }
+        if (error.message.includes('email')) {
+          throw new Error("Email address already exists");
+        }
+        throw new Error("Duplicate value detected");
+      }
+      
+      throw error;
     }
-    
-    // If password is being updated, hash it
-    if (customerData.password) {
-      const hashedPassword = await bcrypt.hash(customerData.password, 10);
-      updateData.password = hashedPassword;
-    }
-    
-    const [user] = await db
-      .update(users)
-      .set(updateData)
-      .where(and(eq(users.id, id), eq(users.defaultRole, 'Customer')))
-      .returning();
-    
-    // Convert unified user to customer format
-    return {
-      id: user.id,
-      name: user.name,
-      mobile: user.mobile!,
-      email: user.email,
-      password: user.password,
-      isActive: user.status === 'active',
-      createdAt: user.createdAt!,
-      updatedAt: user.updatedAt!,
-    } as Customer;
   }
 
   async deleteCustomer(id: string): Promise<void> {

@@ -1953,7 +1953,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid customer data", errors: error.errors });
       }
+      
       console.error("Error updating customer:", error);
+      
+      // Handle specific errors with more meaningful messages
+      if (error instanceof Error) {
+        if (error.message === "Customer not found") {
+          return res.status(404).json({ message: "Customer not found" });
+        }
+        if (error.message === "Mobile number already exists") {
+          return res.status(400).json({ message: "Mobile number already exists" });
+        }
+        if (error.message === "Email address already exists") {
+          return res.status(400).json({ message: "Email address already exists" });
+        }
+        if (error.message.includes("duplicate key value")) {
+          return res.status(400).json({ message: "Duplicate value detected. Please check mobile number and email." });
+        }
+      }
+      
       res.status(500).json({ message: "Failed to update customer" });
     }
   });
