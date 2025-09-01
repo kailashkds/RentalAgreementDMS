@@ -1308,7 +1308,14 @@ export class DatabaseStorage implements IStorage {
       default:
         // Default expiry urgency sorting (pure chronological order by expiry date)
         console.log('📊 Using default expiry_status - pure chronological order by expiry date');
-        orderByClause = asc(agreements.endDate);
+        orderByClause = [
+          // Handle null dates by putting them at the end
+          sql`CASE 
+            WHEN ${agreements.endDate} IS NULL THEN 1
+            ELSE 0
+          END`,
+          asc(agreements.endDate)
+        ];
         break;
     }
 
