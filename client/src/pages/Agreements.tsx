@@ -43,6 +43,9 @@ import {
   X,
   Upload,
   File,
+  ChevronDown,
+  Package,
+  Archive,
   CheckCircle,
   Award,
   FileCheck
@@ -1046,6 +1049,169 @@ export default function Agreements() {
     }
   };
 
+  // Bulk Export Handler Functions
+  const handleBulkExportPDF = async () => {
+    try {
+      const params = new URLSearchParams({
+        format: 'pdf',
+        customerId: customerFilter === "all" ? "" : customerFilter,
+        status: statusFilter === "all" ? "" : statusFilter,
+        search: searchTerm,
+        tenant: tenantFilter === "all" ? "" : tenantFilter,
+        owner: ownerFilter === "all" ? "" : ownerFilter,
+        notary: notaryFilter === "all" ? "" : notaryFilter,
+        policeVerification: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
+      });
+
+      const response = await fetch(`/api/agreements/bulk-export?${params}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) throw new Error('Failed to export agreements');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `agreements-pdf-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Export Successful",
+        description: "All agreements exported as PDF in ZIP file.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export agreements as PDF.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkExportWord = async () => {
+    try {
+      const params = new URLSearchParams({
+        format: 'word',
+        customerId: customerFilter === "all" ? "" : customerFilter,
+        status: statusFilter === "all" ? "" : statusFilter,
+        search: searchTerm,
+        tenant: tenantFilter === "all" ? "" : tenantFilter,
+        owner: ownerFilter === "all" ? "" : ownerFilter,
+        notary: notaryFilter === "all" ? "" : notaryFilter,
+        policeVerification: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
+      });
+
+      const response = await fetch(`/api/agreements/bulk-export?${params}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) throw new Error('Failed to export agreements');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `agreements-word-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Export Successful",
+        description: "All agreements exported as Word documents in ZIP file.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export agreements as Word documents.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkExportMixed = async () => {
+    try {
+      const params = new URLSearchParams({
+        format: 'mixed',
+        customerId: customerFilter === "all" ? "" : customerFilter,
+        status: statusFilter === "all" ? "" : statusFilter,
+        search: searchTerm,
+        tenant: tenantFilter === "all" ? "" : tenantFilter,
+        owner: ownerFilter === "all" ? "" : ownerFilter,
+        notary: notaryFilter === "all" ? "" : notaryFilter,
+        policeVerification: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
+      });
+
+      const response = await fetch(`/api/agreements/bulk-export?${params}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) throw new Error('Failed to export agreements');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `agreements-complete-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Export Successful",
+        description: "All agreements exported with PDF, Word, and document files.",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export complete agreement package.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleArchiveVisible = async () => {
+    try {
+      const params = new URLSearchParams({
+        customerId: customerFilter === "all" ? "" : customerFilter,
+        status: statusFilter === "all" ? "" : statusFilter,
+        search: searchTerm,
+        tenant: tenantFilter === "all" ? "" : tenantFilter,
+        owner: ownerFilter === "all" ? "" : ownerFilter,
+        notary: notaryFilter === "all" ? "" : notaryFilter,
+        policeVerification: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
+      });
+
+      const response = await fetch(`/api/agreements/archive?${params}`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) throw new Error('Failed to archive agreements');
+
+      const result = await response.json();
+
+      toast({
+        title: "Archive Successful",
+        description: `${result.archivedCount} agreements archived with version history.`,
+      });
+
+      // Refresh the agreements list
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: "Archive Failed",
+        description: "Failed to archive visible agreements.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Helper function to check if agreement is imported
   const isImportedAgreement = (agreement: any) => {
     // Check if agreement is marked as imported (new field)
@@ -1267,6 +1433,61 @@ export default function Agreements() {
               </Button>
             )}
             <div className="flex gap-2">
+              {/* Bulk Export Dropdown */}
+              {(hasPermission(PERMISSIONS.DOWNLOAD_AGREEMENT_ALL) || hasPermission(PERMISSIONS.DOWNLOAD_AGREEMENT_OWN)) && agreementsData?.agreements.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100">
+                      <Download className="mr-2 h-4 w-4" />
+                      Export All
+                      <ChevronDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64" align="end">
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium text-gray-900 mb-3">Export All Agreements</div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={handleBulkExportPDF}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export All as PDF (ZIP)
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={handleBulkExportWord}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export All as Word (ZIP)
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                        onClick={handleBulkExportMixed}
+                      >
+                        <Package className="h-4 w-4 mr-2" />
+                        Export All (PDF + Word + Docs)
+                      </Button>
+                      <div className="border-t border-gray-200 my-2"></div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                        onClick={handleArchiveVisible}
+                      >
+                        <Archive className="h-4 w-4 mr-2" />
+                        Archive Visible Agreements
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+              
               {/* Create Agreement Button - Show only if user has create permission */}
               {hasPermission(PERMISSIONS.AGREEMENT_CREATE) && (
                 <Button onClick={() => setShowWizard(true)} className="bg-blue-600 hover:bg-blue-700">
