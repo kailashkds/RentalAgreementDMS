@@ -1276,16 +1276,45 @@ export class DatabaseStorage implements IStorage {
         break;
       case "expiry_status_asc":
         // Sort by expiry status: expiring soon first, then active, then expired at end
-        orderByClause = asc(agreements.endDate);
+        orderByClause = [
+          sql`CASE 
+            WHEN ${agreements.endDate} IS NULL THEN 1
+            WHEN ${agreements.endDate} < CURRENT_DATE THEN 2
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 0
+            ELSE 1
+          END`,
+          asc(agreements.endDate)
+        ];
         break;
       case "expiry_status_desc":
         // Sort by expiry status descending (active first, then expiring soon, then expired)
-        orderByClause = desc(agreements.endDate);
+        orderByClause = [
+          sql`CASE 
+            WHEN ${agreements.endDate} IS NULL THEN 0
+            WHEN ${agreements.endDate} < CURRENT_DATE THEN 2
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 1
+            ELSE 0
+          END`,
+          desc(agreements.endDate)
+        ];
         break;
       case "expiry_status":
       default:
-        // Default expiry urgency sorting (created date for now to fix SQL issues)
-        orderByClause = desc(agreements.createdAt);
+        // Default expiry urgency sorting (expiring soon first, then later dates, expired at end)
+        orderByClause = [
+          sql`CASE 
+            WHEN ${agreements.status} = 'expired' THEN 1000
+            WHEN ${agreements.endDate} IS NULL THEN 999
+            WHEN ${agreements.endDate} < CURRENT_DATE THEN 1000
+            WHEN ${agreements.endDate} = CURRENT_DATE THEN 1
+            WHEN ${agreements.endDate} = CURRENT_DATE + INTERVAL '1 day' THEN 2
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '7 days' THEN 3
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 4
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '90 days' THEN 5
+            ELSE 100
+          END`,
+          asc(agreements.endDate)
+        ];
         break;
     }
 
