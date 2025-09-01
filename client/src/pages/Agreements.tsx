@@ -1267,7 +1267,7 @@ export default function Agreements() {
               <div className="p-6 text-center text-gray-500">Loading agreements...</div>
             ) : sortedAgreements?.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
-                {searchTerm || notaryFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
+                {searchTerm || notaryFilter !== "all" || policeFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
                   <>
                     No agreements found matching your criteria.
                     <Button
@@ -1276,6 +1276,7 @@ export default function Agreements() {
                         setSearchTerm("");
                         setStatusFilter("all");
                         setNotaryFilter("all");
+                        setPoliceFilter("all");
                         setCustomerFilter("all");
                         setTenantFilter("all");
                         setOwnerFilter("all");
@@ -1641,7 +1642,7 @@ export default function Agreements() {
         </Card>
 
         {/* Enhanced Pagination */}
-        {agreementsData && agreementsData.total > 20 && (
+        {agreementsData && agreementsData.total > 0 && agreementsData.total > 20 && (
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-700">
               Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, agreementsData.total)} of{" "}
