@@ -2634,6 +2634,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve notarized documents from object storage (must come before generic /uploads/* route)
+  app.get("/uploads/notarized/:fileName", async (req, res) => {
+    try {
+      const fileName = req.params.fileName;
+      console.log(`[File Serve] Requested notarized file: ${fileName}`);
+      
+      // Try to serve from object storage first using the object path format
+      const objectPath = `/objects/uploads/notarized/${fileName}`;
+      console.log(`[File Serve] Trying object storage path: ${objectPath}`);
+      
+      try {
+        const objectStorageService = new ObjectStorageService();
+        const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
+        await objectStorageService.downloadObject(objectFile, res);
+        return;
+      } catch (objectError: any) {
+        console.log(`[File Serve] Object storage failed, trying local file system:`, objectError?.message || 'Unknown error');
+      }
+      
+      // Fallback to local file system
+      const filePath = path.join(process.cwd(), 'uploads', 'notarized', fileName);
+      console.log(`[File Serve] Trying local file path: ${filePath}`);
+      
+      if (!fs.existsSync(filePath)) {
+        console.log(`[File Serve] File not found: ${filePath}`);
+        return res.status(404).json({ error: "Notarized document not found" });
+      }
+      
+      // Set proper headers for PDF files
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      
+      // Serve the file
+      res.sendFile(filePath, (err) => {
+        if (err) {
+          console.error("[File Serve] Error serving notarized document:", err);
+          res.status(404).json({ error: "Notarized document not found" });
+        }
+      });
+    } catch (error) {
+      console.error("[File Serve] Error serving notarized document:", error);
+      res.status(500).json({ error: "Failed to serve notarized document" });
+    }
+  });
+
   // Serve uploaded files from local uploads folder with proper headers (including subdirectories)
   app.get("/uploads/*", (req, res) => {
     try {
@@ -2960,29 +3006,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve notarized documents
-  app.get("/uploads/notarized/:fileName", (req, res) => {
-    try {
-      const fileName = req.params.fileName;
-      const filePath = path.join(process.cwd(), 'uploads', 'notarized', fileName);
-      
-      // Set proper headers for PDF files
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
-      
-      // Check if file exists and serve it
-      res.sendFile(filePath, (err) => {
-        if (err) {
-          console.error("Error serving notarized document:", err);
-          res.status(404).json({ error: "Notarized document not found" });
-        }
-      });
-    } catch (error) {
-      console.error("Error serving notarized document:", error);
-      res.status(500).json({ error: "Failed to serve notarized document" });
-    }
-  });
 
   // Update agreement with document URLs
   app.put("/api/agreements/:id/documents", async (req, res) => {
