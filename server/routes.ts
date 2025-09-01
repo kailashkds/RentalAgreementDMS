@@ -1945,6 +1945,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cleanData = Object.fromEntries(
         Object.entries(customerData).filter(([_, value]) => value !== null)
       );
+      
+      console.log(`Customer update attempt - ID: ${req.params.id}, Data:`, cleanData);
       const customer = await storage.updateCustomer(req.params.id, cleanData);
       
       console.log(`Customer update: User ${req.user.id} (${req.user.role}) updated customer ${customer.id} - Super Admin: ${isSuperAdmin(req.user)}`);

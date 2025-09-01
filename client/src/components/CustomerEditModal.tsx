@@ -56,6 +56,7 @@ export default function CustomerEditModal({ isOpen, onClose, customer }: Custome
     
     setIsLoading(true);
     try {
+      console.log("Updating customer:", customer.id, "with data:", formData);
       await apiRequest("PUT", `/api/customers/${customer.id}`, formData);
       
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
@@ -67,6 +68,7 @@ export default function CustomerEditModal({ isOpen, onClose, customer }: Custome
       
       onClose();
     } catch (error) {
+      console.error("Customer update error:", error);
       toast({
         title: "Error",
         description: "Failed to update customer.",
