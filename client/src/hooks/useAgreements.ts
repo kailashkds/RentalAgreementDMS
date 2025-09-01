@@ -8,11 +8,6 @@ interface UseAgreementsOptions {
   dateFilter?: string;
   startDate?: string;
   endDate?: string;
-  notaryFilter?: string;
-  policeVerificationFilter?: string;
-  tenantFilter?: string;
-  ownerFilter?: string;
-  sortBy?: string;
   limit?: number;
   offset?: number;
 }
@@ -23,7 +18,7 @@ interface AgreementsResponse {
 }
 
 export function useAgreements(options: UseAgreementsOptions = {}) {
-  const { customerId, status, search, dateFilter, startDate, endDate, notaryFilter, policeVerificationFilter, tenantFilter, ownerFilter, sortBy, limit = 50, offset = 0 } = options;
+  const { customerId, status, search, dateFilter, startDate, endDate, limit = 50, offset = 0 } = options;
   
   const params = new URLSearchParams();
   if (customerId && customerId.trim() !== "") params.append('customerId', customerId);
@@ -38,26 +33,11 @@ export function useAgreements(options: UseAgreementsOptions = {}) {
   if (endDate && endDate.trim() !== "") {
     params.append('endDate', endDate);
   }
-  if (notaryFilter && notaryFilter.trim() !== "" && notaryFilter !== "all") {
-    params.append('notaryFilter', notaryFilter);
-  }
-  if (policeVerificationFilter && policeVerificationFilter.trim() !== "" && policeVerificationFilter !== "all") {
-    params.append('policeVerificationFilter', policeVerificationFilter);
-  }
-  if (tenantFilter && tenantFilter.trim() !== "" && tenantFilter !== "all") {
-    params.append('tenantFilter', tenantFilter);
-  }
-  if (ownerFilter && ownerFilter.trim() !== "" && ownerFilter !== "all") {
-    params.append('ownerFilter', ownerFilter);
-  }
-  if (sortBy && sortBy.trim() !== "") {
-    params.append('sortBy', sortBy);
-  }
   params.append('limit', limit.toString());
   params.append('offset', offset.toString());
 
   return useQuery<AgreementsResponse>({
-    queryKey: ["/api/agreements", customerId, status, search, dateFilter || null, startDate || null, endDate || null, notaryFilter || null, policeVerificationFilter || null, tenantFilter || null, ownerFilter || null, sortBy || null, limit, offset],
+    queryKey: ["/api/agreements", customerId, status, search, dateFilter || null, startDate || null, endDate || null, limit, offset],
     queryFn: async () => {
       // Add cache buster to force fresh data
       params.append('_t', Date.now().toString());

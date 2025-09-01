@@ -27,9 +27,6 @@ import { formatDateToDDMMYYYY, getRelativeDateDescription } from "@/lib/dateUtil
 import AgreementWizard from "@/components/AgreementWizard";
 import ImportAgreementWizard from "@/components/ImportAgreementWizard";
 import { useAgreements } from "@/hooks/useAgreements";
-import { useCustomers } from "@/hooks/useCustomers";
-import { useUniqueTenants } from "@/hooks/useUniqueTenants";
-import { useUniqueOwners } from "@/hooks/useUniqueOwners";
 import {
   Plus,
   Search,
@@ -43,9 +40,6 @@ import {
   X,
   Upload,
   File,
-  ChevronDown,
-  Package,
-  Archive,
   CheckCircle,
   Award,
   FileCheck
@@ -96,7 +90,7 @@ export default function Agreements() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [notaryFilter, setNotaryFilter] = useState("all");
   const [policeVerificationFilter, setPoliceVerificationFilter] = useState("all");
-  const [customerFilter, setCustomerFilter] = useState("all"); // Store customer ID for filtering
+  const [customerFilter, setCustomerFilter] = useState("all");
   const [tenantFilter, setTenantFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
@@ -280,22 +274,9 @@ export default function Agreements() {
 
   const dateParams = calculateDateRange();
   
-  // Fetch all customers for the dropdown filter
-  const { data: customersData } = useCustomers({ limit: 1000, activeOnly: false });
-  
-  // Fetch unique tenants and owners for dropdown filters
-  const { data: uniqueTenantsData } = useUniqueTenants();
-  const { data: uniqueOwnersData } = useUniqueOwners();
-  
   const { data: agreementsData, isLoading } = useAgreements({
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
-    customerId: customerFilter === "all" ? "" : customerFilter,
-    notaryFilter: notaryFilter === "all" ? "" : notaryFilter,
-    policeVerificationFilter: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
-    tenantFilter: tenantFilter === "all" ? "" : tenantFilter,
-    ownerFilter: ownerFilter === "all" ? "" : ownerFilter,
-    sortBy: sortBy,
     ...dateParams,
     limit: 25,
     offset: (currentPage - 1) * 25,
@@ -311,20 +292,201 @@ export default function Agreements() {
     }
   }, [agreementsData?.total, currentPage]);
 
-  // Extract unique values for dropdown options - customers now come from separate API call
-  const allCustomersForFilter = React.useMemo(() => {
-    return customersData?.customers?.map(customer => ({
-      id: customer.id,
-      name: customer.name
-    })).sort((a, b) => a.name.localeCompare(b.name)) || [];
-  }, [customersData?.customers]);
+  // Extract unique values for dropdown options
+  const uniqueCustomers = React.useMemo(() => {
+    const customers = agreementsData?.agreements
+      ?.map((agreement: any) => agreement.customer?.name)
+      .filter((name: string) => name && name.trim() !== '')
+      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
+      .sort() || [];
+    return customers;
+  }, [agreementsData?.agreements]);
 
-  // Use unique values from server instead of extracting from current page
-  const uniqueTenants = uniqueTenantsData || [];
-  const uniqueOwners = uniqueOwnersData || [];
+  const uniqueTenants = React.useMemo(() => {
+    const tenants = agreementsData?.agreements
+      ?.map((agreement: any) => agreement.tenantDetails?.name)
+      .filter((name: string) => name && name.trim() !== '')
+      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
+      .sort() || [];
+    return tenants;
+  }, [agreementsData?.agreements]);
 
-  // All filtering AND sorting is now handled server-side - no client-side processing needed!
-  const sortedAgreements = agreementsData?.agreements || [];
+  const uniqueOwners = React.useMemo(() => {
+    const owners = agreementsData?.agreements
+      ?.map((agreement: any) => agreement.ownerDetails?.name)
+      .filter((name: string) => name && name.trim() !== '')
+      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
+      .sort() || [];
+    return owners;
+  }, [agreementsData?.agreements]);
+
+  // Client-side filtering for customer, tenant, owner, and notary (date filtering is now server-side)
+  const filteredAgreements = agreementsData?.agreements?.filter((agreement: any) => {
+    // Filter by notary status
+    if (notaryFilter && notaryFilter !== "all") {
+      const notaryStatus = agreement.status === "draft" 
+        ? "complete_first" 
+        : agreement.status === "active" 
+        ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) 
+          ? "notarized" 
+          : "pending"
+        : "n_a";
+      if (notaryStatus !== notaryFilter) return false;
+    }
+
+    // Filter by police verification status (only for imported agreements)
+    if (policeVerificationFilter && policeVerificationFilter !== "all") {
+      // Only filter imported agreements by police verification
+      if (isImportedAgreement(agreement)) {
+        const policeStatus = agreement.policeVerificationStatus || "pending";
+        if (policeStatus !== policeVerificationFilter) return false;
+      } else {
+        // For non-imported agreements, exclude them when filtering by police verification
+        return false;
+      }
+    }
+
+    // Filter by customer name
+    if (customerFilter && customerFilter !== "all") {
+      const customerName = agreement.customer?.name || '';
+      if (customerName !== customerFilter) {
+        return false;
+      }
+    }
+
+    // Filter by tenant name
+    if (tenantFilter && tenantFilter !== "all") {
+      const tenantName = agreement.tenantDetails?.name || '';
+      if (tenantName !== tenantFilter) {
+        return false;
+      }
+    }
+
+    // Filter by owner name
+    if (ownerFilter && ownerFilter !== "all") {
+      const ownerName = agreement.ownerDetails?.name || '';
+      if (ownerName !== ownerFilter) {
+        return false;
+      }
+    }
+
+    return true;
+  }) || [];
+
+  // Sort the filtered agreements
+  const sortedAgreements = React.useMemo(() => {
+    if (!filteredAgreements || filteredAgreements.length === 0) return [];
+    
+    const sorted = [...filteredAgreements].sort((a, b) => {
+      switch (sortBy) {
+        case "agreement_number_desc":
+          // Sort by agreement number descending (highest number first)
+          const aNum = parseInt(a.agreementNumber?.replace(/[^0-9]/g, '') || '0');
+          const bNum = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
+          return bNum - aNum;
+          
+        case "agreement_number_asc":
+          // Sort by agreement number ascending (oldest first)
+          const aNumAsc = parseInt(a.agreementNumber?.replace(/[^0-9]/g, '') || '0');
+          const bNumAsc = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
+          return aNumAsc - bNumAsc;
+          
+        case "expiry_status_asc":
+          // Sort by expiry status ascending (expired first, then expiring soon, then active)
+          const getExpiryPriority = (agreement: any) => {
+            const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+            if (!endDate) return 3; // No expiry date - lowest priority
+            
+            const today = new Date();
+            const expiry = new Date(endDate);
+            const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilExpiry < 0) return 0; // Expired - highest priority
+            if (daysUntilExpiry <= 30) return 1; // Expiring soon
+            return 2; // Active
+          };
+          
+          const aPriority = getExpiryPriority(a);
+          const bPriority = getExpiryPriority(b);
+          
+          if (aPriority === bPriority) {
+            // If same status, sort by expiry date
+            const aEndDate = new Date(a.rentalTerms?.endDate || a.endDate || 0);
+            const bEndDate = new Date(b.rentalTerms?.endDate || b.endDate || 0);
+            return aEndDate.getTime() - bEndDate.getTime();
+          }
+          
+          return aPriority - bPriority;
+          
+        case "expiry_status":
+          // Sort by expiry urgency (expiring soon first, then later dates, expired at end)
+          const getExpiryUrgency = (agreement: any) => {
+            // Check agreement status first - if already expired, put at end
+            if (agreement.status === 'expired') return 1000; // Expired - lowest priority (at end)
+            
+            const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+            if (!endDate) return 999; // No expiry date - second lowest priority
+            
+            const today = new Date();
+            const expiry = new Date(endDate);
+            const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilExpiry < 0) return 1000; // Expired by date - lowest priority (at end)
+            if (daysUntilExpiry === 0) return 1; // Expires today - highest priority
+            if (daysUntilExpiry === 1) return 2; // Expires tomorrow
+            if (daysUntilExpiry <= 7) return 3; // Expires this week
+            if (daysUntilExpiry <= 30) return 4; // Expires this month
+            if (daysUntilExpiry <= 90) return 5; // Expires in 3 months
+            
+            return daysUntilExpiry; // Return days for further dates
+          };
+          
+          const aUrgency = getExpiryUrgency(a);
+          const bUrgency = getExpiryUrgency(b);
+          
+          if (aUrgency === bUrgency) {
+            // If same urgency, sort by expiry date (closest first)
+            const aEndDate = new Date(a.rentalTerms?.endDate || a.endDate || 0);
+            const bEndDate = new Date(b.rentalTerms?.endDate || b.endDate || 0);
+            return aEndDate.getTime() - bEndDate.getTime();
+          }
+          
+          return aUrgency - bUrgency;
+
+        case "expiry_status_desc":
+          // Sort by expiry status descending (active first, then expiring soon, then expired)
+          const getExpiryPriorityDesc = (agreement: any) => {
+            const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
+            if (!endDate) return 0; // No expiry date - highest priority
+            
+            const today = new Date();
+            const expiry = new Date(endDate);
+            const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysUntilExpiry < 0) return 3; // Expired - lowest priority
+            if (daysUntilExpiry <= 30) return 2; // Expiring soon
+            return 1; // Active
+          };
+          
+          const aPriorityDesc = getExpiryPriorityDesc(a);
+          const bPriorityDesc = getExpiryPriorityDesc(b);
+          
+          if (aPriorityDesc === bPriorityDesc) {
+            // If same status, sort by expiry date (farthest first)
+            const aEndDateDesc = new Date(a.rentalTerms?.endDate || a.endDate || 0);
+            const bEndDateDesc = new Date(b.rentalTerms?.endDate || b.endDate || 0);
+            return bEndDateDesc.getTime() - aEndDateDesc.getTime();
+          }
+          
+          return aPriorityDesc - bPriorityDesc;
+          
+        default:
+          return 0;
+      }
+    });
+    
+    return sorted;
+  }, [filteredAgreements, sortBy]);
 
   const handleRenewAgreement = async (agreementId: string) => {
     try {
@@ -1049,169 +1211,6 @@ export default function Agreements() {
     }
   };
 
-  // Bulk Export Handler Functions
-  const handleBulkExportPDF = async () => {
-    try {
-      const params = new URLSearchParams({
-        format: 'pdf',
-        customerId: customerFilter === "all" ? "" : customerFilter,
-        status: statusFilter === "all" ? "" : statusFilter,
-        search: searchTerm,
-        tenant: tenantFilter === "all" ? "" : tenantFilter,
-        owner: ownerFilter === "all" ? "" : ownerFilter,
-        notary: notaryFilter === "all" ? "" : notaryFilter,
-        policeVerification: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
-      });
-
-      const response = await fetch(`/api/agreements/bulk-export?${params}`, {
-        method: 'GET',
-      });
-
-      if (!response.ok) throw new Error('Failed to export agreements');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `agreements-pdf-${new Date().toISOString().split('T')[0]}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Export Successful",
-        description: "All agreements exported as PDF in ZIP file.",
-      });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Failed to export agreements as PDF.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleBulkExportWord = async () => {
-    try {
-      const params = new URLSearchParams({
-        format: 'word',
-        customerId: customerFilter === "all" ? "" : customerFilter,
-        status: statusFilter === "all" ? "" : statusFilter,
-        search: searchTerm,
-        tenant: tenantFilter === "all" ? "" : tenantFilter,
-        owner: ownerFilter === "all" ? "" : ownerFilter,
-        notary: notaryFilter === "all" ? "" : notaryFilter,
-        policeVerification: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
-      });
-
-      const response = await fetch(`/api/agreements/bulk-export?${params}`, {
-        method: 'GET',
-      });
-
-      if (!response.ok) throw new Error('Failed to export agreements');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `agreements-word-${new Date().toISOString().split('T')[0]}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Export Successful",
-        description: "All agreements exported as Word documents in ZIP file.",
-      });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Failed to export agreements as Word documents.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleBulkExportMixed = async () => {
-    try {
-      const params = new URLSearchParams({
-        format: 'mixed',
-        customerId: customerFilter === "all" ? "" : customerFilter,
-        status: statusFilter === "all" ? "" : statusFilter,
-        search: searchTerm,
-        tenant: tenantFilter === "all" ? "" : tenantFilter,
-        owner: ownerFilter === "all" ? "" : ownerFilter,
-        notary: notaryFilter === "all" ? "" : notaryFilter,
-        policeVerification: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
-      });
-
-      const response = await fetch(`/api/agreements/bulk-export?${params}`, {
-        method: 'GET',
-      });
-
-      if (!response.ok) throw new Error('Failed to export agreements');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `agreements-complete-${new Date().toISOString().split('T')[0]}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Export Successful",
-        description: "All agreements exported with PDF, Word, and document files.",
-      });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Failed to export complete agreement package.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleArchiveVisible = async () => {
-    try {
-      const params = new URLSearchParams({
-        customerId: customerFilter === "all" ? "" : customerFilter,
-        status: statusFilter === "all" ? "" : statusFilter,
-        search: searchTerm,
-        tenant: tenantFilter === "all" ? "" : tenantFilter,
-        owner: ownerFilter === "all" ? "" : ownerFilter,
-        notary: notaryFilter === "all" ? "" : notaryFilter,
-        policeVerification: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
-      });
-
-      const response = await fetch(`/api/agreements/archive?${params}`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) throw new Error('Failed to archive agreements');
-
-      const result = await response.json();
-
-      toast({
-        title: "Archive Successful",
-        description: `${result.archivedCount} agreements archived with version history.`,
-      });
-
-      // Refresh the agreements list
-      window.location.reload();
-    } catch (error) {
-      toast({
-        title: "Archive Failed",
-        description: "Failed to archive visible agreements.",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Helper function to check if agreement is imported
   const isImportedAgreement = (agreement: any) => {
     // Check if agreement is marked as imported (new field)
@@ -1287,9 +1286,9 @@ export default function Agreements() {
             {/* Show customer filter only for admins/staff who can view all agreements */}
             {hasPermission(PERMISSIONS.AGREEMENT_VIEW_ALL) && (
               <Combobox
-                options={allCustomersForFilter.map((customer) => ({
-                  value: customer.id,
-                  label: customer.name
+                options={uniqueCustomers.map((customer) => ({
+                  value: customer,
+                  label: customer
                 }))}
                 value={customerFilter === "all" ? "" : customerFilter}
                 onValueChange={(value) => setCustomerFilter(value || "all")}
@@ -1300,7 +1299,7 @@ export default function Agreements() {
               />
             )}
             <Combobox
-              options={uniqueTenants.map((tenant: string) => ({
+              options={uniqueTenants.map((tenant) => ({
                 value: tenant,
                 label: tenant
               }))}
@@ -1312,7 +1311,7 @@ export default function Agreements() {
               allowCustom={false}
             />
             <Combobox
-              options={uniqueOwners.map((owner: string) => ({
+              options={uniqueOwners.map((owner) => ({
                 value: owner,
                 label: owner
               }))}
@@ -1433,61 +1432,6 @@ export default function Agreements() {
               </Button>
             )}
             <div className="flex gap-2">
-              {/* Bulk Export Dropdown */}
-              {(hasPermission(PERMISSIONS.DOWNLOAD_AGREEMENT_ALL) || hasPermission(PERMISSIONS.DOWNLOAD_AGREEMENT_OWN)) && agreementsData?.agreements.length > 0 && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100">
-                      <Download className="mr-2 h-4 w-4" />
-                      Export All
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64" align="end">
-                    <div className="space-y-2">
-                      <div className="text-sm font-medium text-gray-900 mb-3">Export All Agreements</div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={handleBulkExportPDF}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Export All as PDF (ZIP)
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={handleBulkExportWord}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Export All as Word (ZIP)
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                        onClick={handleBulkExportMixed}
-                      >
-                        <Package className="h-4 w-4 mr-2" />
-                        Export All (PDF + Word + Docs)
-                      </Button>
-                      <div className="border-t border-gray-200 my-2"></div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                        onClick={handleArchiveVisible}
-                      >
-                        <Archive className="h-4 w-4 mr-2" />
-                        Archive Visible Agreements
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
-              
               {/* Create Agreement Button - Show only if user has create permission */}
               {hasPermission(PERMISSIONS.AGREEMENT_CREATE) && (
                 <Button onClick={() => setShowWizard(true)} className="bg-blue-600 hover:bg-blue-700">

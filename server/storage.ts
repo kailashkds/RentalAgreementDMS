@@ -45,7 +45,7 @@ import {
 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, ilike, desc, asc, and, or, count, sql, gte, lte, isNull, isNotNull, not, like, inArray, ne } from "drizzle-orm";
+import { eq, ilike, desc, asc, and, or, count, sql, gte, lte, isNull, isNotNull } from "drizzle-orm";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths } from "date-fns";
 import bcrypt from "bcrypt";
 import { encryptPasswordForStorage, decryptPasswordFromStorage } from "./encryption";
@@ -695,67 +695,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateCustomer(id: string, customerData: Partial<InsertCustomer> & { password?: string }): Promise<Customer> {
-    try {
-      // First check if customer exists
-      const existingUser = await db.select().from(users).where(and(eq(users.id, id), eq(users.defaultRole, 'Customer'))).limit(1);
-      if (existingUser.length === 0) {
-        throw new Error("Customer not found");
-      }
-
-      let updateData: any = { updatedAt: new Date() };
-      
-      // Map customer fields to user fields
-      if (customerData.name) updateData.name = customerData.name;
-      if (customerData.mobile) updateData.mobile = customerData.mobile;
-      if (customerData.email) updateData.email = customerData.email;
-      if (customerData.isActive !== undefined) {
-        updateData.isActive = customerData.isActive;
-        updateData.status = customerData.isActive ? 'active' : 'inactive';
-      }
-      
-      // If password is being updated, hash it
-      if (customerData.password) {
-        const hashedPassword = await bcrypt.hash(customerData.password, 10);
-        updateData.password = hashedPassword;
-      }
-      
-      const [user] = await db
-        .update(users)
-        .set(updateData)
-        .where(and(eq(users.id, id), eq(users.defaultRole, 'Customer')))
-        .returning();
-      
-      if (!user) {
-        throw new Error("Customer not found after update");
-      }
-      
-      // Convert unified user to customer format
-      return {
-        id: user.id,
-        name: user.name,
-        mobile: user.mobile!,
-        email: user.email,
-        password: user.password,
-        isActive: user.status === 'active',
-        createdAt: user.createdAt!,
-        updatedAt: user.updatedAt!,
-      } as Customer;
-    } catch (error) {
-      console.error("Error in updateCustomer:", error);
-      
-      // Check for specific database constraint errors
-      if (error instanceof Error && error.message.includes('duplicate key value')) {
-        if (error.message.includes('mobile')) {
-          throw new Error("Mobile number already exists");
-        }
-        if (error.message.includes('email')) {
-          throw new Error("Email address already exists");
-        }
-        throw new Error("Duplicate value detected");
-      }
-      
-      throw error;
+    let updateData: any = { updatedAt: new Date() };
+    
+    // Map customer fields to user fields
+    if (customerData.name) updateData.name = customerData.name;
+    if (customerData.mobile) updateData.mobile = customerData.mobile;
+    if (customerData.email) updateData.email = customerData.email;
+    if (customerData.isActive !== undefined) {
+      updateData.isActive = customerData.isActive;
+      updateData.status = customerData.isActive ? 'active' : 'inactive';
     }
+    
+    // If password is being updated, hash it
+    if (customerData.password) {
+      const hashedPassword = await bcrypt.hash(customerData.password, 10);
+      updateData.password = hashedPassword;
+    }
+    
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(and(eq(users.id, id), eq(users.defaultRole, 'Customer')))
+      .returning();
+    
+    // Convert unified user to customer format
+    return {
+      id: user.id,
+      name: user.name,
+      mobile: user.mobile!,
+      email: user.email,
+      password: user.password,
+      isActive: user.status === 'active',
+      createdAt: user.createdAt!,
+      updatedAt: user.updatedAt!,
+    } as Customer;
   }
 
   async deleteCustomer(id: string): Promise<void> {
@@ -1082,42 +1055,6 @@ export class DatabaseStorage implements IStorage {
     return newProperty;
   }
 
-  // Get unique tenants from all agreements for dropdown options
-  async getUniqueTenants(): Promise<string[]> {
-    const result = await db
-      .select({
-        tenantName: sql<string>`${agreements.tenantDetails}->>'name'`
-      })
-      .from(agreements)
-      .where(and(
-        isNotNull(sql`${agreements.tenantDetails}->>'name'`),
-        sql`${agreements.tenantDetails}->>'name' != ''`
-      ));
-    
-    const uniqueNames = [...new Set(result.map(row => row.tenantName).filter(name => name && name.trim() !== ''))]
-      .sort();
-    
-    return uniqueNames;
-  }
-
-  // Get unique owners from all agreements for dropdown options
-  async getUniqueOwners(): Promise<string[]> {
-    const result = await db
-      .select({
-        ownerName: sql<string>`${agreements.ownerDetails}->>'name'`
-      })
-      .from(agreements)
-      .where(and(
-        isNotNull(sql`${agreements.ownerDetails}->>'name'`),
-        sql`${agreements.ownerDetails}->>'name' != ''`
-      ));
-    
-    const uniqueNames = [...new Set(result.map(row => row.ownerName).filter(name => name && name.trim() !== ''))]
-      .sort();
-    
-    return uniqueNames;
-  }
-
   // Agreement operations
   async getAgreements(filters?: {
     customerId?: string;
@@ -1127,15 +1064,10 @@ export class DatabaseStorage implements IStorage {
     dateFilter?: string;
     startDate?: string;
     endDate?: string;
-    notaryFilter?: string;
-    policeVerificationFilter?: string;
-    tenantFilter?: string;
-    ownerFilter?: string;
-    sortBy?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ agreements: Agreement[]; total: number }> {
-    const { customerId, propertyId, status, search, dateFilter, startDate, endDate, notaryFilter, policeVerificationFilter, tenantFilter, ownerFilter, sortBy, limit = 50, offset = 0 } = filters || {};
+    const { customerId, propertyId, status, search, dateFilter, startDate, endDate, limit = 50, offset = 0 } = filters || {};
     
     // console.log(`[Date Filter Debug] Received parameters:`, { dateFilter, startDate, endDate }); // Removed for performance
     
@@ -1189,169 +1121,26 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
-    // Build additional filter conditions
-    let notaryCondition = null;
-    if (notaryFilter) {
-      if (notaryFilter === "complete_first") {
-        notaryCondition = eq(agreements.status, "draft");
-      } else if (notaryFilter === "pending") {
-        notaryCondition = and(
-          eq(agreements.status, "active"),
-          or(
-            isNull(agreements.notarizedDocumentUrl),
-            eq(agreements.notarizedDocumentUrl, "")
-          )
-        );
-      } else if (notaryFilter === "notarized") {
-        notaryCondition = and(
-          eq(agreements.status, "active"),
-          isNotNull(agreements.notarizedDocumentUrl),
-          sql`${agreements.notarizedDocumentUrl} != ''`
-        );
-      } else if (notaryFilter === "n_a") {
-        notaryCondition = not(eq(agreements.status, "draft"));
-      }
-    }
-
-    let policeVerificationCondition = null;
-    if (policeVerificationFilter) {
-      // Police verification only applies to imported agreements
-      if (policeVerificationFilter === "pending") {
-        policeVerificationCondition = and(
-          eq(agreements.isImported, true),
-          or(
-            isNull(agreements.policeVerificationStatus),
-            eq(agreements.policeVerificationStatus, "pending")
-          )
-        );
-      } else if (policeVerificationFilter === "done") {
-        policeVerificationCondition = and(
-          eq(agreements.isImported, true),
-          eq(agreements.policeVerificationStatus, "done")
-        );
-      } else if (policeVerificationFilter === "no") {
-        policeVerificationCondition = and(
-          eq(agreements.isImported, true),
-          eq(agreements.policeVerificationStatus, "no")
-        );
-      }
-    }
-
-    let tenantCondition = null;
-    if (tenantFilter) {
-      tenantCondition = sql`${agreements.tenantDetails}->>'name' = ${tenantFilter}`;
-    }
-
-    let ownerCondition = null;
-    if (ownerFilter) {
-      ownerCondition = sql`${agreements.ownerDetails}->>'name' = ${ownerFilter}`;
-    }
-
     // Build conditions array, filtering out undefined values
     const conditions = [
       customerId ? eq(agreements.customerId, customerId) : null,
       propertyId ? eq(agreements.propertyId, propertyId) : null,
       status ? eq(agreements.status, status) : null,
       searchCondition,
-      dateCondition,
-      notaryCondition,
-      policeVerificationCondition,
-      tenantCondition,
-      ownerCondition
+      dateCondition
     ].filter((condition): condition is NonNullable<typeof condition> => Boolean(condition));
 
     const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
 
-    // Build order by clause based on sortBy parameter
-    let orderByClause;
-    
-    console.log('🔍 Sorting by:', sortBy);
-    
-    switch (sortBy) {
-      case "agreement_number_desc":
-        // Sort by agreement number descending (newest first = highest numbers first)
-        console.log('📊 Using agreement_number_desc - showing highest numbers first');
-        orderByClause = desc(agreements.agreementNumber);
-        break;
-      case "agreement_number_asc":
-        // Sort by agreement number ascending (oldest first = lowest numbers first)
-        console.log('📊 Using agreement_number_asc - showing lowest numbers first');
-        orderByClause = asc(agreements.agreementNumber);
-        break;
-      case "expiry_status_asc":
-        // Sort by expiry status: expired first, then expiring soon, then active
-        console.log('📊 Using expiry_status_asc - showing expired first');
-        orderByClause = [
-          sql`CASE 
-            WHEN ${agreements.endDate} IS NULL THEN 2
-            WHEN ${agreements.endDate} < CURRENT_DATE THEN 0
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 1
-            ELSE 2
-          END`,
-          asc(agreements.endDate)
-        ];
-        break;
-      case "expiry_status_desc":
-        // Sort by expiry status descending (active first, then expiring soon, then expired)
-        console.log('📊 Using expiry_status_desc - showing active first');
-        orderByClause = [
-          sql`CASE 
-            WHEN ${agreements.endDate} IS NULL THEN 0
-            WHEN ${agreements.endDate} < CURRENT_DATE THEN 2
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 1
-            ELSE 0
-          END`,
-          desc(agreements.endDate)
-        ];
-        break;
-      case "expiry_status":
-      default:
-        // Default expiry urgency sorting (expiry urgency only, regardless of status)
-        console.log('📊 Using default expiry_status - pure expiry urgency regardless of status');
-        orderByClause = [
-          // Sort purely by expiry urgency: less days remaining first, more days remaining later, expired last
-          sql`CASE 
-            WHEN ${agreements.endDate} IS NULL THEN 1000
-            WHEN ${agreements.endDate} < CURRENT_DATE THEN 1000
-            WHEN ${agreements.endDate} = CURRENT_DATE THEN 1
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '7 days' THEN 2
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 3
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '90 days' THEN 4
-            ELSE 5
-          END`,
-          asc(agreements.endDate)
-        ];
-        break;
-    }
-
-    // Build the base query with conditional ordering
-    let query;
-    
-    if (Array.isArray(orderByClause)) {
-      query = db
-        .select()
-        .from(agreements)
-        .leftJoin(users, eq(agreements.customerId, users.id))
-        .where(whereConditions)
-        .orderBy(...orderByClause.filter(clause => clause !== undefined));
-    } else if (orderByClause) {
-      query = db
-        .select()
-        .from(agreements)
-        .leftJoin(users, eq(agreements.customerId, users.id))
-        .where(whereConditions)
-        .orderBy(orderByClause);
-    } else {
-      query = db
-        .select()
-        .from(agreements)
-        .leftJoin(users, eq(agreements.customerId, users.id))
-        .where(whereConditions)
-        .orderBy(desc(agreements.createdAt));
-    }
-    
     const [agreementsResult, totalResult] = await Promise.all([
-      query.limit(limit).offset(offset),
+      db
+        .select()
+        .from(agreements)
+        .leftJoin(users, eq(agreements.customerId, users.id))
+        .where(whereConditions)
+        .orderBy(desc(agreements.createdAt))
+        .limit(limit)
+        .offset(offset),
       db
         .select({ count: count() })
         .from(agreements)
