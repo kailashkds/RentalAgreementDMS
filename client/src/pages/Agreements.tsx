@@ -1651,11 +1651,11 @@ export default function Agreements() {
         </Card>
 
         {/* Enhanced Pagination */}
-        {agreementsData && sortedAgreements && sortedAgreements.length > 20 && (
+        {agreementsData && agreementsData.total > 20 && (
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, sortedAgreements.length)} of{" "}
-              {sortedAgreements.length} results
+              Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, agreementsData.total)} of{" "}
+              {agreementsData.total} results
             </div>
             
             <Pagination>
@@ -1670,7 +1670,7 @@ export default function Agreements() {
                 </PaginationItem>
                 
                 {/* Page Numbers */}
-                {generatePageNumbers(currentPage, Math.ceil(sortedAgreements.length / 20)).map((page, index) => (
+                {generatePageNumbers(currentPage, Math.ceil(agreementsData.total / 20)).map((page, index) => (
                   <PaginationItem key={index}>
                     {page === '...' ? (
                       <PaginationEllipsis />
@@ -1691,7 +1691,7 @@ export default function Agreements() {
                 <PaginationItem>
                   <PaginationNext 
                     onClick={() => setCurrentPage(page => page + 1)}
-                    className={currentPage * 20 >= sortedAgreements.length ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={currentPage * 20 >= agreementsData.total ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     data-testid="button-next-page"
                   />
                 </PaginationItem>
