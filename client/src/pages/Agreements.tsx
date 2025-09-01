@@ -1642,7 +1642,7 @@ export default function Agreements() {
         </Card>
 
         {/* Enhanced Pagination */}
-        {agreementsData && agreementsData.total > 0 && agreementsData.total > 20 && (
+        {agreementsData && agreementsData.total > 20 && (
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-700">
               Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, agreementsData.total)} of{" "}
