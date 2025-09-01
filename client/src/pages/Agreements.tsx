@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -271,6 +272,22 @@ export default function Agreements() {
       .sort() || [];
     return owners;
   }, [agreementsData?.agreements]);
+
+  // Prepare options for Combobox components
+  const customerOptions = React.useMemo(() => [
+    { value: "all", label: "All Customers" },
+    ...uniqueCustomers.map(customer => ({ value: customer, label: customer }))
+  ], [uniqueCustomers]);
+
+  const tenantOptions = React.useMemo(() => [
+    { value: "all", label: "All Tenants" },
+    ...uniqueTenants.map(tenant => ({ value: tenant, label: tenant }))
+  ], [uniqueTenants]);
+
+  const ownerOptions = React.useMemo(() => [
+    { value: "all", label: "All Owners" },
+    ...uniqueOwners.map(owner => ({ value: owner, label: owner }))
+  ], [uniqueOwners]);
 
   // Client-side filtering for customer, tenant, owner, and notary (date filtering is now server-side)
   const filteredAgreements = agreementsData?.agreements?.filter((agreement: any) => {
@@ -1053,45 +1070,36 @@ export default function Agreements() {
                 <SelectItem value="complete_first">Complete First</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={customerFilter} onValueChange={setCustomerFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="All Customers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Customers</SelectItem>
-                {uniqueCustomers.map((customer) => (
-                  <SelectItem key={customer} value={customer}>
-                    {customer}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={tenantFilter} onValueChange={setTenantFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="All Tenants" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Tenants</SelectItem>
-                {uniqueTenants.map((tenant) => (
-                  <SelectItem key={tenant} value={tenant}>
-                    {tenant}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="All Owners" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Owners</SelectItem>
-                {uniqueOwners.map((owner) => (
-                  <SelectItem key={owner} value={owner}>
-                    {owner}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={customerOptions}
+              value={customerFilter}
+              onValueChange={setCustomerFilter}
+              placeholder="Filter by Customer"
+              emptyMessage="No customer found"
+              className="w-full sm:w-48"
+              allowCustom={false}
+              data-testid="combobox-customer-filter"
+            />
+            <Combobox
+              options={tenantOptions}
+              value={tenantFilter}
+              onValueChange={setTenantFilter}
+              placeholder="Filter by Tenant"
+              emptyMessage="No tenant found"
+              className="w-full sm:w-48"
+              allowCustom={false}
+              data-testid="combobox-tenant-filter"
+            />
+            <Combobox
+              options={ownerOptions}
+              value={ownerFilter}
+              onValueChange={setOwnerFilter}
+              placeholder="Filter by Owner"
+              emptyMessage="No owner found"
+              className="w-full sm:w-48"
+              allowCustom={false}
+              data-testid="combobox-owner-filter"
+            />
             
             {/* Date Filter */}
             <Select value={dateFilter} onValueChange={setDateFilter}>
