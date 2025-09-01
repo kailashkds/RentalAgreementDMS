@@ -780,14 +780,37 @@ export default function Agreements() {
   };
 
   const handleDownloadNotarizedFromTable = (agreement: any) => {
+    console.log('Download notarized clicked for:', agreement.agreementNumber);
+    console.log('Agreement data:', {
+      notarizedDocument: agreement.notarizedDocument,
+      notarizedDocumentUrl: agreement.notarizedDocumentUrl,
+      notaryStatus: agreement.notaryStatus
+    });
+    
     const notarizedUrl = agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl;
+    console.log('Notarized URL:', notarizedUrl);
+    
     if (notarizedUrl) {
+      // Create download link
       const link = document.createElement('a');
       link.href = notarizedUrl;
       link.download = agreement.notarizedDocument?.originalName || `${agreement.agreementNumber}-notarized.pdf`;
+      link.target = '_blank'; // Open in new tab as backup
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      toast({
+        title: "Download Started",
+        description: `Downloading ${agreement.notarizedDocument?.originalName || 'notarized document'}`,
+      });
+    } else {
+      console.error('No notarized URL found');
+      toast({
+        title: "Download Failed",
+        description: "No notarized document found for this agreement",
+        variant: "destructive",
+      });
     }
   };
 
