@@ -1306,17 +1306,9 @@ export class DatabaseStorage implements IStorage {
         break;
       case "expiry_status":
       default:
-        // Default expiry urgency sorting (expiry urgency only, regardless of status)
-        console.log('📊 Using default expiry_status - pure expiry urgency regardless of status');
-        orderByClause = [
-          // Sort purely by expiry date: expired last, everything else by ascending end date (fewer days first)
-          sql`CASE 
-            WHEN ${agreements.endDate} IS NULL THEN 1
-            WHEN ${agreements.endDate} < CURRENT_DATE THEN 1
-            ELSE 0
-          END`,
-          asc(agreements.endDate)
-        ];
+        // Default expiry urgency sorting (pure chronological order by expiry date)
+        console.log('📊 Using default expiry_status - pure chronological order by expiry date');
+        orderByClause = asc(agreements.endDate);
         break;
     }
 
