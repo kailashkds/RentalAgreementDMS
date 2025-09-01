@@ -28,6 +28,8 @@ import AgreementWizard from "@/components/AgreementWizard";
 import ImportAgreementWizard from "@/components/ImportAgreementWizard";
 import { useAgreements } from "@/hooks/useAgreements";
 import { useCustomers } from "@/hooks/useCustomers";
+import { useUniqueTenants } from "@/hooks/useUniqueTenants";
+import { useUniqueOwners } from "@/hooks/useUniqueOwners";
 import {
   Plus,
   Search,
@@ -278,10 +280,18 @@ export default function Agreements() {
   // Fetch all customers for the dropdown filter
   const { data: customersData } = useCustomers({ limit: 1000, activeOnly: false });
   
+  // Fetch unique tenants and owners for dropdown filters
+  const { data: uniqueTenantsData } = useUniqueTenants();
+  const { data: uniqueOwnersData } = useUniqueOwners();
+  
   const { data: agreementsData, isLoading } = useAgreements({
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
     customerId: customerFilter === "all" ? "" : customerFilter,
+    notaryFilter: notaryFilter === "all" ? "" : notaryFilter,
+    policeVerificationFilter: policeVerificationFilter === "all" ? "" : policeVerificationFilter,
+    tenantFilter: tenantFilter === "all" ? "" : tenantFilter,
+    ownerFilter: ownerFilter === "all" ? "" : ownerFilter,
     ...dateParams,
     limit: 25,
     offset: (currentPage - 1) * 25,
@@ -305,70 +315,12 @@ export default function Agreements() {
     })).sort((a, b) => a.name.localeCompare(b.name)) || [];
   }, [customersData?.customers]);
 
-  const uniqueTenants = React.useMemo(() => {
-    const tenants = agreementsData?.agreements
-      ?.map((agreement: any) => agreement.tenantDetails?.name)
-      .filter((name: string) => name && name.trim() !== '')
-      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
-      .sort() || [];
-    return tenants;
-  }, [agreementsData?.agreements]);
+  // Use unique values from server instead of extracting from current page
+  const uniqueTenants = uniqueTenantsData || [];
+  const uniqueOwners = uniqueOwnersData || [];
 
-  const uniqueOwners = React.useMemo(() => {
-    const owners = agreementsData?.agreements
-      ?.map((agreement: any) => agreement.ownerDetails?.name)
-      .filter((name: string) => name && name.trim() !== '')
-      .filter((name: string, index: number, arr: string[]) => arr.indexOf(name) === index)
-      .sort() || [];
-    return owners;
-  }, [agreementsData?.agreements]);
-
-  // Client-side filtering for customer, tenant, owner, and notary (date filtering is now server-side)
-  const filteredAgreements = agreementsData?.agreements?.filter((agreement: any) => {
-    // Filter by notary status
-    if (notaryFilter && notaryFilter !== "all") {
-      const notaryStatus = agreement.status === "draft" 
-        ? "complete_first" 
-        : agreement.status === "active" 
-        ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) 
-          ? "notarized" 
-          : "pending"
-        : "n_a";
-      if (notaryStatus !== notaryFilter) return false;
-    }
-
-    // Filter by police verification status (only for imported agreements)
-    if (policeVerificationFilter && policeVerificationFilter !== "all") {
-      // Only filter imported agreements by police verification
-      if (isImportedAgreement(agreement)) {
-        const policeStatus = agreement.policeVerificationStatus || "pending";
-        if (policeStatus !== policeVerificationFilter) return false;
-      } else {
-        // For non-imported agreements, exclude them when filtering by police verification
-        return false;
-      }
-    }
-
-    // Customer filtering is now handled server-side via useAgreements hook
-
-    // Filter by tenant name
-    if (tenantFilter && tenantFilter !== "all") {
-      const tenantName = agreement.tenantDetails?.name || '';
-      if (tenantName !== tenantFilter) {
-        return false;
-      }
-    }
-
-    // Filter by owner name
-    if (ownerFilter && ownerFilter !== "all") {
-      const ownerName = agreement.ownerDetails?.name || '';
-      if (ownerName !== ownerFilter) {
-        return false;
-      }
-    }
-
-    return true;
-  }) || [];
+  // All filtering is now handled server-side - no client-side filtering needed!
+  const filteredAgreements = agreementsData?.agreements || [];
 
   // Sort the filtered agreements
   const sortedAgreements = React.useMemo(() => {

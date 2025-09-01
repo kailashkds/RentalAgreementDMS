@@ -45,7 +45,7 @@ import {
 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, ilike, desc, asc, and, or, count, sql, gte, lte, isNull, isNotNull } from "drizzle-orm";
+import { eq, ilike, desc, asc, and, or, count, sql, gte, lte, isNull, isNotNull, not, like, inArray, ne } from "drizzle-orm";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths } from "date-fns";
 import bcrypt from "bcrypt";
 import { encryptPasswordForStorage, decryptPasswordFromStorage } from "./encryption";
@@ -1082,6 +1082,42 @@ export class DatabaseStorage implements IStorage {
     return newProperty;
   }
 
+  // Get unique tenants from all agreements for dropdown options
+  async getUniqueTenants(): Promise<string[]> {
+    const result = await db
+      .select({
+        tenantName: sql<string>`${agreements.tenantDetails}->>'name'`
+      })
+      .from(agreements)
+      .where(and(
+        isNotNull(sql`${agreements.tenantDetails}->>'name'`),
+        sql`${agreements.tenantDetails}->>'name' != ''`
+      ));
+    
+    const uniqueNames = [...new Set(result.map(row => row.tenantName).filter(name => name && name.trim() !== ''))]
+      .sort();
+    
+    return uniqueNames;
+  }
+
+  // Get unique owners from all agreements for dropdown options
+  async getUniqueOwners(): Promise<string[]> {
+    const result = await db
+      .select({
+        ownerName: sql<string>`${agreements.ownerDetails}->>'name'`
+      })
+      .from(agreements)
+      .where(and(
+        isNotNull(sql`${agreements.ownerDetails}->>'name'`),
+        sql`${agreements.ownerDetails}->>'name' != ''`
+      ));
+    
+    const uniqueNames = [...new Set(result.map(row => row.ownerName).filter(name => name && name.trim() !== ''))]
+      .sort();
+    
+    return uniqueNames;
+  }
+
   // Agreement operations
   async getAgreements(filters?: {
     customerId?: string;
@@ -1091,10 +1127,14 @@ export class DatabaseStorage implements IStorage {
     dateFilter?: string;
     startDate?: string;
     endDate?: string;
+    notaryFilter?: string;
+    policeVerificationFilter?: string;
+    tenantFilter?: string;
+    ownerFilter?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ agreements: Agreement[]; total: number }> {
-    const { customerId, propertyId, status, search, dateFilter, startDate, endDate, limit = 50, offset = 0 } = filters || {};
+    const { customerId, propertyId, status, search, dateFilter, startDate, endDate, notaryFilter, policeVerificationFilter, tenantFilter, ownerFilter, limit = 50, offset = 0 } = filters || {};
     
     // console.log(`[Date Filter Debug] Received parameters:`, { dateFilter, startDate, endDate }); // Removed for performance
     
@@ -1148,13 +1188,75 @@ export class DatabaseStorage implements IStorage {
       );
     }
 
+    // Build additional filter conditions
+    let notaryCondition = null;
+    if (notaryFilter) {
+      if (notaryFilter === "complete_first") {
+        notaryCondition = eq(agreements.status, "draft");
+      } else if (notaryFilter === "pending") {
+        notaryCondition = and(
+          eq(agreements.status, "active"),
+          or(
+            isNull(agreements.notarizedDocumentUrl),
+            eq(agreements.notarizedDocumentUrl, "")
+          )
+        );
+      } else if (notaryFilter === "notarized") {
+        notaryCondition = and(
+          eq(agreements.status, "active"),
+          isNotNull(agreements.notarizedDocumentUrl),
+          sql`${agreements.notarizedDocumentUrl} != ''`
+        );
+      } else if (notaryFilter === "n_a") {
+        notaryCondition = not(eq(agreements.status, "draft"));
+      }
+    }
+
+    let policeVerificationCondition = null;
+    if (policeVerificationFilter) {
+      // Police verification only applies to imported agreements
+      if (policeVerificationFilter === "pending") {
+        policeVerificationCondition = and(
+          eq(agreements.isImported, true),
+          or(
+            isNull(agreements.policeVerificationStatus),
+            eq(agreements.policeVerificationStatus, "pending")
+          )
+        );
+      } else if (policeVerificationFilter === "done") {
+        policeVerificationCondition = and(
+          eq(agreements.isImported, true),
+          eq(agreements.policeVerificationStatus, "done")
+        );
+      } else if (policeVerificationFilter === "no") {
+        policeVerificationCondition = and(
+          eq(agreements.isImported, true),
+          eq(agreements.policeVerificationStatus, "no")
+        );
+      }
+    }
+
+    let tenantCondition = null;
+    if (tenantFilter) {
+      tenantCondition = sql`${agreements.tenantDetails}->>'name' = ${tenantFilter}`;
+    }
+
+    let ownerCondition = null;
+    if (ownerFilter) {
+      ownerCondition = sql`${agreements.ownerDetails}->>'name' = ${ownerFilter}`;
+    }
+
     // Build conditions array, filtering out undefined values
     const conditions = [
       customerId ? eq(agreements.customerId, customerId) : null,
       propertyId ? eq(agreements.propertyId, propertyId) : null,
       status ? eq(agreements.status, status) : null,
       searchCondition,
-      dateCondition
+      dateCondition,
+      notaryCondition,
+      policeVerificationCondition,
+      tenantCondition,
+      ownerCondition
     ].filter((condition): condition is NonNullable<typeof condition> => Boolean(condition));
 
     const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;

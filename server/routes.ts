@@ -2541,10 +2541,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get unique tenants and owners for dropdown filters
+  app.get("/api/agreements/unique-tenants", requireAuth, async (req, res) => {
+    try {
+      const uniqueTenants = await storage.getUniqueTenants();
+      res.json({ tenants: uniqueTenants });
+    } catch (error) {
+      console.error("Error fetching unique tenants:", error);
+      res.status(500).json({ error: "Failed to fetch unique tenants" });
+    }
+  });
+
+  app.get("/api/agreements/unique-owners", requireAuth, async (req, res) => {
+    try {
+      const uniqueOwners = await storage.getUniqueOwners();
+      res.json({ owners: uniqueOwners });
+    } catch (error) {
+      console.error("Error fetching unique owners:", error);
+      res.status(500).json({ error: "Failed to fetch unique owners" });
+    }
+  });
+
   // Agreement routes
   app.get("/api/agreements", requireAuth, async (req: any, res) => {
     try {
-      const { customerId, status, search, dateFilter, startDate, endDate, limit, offset } = req.query;
+      const { customerId, status, search, dateFilter, startDate, endDate, notaryFilter, policeVerificationFilter, tenantFilter, ownerFilter, limit, offset } = req.query;
       
       // Get user's data access level using new RBAC utilities
       const { isSuperAdmin, getDataAccessLevel, applyRoleBasedFiltering } = await import('./rbacUtils.js');
@@ -2561,6 +2582,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateFilter: dateFilter as string,
         startDate: startDate as string,
         endDate: endDate as string,
+        notaryFilter: notaryFilter as string,
+        policeVerificationFilter: policeVerificationFilter as string,
+        tenantFilter: tenantFilter as string,
+        ownerFilter: ownerFilter as string,
         limit: limit ? parseInt(limit as string) : undefined,
         offset: offset ? parseInt(offset as string) : undefined,
       };
