@@ -782,7 +782,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
   // Enhanced customer lookup for both mobile and name
   const fetchCustomerInfo = async (searchTerm: string, searchType: 'mobile' | 'name', userType: 'owner' | 'tenant') => {
-    if (!searchTerm || searchTerm.trim().length < 1) return;
+    if (!searchTerm || searchTerm.trim().length < 3) return;
     
     try {
       let customer = null;
@@ -791,7 +791,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
         console.log(`Looking up customer by mobile: ${searchTerm}`);
         const response = await apiRequest(`/api/customers/by-mobile?mobile=${encodeURIComponent(searchTerm)}`, "GET");
         customer = await response.json();
-      } else if (searchType === 'name' && searchTerm.trim().length >= 1) {
+      } else if (searchType === 'name' && searchTerm.trim().length >= 3) {
         console.log(`Looking up customer by name: ${searchTerm}`);
         const response = await apiRequest(`/api/customers?search=${encodeURIComponent(searchTerm)}`, "GET");
         const data = await response.json();

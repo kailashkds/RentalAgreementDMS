@@ -26,7 +26,7 @@ export function useAddresses(options: UseAddressesOptions = {}) {
       
       return response.json();
     },
-    enabled: !!search && search.length >= 1, // Search suggestions start from 1 character
+    enabled: !!search && search.length >= 3, // Only search when user has typed at least 3 characters
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }

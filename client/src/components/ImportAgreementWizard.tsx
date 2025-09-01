@@ -371,7 +371,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
 
   // Enhanced customer lookup for mobile numbers
   const fetchCustomerInfo = async (searchTerm: string, searchType: 'mobile' | 'name', userType: 'owner' | 'tenant') => {
-    if (!searchTerm || searchTerm.trim().length < 1) return;
+    if (!searchTerm || searchTerm.trim().length < 3) return;
     
     try {
       let customer = null;
@@ -380,7 +380,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         console.log(`Looking up customer by mobile: ${searchTerm}`);
         const response = await apiRequest("GET", `/api/customers/by-mobile?mobile=${encodeURIComponent(searchTerm)}`);
         customer = await response.json();
-      } else if (searchType === 'name' && searchTerm.trim().length >= 1) {
+      } else if (searchType === 'name' && searchTerm.trim().length >= 3) {
         console.log(`Looking up customer by name: ${searchTerm}`);
         const response = await apiRequest("GET", `/api/customers?search=${encodeURIComponent(searchTerm)}`);
         const data = await response.json();
