@@ -1630,6 +1630,7 @@ export default function Agreements() {
                                           ? "bg-red-100 text-red-800"
                                           : "bg-red-100 text-red-800"
                                       }`}
+                                      title={`Debug: status=${agreement.status}, notaryStatus=${agreement.notaryStatus}`}
                                     >
                                       {agreement.status === "draft"
                                         ? "Complete First"
