@@ -1656,7 +1656,7 @@ export default function Agreements() {
         </Card>
 
         {/* Enhanced Pagination */}
-        {agreementsData && sortedAgreements && sortedAgreements.length > 20 && (
+        {agreementsData && sortedAgreements && (
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-700">
               Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, sortedAgreements.length)} of{" "}
@@ -1675,7 +1675,7 @@ export default function Agreements() {
                 </PaginationItem>
                 
                 {/* Page Numbers */}
-                {generatePageNumbers(currentPage, Math.ceil(sortedAgreements.length / 20)).map((page, index) => (
+                {generatePageNumbers(currentPage, Math.max(1, Math.ceil(sortedAgreements.length / 20))).map((page, index) => (
                   <PaginationItem key={index}>
                     {page === '...' ? (
                       <PaginationEllipsis />
