@@ -439,6 +439,15 @@ export default function Agreements() {
     return sorted;
   }, [filteredAgreements, sortBy]);
 
+  // Client-side pagination for filtered/sorted results
+  const paginatedAgreements = React.useMemo(() => {
+    if (!sortedAgreements || sortedAgreements.length === 0) return [];
+    
+    const startIndex = (currentPage - 1) * 20;
+    const endIndex = startIndex + 20;
+    return sortedAgreements.slice(startIndex, endIndex);
+  }, [sortedAgreements, currentPage]);
+
   const handleRenewAgreement = async (agreementId: string) => {
     try {
       const startDate = new Date();
@@ -1311,7 +1320,7 @@ export default function Agreements() {
               </div>
             ) : (
               <div className="space-y-4">
-                {sortedAgreements?.map((agreement: any, index: number) => (
+                {paginatedAgreements?.map((agreement: any, index: number) => (
                   <div key={agreement.id || index} className="border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors group">
                     <div className="flex flex-col lg:flex-row">
                       {/* Details Section */}
@@ -1642,11 +1651,11 @@ export default function Agreements() {
         </Card>
 
         {/* Enhanced Pagination */}
-        {agreementsData && agreementsData.total > 20 && (
+        {agreementsData && sortedAgreements && sortedAgreements.length > 20 && (
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, agreementsData.total)} of{" "}
-              {agreementsData.total} results
+              Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, sortedAgreements.length)} of{" "}
+              {sortedAgreements.length} results
             </div>
             
             <Pagination>
@@ -1661,7 +1670,7 @@ export default function Agreements() {
                 </PaginationItem>
                 
                 {/* Page Numbers */}
-                {generatePageNumbers(currentPage, Math.ceil(agreementsData.total / 20)).map((page, index) => (
+                {generatePageNumbers(currentPage, Math.ceil(sortedAgreements.length / 20)).map((page, index) => (
                   <PaginationItem key={index}>
                     {page === '...' ? (
                       <PaginationEllipsis />
@@ -1682,7 +1691,7 @@ export default function Agreements() {
                 <PaginationItem>
                   <PaginationNext 
                     onClick={() => setCurrentPage(page => page + 1)}
-                    className={currentPage * 20 >= agreementsData.total ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={currentPage * 20 >= sortedAgreements.length ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     data-testid="button-next-page"
                   />
                 </PaginationItem>
