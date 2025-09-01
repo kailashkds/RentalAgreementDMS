@@ -89,6 +89,7 @@ export default function Agreements() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [notaryFilter, setNotaryFilter] = useState("all");
+  const [policeFilter, setPoliceFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("all");
   const [tenantFilter, setTenantFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
@@ -104,7 +105,7 @@ export default function Agreements() {
   // Reset current page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, notaryFilter, customerFilter, tenantFilter, ownerFilter, dateFilter, sortBy]);
+  }, [searchTerm, statusFilter, notaryFilter, policeFilter, customerFilter, tenantFilter, ownerFilter, dateFilter, sortBy]);
 
   // Pagination helper function
   const generatePageNumbers = (currentPage: number, totalPages: number) => {
@@ -301,6 +302,13 @@ export default function Agreements() {
           : "pending"
         : "n_a";
       if (notaryStatus !== notaryFilter) return false;
+    }
+
+    // Filter by police verification status
+    if (policeFilter && policeFilter !== "all") {
+      const hasPoliceVerification = agreement.documents?.policeVerificationDocument?.url;
+      const policeStatus = hasPoliceVerification ? "verified" : "not_verified";
+      if (policeStatus !== policeFilter) return false;
     }
 
     // Filter by customer name
@@ -1068,6 +1076,16 @@ export default function Agreements() {
                 <SelectItem value="notarized">Notarized</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="complete_first">Complete First</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={policeFilter} onValueChange={setPoliceFilter}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="All Police" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Police</SelectItem>
+                <SelectItem value="verified">Verified</SelectItem>
+                <SelectItem value="not_verified">Not Verified</SelectItem>
               </SelectContent>
             </Select>
             <Combobox
