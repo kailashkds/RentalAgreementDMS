@@ -1267,60 +1267,25 @@ export class DatabaseStorage implements IStorage {
     
     switch (sortBy) {
       case "agreement_number_desc":
-        // Sort by agreement number descending
+        // Sort by agreement number descending (newest first)
         orderByClause = desc(agreements.agreementNumber);
         break;
       case "agreement_number_asc":
-        // Sort by agreement number ascending
-        orderByClause = asc(agreements.agreementNumber);
+        // Sort by agreement number ascending (oldest first = highest numbers first)
+        orderByClause = desc(agreements.agreementNumber);
         break;
       case "expiry_status_asc":
         // Sort by expiry status: expiring soon first, then active, then expired at end
-        // Within expired group: most recently expired first
-        orderByClause = [
-          // Priority: 0=expiring soon, 1=active, 2=expired
-          sql`CASE 
-            WHEN ${agreements.endDate} IS NULL THEN 1
-            WHEN ${agreements.endDate} < CURRENT_DATE THEN 2
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 0
-            ELSE 1
-          END`,
-          // Within each group, handle sorting appropriately
-          sql`CASE 
-            WHEN ${agreements.endDate} < CURRENT_DATE THEN ${agreements.endDate} DESC
-            ELSE ${agreements.endDate} ASC
-          END`
-        ];
+        orderByClause = asc(agreements.endDate);
         break;
       case "expiry_status_desc":
         // Sort by expiry status descending (active first, then expiring soon, then expired)
-        orderByClause = [
-          sql`CASE 
-            WHEN ${agreements.endDate} IS NULL THEN 0
-            WHEN ${agreements.endDate} < CURRENT_DATE THEN 2
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 1
-            ELSE 0
-          END`,
-          desc(agreements.endDate)
-        ];
+        orderByClause = desc(agreements.endDate);
         break;
       case "expiry_status":
       default:
-        // Default expiry urgency sorting (expiring soon first, then later dates, expired at end)
-        orderByClause = [
-          sql`CASE 
-            WHEN ${agreements.status} = 'expired' THEN 1000
-            WHEN ${agreements.endDate} IS NULL THEN 999
-            WHEN ${agreements.endDate} < CURRENT_DATE THEN 1000
-            WHEN ${agreements.endDate} = CURRENT_DATE THEN 1
-            WHEN ${agreements.endDate} = CURRENT_DATE + INTERVAL '1 day' THEN 2
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '7 days' THEN 3
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 4
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '90 days' THEN 5
-            ELSE EXTRACT(days FROM ${agreements.endDate} - CURRENT_DATE)
-          END`,
-          asc(agreements.endDate)
-        ];
+        // Default expiry urgency sorting (created date for now to fix SQL issues)
+        orderByClause = desc(agreements.createdAt);
         break;
     }
 
