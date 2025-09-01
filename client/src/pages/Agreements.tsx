@@ -1386,7 +1386,7 @@ export default function Agreements() {
                                   const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
                                   
                                   if (startDate && endDate) {
-                                    return `${formatDateToDDMMYYYY(startDate)} - ${formatDateToDDMMYYYY(endDate)}`;
+                                    return `${formatDateToDDMMYYYY(startDate, '/')} - ${formatDateToDDMMYYYY(endDate, '/')}`;
                                   }
                                   return 'Not available';
                                 })()}
@@ -2823,7 +2823,7 @@ export default function Agreements() {
                       <div className="md:col-span-2">
                         <span className="text-sm font-medium text-slate-600">Agreement Period:</span>
                         <p className="text-slate-900">
-                          {viewingImportedAgreement.startDate ? formatDateToDDMMYYYY(viewingImportedAgreement.startDate) : 'N/A'} to {viewingImportedAgreement.endDate ? formatDateToDDMMYYYY(viewingImportedAgreement.endDate) : 'N/A'}
+                          {viewingImportedAgreement.startDate ? formatDateToDDMMYYYY(viewingImportedAgreement.startDate, '/') : 'N/A'} to {viewingImportedAgreement.endDate ? formatDateToDDMMYYYY(viewingImportedAgreement.endDate, '/') : 'N/A'}
                         </p>
                       </div>
                     )}
