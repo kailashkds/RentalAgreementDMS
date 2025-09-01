@@ -1300,18 +1300,13 @@ export class DatabaseStorage implements IStorage {
         break;
       case "expiry_status":
       default:
-        // Default expiry urgency sorting (expiring soon first, then later dates, expired at end)
+        // Default expiry urgency sorting (expiring soon first with less days remaining first, then more days, expired at end)
         orderByClause = [
           sql`CASE 
             WHEN ${agreements.status} = 'expired' THEN 1000
             WHEN ${agreements.endDate} IS NULL THEN 999
             WHEN ${agreements.endDate} < CURRENT_DATE THEN 1000
-            WHEN ${agreements.endDate} = CURRENT_DATE THEN 1
-            WHEN ${agreements.endDate} = CURRENT_DATE + INTERVAL '1 day' THEN 2
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '7 days' THEN 3
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 4
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '90 days' THEN 5
-            ELSE 100
+            ELSE 1
           END`,
           asc(agreements.endDate)
         ];
