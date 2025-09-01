@@ -1267,8 +1267,8 @@ export class DatabaseStorage implements IStorage {
     
     switch (sortBy) {
       case "agreement_number_desc":
-        // Sort by agreement number descending (newest first)
-        orderByClause = desc(agreements.agreementNumber);
+        // Sort by agreement number descending (newest first = lowest numbers first)
+        orderByClause = asc(agreements.agreementNumber);
         break;
       case "agreement_number_asc":
         // Sort by agreement number ascending (oldest first = highest numbers first)
