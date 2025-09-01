@@ -1265,13 +1265,17 @@ export class DatabaseStorage implements IStorage {
     // Build order by clause based on sortBy parameter
     let orderByClause;
     
+    console.log('🔍 Sorting by:', sortBy);
+    
     switch (sortBy) {
       case "agreement_number_desc":
         // Sort by agreement number descending (newest first = highest numbers first)
+        console.log('📊 Using agreement_number_desc - showing highest numbers first');
         orderByClause = desc(agreements.agreementNumber);
         break;
       case "agreement_number_asc":
         // Sort by agreement number ascending (oldest first = lowest numbers first)
+        console.log('📊 Using agreement_number_asc - showing lowest numbers first');
         orderByClause = asc(agreements.agreementNumber);
         break;
       case "expiry_status_asc":
