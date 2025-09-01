@@ -1922,27 +1922,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/customers/:id", requireAuth, async (req: any, res) => {
     try {
       // Use RBAC utilities for permission checking
-      const { isSuperAdmin, canAccessRecord } = await import('./rbacUtils.js');
+      const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
       
-      // Get customer first to check access
+      // Check permissions - Super Admin has full access, others need specific permission
+      if (!isSuperAdmin(req.user)) {
+        const hasPermission = await hasPermissionWithSuperAdminBypass(req.user, 'customer.edit.all');
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            message: "Insufficient permissions to edit customers",
+            error: "permission_denied",
+            action: "Contact an administrator for customer editing access"
+          });
+        }
+      }
+      
+      // Get customer first to check if it exists
       const existingCustomer = await storage.getCustomer(req.params.id);
       if (!existingCustomer) {
         return res.status(404).json({ message: "Customer not found" });
-      }
-      
-      // Check if user can edit this specific customer
-      const accessCheck = await canAccessRecord(
-        req.user,
-        { customerId: existingCustomer.id, ownerId: existingCustomer.id },
-        'edit'
-      );
-      
-      if (!accessCheck.allowed) {
-        return res.status(403).json({ 
-          message: "Insufficient permissions to edit this customer",
-          error: "permission_denied",
-          action: "You can only edit customers you have permission to modify"
-        });
       }
       
       // Create customer data schema dynamically since we moved to unified users table
