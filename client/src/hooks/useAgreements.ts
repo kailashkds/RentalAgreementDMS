@@ -18,7 +18,7 @@ interface AgreementsResponse {
 }
 
 export function useAgreements(options: UseAgreementsOptions = {}) {
-  const { customerId, status, search, dateFilter, startDate, endDate, limit = 50, offset = 0 } = options;
+  const { customerId, status, search, dateFilter, startDate, endDate, limit, offset } = options;
   
   const params = new URLSearchParams();
   if (customerId && customerId.trim() !== "") params.append('customerId', customerId);
@@ -33,8 +33,12 @@ export function useAgreements(options: UseAgreementsOptions = {}) {
   if (endDate && endDate.trim() !== "") {
     params.append('endDate', endDate);
   }
-  params.append('limit', limit.toString());
-  params.append('offset', offset.toString());
+  
+  // Only add pagination if limit is specified
+  if (limit !== undefined) {
+    params.append('limit', limit.toString());
+    params.append('offset', (offset || 0).toString());
+  }
 
   return useQuery<AgreementsResponse>({
     queryKey: ["/api/agreements", customerId, status, search, dateFilter || null, startDate || null, endDate || null, limit, offset],

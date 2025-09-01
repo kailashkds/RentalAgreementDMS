@@ -242,8 +242,7 @@ export default function Agreements() {
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
     ...dateParams,
-    limit: 20,
-    offset: (currentPage - 1) * 20,
+    // Remove pagination parameters to fetch all records
   });
 
   // Extract unique values for dropdown options
