@@ -286,6 +286,7 @@ export default function Agreements() {
   React.useEffect(() => {
     const timer = setTimeout(() => {
       queryClient.invalidateQueries({ queryKey: ['/api/agreements'] });
+      queryClient.removeQueries({ queryKey: ['/api/agreements'] }); // Force complete cache removal
       refetch();
     }, 1000);
     return () => clearTimeout(timer);
@@ -1622,19 +1623,19 @@ export default function Agreements() {
                                         agreement.status === "draft"
                                           ? "bg-gray-100 text-gray-800"
                                           : agreement.notaryStatus === "pending"
-                                          ? "bg-amber-100 text-amber-800"
-                                          : agreement.notaryStatus === "complete"
+                                          ? "bg-red-100 text-red-800"
+                                          : agreement.notaryStatus === "done" || agreement.notaryStatus === "complete"
                                           ? "bg-green-100 text-green-800"
                                           : agreement.notaryStatus === "expired"
                                           ? "bg-red-100 text-red-800"
-                                          : "bg-gray-100 text-gray-800"
+                                          : "bg-red-100 text-red-800"
                                       }`}
                                     >
                                       {agreement.status === "draft"
                                         ? "Complete First"
                                         : agreement.notaryStatus === "pending"
                                         ? "Pending"
-                                        : agreement.notaryStatus === "complete"
+                                        : agreement.notaryStatus === "done" || agreement.notaryStatus === "complete"
                                         ? "Complete"
                                         : agreement.notaryStatus === "expired"
                                         ? "Expired"
