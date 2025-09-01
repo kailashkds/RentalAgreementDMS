@@ -32,8 +32,7 @@ export const users = pgTable("users", {
   // Authentication fields
   username: varchar("username", { length: 50 }).unique(), // For admin login
   mobile: varchar("mobile", { length: 20 }).unique(), // For customer mobile
-  password: text("password").notNull(), // Hashed password for login
-  encryptedPassword: text("encrypted_password"), // Encrypted password for admin viewing
+  password: text("password").notNull(), // Password for login
   
   // Profile fields
   name: text("name").notNull(), // Full name or display name
@@ -106,16 +105,29 @@ export const userPermissions = pgTable("user_permissions", {
   createdBy: varchar("created_by").references(() => users.id), // Who assigned this override
 });
 
-// Track permission removals (permissions taken away from role)
-export const userPermissionRemovals = pgTable("user_permission_removals", {
+// DEPRECATED: customerRoles is merged into userRoles
+// This table will be dropped after data migration
+export const customerRoles = pgTable("customer_roles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
-  permissionId: varchar("permission_id").references(() => permissions.id, { onDelete: 'cascade' }).notNull(),
+  customerId: varchar("customer_id").references(() => customers.id, { onDelete: 'cascade' }).notNull(),
+  roleId: varchar("role_id").references(() => roles.id, { onDelete: 'cascade' }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-  createdBy: varchar("created_by").references(() => users.id), // Who removed this permission
 });
 
-
+// DEPRECATED: customers table is merged into users
+// This table will be dropped after data migration
+export const customers = pgTable("customers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  username: varchar("username").unique(),
+  mobile: varchar("mobile", { length: 20 }).notNull().unique(),
+  email: varchar("email"),
+  password: text("password"), // bcrypt hashed password for authentication
+  encryptedPassword: text("encrypted_password"), // Encrypted password for admin viewing
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
 // Properties table for user property management
 export const properties = pgTable("properties", {
@@ -145,6 +157,20 @@ export const properties = pgTable("properties", {
   customerIdx: index("property_customer_idx").on(table.customerId), // Index on customer_id
   addressIdx: index("property_address_idx").on(table.society, table.area, table.city),
 }));
+
+// DEPRECATED: adminUsers table is merged into users
+// This table will be dropped after data migration
+export const adminUsers = pgTable("admin_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username", { length: 50 }).notNull().unique(),
+  phone: varchar("phone", { length: 15 }).notNull().unique(),
+  password: text("password").notNull(),
+  name: text("name").notNull(),
+  role: varchar("role", { length: 20 }).notNull().default("admin"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
 // Societies table for address autocomplete
 export const societies = pgTable("societies", {
@@ -206,17 +232,8 @@ export const agreements: any = pgTable("agreements", {
   endDate: date("end_date").notNull(),
   agreementDate: date("agreement_date").notNull(),
   
-  // Status tracking - automatically updates to 'expired' when endDate passes
+  // Status tracking
   status: varchar("status", { length: 20 }).notNull().default("draft"), // draft, active, expired, renewed, terminated
-  
-  // Notary status tracking - automatically updates to 'expired' when agreement expires
-  notaryStatus: varchar("notary_status", { length: 20 }).default("pending"), // pending, complete, draft, expired
-  
-  // Police verification status tracking
-  policeVerificationStatus: varchar("police_verification_status", { length: 20 }).default("pending"), // done, not_done, pending
-  
-  // Import tracking - to distinguish imported vs generated agreements
-  isImported: boolean("is_imported").default(false), // true for imported agreements, false for generated ones
   
   // Relationship tracking
   parentAgreementId: varchar("parent_agreement_id"),
@@ -239,27 +256,43 @@ export const agreements: any = pgTable("agreements", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// PDF Templates table - for storing agreement templates
+// Agreement templates for different languages
+export const agreementTemplates = pgTable("agreement_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  language: varchar("language", { length: 20 }).notNull(),
+  templateContent: text("template_content").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// PDF Templates for dynamic document generation
 export const pdfTemplates = pgTable("pdf_templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name", { length: 255 }).notNull(),
-  documentType: varchar("document_type", { length: 100 }).notNull().default("rental_agreement"),
-  language: varchar("language", { length: 50 }).notNull().default("english"),
-  htmlTemplate: text("html_template").notNull(), // The HTML template content
+  name: text("name").notNull(),
+  documentType: text("document_type").notNull(), // 'rental_agreement', 'promissory_note', etc.
+  language: varchar("language", { length: 20 }).notNull(),
+  htmlTemplate: text("html_template").notNull(), // WYSIWYG HTML content
+  dynamicFields: jsonb("dynamic_fields").notNull().default('[]'), // Array of field configurations
+  conditionalRules: jsonb("conditional_rules").notNull().default('[]'), // Conditional display rules
   isActive: boolean("is_active").default(true),
-  version: integer("version").default(1),
-  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+
+
 // Relations
+export const customersRelations = relations(customers, ({ many }) => ({
+  properties: many(properties),
+  agreements: many(agreements),
+  customerRoles: many(customerRoles),
+}));
 
 // RBAC Relations
 export const usersRelations = relations(users, ({ many }) => ({
   userRoles: many(userRoles),
   userPermissions: many(userPermissions),
-  userPermissionRemovals: many(userPermissionRemovals),
   properties: many(properties),
   agreements: many(agreements),
 }));
@@ -271,6 +304,7 @@ export const permissionsRelations = relations(permissions, ({ many }) => ({
 export const rolesRelations = relations(roles, ({ many }) => ({
   rolePermissions: many(rolePermissions),
   userRoles: many(userRoles),
+  customerRoles: many(customerRoles), // Will be deprecated after migration
 }));
 
 export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
@@ -310,21 +344,16 @@ export const userPermissionsRelations = relations(userPermissions, ({ one }) => 
   }),
 }));
 
-export const userPermissionRemovalsRelations = relations(userPermissionRemovals, ({ one }) => ({
-  user: one(users, {
-    fields: [userPermissionRemovals.userId],
-    references: [users.id],
+export const customerRolesRelations = relations(customerRoles, ({ one }) => ({
+  customer: one(customers, {
+    fields: [customerRoles.customerId],
+    references: [customers.id],
   }),
-  permission: one(permissions, {
-    fields: [userPermissionRemovals.permissionId],
-    references: [permissions.id],
-  }),
-  createdByUser: one(users, {
-    fields: [userPermissionRemovals.createdBy],
-    references: [users.id],
+  role: one(roles, {
+    fields: [customerRoles.roleId],
+    references: [roles.id],
   }),
 }));
-
 
 export const propertiesRelations = relations(properties, ({ one, many }) => ({
   user: one(users, {
@@ -360,7 +389,11 @@ export const agreementsRelations = relations(agreements, ({ one, many }) => ({
 }));
 
 // Insert schemas
-
+export const insertCustomerSchema = createInsertSchema(customers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 export const insertSocietySchema = createInsertSchema(societies).omit({
   id: true,
@@ -396,35 +429,45 @@ export const insertAgreementSchema = createInsertSchema(agreements).omit({
   rentalTerms: z.any().optional(),
 });
 
+export const insertAgreementTemplateSchema = createInsertSchema(agreementTemplates).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPdfTemplateSchema = createInsertSchema(pdfTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 
 
-
+export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
-// Customer type is now handled through the users table with Customer role
-// Customer type is now based on users table with Customer role
-export interface Customer {
-  id: string;
-  name: string;
-  mobile: string;
-  email?: string | null;
-  password?: string | null;
-  encryptedPassword?: string | null;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+export type Customer = typeof customers.$inferSelect;
+export type InsertSociety = z.infer<typeof insertSocietySchema>;
+export type Society = typeof societies.$inferSelect;
 export type InsertAddress = z.infer<typeof insertAddressSchema>;
 export type Address = typeof addresses.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type Property = typeof properties.$inferSelect;
-export type InsertSociety = z.infer<typeof insertSocietySchema>;
-export type Society = typeof societies.$inferSelect;
 export type InsertAgreement = z.infer<typeof insertAgreementSchema>;
 export type Agreement = typeof agreements.$inferSelect;
+export type InsertAgreementTemplate = z.infer<typeof insertAgreementTemplateSchema>;
+export type AgreementTemplate = typeof agreementTemplates.$inferSelect;
+export type InsertPdfTemplate = z.infer<typeof insertPdfTemplateSchema>;
+export type PdfTemplate = typeof pdfTemplates.$inferSelect;
+
+export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
+export type AdminUser = typeof adminUsers.$inferSelect;
 
 // RBAC Insert Schemas
 export const insertPermissionSchema = createInsertSchema(permissions).omit({
@@ -453,11 +496,10 @@ export const insertUserPermissionSchema = createInsertSchema(userPermissions).om
   createdAt: true,
 });
 
-export const insertUserPermissionRemovalSchema = createInsertSchema(userPermissionRemovals).omit({
+export const insertCustomerRoleSchema = createInsertSchema(customerRoles).omit({
   id: true,
   createdAt: true,
 });
-
 
 // RBAC Types
 export type InsertPermission = z.infer<typeof insertPermissionSchema>;
@@ -470,8 +512,8 @@ export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
 export type UserRole = typeof userRoles.$inferSelect;
 export type InsertUserPermission = z.infer<typeof insertUserPermissionSchema>;
 export type UserPermission = typeof userPermissions.$inferSelect;
-export type InsertUserPermissionRemoval = z.infer<typeof insertUserPermissionRemovalSchema>;
-export type UserPermissionRemoval = typeof userPermissionRemovals.$inferSelect;
+export type InsertCustomerRole = z.infer<typeof insertCustomerRoleSchema>;
+export type CustomerRole = typeof customerRoles.$inferSelect;
 
 // Extended RBAC types for API responses
 export interface RoleWithPermissions extends Role {
@@ -485,10 +527,6 @@ export interface RoleWithStringPermissions extends Role {
 
 export interface UserWithRoles extends User {
   roles: RoleWithStringPermissions[];
-  manualPermissions?: {
-    added: string[]; // Permission codes that were manually added
-    removed: string[]; // Permission codes that were manually removed
-  };
 }
 
 export interface CustomerWithRoles extends Customer {
@@ -606,14 +644,3 @@ export interface AgreementDocuments {
 // Audit Log types
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = typeof auditLogs.$inferInsert;
-
-// PDF Template types and schemas
-export type PdfTemplate = typeof pdfTemplates.$inferSelect;
-export type InsertPdfTemplate = typeof pdfTemplates.$inferInsert;
-
-// Create Zod schemas for validation
-export const insertPdfTemplateSchema = createInsertSchema(pdfTemplates).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});

@@ -15,7 +15,6 @@ import { usePdfTemplates } from "@/hooks/usePdfTemplates";
 import PdfTemplateEditor from "@/components/PdfTemplateEditor";
 import AdminLayout from "@/components/AdminLayout";
 import type { PdfTemplate } from "@shared/schema";
-import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 
 const DOCUMENT_TYPES = [
   { value: "rental_agreement", label: "Rental Agreement" },
@@ -377,7 +376,7 @@ export default function PdfTemplates() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {template.createdAt ? formatDateToDDMMYYYY(template.createdAt) : '-'}
+                      {template.createdAt ? new Date(template.createdAt).toLocaleDateString() : '-'}
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
@@ -424,40 +423,11 @@ export default function PdfTemplates() {
           onClose={() => setShowEditor(false)}
           onSave={(templateData) => {
             if (selectedTemplate) {
-              updateTemplate({ id: selectedTemplate.id, data: templateData }, {
-                onSuccess: () => {
-                  toast({
-                    title: "Success",
-                    description: "Template updated successfully",
-                  });
-                  setShowEditor(false);
-                },
-                onError: (error: Error) => {
-                  toast({
-                    title: "Error", 
-                    description: error.message,
-                    variant: "destructive",
-                  });
-                },
-              });
+              updateTemplate({ id: selectedTemplate.id, data: templateData });
             } else {
-              createTemplate(templateData, {
-                onSuccess: () => {
-                  toast({
-                    title: "Success",
-                    description: "Template created successfully",
-                  });
-                  setShowEditor(false);
-                },
-                onError: (error: Error) => {
-                  toast({
-                    title: "Error",
-                    description: error.message, 
-                    variant: "destructive",
-                  });
-                },
-              });
+              createTemplate(templateData);
             }
+            setShowEditor(false);
           }}
         />
       )}

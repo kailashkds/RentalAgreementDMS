@@ -3,10 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building, MapPin, Plus, Eye, ArrowLeft, Shield } from "lucide-react";
+import { Building, MapPin, Plus, Eye, ArrowLeft } from "lucide-react";
 import { AddPropertyDialog } from "@/components/AddPropertyDialog";
 import { useState } from "react";
-import { usePermissions } from "@/hooks/usePermissions";
 
 interface Property {
   id: string;
@@ -38,10 +37,6 @@ interface Customer {
 export default function CustomerProperties() {
   const { customerId } = useParams();
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const { hasPermission } = usePermissions();
-  
-  // Check if user can view properties - customers can view their own properties, admins can view all
-  const canViewProperties = hasPermission('customer.manage') || hasPermission('system.admin') || hasPermission('customer.view.all') || hasPermission('agreement.view.own');
 
   const { data: customer, isLoading: customerLoading } = useQuery<Customer>({
     queryKey: [`/api/customers/${customerId}`],
@@ -64,32 +59,6 @@ export default function CustomerProperties() {
 
   if (!customer) {
     return <div className="p-6">Customer not found</div>;
-  }
-
-  if (!canViewProperties) {
-    return (
-      <div className="container mx-auto px-4 py-6">
-        <Card className="max-w-md mx-auto">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <Shield className="h-12 w-12 text-red-500" />
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Access Denied</h3>
-                <p className="text-sm text-gray-500 mt-2">
-                  You don't have permission to view customer properties.
-                </p>
-              </div>
-              <Link href="/customers">
-                <Button variant="outline">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Customers
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
   }
 
   return (

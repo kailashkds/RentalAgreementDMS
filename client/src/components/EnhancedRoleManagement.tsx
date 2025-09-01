@@ -16,7 +16,6 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { PermissionGuard } from "./PermissionGuard";
-import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 import { 
   Shield, 
   Plus, 
@@ -606,7 +605,7 @@ export function EnhancedRoleManagement() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {formatDateToDDMMYYYY(new Date())}
+                      {new Date().toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>

@@ -6,8 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, FileText, Calendar, Download, Eye } from "lucide-react";
 import { useState } from "react";
 import { apiClient } from "@/lib/apiClient";
-import { useToast } from "@/hooks/use-toast";
-import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 
 interface Agreement {
   id: string;
@@ -57,7 +55,6 @@ interface Customer {
 export default function PropertyAgreements() {
   const { customerId, propertyId } = useParams();
   const [selectedAgreement, setSelectedAgreement] = useState<Agreement | null>(null);
-  const { toast } = useToast();
 
   const { data: customer } = useQuery<Customer>({
     queryKey: [`/api/customers/${customerId}`],
@@ -87,7 +84,7 @@ export default function PropertyAgreements() {
   };
 
   const formatDate = (dateString: string) => {
-    return formatDateToDDMMYYYY(dateString);
+    return new Date(dateString).toLocaleDateString();
   };
 
   const handleDownloadPdf = async (agreementId: string) => {
@@ -97,51 +94,214 @@ export default function PropertyAgreements() {
       
       console.log('Starting PDF download for agreement:', agreementId);
       
-      const response = await fetch(`/api/agreements/${agreementId}/pdf`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.html) {
-          // Import html2pdf dynamically
-          const html2pdf = (await import('html2pdf.js' as any)).default;
-          
-          // Create a temporary container for the HTML content
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = data.html;
-          tempDiv.style.width = '210mm'; // A4 width
-          tempDiv.style.fontFamily = 'Arial, sans-serif';
-          document.body.appendChild(tempDiv);
-          
-          // Configure pdf options
-          const options = {
-            margin: [15, 10, 15, 10], // mm
-            filename: data.filename || `${agreement.agreementNumber}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
-              scale: 2, 
-              useCORS: true,
-              letterRendering: true 
-            },
-            jsPDF: { 
-              unit: 'mm', 
-              format: 'a4', 
-              orientation: 'portrait' 
-            }
-          };
-          
-          // Generate and download PDF
-          await html2pdf().set(options).from(tempDiv).save();
-          
-          // Clean up
-          document.body.removeChild(tempDiv);
+      const data = await apiClient.get(`/api/agreements/${agreementId}/pdf`);
+      console.log('PDF generation successful, received HTML');
+      
+      // Create a temporary HTML page for printing/PDF generation
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+          printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Rental Agreement - ${agreement.agreementNumber || 'Agreement'}</title>
+              <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+              <style>
+                @page {
+                  margin: 15mm 10mm 20mm 10mm;
+                  @bottom-center { content: none; }
+                  @bottom-left { content: none; }
+                  @bottom-right { 
+                    content: "Page " counter(page) " of " counter(pages);
+                    font-size: 10px;
+                    color: #666;
+                    font-family: ${agreement.language === 'gujarati' 
+                      ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif'
+                      : agreement.language === 'hindi'
+                      ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                      : agreement.language === 'tamil'
+                      ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                      : agreement.language === 'marathi'
+                      ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                      : 'Arial, sans-serif'};
+                  }
+                  @top-center { content: none; }
+                  @top-left { content: none; }
+                  @top-right { content: none; }
+                }
+                
+                body { 
+                  font-family: ${agreement.language === 'gujarati' 
+                    ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
+                    : agreement.language === 'hindi'
+                    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                    : agreement.language === 'tamil'
+                    ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                    : agreement.language === 'marathi'
+                    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                    : 'Arial, sans-serif'}; 
+                  margin: 0;
+                  padding: 20px;
+                  line-height: 1.6;
+                  background: white;
+                  font-size: 14px;
+                  text-rendering: optimizeLegibility;
+                  -webkit-font-smoothing: antialiased;
+                  -moz-osx-font-smoothing: grayscale;
+                  font-feature-settings: "kern" 1, "liga" 1;
+                }
+                
+                .agreement-content {
+                  max-width: 800px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  background: white;
+                  min-height: 1056px;
+                }
+                
+                /* Enhanced font support for all languages */
+                .gujarati-content, .gujarati-content * {
+                  font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif !important;
+                }
+                
+                /* Enhanced English font support and styling */
+                .english-content, .english-content * {
+                  font-family: Arial, sans-serif !important;
+                  font-size: 14px !important;
+                }
+                
+                /* Consistent spacing for all languages */
+                .party-details p {
+                  margin: 3px 0 !important;
+                  line-height: 1.5 !important;
+                }
+                
+                /* Title styling */
+                h1, h2, h3 {
+                  font-weight: bold !important;
+                  margin: 20px 0 15px 0 !important;
+                  text-align: center !important;
+                }
+                
+                h1 {
+                  font-size: 18px !important;
+                  margin-bottom: 25px !important;
+                }
+                
+                /* Paragraph styling with consistent spacing */
+                p {
+                  margin: 10px 0 !important;
+                  line-height: 1.6 !important;
+                  text-align: justify !important;
+                  text-indent: 0 !important;
+                  padding: 0 !important;
+                }
+                
+                /* List styling */
+                ol, ul {
+                  margin: 10px 0 !important;
+                  padding-left: 30px !important;
+                }
+                
+                li {
+                  margin: 5px 0 !important;
+                  line-height: 1.6 !important;
+                }
+                
+                /* Strong text styling */
+                strong, b {
+                  font-weight: bold !important;
+                }
+                
+                /* Passport photo styling - only for screen preview */
+                @media screen {
+                  div[style*="130px"][style*="160px"]:empty,
+                  div[style*="130px"][style*="160px"]:contains("પાસપોર્ટ સાઈઝ ફોટો"),
+                  div[style*="130px"][style*="160px"]:contains("Passport Size Photo") {
+                    border: 1px dashed #ccc !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    background: #f9f9f9 !important;
+                    font-size: 12px !important;
+                    text-align: center !important;
+                    color: #666 !important;
+                  }
+                }
+                
+                /* Remove borders for PDF/print */
+                @media print {
+                  div[style*="130px"][style*="160px"] {
+                    border: none !important;
+                    background: transparent !important;
+                  }
+                }
+                
+                /* Page break control classes for PDF generation */
+                .no-page-break,
+                .keep-together,
+                .agreement-section,
+                .clause-section,
+                .signature-section,
+                .terms-section {
+                  page-break-inside: avoid;
+                  break-inside: avoid;
+                }
+                
+                .page-break-before {
+                  page-break-before: always;
+                  break-before: page;
+                }
+                
+                .page-break-after {
+                  page-break-after: always;
+                  break-after: page;
+                }
+                
+                @media print {
+                  body { margin: 0; }
+                  .no-print { display: none; }
+                  
+                  /* Enforce page break controls for print/PDF */
+                  .no-page-break,
+                  .keep-together,
+                  .agreement-section,
+                  .clause-section,
+                  .signature-section,
+                  .terms-section {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                  }
+                  
+                  .page-break-before {
+                    page-break-before: always !important;
+                    break-before: page !important;
+                  }
+                  
+                  .page-break-after {
+                    page-break-after: always !important;
+                    break-after: page !important;
+                  }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="no-print" style="margin-bottom: 20px;">
+                <button onclick="window.print()">Print / Save as PDF</button>
+                <button onclick="window.close()">Close</button>
+              </div>
+              <div class="agreement-content ${agreement.language === 'gujarati' ? 'gujarati-content' : 'english-content'}">
+                ${data.html || '<p>No agreement content available</p>'}
+              </div>
+            </body>
+            </html>
+          `);
+          printWindow.document.close();
+        } else {
+          throw new Error('Could not open print window - popup blocked?');
         }
-      }
     } catch (error) {
-      console.error('Error downloading PDF:', error);
-      toast({
-        title: "Download Failed",
-        description: "Failed to download PDF. Please try again.",
-        variant: "destructive",
-      });
+      console.error('Download error:', error);
     }
   };
 

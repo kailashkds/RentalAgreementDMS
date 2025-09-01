@@ -134,6 +134,8 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
     documentType: "rental_agreement",
     language: "english",
     htmlTemplate: "",
+    dynamicFields: [],
+    conditionalRules: [],
     isActive: true,
   });
   const [activeTab, setActiveTab] = useState("basic");
@@ -149,6 +151,8 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
         documentType: template.documentType,
         language: template.language,
         htmlTemplate: template.htmlTemplate,
+        dynamicFields: (template.dynamicFields || []) as string[],
+        conditionalRules: (template.conditionalRules || []) as string[],
         isActive: template.isActive,
       });
     } else {
@@ -279,6 +283,8 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
     </div>
   </div>
 </div>`,
+        dynamicFields: [],
+        conditionalRules: [],
         isActive: true,
       });
     }
@@ -297,6 +303,10 @@ export default function PdfTemplateEditor({ template, isOpen, onClose, onSave }:
     }
 
     onSave(formData);
+    toast({
+      title: "Success",
+      description: template ? "Template updated successfully" : "Template created successfully",
+    });
   };
 
   const insertDynamicField = (fieldKey: string) => {

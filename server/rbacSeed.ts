@@ -31,7 +31,6 @@ export const PERMISSIONS = {
   USER_CREATE: "user.create",
   USER_EDIT_ALL: "user.edit.all",
   USER_DELETE_ALL: "user.delete.all",
-  USER_STATUS_CHANGE: "user.status.change",
   
   // Role management permissions
   ROLE_MANAGE: "role.manage",
@@ -52,6 +51,7 @@ export const PERMISSIONS = {
   
   // System permissions
   SYSTEM_ADMIN: "system.admin",
+  DASHBOARD_VIEW: "dashboard.view",
 } as const;
 
 // Default roles configuration
@@ -66,8 +66,9 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.SHARE_AGREEMENT_OWN,
       PERMISSIONS.AGREEMENT_VIEW_NOTARIZED_OWN,
       PERMISSIONS.AGREEMENT_CREATE,
+      PERMISSIONS.DASHBOARD_VIEW,
+      PERMISSIONS.VIEW_SENSITIVE_INFO,
       // Note: AGREEMENT_EDIT_NOTARIZED_OWN removed - only Super Admin can edit notarized agreements
-      // Note: VIEW_SENSITIVE_INFO removed - customers don't need access to sensitive information
     ]
   },
   STAFF: {
@@ -83,6 +84,7 @@ export const DEFAULT_ROLES = {
       PERMISSIONS.TEMPLATE_MANAGE,
       PERMISSIONS.TEMPLATE_CREATE,
       PERMISSIONS.TEMPLATE_EDIT,
+      PERMISSIONS.DASHBOARD_VIEW,
       PERMISSIONS.AGREEMENT_VIEW_NOTARIZED_ALL,
       PERMISSIONS.VIEW_SENSITIVE_INFO,
       // Note: AGREEMENT_EDIT_NOTARIZED_ALL removed - only Super Admin can edit notarized agreements

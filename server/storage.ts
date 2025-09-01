@@ -1,28 +1,37 @@
 import {
   users,
+  customers,
   properties,
-  addresses,
   societies,
+  addresses,
   agreements,
+  agreementTemplates,
+  pdfTemplates,
   permissions,
   roles,
   rolePermissions as rolePermissionsTable,
   userRoles,
+  customerRoles,
   userPermissions,
-  userPermissionRemovals,
   auditLogs,
-  pdfTemplates,
 
+  adminUsers,
   type User,
   type UpsertUser,
+  type Customer,
+  type InsertCustomer,
   type Property,
   type InsertProperty,
-  type Address,
-  type InsertAddress,
   type Society,
   type InsertSociety,
+  type Address,
+  type InsertAddress,
   type Agreement,
   type InsertAgreement,
+  type AgreementTemplate,
+  type InsertAgreementTemplate,
+  type PdfTemplate,
+  type InsertPdfTemplate,
   type Permission,
   type InsertPermission,
   type Role,
@@ -33,19 +42,20 @@ import {
   type InsertUserRole,
   type UserPermission,
   type InsertUserPermission,
-  type UserPermissionRemoval,
-  type InsertUserPermissionRemoval,
+  type CustomerRole,
+  type InsertCustomerRole,
   type RoleWithPermissions,
   type RoleWithStringPermissions,
   type UserWithRoles,
+  type CustomerWithRoles,
   type AuditLog,
   type InsertAuditLog,
-  type PdfTemplate,
-  type InsertPdfTemplate,
 
+  type AdminUser,
+  type InsertAdminUser,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, ilike, desc, asc, and, or, count, sql, gte, lte, isNull, isNotNull } from "drizzle-orm";
+import { eq, ilike, desc, asc, and, or, count, sql, gte, lte } from "drizzle-orm";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths } from "date-fns";
 import bcrypt from "bcrypt";
 import { encryptPasswordForStorage, decryptPasswordFromStorage } from "./encryption";
@@ -56,6 +66,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByFullName(fullName: string): Promise<User | undefined>;
   getUserByMobile(mobile: string): Promise<User | undefined>;
+  getUserByPhone(phone: string): Promise<User | undefined>;
   createUser(user: Omit<UpsertUser, 'id'>): Promise<User>;
   updateUser(id: string, user: Partial<UpsertUser>): Promise<User>;
   deleteUser(id: string): Promise<void>;
@@ -65,8 +76,8 @@ export interface IStorage {
   getCustomers(search?: string, limit?: number, offset?: number, activeOnly?: boolean): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }>;
   getCustomer(id: string): Promise<Customer | undefined>;
   getCustomerByMobile(mobile: string): Promise<Customer | undefined>;
-  createCustomer(customer: any): Promise<Customer>;
-  updateCustomer(id: string, customer: Partial<any>): Promise<Customer>;
+  createCustomer(customer: InsertCustomer & { password?: string | null }): Promise<Customer>;
+  updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer>;
   deleteCustomer(id: string): Promise<void>;
   resetCustomerPassword(id: string, newPassword: string): Promise<Customer>;
   toggleCustomerStatus(id: string, isActive: boolean): Promise<Customer>;
@@ -83,26 +94,35 @@ export interface IStorage {
   findOrCreatePropertyForAgreement(customerId: string, propertyDetails: any): Promise<Property>;
   getAllPropertiesWithCustomers(): Promise<any[]>;
   
+  // Society operations
+  getSocieties(search?: string, limit?: number): Promise<Society[]>;
+  getSociety(id: string): Promise<Society | undefined>;
+  createSociety(society: InsertSociety): Promise<Society>;
+  updateSociety(id: string, society: Partial<InsertSociety>): Promise<Society>;
+  deleteSociety(id: string): Promise<void>;
   
   // Address operations for intelligent autocomplete
   searchAddresses(search: string, limit?: number): Promise<Address[]>;
   saveAddress(address: InsertAddress): Promise<Address>;
   incrementAddressUsage(addressId: string): Promise<void>;
   
-  // Society operations for address autocomplete
-  getSocieties(search?: string, limit?: number): Promise<any[]>;
-  createSociety(societyData: any): Promise<any>;
-  
-  // PDF Template operations (full CRUD)
+  // PDF Template operations
   getPdfTemplates(documentType?: string, language?: string): Promise<PdfTemplate[]>;
   getPdfTemplate(id: string): Promise<PdfTemplate | undefined>;
   createPdfTemplate(template: InsertPdfTemplate): Promise<PdfTemplate>;
-  updatePdfTemplate(id: string, template: Partial<InsertPdfTemplate>): Promise<PdfTemplate | undefined>;
-  deletePdfTemplate(id: string): Promise<boolean>;
-  
+  updatePdfTemplate(id: string, template: Partial<InsertPdfTemplate>): Promise<PdfTemplate>;
+  deletePdfTemplate(id: string): Promise<void>;
   
 
   
+  // Admin user operations (DEPRECATED - use unified user operations)
+  getAdminUsers(): Promise<AdminUser[]>;
+  getAdminUser(id: string): Promise<AdminUser | undefined>;
+  getAdminUserByPhone(phone: string): Promise<AdminUser | undefined>;
+  getAdminUserByUsername(username: string): Promise<AdminUser | undefined>;
+  createAdminUser(userData: InsertAdminUser): Promise<AdminUser>;
+  updateAdminUser(id: string, user: Partial<InsertAdminUser>): Promise<AdminUser>;
+  deleteAdminUser(id: string): Promise<void>;
   
   // Unified user role operations
   assignUserRole(userId: string, roleId: string): Promise<void>;
@@ -139,6 +159,9 @@ export interface IStorage {
     totalCustomers: number;
   }>;
   
+  // Agreement templates
+  getAgreementTemplates(language?: string): Promise<AgreementTemplate[]>;
+  createAgreementTemplate(template: InsertAgreementTemplate): Promise<AgreementTemplate>;
   
   // RBAC operations
   // Permission operations
@@ -201,49 +224,6 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  
-  // Auto-update expired agreements on startup and periodically
-  constructor() {
-    this.updateExpiredAgreements();
-    // Run every 24 hours to update expired agreements
-    setInterval(() => {
-      this.updateExpiredAgreements();
-    }, 24 * 60 * 60 * 1000);
-  }
-
-  // Update agreements that have passed their expiry date to 'expired' status
-  async updateExpiredAgreements(): Promise<number> {
-    try {
-      const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-      
-      const result = await db
-        .update(agreements)
-        .set({ 
-          status: 'expired',
-          notaryStatus: 'expired', // Also update notary status to expired
-          updatedAt: new Date()
-        })
-        .where(
-          and(
-            // Agreement end date is before today
-            sql`${agreements.endDate} < ${today}`,
-            // Current status is active (don't update already expired or draft agreements)
-            eq(agreements.status, 'active')
-          )
-        )
-        .returning({ id: agreements.id });
-
-      const updatedCount = result.length;
-      if (updatedCount > 0) {
-        console.log(`✅ Auto-updated ${updatedCount} agreements and notary statuses to 'expired'`);
-      }
-      
-      return updatedCount;
-    } catch (error) {
-      console.error('❌ Error updating expired agreements:', error);
-      return 0;
-    }
-  }
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -299,6 +279,11 @@ export class DatabaseStorage implements IStorage {
     } as User;
   }
 
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.mobile, phone));
+    return user;
+  }
+
   async createUser(userData: Omit<UpsertUser, 'id'>): Promise<User> {
     const [user] = await db.insert(users).values(userData).returning();
     return user;
@@ -329,7 +314,6 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ 
         password: hashedPassword,
-        encryptedPassword: encryptedPassword,
         updatedAt: new Date() 
       })
       .where(eq(users.id, id))
@@ -367,7 +351,7 @@ export class DatabaseStorage implements IStorage {
           ilike(users.name, `%${filters.search}%`),
           ilike(users.email, `%${filters.search}%`),
           ilike(users.username, `%${filters.search}%`),
-          ilike(users.mobile, `%${filters.search}%`)
+          ilike(users.phone, `%${filters.search}%`)
         )
       );
     }
@@ -393,32 +377,13 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(whereConditions);
 
-    // Get roles and manual permissions for each user
+    // Get roles for each user
     const usersWithRoles = await Promise.all(
       usersResult.map(async (user) => {
         const userRoles = await this.getUserRoles(user.id);
-        
-        // Get manual permission additions
-        const manualPermissionOverrides = await db
-          .select({ code: permissions.code })
-          .from(userPermissions)
-          .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
-          .where(eq(userPermissions.userId, user.id));
-        
-        // Get manual permission removals
-        const manualPermissionRemovals = await db
-          .select({ code: permissions.code })
-          .from(userPermissionRemovals)
-          .innerJoin(permissions, eq(userPermissionRemovals.permissionId, permissions.id))
-          .where(eq(userPermissionRemovals.userId, user.id));
-        
         return {
           ...user,
           roles: userRoles,
-          manualPermissions: {
-            added: manualPermissionOverrides.map(p => p.code),
-            removed: manualPermissionRemovals.map(p => p.code)
-          }
         };
       })
     );
@@ -437,21 +402,10 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getUsersByRoleId(roleId: string): Promise<User[]> {
-    const usersResult = await db
-      .select()
-      .from(users)
-      .innerJoin(userRoles, eq(users.id, userRoles.userId))
-      .where(eq(userRoles.roleId, roleId));
-    
-    return usersResult.map(result => result.users);
-  }
-
   async getUsers(filters?: { 
     search?: string; 
     status?: string; 
     defaultRole?: string; 
-    hasEncryptedPassword?: boolean;
     limit?: number; 
     offset?: number; 
   }): Promise<{ users: User[]; total: number }> {
@@ -475,14 +429,6 @@ export class DatabaseStorage implements IStorage {
     
     if (filters?.defaultRole) {
       conditions.push(eq(users.defaultRole, filters.defaultRole));
-    }
-    
-    if (filters?.hasEncryptedPassword !== undefined) {
-      if (filters.hasEncryptedPassword) {
-        conditions.push(isNotNull(users.encryptedPassword));
-      } else {
-        conditions.push(isNull(users.encryptedPassword));
-      }
     }
     
     const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
@@ -524,32 +470,11 @@ export class DatabaseStorage implements IStorage {
 
   // Customer operations - use unified users table instead
   async getCustomers(search?: string, limit = 50, offset = 0, activeOnly = false): Promise<{ customers: (Customer & { agreementCount: number })[]; total: number }> {
-    // Build where conditions
-    const conditions = [eq(users.defaultRole, 'Customer')];
-    
-    // Add search functionality
-    if (search && search.trim()) {
-      const searchTerm = `%${search.trim().toLowerCase()}%`;
-      conditions.push(
-        or(
-          ilike(users.name, searchTerm),
-          ilike(users.mobile, searchTerm),
-          ilike(users.email, searchTerm)
-        )
-      );
-    }
-    
-    // Add active only filter
-    if (activeOnly) {
-      conditions.push(eq(users.status, 'active'));
-    }
-    
-    const whereConditions = and(...conditions);
-
+    // Simple query without complex conditions for now
     const usersResult = await db
       .select()
       .from(users)
-      .where(whereConditions)
+      .where(eq(users.defaultRole, 'Customer'))
       .orderBy(desc(users.createdAt))
       .limit(limit)
       .offset(offset);
@@ -557,7 +482,7 @@ export class DatabaseStorage implements IStorage {
     const totalResult = await db
       .select({ count: count() })
       .from(users)
-      .where(whereConditions);
+      .where(eq(users.defaultRole, 'Customer'));
 
     // For each user, get their agreement count  
     const customersWithCounts = await Promise.all(
@@ -574,7 +499,6 @@ export class DatabaseStorage implements IStorage {
           mobile: user.mobile,
           email: user.email,
           password: user.password,
-          encryptedPassword: user.encryptedPassword,
           isActive: user.status === 'active',
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
@@ -596,11 +520,10 @@ export class DatabaseStorage implements IStorage {
     // Convert unified user to customer format
     return {
       id: user.id,
-      name: user.name,
+      name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
       mobile: user.mobile!,
       email: user.email,
       password: user.password,
-      encryptedPassword: user.encryptedPassword,
       isActive: user.status === 'active',
       createdAt: user.createdAt!,
       updatedAt: user.updatedAt!,
@@ -614,11 +537,10 @@ export class DatabaseStorage implements IStorage {
     // Convert unified user to customer format
     return {
       id: user.id,
-      name: user.name,
+      name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
       mobile: user.mobile!,
       email: user.email,
       password: user.password,
-      encryptedPassword: user.encryptedPassword,
       isActive: user.status === 'active',
       createdAt: user.createdAt!,
       updatedAt: user.updatedAt!,
@@ -650,7 +572,6 @@ export class DatabaseStorage implements IStorage {
   async createCustomer(customerData: InsertCustomer & { password?: string }): Promise<Customer> {
     const plainPassword = customerData.password || "default123";
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
-    const encryptedPassword = encryptPasswordForStorage(plainPassword);
     
     // Create customer in unified users table
     const [newUser] = await db
@@ -659,8 +580,7 @@ export class DatabaseStorage implements IStorage {
         name: customerData.name,
         mobile: customerData.mobile,
         email: customerData.email,
-        password: hashedPassword, // Store hashed password for authentication
-        encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
+        password: hashedPassword,
         defaultRole: 'Customer',
         status: 'active',
         isActive: true,
@@ -750,31 +670,16 @@ export class DatabaseStorage implements IStorage {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     const encryptedPassword = encryptPasswordForStorage(newPassword);
     
-    const [user] = await db
-      .update(users)
+    const [customer] = await db
+      .update(customers)
       .set({ 
-        password: hashedPassword, // Store hashed password for authentication
+        password: hashedPassword, // Store bcrypt hashed password for authentication
         encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
         updatedAt: new Date() 
       })
-      .where(eq(users.id, id))
+      .where(eq(customers.id, id))
       .returning();
-    
-    if (!user) {
-      throw new Error("Customer not found");
-    }
-    
-    // Convert unified user to customer format
-    return {
-      id: user.id,
-      name: user.name,
-      mobile: user.mobile!,
-      email: user.email,
-      password: user.password,
-      isActive: user.status === 'active',
-      createdAt: user.createdAt!,
-      updatedAt: user.updatedAt!,
-    } as Customer;
+    return customer;
   }
 
   async toggleCustomerStatus(id: string, isActive: boolean): Promise<Customer> {
@@ -821,105 +726,45 @@ export class DatabaseStorage implements IStorage {
     return customer;
   }
 
-  // Society operations - queries the addresses table for comprehensive address autofill
-  async getSocieties(search?: string, limit = 100): Promise<any[]> {
+  // Society operations
+  async getSocieties(search?: string, limit = 100): Promise<Society[]> {
     const whereConditions = search
       ? or(
-          ilike(addresses.society, `%${search}%`),
-          ilike(addresses.area, `%${search}%`),
-          ilike(addresses.city, `%${search}%`)
+          ilike(societies.societyName, `%${search}%`),
+          ilike(societies.area, `%${search}%`),
+          ilike(societies.city, `%${search}%`)
         )
       : undefined;
 
-    const results = await db
-      .select({
-        id: addresses.id,
-        societyName: addresses.society,
-        area: addresses.area,
-        city: addresses.city,
-        state: addresses.state,
-        district: addresses.district,
-        pincode: addresses.pincode
-      })
-      .from(addresses)
+    return db
+      .select()
+      .from(societies)
       .where(whereConditions)
-      .orderBy(addresses.society)
+      .orderBy(societies.societyName)
       .limit(limit);
-
-    return results;
   }
 
-  async getSociety(id: string): Promise<any | undefined> {
-    const [address] = await db.select().from(addresses).where(eq(addresses.id, id));
-    if (!address) return undefined;
-    
-    return {
-      id: address.id,
-      societyName: address.society,
-      area: address.area,
-      city: address.city,
-      state: address.state,
-      district: address.district,
-      pincode: address.pincode
-    };
+  async getSociety(id: string): Promise<Society | undefined> {
+    const [society] = await db.select().from(societies).where(eq(societies.id, id));
+    return society;
   }
 
-  // Note: Society create/update/delete operations have been migrated to address management
-  // These methods are kept for API compatibility but redirect to address operations
-  async createSociety(societyData: any): Promise<any> {
-    const addressData = {
-      flatNumber: '',
-      building: '',
-      society: societyData.societyName || societyData.society,
-      area: societyData.area,
-      city: societyData.city,
-      state: societyData.state,
-      district: societyData.district,
-      pincode: societyData.pincode,
-      landmark: ''
-    };
-    
-    const [address] = await db.insert(addresses).values(addressData).returning();
-    return {
-      id: address.id,
-      societyName: address.society,
-      area: address.area,
-      city: address.city,
-      state: address.state,
-      district: address.district,
-      pincode: address.pincode
-    };
+  async createSociety(societyData: InsertSociety): Promise<Society> {
+    const [society] = await db.insert(societies).values(societyData).returning();
+    return society;
   }
 
-  async updateSociety(id: string, societyData: any): Promise<any> {
-    const updateData = {
-      society: societyData.societyName || societyData.society,
-      area: societyData.area,
-      city: societyData.city,
-      state: societyData.state,
-      district: societyData.district,
-      pincode: societyData.pincode
-    };
-    
-    const [address] = await db
-      .update(addresses)
-      .set(updateData)
-      .where(eq(addresses.id, id))
+  async updateSociety(id: string, societyData: Partial<InsertSociety>): Promise<Society> {
+    const [society] = await db
+      .update(societies)
+      .set(societyData)
+      .where(eq(societies.id, id))
       .returning();
-      
-    return {
-      id: address.id,
-      societyName: address.society,
-      area: address.area,
-      city: address.city,
-      state: address.state,
-      district: address.district,
-      pincode: address.pincode
-    };
+    return society;
   }
 
   async deleteSociety(id: string): Promise<void> {
-    await db.delete(addresses).where(eq(addresses.id, id));
+    await db.delete(societies).where(eq(societies.id, id));
   }
 
   // Property operations
@@ -1138,7 +983,7 @@ export class DatabaseStorage implements IStorage {
         .from(agreements)
         .leftJoin(users, eq(agreements.customerId, users.id))
         .where(whereConditions)
-        .orderBy(desc(agreements.createdAt))
+        .orderBy(asc(agreements.endDate))
         .limit(limit)
         .offset(offset),
       db
@@ -1387,7 +1232,6 @@ export class DatabaseStorage implements IStorage {
       .update(agreements)
       .set({ 
         notarizedDocument: notarizedDocData,
-        notaryStatus: 'complete', // Update notary status to complete when document is uploaded
         updatedAt: new Date()
       })
       .where(eq(agreements.id, id))
@@ -1491,62 +1335,104 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  // Full PDF Template CRUD operations
+  async getAgreementTemplates(language?: string): Promise<AgreementTemplate[]> {
+    const whereConditions = and(
+      eq(agreementTemplates.isActive, true),
+      language ? eq(agreementTemplates.language, language) : undefined
+    );
+
+    return db
+      .select()
+      .from(agreementTemplates)
+      .where(whereConditions)
+      .orderBy(agreementTemplates.name);
+  }
+
+  // Admin user operations
+  async getAdminUsers(): Promise<AdminUser[]> {
+    return db.select().from(adminUsers).orderBy(adminUsers.createdAt);
+  }
+
+  async getAdminUser(id: string): Promise<AdminUser | undefined> {
+    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.id, id));
+    return user;
+  }
+
+  async getAdminUserByPhone(phone: string): Promise<AdminUser | undefined> {
+    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.phone, phone));
+    return user;
+  }
+
+  async getAdminUserByUsername(username: string): Promise<AdminUser | undefined> {
+    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.username, username));
+    return user;
+  }
+
+  async createAdminUser(userData: InsertAdminUser): Promise<AdminUser> {
+    const [user] = await db.insert(adminUsers).values(userData).returning();
+    return user;
+  }
+
+  async updateAdminUser(id: string, userData: Partial<InsertAdminUser>): Promise<AdminUser> {
+    const [user] = await db
+      .update(adminUsers)
+      .set({ ...userData, updatedAt: new Date() })
+      .where(eq(adminUsers.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteAdminUser(id: string): Promise<void> {
+    await db.delete(adminUsers).where(eq(adminUsers.id, id));
+  }
+
+  // PDF Template operations
   async getPdfTemplates(documentType?: string, language?: string): Promise<PdfTemplate[]> {
-    let query = db.select().from(pdfTemplates);
-    
-    const conditions = [];
-    if (documentType) {
-      conditions.push(eq(pdfTemplates.documentType, documentType));
-    }
-    if (language) {
-      conditions.push(eq(pdfTemplates.language, language));
-    }
-    
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-    
-    const templates = await query.orderBy(desc(pdfTemplates.isActive), desc(pdfTemplates.createdAt));
-    console.log(`[PDF Templates] Found ${templates.length} templates for documentType: ${documentType}, language: ${language}`);
-    return templates;
+    const whereConditions = and(
+      eq(pdfTemplates.isActive, true),
+      documentType ? eq(pdfTemplates.documentType, documentType) : undefined,
+      language ? eq(pdfTemplates.language, language) : undefined
+    );
+
+    return db
+      .select()
+      .from(pdfTemplates)
+      .where(whereConditions)
+      .orderBy(pdfTemplates.createdAt);
   }
 
   async getPdfTemplate(id: string): Promise<PdfTemplate | undefined> {
     const [template] = await db.select().from(pdfTemplates).where(eq(pdfTemplates.id, id));
-    console.log(`[PDF Templates] Retrieved template ${id}:`, template ? 'found' : 'not found');
-    return template || undefined;
+    return template;
   }
 
-  async createPdfTemplate(template: InsertPdfTemplate): Promise<PdfTemplate> {
-    const [newTemplate] = await db.insert(pdfTemplates).values(template).returning();
-    console.log(`[PDF Templates] Created template ${newTemplate.id}: ${newTemplate.name}`);
-    return newTemplate;
+  async createPdfTemplate(templateData: InsertPdfTemplate): Promise<PdfTemplate> {
+    const [template] = await db.insert(pdfTemplates).values(templateData).returning();
+    return template;
   }
 
-  async updatePdfTemplate(id: string, template: Partial<InsertPdfTemplate>): Promise<PdfTemplate | undefined> {
-    const [updatedTemplate] = await db
+  async updatePdfTemplate(id: string, templateData: Partial<InsertPdfTemplate>): Promise<PdfTemplate> {
+    const [template] = await db
       .update(pdfTemplates)
-      .set({ ...template, updatedAt: new Date() })
+      .set({ ...templateData, updatedAt: new Date() })
       .where(eq(pdfTemplates.id, id))
       .returning();
-    
-    console.log(`[PDF Templates] Updated template ${id}:`, updatedTemplate ? 'success' : 'not found');
-    return updatedTemplate || undefined;
+    return template;
   }
 
-  async deletePdfTemplate(id: string): Promise<boolean> {
-    const result = await db.delete(pdfTemplates).where(eq(pdfTemplates.id, id));
-    const deleted = result.rowCount && result.rowCount > 0;
-    console.log(`[PDF Templates] Deleted template ${id}:`, deleted ? 'success' : 'not found');
-    return deleted || false;
+  async deletePdfTemplate(id: string): Promise<void> {
+    await db.update(pdfTemplates).set({ isActive: false }).where(eq(pdfTemplates.id, id));
   }
 
 
 
-
-
-
+  async createAgreementTemplate(templateData: InsertAgreementTemplate): Promise<AgreementTemplate> {
+    const [template] = await db
+      .insert(agreementTemplates)
+      .values(templateData)
+      .returning();
+    return template;
+  }
 
   // Address operations for intelligent autocomplete
   async searchAddresses(search: string, limit: number = 10): Promise<Address[]> {
@@ -1746,6 +1632,7 @@ export class DatabaseStorage implements IStorage {
   async deleteRole(id: string): Promise<void> {
     await db.delete(rolePermissionsTable).where(eq(rolePermissionsTable.roleId, id));
     await db.delete(userRoles).where(eq(userRoles.roleId, id));
+    await db.delete(customerRoles).where(eq(customerRoles.roleId, id));
     await db.delete(roles).where(eq(roles.id, id));
   }
 
@@ -1843,12 +1730,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Customer-Role operations
-  async assignRoleToCustomer(customerId: string, roleId: string): Promise<UserRole> {
+  async assignRoleToCustomer(customerId: string, roleId: string): Promise<CustomerRole> {
     // Check if role is already assigned to avoid duplicate key errors
     const existing = await db
       .select()
-      .from(userRoles)
-      .where(and(eq(userRoles.userId, customerId), eq(userRoles.roleId, roleId)))
+      .from(customerRoles)
+      .where(and(eq(customerRoles.customerId, customerId), eq(customerRoles.roleId, roleId)))
       .limit(1);
     
     if (existing.length > 0) {
@@ -1856,16 +1743,16 @@ export class DatabaseStorage implements IStorage {
     }
     
     const [customerRole] = await db
-      .insert(userRoles)
-      .values({ userId: customerId, roleId })
+      .insert(customerRoles)
+      .values({ customerId, roleId })
       .returning();
     return customerRole;
   }
 
   async removeRoleFromCustomer(customerId: string, roleId: string): Promise<void> {
     await db
-      .delete(userRoles)
-      .where(and(eq(userRoles.userId, customerId), eq(userRoles.roleId, roleId)));
+      .delete(customerRoles)
+      .where(and(eq(customerRoles.customerId, customerId), eq(customerRoles.roleId, roleId)));
   }
 
   async getCustomerRoles(customerId: string): Promise<RoleWithPermissions[]> {
@@ -1874,11 +1761,11 @@ export class DatabaseStorage implements IStorage {
         role: roles,
         permission: permissions,
       })
-      .from(userRoles)
-      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .from(customerRoles)
+      .innerJoin(roles, eq(customerRoles.roleId, roles.id))
       .leftJoin(rolePermissionsTable, eq(roles.id, rolePermissionsTable.roleId))
       .leftJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
-      .where(eq(userRoles.userId, customerId));
+      .where(eq(customerRoles.customerId, customerId));
 
     const rolesMap = new Map<string, RoleWithPermissions>();
     
@@ -1898,7 +1785,7 @@ export class DatabaseStorage implements IStorage {
     return Array.from(rolesMap.values());
   }
 
-  async getCustomerWithRoles(customerId: string): Promise<UserWithRoles | undefined> {
+  async getCustomerWithRoles(customerId: string): Promise<CustomerWithRoles | undefined> {
     const customer = await this.getCustomer(customerId);
     if (!customer) return undefined;
 
@@ -1925,10 +1812,10 @@ export class DatabaseStorage implements IStorage {
   async customerHasPermission(customerId: string, permissionCode: string): Promise<boolean> {
     const result = await db
       .select({ count: count() })
-      .from(userRoles)
-      .innerJoin(rolePermissionsTable, eq(userRoles.roleId, rolePermissionsTable.roleId))
+      .from(customerRoles)
+      .innerJoin(rolePermissionsTable, eq(customerRoles.roleId, rolePermissionsTable.roleId))
       .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
-      .where(and(eq(userRoles.userId, customerId), eq(permissions.code, permissionCode)));
+      .where(and(eq(customerRoles.customerId, customerId), eq(permissions.code, permissionCode)));
 
     return result[0].count > 0;
   }
@@ -1942,27 +1829,17 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(userRoles.userId, userId));
 
-    // Get manual permission additions
+    // Get manual permission overrides
     const manualPermissions = await db
       .select({ code: permissions.code })
       .from(userPermissions)
       .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
       .where(eq(userPermissions.userId, userId));
 
-    // Get manual permission removals
-    const removedPermissions = await db
-      .select({ code: permissions.code })
-      .from(userPermissionRemovals)
-      .innerJoin(permissions, eq(userPermissionRemovals.permissionId, permissions.id))
-      .where(eq(userPermissionRemovals.userId, userId));
-
-    // Get removed permission codes
-    const removedPermissionCodes = new Set(removedPermissions.map(p => p.code));
-
-    // Combine permissions and filter out removed ones
+    // Combine and deduplicate permissions
     const allPermissions = new Set([
-      ...rolePermissionResults.filter(p => !removedPermissionCodes.has(p.code)).map(p => p.code),
-      ...manualPermissions.filter(p => !removedPermissionCodes.has(p.code)).map(p => p.code)
+      ...rolePermissionResults.map(p => p.code),
+      ...manualPermissions.map(p => p.code)
     ]);
 
     return Array.from(allPermissions);
@@ -1981,38 +1858,28 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(userRoles.userId, userId));
 
-    // Get manual permission additions
+    // Get manual permission overrides
     const manualPermissions = await db
       .select({ code: permissions.code })
       .from(userPermissions)
       .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
       .where(eq(userPermissions.userId, userId));
 
-    // Get manual permission removals
-    const removedPermissions = await db
-      .select({ code: permissions.code })
-      .from(userPermissionRemovals)
-      .innerJoin(permissions, eq(userPermissionRemovals.permissionId, permissions.id))
-      .where(eq(userPermissionRemovals.userId, userId));
-
     const result: { code: string; source: 'role' | 'override'; roleName?: string }[] = [];
-    const removedPermissionCodes = new Set(removedPermissions.map(p => p.code));
 
-    // Add role permissions (except those explicitly removed)
+    // Add role permissions
     rolePermissions.forEach(p => {
-      if (!removedPermissionCodes.has(p.code)) {
-        result.push({
-          code: p.code,
-          source: 'role',
-          roleName: p.roleName
-        });
-      }
+      result.push({
+        code: p.code,
+        source: 'role',
+        roleName: p.roleName
+      });
     });
 
-    // Add manual overrides (only if not already from role and not removed)
+    // Add manual overrides (only if not already from role)
     const rolePermissionCodes = new Set(rolePermissions.map(p => p.code));
     manualPermissions.forEach(p => {
-      if (!rolePermissionCodes.has(p.code) && !removedPermissionCodes.has(p.code)) {
+      if (!rolePermissionCodes.has(p.code)) {
         result.push({
           code: p.code,
           source: 'override'
@@ -2051,41 +1918,6 @@ export class DatabaseStorage implements IStorage {
       ));
   }
 
-  async addUserPermissionRemoval(userId: string, permissionId: string, createdBy: string): Promise<void> {
-    // Check if removal already exists
-    const existing = await db
-      .select()
-      .from(userPermissionRemovals)
-      .where(and(
-        eq(userPermissionRemovals.userId, userId),
-        eq(userPermissionRemovals.permissionId, permissionId)
-      ));
-
-    if (existing.length === 0) {
-      await db.insert(userPermissionRemovals).values({
-        userId,
-        permissionId,
-        createdBy
-      });
-    }
-  }
-
-  async removeUserPermissionRemoval(userId: string, permissionId: string): Promise<void> {
-    await db
-      .delete(userPermissionRemovals)
-      .where(and(
-        eq(userPermissionRemovals.userId, userId),
-        eq(userPermissionRemovals.permissionId, permissionId)
-      ));
-  }
-
-  async getUserPermissionRemovals(userId: string): Promise<UserPermissionRemoval[]> {
-    return await db
-      .select()
-      .from(userPermissionRemovals)
-      .where(eq(userPermissionRemovals.userId, userId));
-  }
-
   async getUserPermissionOverrides(userId: string): Promise<UserPermission[]> {
     return await db
       .select()
@@ -2096,10 +1928,10 @@ export class DatabaseStorage implements IStorage {
   async getCustomerPermissions(customerId: string): Promise<string[]> {
     const result = await db
       .select({ code: permissions.code })
-      .from(userRoles)
-      .innerJoin(rolePermissionsTable, eq(userRoles.roleId, rolePermissionsTable.roleId))
+      .from(customerRoles)
+      .innerJoin(rolePermissionsTable, eq(customerRoles.roleId, rolePermissionsTable.roleId))
       .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
-      .where(eq(userRoles.userId, customerId));
+      .where(eq(customerRoles.customerId, customerId));
 
     return result.map(row => row.code);
   }

@@ -196,12 +196,12 @@ export async function setupAuth(app: Express) {
         });
       }
       
-      if (!user.isActive || user.status === 'inactive') {
+      if (!user.isActive) {
         console.log('❌ Login failed: user inactive');
         return res.status(401).json({ 
-          message: "Contact administrator for re-activating your account",
+          message: "Your account has been deactivated",
           error: "account_inactive", 
-          action: "Your account is currently inactive. Please contact an administrator to reactivate your account."
+          action: "Contact an administrator to reactivate your account"
         });
       }
       
@@ -304,12 +304,12 @@ export async function setupAuth(app: Express) {
       
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      const newUser = await storage.createUser({
+      const newUser = await storage.createAdminUser({
         username,
-        mobile: phone,
+        phone,
         password: hashedPassword,
         name,
-        defaultRole: role,
+        role,
       });
       
       const { password: _, ...userWithoutPassword } = newUser;
@@ -356,9 +356,8 @@ export async function setupAuth(app: Express) {
         });
       }
       
-      const usersData = await storage.getUsers({ defaultRole: "super_admin" });
-      const users = usersData.users;
-      const usersWithoutPasswords = users.map(({ password, ...user }: any) => user);
+      const users = await storage.getAdminUsers();
+      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
       res.json(usersWithoutPasswords);
     } catch (error) {
       console.error("Get admin users error:", error);

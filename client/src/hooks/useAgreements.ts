@@ -39,15 +39,13 @@ export function useAgreements(options: UseAgreementsOptions = {}) {
   return useQuery<AgreementsResponse>({
     queryKey: ["/api/agreements", customerId, status, search, dateFilter || null, startDate || null, endDate || null, limit, offset],
     queryFn: async () => {
-      // Add cache buster to force fresh data
-      params.append('_t', Date.now().toString());
       const response = await fetch(`/api/agreements?${params.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch agreements');
       }
       return response.json();
     },
-    staleTime: 1 * 60 * 1000, // Reduced to 1 minute for faster updates
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 

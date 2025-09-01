@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileSignature, User, LogOut, Phone, Mail } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { formatDateToDDMMYYYY } from "@/lib/dateUtils";
 
 export default function CustomerDashboard() {
   const { user } = useAuth();
@@ -106,7 +105,7 @@ export default function CustomerDashboard() {
                 </span>
               </div>
               <p className="text-sm text-gray-600 mt-2">
-                Account created on {user?.createdAt ? formatDateToDDMMYYYY(user.createdAt) : 'Unknown'}
+                Account created on {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
               </p>
             </CardContent>
           </Card>

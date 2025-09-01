@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,6 @@ interface ImportAgreementData {
     state: string;
     pincode: string;
   };
-  policeVerificationStatus: "done" | "not_done" | "pending";
 }
 
 export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreementWizardProps) {
@@ -118,8 +117,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
       city: "",
       state: "",
       pincode: ""
-    },
-    policeVerificationStatus: "pending"
+    }
   });
 
   // Fetch customers for autocomplete
@@ -128,17 +126,6 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   });
 
   const customers = (customersData as any)?.customers || [];
-
-  // Clear police verification document when status changes to non-"yes"
-  useEffect(() => {
-    if (formData.policeVerificationStatus !== "done" && documents.policeVerificationDocument) {
-      setDocuments(prev => ({ 
-        ...prev, 
-        policeVerificationDocument: "", 
-        policeVerificationDocument_metadata: undefined 
-      }));
-    }
-  }, [formData.policeVerificationStatus, documents.policeVerificationDocument]);
 
   const handleNext = () => {
     if (validateStepWithToast(currentStep)) {
@@ -222,21 +209,10 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   };
 
   const handleSubmit = async () => {
-    // Check required documents
-    if (!documents.notarizedDocument) {
+    if (!documents.notarizedDocument || !documents.policeVerificationDocument) {
       toast({
-        title: "Missing document",
-        description: "Please upload the notarized agreement document",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check police verification document only if status is "yes"
-    if (formData.policeVerificationStatus === "done" && !documents.policeVerificationDocument) {
-      toast({
-        title: "Missing police verification document",
-        description: "Please upload the police verification document as you marked the status as 'Done'",
+        title: "Required documents missing",
+        description: "Please upload both notarized agreement and police verification certificate",
         variant: "destructive",
       });
       return;
@@ -254,7 +230,6 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         propertyAddress: formData.propertyAddress,
         notarizedDocumentUrl: documents.notarizedDocument,
         policeVerificationDocumentUrl: documents.policeVerificationDocument,
-        policeVerificationStatus: formData.policeVerificationStatus,
         status: 'active', // Imported agreements are active
         isImported: true
       };
@@ -276,10 +251,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         description: "The existing agreement has been added to your database",
       });
 
-      // Force complete cache refresh
-      await queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/agreements"] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
       onClose();
     } catch (error) {
       console.error('Error importing agreement:', error);
@@ -313,8 +285,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         city: "",
         state: "",
         pincode: ""
-      },
-      policeVerificationStatus: "pending"
+      }
     });
     onClose();
   };
@@ -435,17 +406,13 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
       console.log("Customer lookup error:", error);
       if (error instanceof Error && error.message.includes('404')) {
         console.log(`No existing customer found for ${searchType}: ${searchTerm}`);
-        // Silent fail for 404 - this is normal when typing new names
       } else {
         console.error("Customer lookup error:", error);
-        // Only show error toast for actual network/server errors, not missing customers
-        if (!(error instanceof Error && error.message.includes('404'))) {
-          toast({
-            title: "Lookup Error", 
-            description: "Unable to search existing customers",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Lookup Failed",
+          description: "Could not check for existing customer details",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -556,46 +523,34 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="customerId">
-                    {canViewAllCustomers ? "Select Customer" : "Customer"} <span className="text-red-500">*</span>
-                  </Label>
-                  {canViewAllCustomers ? (
-                    <Select
-                      value={formData.customer.id || ""}
-                      onValueChange={(value) => {
-                        const selectedCustomer = customers.find((c: any) => c.id === value);
-                        setFormData(prev => ({
-                          ...prev,
-                          customer: {
-                            id: value,
-                            name: selectedCustomer ? selectedCustomer.name : "",
-                            mobile: selectedCustomer ? selectedCustomer.mobile : ""
-                          }
-                        }));
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a customer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customers.filter((customer: any) => customer.id && customer.id.trim() !== '').map((customer: any) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name} - {customer.mobile}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
-                      <div className="text-sm font-medium text-gray-900">{formData.customer.name}</div>
-                      <div className="text-sm text-gray-500">{formData.customer.mobile}</div>
-                    </div>
-                  )}
+                  <Label htmlFor="customerId">Select Customer <span className="text-red-500">*</span></Label>
+                  <Select
+                    value={formData.customer.id || ""}
+                    onValueChange={(value) => {
+                      const selectedCustomer = customers.find((c: any) => c.id === value);
+                      setFormData(prev => ({
+                        ...prev,
+                        customer: {
+                          id: value,
+                          name: selectedCustomer ? selectedCustomer.name : "",
+                          mobile: selectedCustomer ? selectedCustomer.mobile : ""
+                        }
+                      }));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.filter((customer: any) => customer.id && customer.id.trim() !== '').map((customer: any) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name} - {customer.mobile}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-gray-500 mt-1">
-                    {canViewAllCustomers 
-                      ? "Select an existing customer to import agreement for"
-                      : "Importing agreement for your account"
-                    }
+                    Select an existing customer to import agreement for
                   </p>
                 </div>
 
@@ -951,35 +906,6 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                   </div>
                 </div>
               </div>
-
-              {/* Police Verification Status Section */}
-              <div className="space-y-4 pt-6 border-t border-gray-200">
-                <h4 className="text-md font-semibold text-gray-800">Police Verification Status</h4>
-                <div className="space-y-2">
-                  <Label htmlFor="police-verification-status">Select Police Verification Status *</Label>
-                  <Select
-                    value={formData.policeVerificationStatus}
-                    onValueChange={(value: "done" | "not_done" | "pending") => setFormData(prev => ({
-                      ...prev,
-                      policeVerificationStatus: value
-                    }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="done">Done</SelectItem>
-                      <SelectItem value="not_done">Not Done</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-gray-500">
-                    {formData.policeVerificationStatus === "done" && "Document upload is compulsory during import."}
-                    {formData.policeVerificationStatus === "not_done" && "Status will be set to 'Not Done'. Document can be uploaded later if needed."}
-                    {formData.policeVerificationStatus === "pending" && "Status will be set to 'Pending'. Document can be uploaded later."}
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         );
@@ -1024,67 +950,42 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                   )}
                 </div>
 
-                {/* Conditional Police Verification Upload */}
-                {formData.policeVerificationStatus === "done" ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Shield className="h-5 w-5 text-green-600" />
-                      <Label className="text-sm font-medium text-gray-700">Police Verification Certificate *</Label>
-                    </div>
-                    {documents.policeVerificationDocument ? (
-                      <FilePreview
-                        fileUrl={documents.policeVerificationDocument as string}
-                        fileName={(documents.policeVerificationDocument_metadata as any)?.filename || "Police Verification Certificate"}
-                        fileType={(documents.policeVerificationDocument_metadata as any)?.fileType}
-                        onRemove={() => setDocuments(prev => ({ ...prev, policeVerificationDocument: "", policeVerificationDocument_metadata: undefined }))}
-                        className="w-full"
-                      />
-                    ) : (
-                      <LocalFileUploader
-                        maxSize={5242880} // 5MB
-                        onUploadComplete={(result) => handleDocumentUpload("policeVerificationDocument", result)}
-                        className="w-full"
-                      >
-                        <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
-                          <div className="flex flex-col items-center space-y-2">
-                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                              <Shield className="w-6 h-6 text-gray-500" />
-                            </div>
-                            <p className="text-sm text-gray-600">Click to upload police verification</p>
-                            <p className="text-xs text-gray-500">PDF only (Max 5MB)</p>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Shield className="h-5 w-5 text-green-600" />
+                    <Label className="text-sm font-medium text-gray-700">Police Verification Certificate *</Label>
+                  </div>
+                  {documents.policeVerificationDocument ? (
+                    <FilePreview
+                      fileUrl={documents.policeVerificationDocument as string}
+                      fileName={(documents.policeVerificationDocument_metadata as any)?.filename || "Police Verification Certificate"}
+                      fileType={(documents.policeVerificationDocument_metadata as any)?.fileType}
+                      onRemove={() => setDocuments(prev => ({ ...prev, policeVerificationDocument: "", policeVerificationDocument_metadata: undefined }))}
+                      className="w-full"
+                    />
+                  ) : (
+                    <LocalFileUploader
+                      maxSize={5242880} // 5MB
+                      onUploadComplete={(result) => handleDocumentUpload("policeVerificationDocument", result)}
+                      className="w-full"
+                    >
+                      <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                        <div className="flex flex-col items-center space-y-2">
+                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                            <Shield className="w-6 h-6 text-gray-500" />
                           </div>
+                          <p className="text-sm text-gray-600">Click to upload police verification</p>
+                          <p className="text-xs text-gray-500">PDF only (Max 5MB)</p>
                         </div>
-                      </LocalFileUploader>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Shield className="h-5 w-5 text-gray-500" />
-                      <Label className="text-sm font-medium text-gray-500">Police Verification Certificate</Label>
-                    </div>
-                    <div className="border rounded-lg p-6 text-center bg-gray-50">
-                      <div className="flex flex-col items-center space-y-2">
-                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                          <Shield className="w-6 h-6 text-gray-400" />
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          {formData.policeVerificationStatus === "not_done" 
-                            ? "Police verification document not required" 
-                            : "Police verification marked as pending - document can be uploaded later"}
-                        </p>
                       </div>
-                    </div>
-                  </div>
-                )}
+                    </LocalFileUploader>
+                  )}
+                </div>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Notarized agreement is required. 
-                  {formData.policeVerificationStatus === "done" && "Police verification document is compulsory for 'Done' status. "}
-                  {formData.policeVerificationStatus === "not_done" && "Police verification status set to 'Not Done' - document can be uploaded later. "}
-                  {formData.policeVerificationStatus === "pending" && "Police verification status set to 'Pending' - document can be uploaded later. "}
+                  <strong>Note:</strong> Both documents are required to import an existing agreement. 
                   The agreement will be saved as "Active" status once imported.
                 </p>
               </div>

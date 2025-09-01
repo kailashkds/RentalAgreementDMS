@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Combobox } from "@/components/ui/combobox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -89,59 +88,22 @@ export default function Agreements() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [notaryFilter, setNotaryFilter] = useState("all");
-  const [policeVerificationFilter, setPoliceVerificationFilter] = useState("all");
   const [customerFilter, setCustomerFilter] = useState("all");
   const [tenantFilter, setTenantFilter] = useState("all");
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("expiry_status");
+  const [sortBy, setSortBy] = useState("agreement_number_desc");
   const [customStartDate, setCustomStartDate] = useState<Date>();
   const [customEndDate, setCustomEndDate] = useState<Date>();
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadingNotarized, setUploadingNotarized] = useState(false);
-  const [uploadingPoliceVerification, setUploadingPoliceVerification] = useState(false);
   const [notarizedFileInput, setNotarizedFileInput] = useState<HTMLInputElement | null>(null);
   const { toast } = useToast();
-
-  // Handle updating expired agreements manually
-  const handleUpdateExpiredAgreements = async () => {
-    try {
-      const response = await fetch('/api/agreements/update-expired', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      const data = await response.json();
-      
-      if (data.updatedCount > 0) {
-        toast({
-          title: "Status Updated",
-          description: `Updated ${data.updatedCount} expired agreements to 'expired' status`,
-        });
-        // Refresh the agreements list
-        queryClient.invalidateQueries({ queryKey: ['/api/agreements'] });
-      } else {
-        toast({
-          title: "No Updates Needed",
-          description: "All agreements are already up to date",
-        });
-      }
-    } catch (error) {
-      console.error('Error updating expired agreements:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update expired agreements",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Reset current page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, notaryFilter, policeVerificationFilter, customerFilter, tenantFilter, ownerFilter, dateFilter, sortBy]);
+  }, [searchTerm, statusFilter, notaryFilter, customerFilter, tenantFilter, ownerFilter, dateFilter, sortBy]);
 
   // Pagination helper function
   const generatePageNumbers = (currentPage: number, totalPages: number) => {
@@ -207,17 +169,17 @@ export default function Agreements() {
           end: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000 - 1) 
         };
       case "thisWeek":
-        // Show agreements expiring within the next 7 days from today
-        const weekEnd = new Date(startOfToday);
-        weekEnd.setDate(startOfToday.getDate() + 7);
-        weekEnd.setHours(23, 59, 59, 999);
-        return { start: startOfToday, end: weekEnd };
+        const startOfWeek = new Date(startOfToday);
+        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+        return { start: startOfWeek, end: endOfWeek };
       case "thisMonth":
-        // Show agreements expiring within the next 30 days from today
-        const monthEnd = new Date(startOfToday);
-        monthEnd.setDate(startOfToday.getDate() + 30);
-        monthEnd.setHours(23, 59, 59, 999);
-        return { start: startOfToday, end: monthEnd };
+        const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
+        const endOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth() + 1, 0);
+        endOfMonth.setHours(23, 59, 59, 999);
+        return { start: startOfMonth, end: endOfMonth };
       case "next3Months":
         const next3MonthsEnd = new Date(startOfToday);
         next3MonthsEnd.setMonth(next3MonthsEnd.getMonth() + 3);
@@ -274,33 +236,13 @@ export default function Agreements() {
 
   const dateParams = calculateDateRange();
   
-  const { data: agreementsData, isLoading, refetch } = useAgreements({
+  const { data: agreementsData, isLoading } = useAgreements({
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
     ...dateParams,
-    limit: 25,
-    offset: (currentPage - 1) * 25,
+    limit: 20,
+    offset: (currentPage - 1) * 20,
   });
-
-  // Force refresh agreements data to ensure latest status
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      queryClient.invalidateQueries({ queryKey: ['/api/agreements'] });
-      queryClient.removeQueries({ queryKey: ['/api/agreements'] }); // Force complete cache removal
-      refetch();
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Auto-adjust current page when total agreements change to ensure we don't exceed max pages
-  React.useEffect(() => {
-    if (agreementsData?.total) {
-      const maxPages = Math.ceil(agreementsData.total / 25);
-      if (currentPage > maxPages) {
-        setCurrentPage(maxPages);
-      }
-    }
-  }, [agreementsData?.total, currentPage]);
 
   // Extract unique values for dropdown options
   const uniqueCustomers = React.useMemo(() => {
@@ -344,18 +286,6 @@ export default function Agreements() {
       if (notaryStatus !== notaryFilter) return false;
     }
 
-    // Filter by police verification status (only for imported agreements)
-    if (policeVerificationFilter && policeVerificationFilter !== "all") {
-      // Only filter imported agreements by police verification
-      if (isImportedAgreement(agreement)) {
-        const policeStatus = agreement.policeVerificationStatus || "pending";
-        if (policeStatus !== policeVerificationFilter) return false;
-      } else {
-        // For non-imported agreements, exclude them when filtering by police verification
-        return false;
-      }
-    }
-
     // Filter by customer name
     if (customerFilter && customerFilter !== "all") {
       const customerName = agreement.customer?.name || '';
@@ -390,7 +320,7 @@ export default function Agreements() {
     const sorted = [...filteredAgreements].sort((a, b) => {
       switch (sortBy) {
         case "agreement_number_desc":
-          // Sort by agreement number descending (highest number first)
+          // Sort by agreement number descending (newest first)
           const aNum = parseInt(a.agreementNumber?.replace(/[^0-9]/g, '') || '0');
           const bNum = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
           return bNum - aNum;
@@ -400,6 +330,18 @@ export default function Agreements() {
           const aNumAsc = parseInt(a.agreementNumber?.replace(/[^0-9]/g, '') || '0');
           const bNumAsc = parseInt(b.agreementNumber?.replace(/[^0-9]/g, '') || '0');
           return aNumAsc - bNumAsc;
+          
+        case "edit_date_desc":
+          // Sort by last updated date descending (most recent first)
+          const aDate = new Date(a.updatedAt || a.createdAt);
+          const bDate = new Date(b.updatedAt || b.createdAt);
+          return bDate.getTime() - aDate.getTime();
+          
+        case "edit_date_asc":
+          // Sort by last updated date ascending (oldest first)
+          const aDateAsc = new Date(a.updatedAt || a.createdAt);
+          const bDateAsc = new Date(b.updatedAt || b.createdAt);
+          return aDateAsc.getTime() - bDateAsc.getTime();
           
         case "expiry_status_asc":
           // Sort by expiry status ascending (expired first, then expiring soon, then active)
@@ -428,41 +370,6 @@ export default function Agreements() {
           
           return aPriority - bPriority;
           
-        case "expiry_status":
-          // Sort by expiry urgency (expiring soon first, then later dates, expired at end)
-          const getExpiryUrgency = (agreement: any) => {
-            // Check agreement status first - if already expired, put at end
-            if (agreement.status === 'expired') return 1000; // Expired - lowest priority (at end)
-            
-            const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-            if (!endDate) return 999; // No expiry date - second lowest priority
-            
-            const today = new Date();
-            const expiry = new Date(endDate);
-            const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            
-            if (daysUntilExpiry < 0) return 1000; // Expired by date - lowest priority (at end)
-            if (daysUntilExpiry === 0) return 1; // Expires today - highest priority
-            if (daysUntilExpiry === 1) return 2; // Expires tomorrow
-            if (daysUntilExpiry <= 7) return 3; // Expires this week
-            if (daysUntilExpiry <= 30) return 4; // Expires this month
-            if (daysUntilExpiry <= 90) return 5; // Expires in 3 months
-            
-            return daysUntilExpiry; // Return days for further dates
-          };
-          
-          const aUrgency = getExpiryUrgency(a);
-          const bUrgency = getExpiryUrgency(b);
-          
-          if (aUrgency === bUrgency) {
-            // If same urgency, sort by expiry date (closest first)
-            const aEndDate = new Date(a.rentalTerms?.endDate || a.endDate || 0);
-            const bEndDate = new Date(b.rentalTerms?.endDate || b.endDate || 0);
-            return aEndDate.getTime() - bEndDate.getTime();
-          }
-          
-          return aUrgency - bUrgency;
-
         case "expiry_status_desc":
           // Sort by expiry status descending (active first, then expiring soon, then expired)
           const getExpiryPriorityDesc = (agreement: any) => {
@@ -577,17 +484,7 @@ export default function Agreements() {
 
 
 
-  const handleViewAgreement = async (agreementId: string) => {
-    // Automatically update expired status when viewing agreements
-    try {
-      await apiRequest('/api/agreements/update-expired', 'POST');
-      // Invalidate cache to refresh agreement data
-      queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
-    } catch (error) {
-      console.log('Auto status update failed:', error);
-      // Don't show error to user, just continue with viewing
-    }
-    
+  const handleViewAgreement = (agreementId: string) => {
     const agreement = agreementsData?.agreements.find(a => a.id === agreementId);
     if (agreement) {
       setViewingAgreement(agreement);
@@ -618,42 +515,16 @@ export default function Agreements() {
               uploadDate: result.uploadDate,
               size: result.size,
               url: result.url
-            },
-            notaryStatus: "done" // Update notary status immediately
+            }
           });
         }
-
-        // IMMEDIATE CACHE UPDATE: Update agreements list with new notary status
-        queryClient.setQueryData(['/api/agreements'], (oldData: any) => {
-          if (oldData && oldData.agreements) {
-            return {
-              ...oldData,
-              agreements: oldData.agreements.map((agreement: any) =>
-                agreement.id === agreementId
-                  ? {
-                      ...agreement,
-                      notaryStatus: "done",
-                      notarizedDocument: {
-                        filename: result.filename,
-                        originalName: result.originalName,
-                        uploadDate: result.uploadDate,
-                        size: result.size,
-                        url: result.url
-                      }
-                    }
-                  : agreement
-              ),
-            };
-          }
-          return oldData;
-        });
 
         // Invalidate cache to refresh data
         queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
 
         toast({
           title: "Notarized Document Uploaded",
-          description: `Successfully uploaded ${result.originalName}. Status updated to Done!`,
+          description: `Successfully uploaded ${result.originalName}`,
         });
       } else {
         const errorData = await response.json();
@@ -684,102 +555,6 @@ export default function Agreements() {
     input.click();
   };
 
-  const handleUploadPoliceVerificationDocument = async (agreementId: string, file: File) => {
-    setUploadingPoliceVerification(true);
-    try {
-      const formData = new FormData();
-      formData.append('policeVerificationDocument', file);
-
-      const response = await fetch(`/api/agreements/${agreementId}/upload-police-verification`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Update the viewing agreement with the new police verification document data
-        if (viewingAgreement && viewingAgreement.id === agreementId) {
-          setViewingAgreement({
-            ...viewingAgreement,
-            documents: {
-              ...viewingAgreement.documents,
-              policeVerificationDocument: {
-                filename: result.filename,
-                originalName: result.originalName,
-                uploadDate: result.uploadDate,
-                size: result.size,
-                url: result.url
-              }
-            },
-            policeVerificationStatus: "done" // Update status to done after upload
-          });
-        }
-
-        // Update the cache directly for immediate UI update
-        queryClient.setQueryData(["/api/agreements"], (oldData: any) => {
-          if (oldData && oldData.agreements) {
-            return {
-              ...oldData,
-              agreements: oldData.agreements.map((agreement: any) => 
-                agreement.id === agreementId 
-                  ? { 
-                      ...agreement, 
-                      policeVerificationStatus: "done",
-                      documents: {
-                        ...agreement.documents,
-                        policeVerificationDocument: {
-                          filename: result.filename,
-                          originalName: result.originalName,
-                          uploadDate: result.uploadDate,
-                          size: result.size,
-                          url: result.url
-                        }
-                      }
-                    }
-                  : agreement
-              )
-            };
-          }
-          return oldData;
-        });
-
-        // Also invalidate cache to ensure fresh data on next load
-        queryClient.invalidateQueries({ queryKey: ["/api/agreements"] });
-
-        toast({
-          title: "Police Verification Document Uploaded",
-          description: `Successfully uploaded ${result.originalName}`,
-        });
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload police verification document');
-      }
-    } catch (error) {
-      console.error('Police verification upload error:', error);
-      toast({
-        title: "Upload Error",
-        description: error instanceof Error ? error.message : "Failed to upload police verification document.",
-        variant: "destructive",
-      });
-    } finally {
-      setUploadingPoliceVerification(false);
-    }
-  };
-
-  const handlePoliceVerificationUploadFromTable = (agreementId: string) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf,.jpg,.jpeg,.png';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        handleUploadPoliceVerificationDocument(agreementId, file);
-      }
-    };
-    input.click();
-  };
-
   const handleSendWhatsApp = (agreement: any) => {
     // WhatsApp functionality placeholder
     console.log('Send WhatsApp for agreement:', agreement.agreementNumber);
@@ -791,26 +566,13 @@ export default function Agreements() {
 
   const handleDownloadNotarizedFromTable = (agreement: any) => {
     const notarizedUrl = agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl;
-    
     if (notarizedUrl) {
-      // Create download link
       const link = document.createElement('a');
       link.href = notarizedUrl;
       link.download = agreement.notarizedDocument?.originalName || `${agreement.agreementNumber}-notarized.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      toast({
-        title: "Download Started",
-        description: `Downloading ${agreement.notarizedDocument?.originalName || 'notarized document'}`,
-      });
-    } else {
-      toast({
-        title: "Download Failed",
-        description: "No notarized document found for this agreement",
-        variant: "destructive",
-      });
     }
   };
 
@@ -839,14 +601,12 @@ export default function Agreements() {
         ownerDetails: {
           name: (document.getElementById('edit-owner-name') as HTMLInputElement)?.value,
           mobile: (document.getElementById('edit-owner-mobile') as HTMLInputElement)?.value,
-          // Keep existing address - don't allow editing for imported documents
-          address: editingImportedAgreement.ownerDetails?.address,
+          address: (document.getElementById('edit-owner-address') as HTMLTextAreaElement)?.value,
         },
         tenantDetails: {
           name: (document.getElementById('edit-tenant-name') as HTMLInputElement)?.value,
           mobile: (document.getElementById('edit-tenant-mobile') as HTMLInputElement)?.value,
-          // Keep existing address - don't allow editing for imported documents
-          address: editingImportedAgreement.tenantDetails?.address,
+          address: (document.getElementById('edit-tenant-address') as HTMLTextAreaElement)?.value,
         },
         agreementPeriod: {
           startDate: (document.getElementById('edit-start-date') as HTMLInputElement)?.value,
@@ -1236,8 +996,8 @@ export default function Agreements() {
 
   // Helper function to check if agreement is imported
   const isImportedAgreement = (agreement: any) => {
-    // Check if agreement is marked as imported (new field)
-    return agreement?.isImported === true;
+    // Only imported agreements have police verification documents
+    return agreement?.documents?.policeVerificationDocument?.url;
   };
 
   const getStatusBadge = (status: string | undefined) => {
@@ -1259,7 +1019,7 @@ export default function Agreements() {
       <div className="space-y-6">
         {/* Header Actions */}
         <div className="flex flex-col justify-between items-start gap-4">
-          <div className="flex flex-wrap gap-4 w-full">
+          <div className="flex flex-col lg:flex-row gap-4 w-full">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -1293,58 +1053,45 @@ export default function Agreements() {
                 <SelectItem value="complete_first">Complete First</SelectItem>
               </SelectContent>
             </Select>
-            
-            {/* Police Verification Filter */}
-            <Select value={policeVerificationFilter} onValueChange={setPoliceVerificationFilter}>
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="All Police" />
+            <Select value={customerFilter} onValueChange={setCustomerFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="All Customers" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Police</SelectItem>
-                <SelectItem value="done">Done</SelectItem>
-                <SelectItem value="not_done">Not Done</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="all">All Customers</SelectItem>
+                {uniqueCustomers.map((customer) => (
+                  <SelectItem key={customer} value={customer}>
+                    {customer}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            {/* Show customer filter only for admins/staff who can view all agreements */}
-            {hasPermission(PERMISSIONS.AGREEMENT_VIEW_ALL) && (
-              <Combobox
-                options={uniqueCustomers.map((customer) => ({
-                  value: customer,
-                  label: customer
-                }))}
-                value={customerFilter === "all" ? "" : customerFilter}
-                onValueChange={(value) => setCustomerFilter(value || "all")}
-                placeholder="Filter by Customer"
-                emptyMessage="No customers found..."
-                className="w-full sm:w-48"
-                allowCustom={false}
-              />
-            )}
-            <Combobox
-              options={uniqueTenants.map((tenant) => ({
-                value: tenant,
-                label: tenant
-              }))}
-              value={tenantFilter === "all" ? "" : tenantFilter}
-              onValueChange={(value) => setTenantFilter(value || "all")}
-              placeholder="Filter by Tenant"
-              emptyMessage="No tenants found..."
-              className="w-full sm:w-48"
-              allowCustom={false}
-            />
-            <Combobox
-              options={uniqueOwners.map((owner) => ({
-                value: owner,
-                label: owner
-              }))}
-              value={ownerFilter === "all" ? "" : ownerFilter}
-              onValueChange={(value) => setOwnerFilter(value || "all")}
-              placeholder="Filter by Owner"
-              emptyMessage="No owners found..."
-              className="w-full sm:w-48"
-              allowCustom={false}
-            />
+            <Select value={tenantFilter} onValueChange={setTenantFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="All Tenants" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tenants</SelectItem>
+                {uniqueTenants.map((tenant) => (
+                  <SelectItem key={tenant} value={tenant}>
+                    {tenant}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="All Owners" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Owners</SelectItem>
+                {uniqueOwners.map((owner) => (
+                  <SelectItem key={owner} value={owner}>
+                    {owner}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
             {/* Date Filter */}
             <Select value={dateFilter} onValueChange={setDateFilter}>
@@ -1353,14 +1100,14 @@ export default function Agreements() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Dates</SelectItem>
-                <SelectItem value="today">Expiring Today</SelectItem>
-                <SelectItem value="tomorrow">Expiring Tomorrow</SelectItem>
-                <SelectItem value="thisWeek">Expiring This Week</SelectItem>
-                <SelectItem value="thisMonth">Expiring This Month</SelectItem>
-                <SelectItem value="next3Months">Expiring in 3 Months</SelectItem>
-                <SelectItem value="next6Months">Expiring in 6 Months</SelectItem>
-                <SelectItem value="thisYear">Expiring This Year</SelectItem>
-                <SelectItem value="custom">Custom Expiry Range</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                <SelectItem value="thisWeek">This Week</SelectItem>
+                <SelectItem value="thisMonth">This Month</SelectItem>
+                <SelectItem value="next3Months">Next 3 Months</SelectItem>
+                <SelectItem value="next6Months">Next 6 Months</SelectItem>
+                <SelectItem value="thisYear">This Year</SelectItem>
+                <SelectItem value="custom">Custom Date Range</SelectItem>
               </SelectContent>
             </Select>
             
@@ -1370,11 +1117,12 @@ export default function Agreements() {
                 <span>Sort by</span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="expiry_status">By Expiry Priority (Default)</SelectItem>
-                <SelectItem value="agreement_number_desc">Agreement Number (Newest First)</SelectItem>
-                <SelectItem value="agreement_number_asc">Agreement Number (Oldest First)</SelectItem>
+                <SelectItem value="agreement_number_desc">Agreement Number (Descending)</SelectItem>
+                <SelectItem value="agreement_number_asc">Agreement Number (Ascending)</SelectItem>
                 <SelectItem value="expiry_status_asc">Expiry Status (Expired First)</SelectItem>
                 <SelectItem value="expiry_status_desc">Expiry Status (Active First)</SelectItem>
+                <SelectItem value="edit_date_desc">Last Edit Date (Recent First)</SelectItem>
+                <SelectItem value="edit_date_asc">Last Edit Date (Oldest First)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1432,19 +1180,18 @@ export default function Agreements() {
             </div>
           )}
           <div className="flex justify-between items-center w-full">
-            {(notaryFilter !== "all" || policeVerificationFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || searchTerm || (statusFilter && statusFilter !== "all")) && (
+            {(notaryFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || searchTerm || (statusFilter && statusFilter !== "all")) && (
               <Button
                 variant="outline"
                 onClick={() => {
                   setSearchTerm("");
                   setStatusFilter("all");
                   setNotaryFilter("all");
-                  setPoliceVerificationFilter("all");
                   setCustomerFilter("all");
                   setTenantFilter("all");
                   setOwnerFilter("all");
                   setDateFilter("all");
-                  setSortBy("expiry_status");
+                  setSortBy("agreement_number_desc");
                   setCustomStartDate(undefined);
                   setCustomEndDate(undefined);
                 }}
@@ -1484,7 +1231,7 @@ export default function Agreements() {
               <div className="p-6 text-center text-gray-500">Loading agreements...</div>
             ) : sortedAgreements?.length === 0 ? (
               <div className="p-6 text-center text-gray-500">
-                {searchTerm || notaryFilter !== "all" || policeVerificationFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
+                {searchTerm || notaryFilter !== "all" || customerFilter !== "all" || tenantFilter !== "all" || ownerFilter !== "all" || dateFilter !== "all" || (statusFilter && statusFilter !== "all") ? (
                   <>
                     No agreements found matching your criteria.
                     <Button
@@ -1493,11 +1240,10 @@ export default function Agreements() {
                         setSearchTerm("");
                         setStatusFilter("all");
                         setNotaryFilter("all");
-                        setPoliceVerificationFilter("all");
                         setCustomerFilter("all");
                         setTenantFilter("all");
                         setOwnerFilter("all");
-                        setSortBy("expiry_status");
+                        setSortBy("agreement_number_desc");
                         setDateFilter("all");
                         setCustomStartDate(undefined);
                         setCustomEndDate(undefined);
@@ -1597,55 +1343,29 @@ export default function Agreements() {
                               </p>
                             </div>
                             <div>
-                              {/* Show Police Verification Status for imported agreements, Notary Status for regular agreements */}
-                              {isImportedAgreement(agreement) ? (
-                                <>
-                                  <span className="font-medium text-gray-600">Police Verification:</span>
-                                  <div className="mt-1">
-                                    <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                                      agreement.policeVerificationStatus === "done" 
+                              <span className="font-medium text-gray-600">Notary Status:</span>
+                              <div className="mt-1">
+                                <span
+                                  className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                                    agreement.status === "draft"
+                                      ? "bg-gray-100 text-gray-800"
+                                      : agreement.status === "active"
+                                      ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
                                         ? "bg-green-100 text-green-800"
-                                        : agreement.policeVerificationStatus === "not_done"
-                                        ? "bg-gray-100 text-gray-800" 
-                                        : "bg-yellow-100 text-yellow-800"
-                                    }`}>
-                                      {agreement.policeVerificationStatus === "done" ? "Done" : 
-                                       agreement.policeVerificationStatus === "not_done" ? "Not Done" : "Pending"}
-                                    </span>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="font-medium text-gray-600">Notary Status:</span>
-                                  <div className="mt-1">
-                                    <span
-                                      className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                                        agreement.status === "draft"
-                                          ? "bg-gray-100 text-gray-800"
-                                          : agreement.notaryStatus === "pending"
-                                          ? "bg-red-100 text-red-800"
-                                          : agreement.notaryStatus === "done" || agreement.notaryStatus === "complete"
-                                          ? "bg-green-100 text-green-800"
-                                          : agreement.notaryStatus === "expired"
-                                          ? "bg-red-100 text-red-800"
-                                          : "bg-red-100 text-red-800"
-                                      }`}
-                                      title={`Debug: status=${agreement.status}, notaryStatus=${agreement.notaryStatus}`}
-                                    >
-                                      {agreement.status === "draft"
-                                        ? "Complete First"
-                                        : agreement.notaryStatus === "pending"
-                                        ? "Pending"
-                                        : agreement.notaryStatus === "done" || agreement.notaryStatus === "complete"
-                                        ? "Complete"
-                                        : agreement.notaryStatus === "expired"
-                                        ? "Expired"
-                                        : "Pending"
-                                      }
-                                    </span>
-                                  </div>
-                                </>
-                              )}
+                                        : "bg-amber-100 text-amber-800"
+                                      : "bg-blue-100 text-blue-800"
+                                  }`}
+                                >
+                                  {agreement.status === "draft"
+                                    ? "Draft"
+                                    : agreement.status === "active"
+                                    ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
+                                      ? "Complete"
+                                      : "Pending"
+                                    : "Active"
+                                  }
+                                </span>
+                              </div>
                             </div>
                             <div>
                               <span className="font-medium text-gray-600">Expiry Status:</span>
@@ -1691,30 +1411,25 @@ export default function Agreements() {
                                   );
                                 })()}
                               </div>
-                              
                             </div>
-                            
                           </div>
                           
-                          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-                            <div className="flex-1">
-                              <span className="font-medium text-gray-600">Property Address:</span>
-                              <p className="text-gray-900">
-                                {(() => {
-                                  const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
-                                  if (propertyAddr) {
-                                    return [
-                                      propertyAddr.flatNo,
-                                      propertyAddr.society,
-                                      propertyAddr.area,
-                                      propertyAddr.city
-                                    ].filter(Boolean).join(', ');
-                                  }
-                                  return 'Not available';
-                                })()}
-                              </p>
-                            </div>
-                            
+                          <div>
+                            <span className="font-medium text-gray-600">Property Address:</span>
+                            <p className="text-gray-900">
+                              {(() => {
+                                const propertyAddr = agreement.propertyDetails?.address || agreement.ownerDetails?.address;
+                                if (propertyAddr) {
+                                  return [
+                                    propertyAddr.flatNo,
+                                    propertyAddr.society,
+                                    propertyAddr.area,
+                                    propertyAddr.city
+                                  ].filter(Boolean).join(', ');
+                                }
+                                return 'Not available';
+                              })()}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1825,8 +1540,8 @@ export default function Agreements() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
-                          {/* Upload Notarized Button - Show only for regular agreements (not imported) with notarize permission */}
-                          {hasPermission(PERMISSIONS.AGREEMENT_NOTARIZE) && !isImportedAgreement(agreement) && (agreement.status === "active" || agreement.status === "renewed") && agreement.notaryStatus === "pending" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
+                          {/* Upload Notarized Button - Show only if user has notarize permission */}
+                          {hasPermission(PERMISSIONS.AGREEMENT_NOTARIZE) && agreement.status === "active" && !(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -1834,19 +1549,6 @@ export default function Agreements() {
                               onClick={() => handleNotarizedUploadFromTable(agreement.id)}
                               disabled={uploadingNotarized}
                               title="Upload Notarized Document"
-                            >
-                              <Upload className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {/* Upload Police Verification Button - Show for imported agreements with pending or not_done police verification */}
-                          {isImportedAgreement(agreement) && (agreement.policeVerificationStatus === "pending" || agreement.policeVerificationStatus === "not_done") && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-10 w-10 p-0 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-100 rounded-full border border-gray-200"
-                              onClick={() => handlePoliceVerificationUploadFromTable(agreement.id)}
-                              disabled={uploadingPoliceVerification}
-                              title="Upload Police Verification Certificate"
                             >
                               <Upload className="h-4 w-4" />
                             </Button>
@@ -1902,56 +1604,53 @@ export default function Agreements() {
           </div>
         </Card>
 
-        {/* Enhanced Dynamic Pagination */}
-        {agreementsData && agreementsData.total > 0 && (
+        {/* Enhanced Pagination */}
+        {agreementsData && agreementsData.total > 20 && (
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             <div className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * 25) + 1} to {Math.min(currentPage * 25, agreementsData.total)} of{" "}
+              Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, agreementsData.total)} of{" "}
               {agreementsData.total} results
             </div>
             
-            {/* Only show pagination controls if there are multiple pages */}
-            {Math.ceil(agreementsData.total / 25) > 1 && (
-              <Pagination>
-                <PaginationContent>
-                  {/* Previous Button */}
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
-                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      data-testid="button-previous-page"
-                    />
+            <Pagination>
+              <PaginationContent>
+                {/* Previous Button */}
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    data-testid="button-previous-page"
+                  />
+                </PaginationItem>
+                
+                {/* Page Numbers */}
+                {generatePageNumbers(currentPage, Math.ceil(agreementsData.total / 20)).map((page, index) => (
+                  <PaginationItem key={index}>
+                    {page === '...' ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page as number)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                        data-testid={`button-page-${page}`}
+                      >
+                        {page}
+                      </PaginationLink>
+                    )}
                   </PaginationItem>
-                  
-                  {/* Page Numbers */}
-                  {generatePageNumbers(currentPage, Math.ceil(agreementsData.total / 25)).map((page, index) => (
-                    <PaginationItem key={index}>
-                      {page === '...' ? (
-                        <PaginationEllipsis />
-                      ) : (
-                        <PaginationLink
-                          onClick={() => setCurrentPage(page as number)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                          data-testid={`button-page-${page}`}
-                        >
-                          {page}
-                        </PaginationLink>
-                      )}
-                    </PaginationItem>
-                  ))}
-                  
-                  {/* Next Button */}
-                  <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => setCurrentPage(page => page + 1)}
-                      className={currentPage * 25 >= agreementsData.total ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                      data-testid="button-next-page"
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            )}
+                ))}
+                
+                {/* Next Button */}
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => setCurrentPage(page => page + 1)}
+                    className={currentPage * 20 >= agreementsData.total ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    data-testid="button-next-page"
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
       </div>
@@ -2056,6 +1755,22 @@ export default function Agreements() {
                         className="mt-1"
                       />
                     </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="edit-owner-address">Address</Label>
+                      <Textarea 
+                        id="edit-owner-address"
+                        defaultValue={editingImportedAgreement.ownerDetails?.address ? 
+                          [
+                            editingImportedAgreement.ownerDetails.address.flatNo,
+                            editingImportedAgreement.ownerDetails.address.society,
+                            editingImportedAgreement.ownerDetails.address.area,
+                            editingImportedAgreement.ownerDetails.address.city
+                          ].filter(Boolean).join(', ') : ''
+                        }
+                        className="mt-1"
+                        rows={2}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -2079,6 +1794,22 @@ export default function Agreements() {
                         id="edit-tenant-mobile"
                         defaultValue={editingImportedAgreement.tenantDetails?.mobile || ''}
                         className="mt-1"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="edit-tenant-address">Address</Label>
+                      <Textarea 
+                        id="edit-tenant-address"
+                        defaultValue={editingImportedAgreement.tenantDetails?.address ? 
+                          [
+                            editingImportedAgreement.tenantDetails.address.flatNo,
+                            editingImportedAgreement.tenantDetails.address.society,
+                            editingImportedAgreement.tenantDetails.address.area,
+                            editingImportedAgreement.tenantDetails.address.city
+                          ].filter(Boolean).join(', ') : ''
+                        }
+                        className="mt-1"
+                        rows={2}
                       />
                     </div>
                   </div>
@@ -2383,11 +2114,11 @@ export default function Agreements() {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Created At</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.createdAt ? formatDateToDDMMYYYY(viewingAgreement.createdAt) : 'Not available'}</p>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.createdAt ? new Date(viewingAgreement.createdAt).toLocaleString() : 'Not available'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-slate-700">Last Updated</label>
-                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.updatedAt ? formatDateToDDMMYYYY(viewingAgreement.updatedAt) : 'Not available'}</p>
+                      <p className="mt-1 text-sm text-gray-900">{viewingAgreement.updatedAt ? new Date(viewingAgreement.updatedAt).toLocaleString() : 'Not available'}</p>
                     </div>
                   </div>
                 </div>

@@ -17,7 +17,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { 
   Shield, 
@@ -35,8 +34,7 @@ import {
   Download,
   Upload,
   RefreshCw,
-  UserCheck,
-  UserX
+  UserCheck
 } from "lucide-react";
 
 interface User {
@@ -44,7 +42,7 @@ interface User {
   username: string;
   name: string;
   email?: string;
-  mobile?: string;
+  phone?: string;
   status: string;
   isActive: boolean;
   defaultRole?: string;
@@ -78,7 +76,6 @@ interface Permission {
 
 export default function UserRoleManagement() {
   const { user: currentUser } = useAuth();
-  const { hasPermission } = usePermissions();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -90,32 +87,13 @@ export default function UserRoleManagement() {
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [managingPermissionsUser, setManagingPermissionsUser] = useState<User | null>(null);
   const [showPermissions, setShowPermissions] = useState<string | null>(null);
-  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
-  const [selectedUserPermissions, setSelectedUserPermissions] = useState<any>(null);
-  
-  // Password reset dialog state
-  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
-  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
-  const [currentPassword, setCurrentPassword] = useState<string | null>(null);
-  const [isLoadingCurrentPassword, setIsLoadingCurrentPassword] = useState(false);
-  
-  // Role users management dialog state
-  const [manageUsersDialogOpen, setManageUsersDialogOpen] = useState(false);
-  const [selectedRoleForUsers, setSelectedRoleForUsers] = useState<Role | null>(null);
-  const [roleAssignments, setRoleAssignments] = useState<{[userId: string]: boolean}>({});
-  
-  // Local state for pending permission changes (before saving)
-  const [pendingPermissionChanges, setPendingPermissionChanges] = useState<{
-    toAdd: string[]; // permission IDs to add
-    toRemove: string[]; // permission IDs to remove
-  }>({ toAdd: [], toRemove: [] });
 
   // User form data
   const [userFormData, setUserFormData] = useState({
     username: "",
     name: "",
     email: "",
-    mobile: "",
+    phone: "",
     password: "",
     roleId: "",
     status: "active"
@@ -211,34 +189,17 @@ export default function UserRoleManagement() {
       const response = await apiRequest(`/api/unified/users/${userId}/reset-password`, "PATCH");
       return response.json();
     },
-    onSuccess: (data: { currentPassword: string | null; newPassword: string }) => {
-      // Update the current password display with the new password
-      setCurrentPassword(data.newPassword);
-      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+    onSuccess: (data: { password: string }) => {
+      toast({
+        title: "Password Reset Successful",
+        description: `New password: ${data.password}`,
+        duration: 10000, // Show for 10 seconds so admin can copy it
+      });
     },
     onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message || "Failed to reset password",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const toggleUserStatusMutation = useMutation({
-    mutationFn: ({ userId, isActive }: { userId: string; isActive: boolean }) =>
-      apiRequest(`/api/unified/users/${userId}/toggle-status`, "PATCH", { isActive }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
-      toast({
-        title: "Success",
-        description: "User status updated successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update user status",
         variant: "destructive",
       });
     },
@@ -307,95 +268,13 @@ export default function UserRoleManagement() {
     },
   });
 
-  // Batch save mutation for all permission changes
-  const savePermissionChangesMutation = useMutation({
-    mutationFn: async ({ userId, changes }: { userId: string; changes: typeof pendingPermissionChanges }) => {
-      const promises = [];
-      
-      // Add permissions
-      for (const permissionId of changes.toAdd) {
-        promises.push(
-          apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId })
-        );
-      }
-      
-      // Remove permissions
-      for (const permissionId of changes.toRemove) {
-        promises.push(
-          apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, "DELETE")
-        );
-      }
-      
-      await Promise.all(promises);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
-      setPendingPermissionChanges({ toAdd: [], toRemove: [] }); // Reset pending changes
-      setIsPermissionsModalOpen(false);
-      toast({
-        title: "Success",
-        description: "Permissions updated successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update permissions",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Bulk role assignment mutation
-  const assignRolesMutation = useMutation({
-    mutationFn: async ({ roleId, userAssignments }: { roleId: string; userAssignments: {[userId: string]: boolean} }) => {
-      const promises = [];
-      
-      for (const [userId, shouldHaveRole] of Object.entries(userAssignments)) {
-        const user = users.find(u => u.id === userId);
-        if (!user) continue;
-        
-        const currentlyHasRole = user.roles?.some(r => r.id === roleId) || false;
-        
-        if (shouldHaveRole && !currentlyHasRole) {
-          // Assign role to user
-          promises.push(
-            apiRequest(`/api/rbac/assign-user-role`, "POST", { userId, roleId })
-          );
-        } else if (!shouldHaveRole && currentlyHasRole) {
-          // Remove role from user
-          promises.push(
-            apiRequest(`/api/rbac/remove-user-role`, "DELETE", { userId, roleId })
-          );
-        }
-      }
-      
-      await Promise.all(promises);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
-      setManageUsersDialogOpen(false);
-      toast({
-        title: "Success",
-        description: "Role assignments updated successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update role assignments",
-        variant: "destructive",
-      });
-    },
-  });
-
   // Helper functions
   const resetUserForm = () => {
     setUserFormData({
       username: "",
       name: "",
       email: "",
-      mobile: "",
+      phone: "",
       password: "",
       roleId: "",
       status: "active"
@@ -420,7 +299,7 @@ export default function UserRoleManagement() {
       username: user.username,
       name: user.name,
       email: user.email || "",
-      mobile: user.mobile || "",
+      phone: user.phone || "",
       password: "",
       roleId: userRole?.id || "", // Use the actual role ID for proper Select mapping
       status: user.status
@@ -440,37 +319,7 @@ export default function UserRoleManagement() {
 
   const openManagePermissions = (user: User) => {
     setManagingPermissionsUser(user);
-    setPendingPermissionChanges({ toAdd: [], toRemove: [] }); // Reset pending changes
     setIsPermissionsModalOpen(true);
-  };
-
-  const openManageRoleUsers = (role: Role) => {
-    setSelectedRoleForUsers(role);
-    // Initialize checkbox states based on current role assignments
-    const initialAssignments: {[userId: string]: boolean} = {};
-    users.forEach(user => {
-      initialAssignments[user.id] = user.roles?.some(r => r.id === role.id) || false;
-    });
-    setRoleAssignments(initialAssignments);
-    setManageUsersDialogOpen(true);
-  };
-
-  const openResetPasswordDialog = async (user: User) => {
-    setResetPasswordUser(user);
-    setCurrentPassword(null);
-    setIsLoadingCurrentPassword(true);
-    setResetPasswordDialogOpen(true);
-    
-    try {
-      // Fetch current password without resetting
-      const response = await apiRequest(`/api/unified/users/${user.id}/current-password`, "GET");
-      const data = await response.json();
-      setCurrentPassword(data.currentPassword || "Unable to decrypt current password");
-    } catch (error) {
-      setCurrentPassword("Error loading current password");
-    } finally {
-      setIsLoadingCurrentPassword(false);
-    }
   };
 
   const handleUserSubmit = (e: React.FormEvent) => {
@@ -498,23 +347,6 @@ export default function UserRoleManagement() {
         ? prev.permissions.filter(p => p !== permission)
         : [...prev.permissions, permission]
     }));
-  };
-
-  // Helper function to get effective permission state including pending changes
-  const getEffectivePermissionState = (permission: Permission) => {
-    if (!managingPermissionsUser) return false;
-    
-    const userPermissions = getUserPermissions(managingPermissionsUser);
-    const currentlyHasPermission = userPermissions.total.includes(permission.name);
-    
-    // Check if this permission is in pending changes
-    const isPendingAdd = pendingPermissionChanges.toAdd.includes(permission.id);
-    const isPendingRemove = pendingPermissionChanges.toRemove.includes(permission.id);
-    
-    // Calculate effective state
-    if (isPendingAdd) return true;
-    if (isPendingRemove) return false;
-    return currentlyHasPermission;
   };
 
   const getPermissionsByCategory = () => {
@@ -558,7 +390,7 @@ export default function UserRoleManagement() {
     return {
       inherited: uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),
       manual: manualAdded.filter(p => !uniqueRolePermissions.includes(p)),
-      total: [...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded]
+      total: [...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded.filter(p => !uniqueRolePermissions.includes(p))]
     };
   };
 
@@ -676,13 +508,13 @@ export default function UserRoleManagement() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="mobile">Mobile Number</Label>
+                          <Label htmlFor="phone">Phone</Label>
                           <Input
-                            id="mobile"
-                            data-testid="input-mobile"
-                            value={userFormData.mobile}
-                            onChange={(e) => setUserFormData(prev => ({ ...prev, mobile: e.target.value }))}
-                            placeholder="Enter mobile number"
+                            id="phone"
+                            data-testid="input-phone"
+                            value={userFormData.phone}
+                            onChange={(e) => setUserFormData(prev => ({ ...prev, phone: e.target.value }))}
+                            placeholder="Enter phone"
                           />
                         </div>
                       </div>
@@ -808,7 +640,7 @@ export default function UserRoleManagement() {
                         <TableCell>
                           <div className="text-sm">
                             {user.email && <div>{user.email}</div>}
-                            {user.mobile && <div className="text-muted-foreground">{user.mobile}</div>}
+                            {user.phone && <div className="text-muted-foreground">{user.phone}</div>}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -831,19 +663,44 @@ export default function UserRoleManagement() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setSelectedUserPermissions({
-                                  user: user,
-                                  permissions: userPermissions
-                                });
-                                setPermissionsDialogOpen(true);
-                              }}
+                              onClick={() => setShowPermissions(showPermissions === user.id ? null : user.id)}
                               data-testid={`button-show-permissions-${user.id}`}
                             >
-                              <Eye className="h-4 w-4" />
+                              {showPermissions === user.id ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                               <span className="ml-1">{userPermissions.total.length}</span>
                             </Button>
+                            {userPermissions.manual.length > 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{userPermissions.manual.length} manual
+                              </Badge>
+                            )}
                           </div>
+                          {showPermissions === user.id && (
+                            <div className="mt-2 p-2 bg-muted rounded text-xs space-y-1">
+                              <div>
+                                <strong>Inherited ({userPermissions.inherited.length}):</strong>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {userPermissions.inherited.map(permission => (
+                                    <Badge key={permission} variant="outline" className="text-xs">
+                                      {formatPermissionName(permission)}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              {userPermissions.manual.length > 0 && (
+                                <div>
+                                  <strong>Manual ({userPermissions.manual.length}):</strong>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {userPermissions.manual.map(permission => (
+                                      <Badge key={permission} variant="default" className="text-xs">
+                                        {formatPermissionName(permission)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge 
@@ -874,19 +731,18 @@ export default function UserRoleManagement() {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Reset User Password</AlertDialogTitle>
+                                    <AlertDialogTitle>Reset Password</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to reset the password for <strong>{user.name}</strong>? 
-                                      A new random password will be generated and the current password will be lost.
+                                      Are you sure you want to reset this user's password? A new password will be generated and the user will need to be notified.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() => openResetPasswordDialog(user)}
-                                      className="bg-orange-600 text-white hover:bg-orange-700"
+                                      onClick={() => resetPasswordMutation.mutate(user.id)}
+                                      disabled={resetPasswordMutation.isPending}
                                     >
-                                      Reset Password
+                                      {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -895,59 +751,6 @@ export default function UserRoleManagement() {
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Manage Permissions
                               </DropdownMenuItem>
-                              {hasPermission('user.status.change') && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} data-testid={`button-toggle-status-${user.id}`}>
-                                      {user.isActive ? (
-                                        <>
-                                          <UserX className="h-4 w-4 mr-2" />
-                                          Deactivate User
-                                        </>
-                                      ) : (
-                                        <>
-                                          <UserCheck className="h-4 w-4 mr-2" />
-                                          Activate User
-                                        </>
-                                      )}
-                                    </DropdownMenuItem>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>
-                                        {user.isActive ? "Deactivate User" : "Activate User"}
-                                      </AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        {user.isActive 
-                                          ? `Are you sure you want to deactivate ${user.name}? 
-                                          
-⚠️ WARNING: This action will:
-• Immediately revoke all system access
-• Prevent login to admin panel and customer portal
-• Block all document creation and management
-• Disable any automated processes for this user
-• User will receive no notification of deactivation
-
-This change takes effect immediately but can be reversed by reactivating the user.`
-                                          : `Are you sure you want to activate ${user.name}? They will regain access to the system.`
-                                        }
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => toggleUserStatusMutation.mutate({ 
-                                          userId: user.id, 
-                                          isActive: !user.isActive 
-                                        })}
-                                        className={user.isActive ? "bg-orange-600 text-white hover:bg-orange-700" : "bg-green-600 text-white hover:bg-green-700"}
-                                      >
-                                        {user.isActive ? "Deactivate" : "Activate"}
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
                               {(currentUser as any)?.id !== user.id && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
@@ -1109,7 +912,7 @@ This change takes effect immediately but can be reversed by reactivating the use
                           {role.permissions.length} permissions
                         </Badge>
                         <Badge variant="secondary">
-                          {users.filter(u => u.roles?.some(r => r.id === role.id)).length} users
+                          {users.filter(u => u.roles?.some(userRole => userRole.id === role.id)).length} users
                         </Badge>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -1122,39 +925,14 @@ This change takes effect immediately but can be reversed by reactivating the use
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Role
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openManageRoleUsers(role)}>
+                            <DropdownMenuItem>
                               <Users className="h-4 w-4 mr-2" />
-                              Manage Users ({users.filter(u => u.roles?.some(r => r.id === role.id)).length})
+                              Manage Users
                             </DropdownMenuItem>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <RefreshCw className="h-4 w-4 mr-2" />
-                                  Reset Permissions
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Reset Role Permissions</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to reset all permissions for the role "{role.name}"? 
-                                    This will remove all permissions and set the role to have no access rights.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-orange-600 text-white hover:bg-orange-700"
-                                    onClick={() => {
-                                      setRoleFormData(prev => ({ ...prev, permissions: [] }));
-                                      updateRoleMutation.mutate({ id: role.id, data: { ...role, permissions: [] } });
-                                    }}
-                                  >
-                                    Reset Permissions
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <DropdownMenuItem>
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Reset Permissions
+                            </DropdownMenuItem>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -1256,82 +1034,30 @@ This change takes effect immediately but can be reversed by reactivating the use
                     <div className="grid grid-cols-1 gap-2">
                       {categoryPermissions.map((permission) => {
                         const userPermissions = getUserPermissions(managingPermissionsUser);
-                        const currentlyHasPermission = userPermissions.total.includes(permission.name);
-                        const effectiveState = getEffectivePermissionState(permission);
+                        const hasPermission = userPermissions.total.includes(permission.name);
                         const isFromRole = managingPermissionsUser.roles?.[0]?.permissions?.includes(permission.name) || false;
                         const isManuallyAdded = managingPermissionsUser.manualPermissions?.added?.includes(permission.name) || false;
                         const isManuallyRemoved = managingPermissionsUser.manualPermissions?.removed?.includes(permission.name) || false;
-                        
-                        // Check if there are pending changes for this permission
-                        const isPendingAdd = pendingPermissionChanges.toAdd.includes(permission.id);
-                        const isPendingRemove = pendingPermissionChanges.toRemove.includes(permission.id);
-                        const hasPendingChanges = isPendingAdd || isPendingRemove;
                         
                         return (
                           <div key={permission.name} className="flex items-center justify-between p-2 border rounded">
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
                                 <span className="text-sm font-medium">{formatPermissionName(permission.name)}</span>
-                                {(() => {
-                                  // Smart badge logic: if both added and removed, they cancel out
-                                  if (isManuallyAdded && isManuallyRemoved) {
-                                    // Both actions cancel out - show original state
-                                    if (isFromRole) {
-                                      // Originally from role, removed, then added back = Role
-                                      return <Badge variant="outline" className="text-xs">Role</Badge>;
-                                    } else {
-                                      // Originally not from role, added, then removed = nothing (back to original state)
-                                      return null;
-                                    }
-                                  }
-                                  
-                                  // Show individual states
-                                  const badges = [];
-                                  if (isFromRole && !isManuallyRemoved) {
-                                    badges.push(<Badge key="role" variant="outline" className="text-xs">Role</Badge>);
-                                  }
-                                  if (isManuallyAdded && !isManuallyRemoved) {
-                                    badges.push(<Badge key="added" variant="default" className="text-xs bg-green-100 text-green-800">+Added</Badge>);
-                                  }
-                                  if (isManuallyRemoved && !isManuallyAdded) {
-                                    badges.push(<Badge key="removed" variant="default" className="text-xs bg-red-100 text-red-800">-Removed</Badge>);
-                                  }
-                                  
-                                  return badges;
-                                })()}
-                                {isPendingAdd && <Badge variant="default" className="text-xs bg-blue-100 text-blue-800">Pending +</Badge>}
-                                {isPendingRemove && <Badge variant="default" className="text-xs bg-orange-100 text-orange-800">Pending -</Badge>}
+                                {isFromRole && <Badge variant="outline" className="text-xs">Role</Badge>}
+                                {isManuallyAdded && <Badge variant="default" className="text-xs bg-green-100 text-green-800">+Added</Badge>}
+                                {isManuallyRemoved && <Badge variant="default" className="text-xs bg-red-100 text-red-800">-Removed</Badge>}
                               </div>
                               <p className="text-xs text-muted-foreground">{permission.description}</p>
                             </div>
                             <div className="flex items-center space-x-2">
                               <Switch 
-                                checked={effectiveState}
-                                disabled={permissionsLoading || savePermissionChangesMutation.isPending}
+                                checked={hasPermission}
+                                disabled={permissionsLoading}
                                 onCheckedChange={(checked) => {
-                                  setPendingPermissionChanges(prev => {
-                                    const newChanges = { ...prev };
-                                    
-                                    if (checked) {
-                                      // User wants to enable this permission
-                                      // Remove from toRemove if it's there
-                                      newChanges.toRemove = newChanges.toRemove.filter(id => id !== permission.id);
-                                      // Add to toAdd if not currently having permission
-                                      if (!currentlyHasPermission && !newChanges.toAdd.includes(permission.id)) {
-                                        newChanges.toAdd.push(permission.id);
-                                      }
-                                    } else {
-                                      // User wants to disable this permission
-                                      // Remove from toAdd if it's there
-                                      newChanges.toAdd = newChanges.toAdd.filter(id => id !== permission.id);
-                                      // Add to toRemove if currently having permission
-                                      if (currentlyHasPermission && !newChanges.toRemove.includes(permission.id)) {
-                                        newChanges.toRemove.push(permission.id);
-                                      }
-                                    }
-                                    
-                                    return newChanges;
-                                  });
+                                  // Here you would implement the logic to add/remove manual permissions
+                                  // This would require an API endpoint for managing user permissions
+                                  console.log(`Toggle permission ${permission.name} for user ${managingPermissionsUser.id}: ${checked}`);
                                 }}
                               />
                             </div>
@@ -1349,281 +1075,8 @@ This change takes effect immediately but can be reversed by reactivating the use
             <Button variant="outline" onClick={() => setIsPermissionsModalOpen(false)}>
               Cancel
             </Button>
-            {(pendingPermissionChanges.toAdd.length > 0 || pendingPermissionChanges.toRemove.length > 0) ? (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button disabled={savePermissionChangesMutation.isPending}>
-                    {savePermissionChangesMutation.isPending ? "Saving..." : "Save Changes"}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Permission Changes</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      You are about to change permissions for <strong>{managingPermissionsUser?.name}</strong>:
-                      {pendingPermissionChanges.toAdd.length > 0 && (
-                        <div className="mt-2">
-                          <span className="text-green-600">Adding {pendingPermissionChanges.toAdd.length} permissions</span>
-                        </div>
-                      )}
-                      {pendingPermissionChanges.toRemove.length > 0 && (
-                        <div className="mt-1">
-                          <span className="text-red-600">Removing {pendingPermissionChanges.toRemove.length} permissions</span>
-                        </div>
-                      )}
-                      <div className="mt-2 text-sm text-gray-600">
-                        These changes will take effect immediately and may affect the user's access to system features.
-                      </div>
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        if (managingPermissionsUser) {
-                          savePermissionChangesMutation.mutate({
-                            userId: managingPermissionsUser.id,
-                            changes: pendingPermissionChanges
-                          });
-                        }
-                      }}
-                      className="bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                      Apply Changes
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            ) : (
-              <Button onClick={() => setIsPermissionsModalOpen(false)}>
-                Close
-              </Button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Permissions Popup Dialog */}
-      <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>User Permissions - {selectedUserPermissions?.user?.name}</DialogTitle>
-            <DialogDescription>
-              View all permissions for this user. Permissions are inherited from roles and can be manually added.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedUserPermissions && (
-            <div className="space-y-4">
-              {/* Inherited Permissions */}
-              <div>
-                <h4 className="font-medium mb-2">Inherited from Roles ({selectedUserPermissions.permissions.inherited.length})</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedUserPermissions.permissions.inherited.map((permission: string) => (
-                    <Badge key={permission} variant="outline" className="text-xs">
-                      {formatPermissionName(permission)}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Manual Permissions */}
-              {selectedUserPermissions.permissions.manual.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2">Manually Added ({selectedUserPermissions.permissions.manual.length})</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedUserPermissions.permissions.manual.map((permission: string) => (
-                      <Badge key={permission} variant="default" className="text-xs bg-green-100 text-green-800">
-                        {formatPermissionName(permission)}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Total Summary */}
-              <div className="border-t pt-4">
-                <div className="text-sm text-muted-foreground">
-                  Total Permissions: {selectedUserPermissions.permissions.total.length}
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div className="flex justify-end pt-4">
-            <Button onClick={() => setPermissionsDialogOpen(false)}>
-              Close
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Password Reset Dialog */}
-      <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reset Password</DialogTitle>
-            <DialogDescription>
-              Current password for user: {resetPasswordUser?.name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="current-password">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="current-password"
-                  type="text"
-                  value={currentPassword || ""}
-                  readOnly
-                  className="bg-gray-50"
-                  placeholder={isLoadingCurrentPassword ? "Loading..." : "No password available"}
-                />
-                {isLoadingCurrentPassword && (
-                  <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={() => setResetPasswordDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                if (resetPasswordUser) {
-                  resetPasswordMutation.mutate(resetPasswordUser.id);
-                }
-              }}
-              disabled={resetPasswordMutation.isPending}
-            >
-              {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Manage Users for Role Dialog */}
-      <Dialog open={manageUsersDialogOpen} onOpenChange={setManageUsersDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Manage Users - Role: {selectedRoleForUsers?.name}</DialogTitle>
-            <DialogDescription>
-              All users in the system - check/uncheck to assign/remove from this role
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedRoleForUsers && (
-            <div className="space-y-4">
-              {/* All Users with Checkboxes */}
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <input
-                          type="checkbox"
-                          checked={usersData?.users.every(user => roleAssignments[user.id]) || false}
-                          onChange={(e) => {
-                            const newAssignments = {...roleAssignments};
-                            usersData?.users.forEach(user => {
-                              newAssignments[user.id] = e.target.checked;
-                            });
-                            setRoleAssignments(newAssignments);
-                          }}
-                          className="rounded border-gray-300"
-                        />
-                      </TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Current Role</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {usersData?.users?.map((user) => (
-                      <TableRow key={user.id} className={roleAssignments[user.id] ? "bg-blue-50" : ""}>
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            checked={roleAssignments[user.id] || false}
-                            onChange={(e) => {
-                              setRoleAssignments(prev => ({
-                                ...prev,
-                                [user.id]: e.target.checked
-                              }));
-                            }}
-                            className="rounded border-gray-300"
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell>{user.username}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          {user.roles && user.roles.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {user.roles.map(userRole => (
-                                <Badge key={userRole.id} variant="outline" className="text-xs">
-                                  {userRole.name}
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-gray-500">No Role</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={user.isActive ? "default" : "secondary"}
-                            className={user.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
-                          >
-                            {user.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                
-                {!usersData?.users || usersData.users.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No users found
-                  </div>
-                ) : (
-                  <div className="p-4 bg-gray-50 text-sm text-gray-600">
-                    <div className="flex justify-between">
-                      <span>Total users: {usersData.users.length}</span>
-                      <span>Selected: {Object.values(roleAssignments).filter(Boolean).length}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setManageUsersDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                if (selectedRoleForUsers) {
-                  assignRolesMutation.mutate({
-                    roleId: selectedRoleForUsers.id,
-                    userAssignments: roleAssignments
-                  });
-                }
-              }}
-              disabled={assignRolesMutation.isPending}
-              className="bg-blue-600 text-white hover:bg-blue-700"
-            >
-              {assignRolesMutation.isPending ? "Saving..." : "Save Changes"}
+            <Button onClick={() => setIsPermissionsModalOpen(false)}>
+              Save Changes
             </Button>
           </div>
         </DialogContent>

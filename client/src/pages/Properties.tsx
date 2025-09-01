@@ -6,8 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building, MapPin, Eye, Users, FileText, Edit } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
-import { useAuth } from "@/hooks/useAuth";
-import { usePermissions } from "@/hooks/usePermissions";
 import { EditPropertyDialog } from "@/components/EditPropertyDialog";
 
 interface Property {
@@ -44,15 +42,9 @@ interface PropertyWithCustomer extends Property {
 export default function Properties() {
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const { user } = useAuth();
-  const { hasPermission } = usePermissions();
 
-  // Check if user has admin permissions to see all properties
-  const canViewAll = hasPermission('customer.view.all') || hasPermission('agreement.view.all');
-
-  const { data: properties, isLoading, refetch, error } = useQuery<PropertyWithCustomer[]>({
-    queryKey: ['/api/properties'],
-    enabled: !!user, // Only run query when user is authenticated
+  const { data: properties, isLoading, refetch } = useQuery<PropertyWithCustomer[]>({
+    queryKey: ['/api/properties/all'],
   });
 
   const handleEditProperty = (property: PropertyWithCustomer) => {
@@ -69,24 +61,20 @@ export default function Properties() {
     refetch();
   };
 
-  // Dynamic title and subtitle based on user permissions
-  const pageTitle = canViewAll ? "Properties" : "My Properties";
-  const pageSubtitle = canViewAll ? "View and manage properties" : "View your properties";
-
   if (isLoading) {
     return (
-      <AdminLayout title={pageTitle} subtitle={pageSubtitle}>
+      <AdminLayout title="Properties" subtitle="Manage all properties">
         <div className="p-6">Loading...</div>
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout title={pageTitle} subtitle={pageSubtitle}>
+    <AdminLayout title="Properties" subtitle="Manage all properties across customers">
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold" data-testid="text-properties-count">
-            {properties?.length || 0} {canViewAll ? "Properties" : "My Properties"}
+            {properties?.length || 0} Properties
           </h2>
         </div>
 
@@ -96,19 +84,14 @@ export default function Properties() {
               <Building className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Properties Found</h3>
               <p className="text-muted-foreground mb-4">
-                {canViewAll 
-                  ? "No properties have been created yet. Properties are created through the customer management section."
-                  : "You don't have any properties yet. Contact support to add your properties."
-                }
+                No properties have been created yet. Properties are created through the customer management section.
               </p>
-              {canViewAll && (
-                <Link href="/customers">
-                  <Button data-testid="button-go-to-customers">
-                    <Users className="h-4 w-4 mr-2" />
-                    Go to Customers
-                  </Button>
-                </Link>
-              )}
+              <Link href="/customers">
+                <Button data-testid="button-go-to-customers">
+                  <Users className="h-4 w-4 mr-2" />
+                  Go to Customers
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         ) : (
@@ -120,11 +103,9 @@ export default function Properties() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Property
                     </th>
-                    {canViewAll && (
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer
-                      </th>
-                    )}
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Address
                     </th>
@@ -154,18 +135,16 @@ export default function Properties() {
                           )}
                         </div>
                       </td>
-                      {canViewAll && (
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {property.customer.name}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {property.customer.mobile}
-                            </div>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {property.customer.name}
                           </div>
-                        </td>
-                      )}
+                          <div className="text-sm text-gray-500">
+                            {property.customer.mobile}
+                          </div>
+                        </div>
+                      </td>
                       <td className="px-6 py-4">
                         <div className={`text-sm ${property.society ? 'text-gray-900' : 'text-gray-400 italic'}`}>
                           {property.society || 'No Society/Building Name'}
@@ -195,31 +174,27 @@ export default function Properties() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                        {canViewAll && (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => handleEditProperty(property)}
-                            data-testid={`button-edit-property-${property.id}`}
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                        )}
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleEditProperty(property)}
+                          data-testid={`button-edit-property-${property.id}`}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
                         <Link href={`/customers/${property.customerId}/properties/${property.id}/agreements`}>
                           <Button size="sm" variant="outline" data-testid={`button-view-agreements-${property.id}`}>
                             <FileText className="h-4 w-4 mr-2" />
                             View Agreements
                           </Button>
                         </Link>
-                        {canViewAll && (
-                          <Link href={`/customers/${property.customerId}/properties`}>
-                            <Button size="sm" variant="ghost" data-testid={`button-view-customer-${property.customerId}`}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Customer
-                            </Button>
-                          </Link>
-                        )}
+                        <Link href={`/customers/${property.customerId}/properties`}>
+                          <Button size="sm" variant="ghost" data-testid={`button-view-customer-${property.customerId}`}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Customer
+                          </Button>
+                        </Link>
                       </td>
                     </tr>
                   ))}

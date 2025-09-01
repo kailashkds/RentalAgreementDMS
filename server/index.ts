@@ -46,7 +46,7 @@ async function initializeAdminUser() {
   try {
     log("Checking for unified admin user...");
     // Check if admin user exists in unified users table
-    const adminUser = await storage.getUserByMobile("9999999999");
+    const adminUser = await storage.getUserByPhone("9999999999");
     
     if (!adminUser) {
       log("Creating unified admin user...");
@@ -55,7 +55,7 @@ async function initializeAdminUser() {
         name: "Admin",
         firstName: "Admin", 
         lastName: null,
-        mobile: "9999999999",
+        phone: "9999999999",
         username: "admin", // Keep username for backwards compatibility
         password: hashedPassword,
         defaultRole: "Super Admin",
@@ -73,14 +73,14 @@ async function initializeAdminUser() {
     // Force retry once more in case of connection issues
     try {
       await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-      const adminUser2 = await storage.getUserByMobile("9999999999");
+      const adminUser2 = await storage.getUserByPhone("9999999999");
       if (!adminUser2) {
         const hashedPassword = await bcrypt.hash("admin123", 10);
         const retryAdmin = await storage.createUser({
           name: "Admin",
           firstName: "Admin",
           lastName: null,
-          mobile: "9999999999",
+          phone: "9999999999",
           username: "admin",
           password: hashedPassword,
           defaultRole: "Super Admin",
@@ -105,7 +105,7 @@ async function initializeRBAC() {
     await seedRBAC();
     
     // Assign Super Admin role to the unified admin user
-    const adminUser = await storage.getUserByMobile("9999999999");
+    const adminUser = await storage.getUserByPhone("9999999999");
     if (adminUser) {
       try {
         await assignDefaultRoleToUser(adminUser.id, "Super Admin");

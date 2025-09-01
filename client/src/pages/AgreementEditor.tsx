@@ -404,42 +404,147 @@ export default function AgreementEditor() {
       // Get the current editor content
       const editorContent = editorRef.current.innerHTML;
       
-      // Import html2pdf dynamically
-      const html2pdf = (await import('html2pdf.js' as any)).default;
-      
-      // Create a temporary container for the HTML content
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = editorContent;
-      tempDiv.style.width = '210mm'; // A4 width
-      tempDiv.style.fontFamily = 'Arial, sans-serif';
-      document.body.appendChild(tempDiv);
-      
-      // Configure pdf options
-      const options = {
-        margin: [15, 10, 15, 10], // mm
-        filename: `Agreement-${agreementNumber}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
-          useCORS: true,
-          letterRendering: true 
-        },
-        jsPDF: { 
-          unit: 'mm', 
-          format: 'a4', 
-          orientation: 'portrait' 
-        }
-      };
-      
-      // Generate and download PDF
-      await html2pdf().set(options).from(tempDiv).save();
-      
-      // Clean up
-      document.body.removeChild(tempDiv);
+      // Create a temporary HTML page for printing/PDF generation
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Agreement - ${agreementNumber}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              @page {
+                margin: 15mm 10mm 20mm 10mm;
+                @bottom-center { content: none; }
+                @bottom-left { content: none; }
+                @bottom-right { 
+                  content: "Page " counter(page) " of " counter(pages);
+                  font-size: 10px;
+                  color: #666;
+                  font-family: ${language === 'gujarati' 
+                    ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif'
+                    : language === 'hindi'
+                    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                    : language === 'tamil'
+                    ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                    : language === 'marathi'
+                    ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                    : 'Arial, sans-serif'};
+                }
+                @top-center { content: none; }
+                @top-left { content: none; }
+                @top-right { content: none; }
+              }
+              
+              body { 
+                font-family: ${language === 'gujarati' 
+                  ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif' 
+                  : language === 'hindi'
+                  ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                  : language === 'tamil'
+                  ? '"Noto Sans Tamil", "Latha", "Lohit Tamil", system-ui, Arial, sans-serif'
+                  : language === 'marathi'
+                  ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
+                  : 'Arial, sans-serif'}; 
+                margin: 0;
+                padding: 20px;
+                line-height: 1.6;
+                background: white;
+                font-size: 14px;
+                text-rendering: optimizeLegibility;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                font-feature-settings: "kern" 1, "liga" 1;
+              }
+              
+              .agreement-content {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                background: white;
+                min-height: 1056px;
+              }
+              
+              /* Enhanced font support for all languages */
+              .gujarati-content, .gujarati-content * {
+                font-family: "Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif !important;
+              }
+              
+              /* Enhanced English font support and styling */
+              .english-content, .english-content * {
+                font-family: Arial, sans-serif !important;
+                font-size: 14px !important;
+              }
+              
+              /* Consistent spacing for all languages */
+              .party-details p {
+                margin: 3px 0 !important;
+                line-height: 1.5 !important;
+              }
+              
+              /* Title styling */
+              h1, h2, h3 {
+                font-weight: bold !important;
+                margin: 20px 0 15px 0 !important;
+                text-align: center !important;
+              }
+              
+              h1 {
+                font-size: 20px !important;
+              }
+              
+              /* Page break controls */
+              .page-break-before {
+                page-break-before: always !important;
+              }
+              
+              .document-page {
+                page-break-before: always !important;
+                page-break-inside: avoid !important;
+                margin: 20px 0 !important;
+              }
+              
+              .document-page:first-child {
+                page-break-before: auto !important;
+              }
+              
+              /* Hide any editing artifacts */
+              [contenteditable] {
+                -webkit-user-modify: read-only !important;
+                -moz-user-modify: read-only !important;
+                user-modify: read-only !important;
+              }
+              
+              /* Remove any highlight from find/replace */
+              span[style*="background-color: #ffeb3b"] {
+                background-color: transparent !important;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="agreement-content ${language === 'gujarati' ? 'gujarati-content' : 'english-content'}">
+              ${editorContent}
+            </div>
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+        
+        // Focus the new window and trigger print dialog
+        printWindow.focus();
+        
+        // Small delay to ensure content is loaded before printing
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      } else {
+        throw new Error('Could not open print window - popup blocked?');
+      }
       
       toast({
-        title: "PDF Downloaded Successfully",
-        description: "The agreement PDF has been downloaded.",
+        title: "PDF Generated Successfully",
+        description: "The agreement has been opened in a new window for download.",
       });
       
       // Close the editor and return to agreements list after successful PDF generation
@@ -518,86 +623,81 @@ export default function AgreementEditor() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-none">
-        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-            <Button 
-              variant="ghost" 
-              onClick={goBack}
-              className="flex items-center gap-2 shrink-0"
-              data-testid="back-button"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Back to Agreements</span>
-              <span className="sm:hidden">Back</span>
-            </Button>
-            <div className="w-full sm:w-auto">
-              <h1 className="text-xl sm:text-2xl font-bold">Agreement Editor</h1>
-              <p className="text-muted-foreground text-sm sm:text-base">Agreement #{agreementNumber}</p>
-              {lastSaved && (
-                <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                  <Clock className="h-3 w-3" />
-                  Last saved: {lastSaved.toLocaleString()}
-                </p>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
-            {isSaving && (
-              <div className="text-sm text-blue-600 font-medium flex items-center gap-1">
-                <Clock className="h-4 w-4 animate-spin" />
-                <span className="hidden sm:inline">Auto-saving...</span>
-                <span className="sm:hidden">Saving...</span>
-              </div>
+    <div className="container mx-auto py-6">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            onClick={goBack}
+            className="flex items-center gap-2"
+            data-testid="back-button"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Agreements
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Agreement Editor</h1>
+            <p className="text-muted-foreground">Agreement #{agreementNumber}</p>
+            {lastSaved && (
+              <p className="text-xs text-green-600 flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Last saved: {lastSaved.toLocaleString()}
+              </p>
             )}
-            {isDirty && !isSaving && (
-              <div className="text-sm text-orange-600 font-medium">
-                • Unsaved changes
-              </div>
-            )}
-            {!isDirty && lastSaved && !isSaving && (
-              <div className="text-sm text-green-600 font-medium">
-                ✓ All changes saved
-              </div>
-            )}
-            
-            <Button 
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-2 w-full sm:w-auto"
-              variant="outline"
-              data-testid="save-continue"
-            >
-              <Save className="h-4 w-4" />
-              <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save & Continue Later'}</span>
-              <span className="sm:hidden">{isSaving ? 'Saving...' : 'Save'}</span>
-            </Button>
           </div>
         </div>
+        
+        <div className="flex items-center gap-3">
+          {isSaving && (
+            <div className="text-sm text-blue-600 font-medium flex items-center gap-1">
+              <Clock className="h-4 w-4 animate-spin" />
+              Auto-saving...
+            </div>
+          )}
+          {isDirty && !isSaving && (
+            <div className="text-sm text-orange-600 font-medium">
+              • Unsaved changes
+            </div>
+          )}
+          {!isDirty && lastSaved && !isSaving && (
+            <div className="text-sm text-green-600 font-medium">
+              ✓ All changes saved
+            </div>
+          )}
+          
+          <Button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-2"
+            variant="outline"
+            data-testid="save-continue"
+          >
+            <Save className="h-4 w-4" />
+            {isSaving ? 'Saving...' : 'Save & Continue Later'}
+          </Button>
+        </div>
+      </div>
 
-        <div className="space-y-4 sm:space-y-6">
-          <Card className="shadow-lg">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <span className="text-lg sm:text-xl">Document Editor</span>
-                <Button 
-                  onClick={generatePDF}
-                  disabled={isGeneratingPdf}
-                  className="flex items-center gap-2 w-full sm:w-auto"
-                  data-testid="generate-pdf"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span className="hidden sm:inline">{isGeneratingPdf ? 'Generating...' : 'Generate PDF'}</span>
-                  <span className="sm:hidden">{isGeneratingPdf ? 'Generating...' : 'PDF'}</span>
-                </Button>
-              </CardTitle>
-              
-              {/* Formatting Toolbar */}
-              <div className="flex flex-wrap items-center gap-2 p-2 sm:p-3 border rounded-md bg-gray-50 overflow-x-auto">
-                {/* Text Formatting */}
-                <div className="flex items-center gap-1 border-r pr-2 shrink-0">
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Document Editor</span>
+              <Button 
+                onClick={generatePDF}
+                disabled={isGeneratingPdf}
+                className="flex items-center gap-2"
+                data-testid="generate-pdf"
+              >
+                <FileText className="h-4 w-4" />
+                {isGeneratingPdf ? 'Generating...' : 'Generate PDF'}
+              </Button>
+            </CardTitle>
+            
+            {/* Formatting Toolbar */}
+            <div className="flex items-center gap-2 p-3 border rounded-md bg-gray-50">
+              {/* Text Formatting */}
+              <div className="flex items-center gap-1 border-r pr-2">
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -721,7 +821,7 @@ export default function AgreementEditor() {
             <div
               ref={editorRef}
               contentEditable
-              className="min-h-[400px] sm:min-h-[600px] lg:min-h-[700px] p-3 sm:p-4 lg:p-6 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white overflow-auto resize-none text-sm sm:text-base"
+              className="min-h-[600px] p-4 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               style={{
                 fontFamily: language === 'gujarati' 
                   ? '"Noto Sans Gujarati", "Shruti", "Lohit Gujarati", system-ui, Arial, sans-serif'
@@ -729,10 +829,7 @@ export default function AgreementEditor() {
                   ? '"Noto Sans Devanagari", "Mangal", "Lohit Devanagari", system-ui, Arial, sans-serif'
                   : language === 'tamil'
                   ? '"Noto Sans Tamil", "Lohit Tamil", system-ui, Arial, sans-serif'
-                  : '"Times New Roman", serif',
-                maxWidth: '100%',
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word'
+                  : '"Times New Roman", serif'
               }}
               onInput={handleContentChange}
               onPaste={handleContentChange}
@@ -748,47 +845,6 @@ export default function AgreementEditor() {
                 font-family: 'Times New Roman', serif;
                 line-height: 1.6;
                 color: #000;
-                max-width: 100%;
-                word-wrap: break-word;
-                overflow-wrap: break-word;
-              }
-              
-              /* Responsive adjustments */
-              @media (max-width: 640px) {
-                .editor-content {
-                  font-size: 14px;
-                  line-height: 1.5;
-                }
-                
-                .editor-content h1 {
-                  font-size: 18pt;
-                }
-                
-                .editor-content h2 {
-                  font-size: 16pt;
-                }
-                
-                .editor-content h3 {
-                  font-size: 14pt;
-                }
-              }
-              
-              @media (min-width: 641px) and (max-width: 1024px) {
-                .editor-content {
-                  font-size: 15px;
-                }
-                
-                .editor-content h1 {
-                  font-size: 20pt;
-                }
-                
-                .editor-content h2 {
-                  font-size: 17pt;
-                }
-                
-                .editor-content h3 {
-                  font-size: 15pt;
-                }
               }
               
               .editor-content p {
@@ -894,7 +950,6 @@ export default function AgreementEditor() {
           </CardContent>
         </Card>
       </div>
-    </div>
     </div>
   );
 }

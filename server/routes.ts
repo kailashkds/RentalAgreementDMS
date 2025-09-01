@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import type { Address } from "@shared/schema";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
@@ -8,7 +7,7 @@ import { ObjectPermission } from "./objectAcl";
 import { mapFormDataToTemplateFields, generatePdfHtml, convertPdfToImages } from "./fieldMapping";
 import { setupAuth, requireAuth, optionalAuth } from "./auth";
 import { requirePermission } from "./rbacMiddleware";
-import { insertPropertySchema, insertAgreementSchema } from "@shared/schema";
+import { insertCustomerSchema, insertSocietySchema, insertPropertySchema, insertAgreementSchema, insertPdfTemplateSchema } from "@shared/schema";
 import { directFileUpload } from "./directFileUpload";
 import { upload, getFileInfo, deleteFile, readFileAsBase64 } from "./localFileUpload";
 import { seedRBAC, assignDefaultRoleToUser, assignDefaultRoleToCustomer } from "./rbacSeed";
@@ -33,8 +32,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adminUser: adminUser ? { 
           id: adminUser.id, 
           username: adminUser.username, 
-          mobile: adminUser.mobile, 
-          name: adminUser.name
+          phone: adminUser.phone, 
+          name: `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() 
         } : null,
         totalAdmins: allAdmins.users.length,
         environment: process.env.NODE_ENV || 'development'
@@ -58,8 +57,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Admin already exists", 
           admin: { 
             username: existingAdmin.username, 
-            mobile: existingAdmin.mobile, 
-            name: existingAdmin.name
+            phone: existingAdmin.phone, 
+            name: `${existingAdmin.firstName || ''} ${existingAdmin.lastName || ''}`.trim() 
           } 
         });
       }
@@ -68,7 +67,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newAdmin = await storage.createUser({
         name: "Administrator",
         username: "admin",
-        mobile: "9999999999",
+        phone: "9999999999",
+        firstName: "Administrator",
+        lastName: null,
         password: hashedPassword,
         defaultRole: "super_admin",
         status: "active"
@@ -78,23 +79,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Admin created successfully", 
         admin: { 
           username: newAdmin.username, 
-          mobile: newAdmin.mobile, 
-          name: newAdmin.name
+          phone: newAdmin.phone, 
+          name: `${newAdmin.firstName || ''} ${newAdmin.lastName || ''}`.trim() 
         } 
       });
     } catch (error) {
       res.status(500).json({ error: String(error) });
     }
   });
-  // Dashboard stats - accessible to all authenticated users
+  // Dashboard stats
   app.get("/api/dashboard/stats", requireAuth, async (req: any, res) => {
     try {
       // Check permissions to determine data access level
       const canViewAllAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.all');
       const canViewOwnAgreements = await storage.userHasPermission(req.user.id, 'agreement.view.own');
       
-      // Dashboard is now accessible to all authenticated users
-      // Data will be filtered based on user's permissions below
+      if (!canViewAllAgreements && !canViewOwnAgreements) {
+        return res.status(403).json({ 
+          message: "You don't have permission to view the dashboard",
+          error: "dashboard_access_denied",
+          action: "Contact an administrator to request dashboard access permissions"
+        });
+      }
       
       // If user can only view own agreements, filter stats by their ID
       const userId = (!canViewAllAgreements && canViewOwnAgreements) ? req.user.id : undefined;
@@ -177,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser({
         name,
         username,
-        mobile: `999${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`, // Generate 10-digit mobile
+        phone: `999${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`, // Generate 10-digit phone
         password: hashedPassword,
         status: 'active',
         isActive: true,
@@ -227,13 +233,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user exists
-      const userToDelete = await storage.getUser(id);
+      const userToDelete = await storage.getAdminUser(id);
       if (!userToDelete) {
         return res.status(404).json({ message: "User not found" });
       }
       
       // Delete the user
-      await storage.deleteUser(id);
+      await storage.deleteAdminUser(id);
       res.status(204).send();
     } catch (error) {
       console.error("Delete admin user error:", error);
@@ -344,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         email,
         username: finalUsername,
-        mobile: phone, // Map phone to mobile field
+        phone,
         password: hashedPassword,
         status: 'active',
         isActive: true,
@@ -384,8 +390,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (error.detail?.includes('username')) {
           return res.status(400).json({ message: "Username already exists" });
         }
-        if (error.detail?.includes('mobile')) {
-          return res.status(400).json({ message: "Mobile number already exists" });
+        if (error.detail?.includes('phone') || error.detail?.includes('mobile')) {
+          return res.status(400).json({ message: "Phone number already exists" });
         }
       }
       
@@ -404,7 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/unified/users/:id", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { name, email, username, mobile, status, isActive, roleId } = req.body;
+      const { name, email, username, phone, status, isActive, roleId } = req.body;
       
       // Get existing user
       const existingUser = await storage.getUser(id);
@@ -417,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         email,
         username,
-        mobile,
+        phone,
         status,
         isActive,
       });
@@ -455,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           changedBy: req.user.id,
           diff: { 
             before: existingUser, 
-            after: { name, email, username, mobile, status, isActive, roleId } 
+            after: { name, email, username, phone, status, isActive, roleId } 
           },
           metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
         });
@@ -483,11 +489,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             action: "Choose a different username"
           });
         }
-        if (error.detail?.includes('mobile')) {
+        if (error.detail?.includes('phone') || error.detail?.includes('mobile')) {
           return res.status(400).json({ 
-            message: "This mobile number is already registered",
-            error: "duplicate_mobile",
-            action: "Use a different mobile number or check if this user already exists"
+            message: "This phone number is already registered",
+            error: "duplicate_phone",
+            action: "Use a different phone number or check if this user already exists"
           });
         }
       }
@@ -575,108 +581,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Migrate all users to have encrypted passwords
-  app.post("/api/admin/migrate-user-passwords", requireAuth, requirePermission({ permission: "system.admin" }), async (req: any, res) => {
-    try {
-      const usersToMigrate = await storage.getUsers({ hasEncryptedPassword: false });
-      const results = [];
-      
-      for (const user of usersToMigrate.users) {
-        try {
-          // Generate a new password for this user
-          const newPassword = generatePassword(12);
-          
-          // Reset the user's password (this will create both hashed and encrypted versions)
-          await storage.resetUserPassword(user.id, newPassword);
-          
-          results.push({
-            userId: user.id,
-            name: user.name,
-            username: user.username,
-            newPassword: newPassword,
-            success: true
-          });
-        } catch (error) {
-          results.push({
-            userId: user.id,
-            name: user.name,
-            username: user.username,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            success: false
-          });
-        }
-      }
-      
-      res.json({
-        message: "Password migration completed",
-        totalUsers: usersToMigrate.users.length,
-        successful: results.filter(r => r.success).length,
-        failed: results.filter(r => !r.success).length,
-        results: results
-      });
-    } catch (error) {
-      console.error("Error migrating user passwords:", error);
-      res.status(500).json({ message: "Failed to migrate user passwords" });
-    }
-  });
-
-  // Get current password (for display before reset)
-  app.get("/api/unified/users/:id/current-password", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      
-      // Get current user data to decrypt current password
-      const user = await storage.getUser(id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      let currentPassword = null;
-      try {
-        // Try to decrypt the current password if it exists
-        if (user.encryptedPassword) {
-          const { decryptPasswordFromStorage } = await import('./encryption');
-          currentPassword = decryptPasswordFromStorage(user.encryptedPassword);
-        } else if (user.password) {
-          // User has a hashed password but no encrypted version
-          currentPassword = "Password is hashed and cannot be decrypted. Please reset to generate a new password.";
-        } else {
-          currentPassword = "No password set for this user";
-        }
-      } catch (decryptError) {
-        console.warn("Failed to decrypt current password:", decryptError);
-        currentPassword = "Unable to decrypt current password";
-      }
-      
-      res.json({ currentPassword });
-    } catch (error) {
-      console.error("Error getting current password:", error);
-      res.status(500).json({ message: "Failed to get current password" });
-    }
-  });
-
   app.patch("/api/unified/users/:id/reset-password", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
       const { newPassword } = req.body;
-      
-      // Get current user data to decrypt current password
-      const user = await storage.getUser(id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      let currentPassword = null;
-      try {
-        // Try to decrypt the current password if it exists
-        if (user.encryptedPassword) {
-          const { decryptPasswordFromStorage } = await import('./encryption');
-          currentPassword = decryptPasswordFromStorage(user.encryptedPassword);
-        }
-      } catch (decryptError) {
-        console.warn("Failed to decrypt current password:", decryptError);
-        currentPassword = "Unable to decrypt current password";
-      }
       
       const finalPassword = newPassword || generatePassword();
       await storage.resetUserPassword(id, finalPassword);
@@ -694,17 +602,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn("Failed to create audit log:", auditError);
       }
 
-      res.json({ 
-        currentPassword: currentPassword,
-        newPassword: finalPassword 
-      });
+      res.json({ password: finalPassword });
     } catch (error) {
       console.error("Error resetting user password:", error);
       res.status(500).json({ message: "Failed to reset password" });
     }
   });
 
-  app.patch("/api/unified/users/:id/toggle-status", requireAuth, requirePermission({ permission: "user.status.change" }), async (req: any, res) => {
+  app.patch("/api/unified/users/:id/toggle-status", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
       const { isActive } = req.body;
@@ -795,6 +700,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/unified/users/:id/permission-overrides/:permissionId", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
+    try {
+      const { id, permissionId } = req.params;
+      
+      // Check if user exists
+      const user = await storage.getUser(id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if permission exists
+      const permission = await storage.getPermission(permissionId);
+      if (!permission) {
+        return res.status(404).json({ message: "Permission not found" });
+      }
+
+      await storage.removeUserPermissionOverride(id, permissionId);
+
+      // Log audit (non-blocking)
+      try {
+        await storage.createAuditLog({
+          action: 'user.permission_override_removed',
+          resourceType: 'user',
+          resourceId: id,
+          changedBy: req.user.id,
+          diff: { permissionOverride: { removed: permission.code } },
+          metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
+        });
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+      }
+
+      res.json({ message: "Permission override removed successfully" });
+    } catch (error) {
+      console.error("Error removing permission override:", error);
+      res.status(500).json({ message: "Failed to remove permission override" });
+    }
+  });
 
   // Unified roles endpoint
   app.get("/api/unified/roles", requireAuth, async (req, res) => {
@@ -941,11 +884,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (auditError) {
         console.warn("Failed to create audit log:", auditError);
-      }
-
-      // Broadcast permission updates to all users with this role
-      if ((httpServer as any).broadcastPermissionUpdate) {
-        await (httpServer as any).broadcastPermissionUpdate(id, role.name);
       }
 
       res.json({
@@ -1261,7 +1199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: "customer-template",
           name: "Customer Template",
           description: "Basic customer access with own-only permissions",
-          permissions: ["agreement.view.own", "download.agreement.own"]
+          permissions: ["agreement.view.own", "download.agreement.own", "dashboard.view"]
         },
         {
           id: "staff-template", 
@@ -1270,7 +1208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           permissions: [
             "agreement.view.all", "agreement.create", "agreement.edit.own", "agreement.notarize",
             "download.agreement.all", "share.agreement.all", "customer.view.all",
-            "template.create", "template.edit"
+            "template.create", "template.edit", "dashboard.view"
           ]
         },
         {
@@ -1457,119 +1395,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error removing role from user:", error);
       res.status(500).json({ message: "Failed to remove role from user" });
-    }
-  });
-
-  // User Permission Override Management - Add debugging middleware
-  app.use("/api/unified/users/:userId/permission-overrides*", (req, res, next) => {
-    console.log(`🌐 ROUTE DEBUG: ${req.method} ${req.originalUrl}`);
-    console.log(`🌐 Params:`, req.params);
-    console.log(`🌐 Body:`, req.body);
-    next();
-  });
-
-  app.post("/api/unified/users/:userId/permission-overrides", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
-    try {
-      const { userId } = req.params;
-      const { permissionId } = req.body;
-      console.log(`🔧 DEBUG: Adding permission override for user ${userId}, permission ${permissionId}`);
-      
-      if (!permissionId) {
-        console.log(`❌ Permission ID is required`);
-        return res.status(400).json({ message: "Permission ID is required" });
-      }
-      
-      // Check if user exists
-      const user = await storage.getUser(userId);
-      if (!user) {
-        console.log(`❌ User not found: ${userId}`);
-        return res.status(404).json({ message: "User not found" });
-      }
-      console.log(`✅ User found: ${user.name}`);
-      
-      // Get all user permissions to determine the action
-      const userPermissions = await storage.getUserPermissionsWithSources(userId);
-      const rolePermissions = userPermissions.filter(p => p.source === 'role');
-      console.log(`📊 User has ${userPermissions.length} total permissions, ${rolePermissions.length} from roles`);
-      
-      // Find the permission
-      const permission = await storage.getPermission(permissionId);
-      if (!permission) {
-        console.log(`❌ Permission not found: ${permissionId}`);
-        return res.status(404).json({ message: "Permission not found" });
-      }
-      console.log(`✅ Permission found: ${permission.code}`);
-      
-      // Check if user has this permission from roles
-      const hasFromRole = rolePermissions.some(p => p.code === permission.code);
-      console.log(`🔍 User has permission '${permission.code}' from role: ${hasFromRole}`);
-      
-      if (hasFromRole) {
-        // User has this permission from role, so we need to REMOVE the removal
-        // (i.e., restore the role-based permission)
-        console.log(`🔄 Removing permission removal to restore role-based permission`);
-        await storage.removeUserPermissionRemoval(userId, permissionId);
-        console.log(`✅ Permission removal removed successfully`);
-      } else {
-        // User doesn't have this permission from role, so we ADD it manually
-        console.log(`➕ Adding manual permission override`);
-        await storage.addUserPermissionOverride(userId, permissionId, req.user.id);
-        console.log(`✅ Manual permission override added successfully`);
-      }
-      
-      res.json({ message: "Permission override updated successfully" });
-    } catch (error) {
-      console.error("❌ Error updating user permission override:", error);
-      res.status(500).json({ message: "Failed to update permission override" });
-    }
-  });
-  
-  app.delete("/api/unified/users/:userId/permission-overrides/:permissionId", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
-    try {
-      const { userId, permissionId } = req.params;
-      console.log(`🔧 DEBUG: Removing permission override for user ${userId}, permission ${permissionId}`);
-      
-      // Check if user exists
-      const user = await storage.getUser(userId);
-      if (!user) {
-        console.log(`❌ User not found: ${userId}`);
-        return res.status(404).json({ message: "User not found" });
-      }
-      console.log(`✅ User found: ${user.name}`);
-      
-      // Get all user permissions to determine the action
-      const userPermissions = await storage.getUserPermissionsWithSources(userId);
-      const rolePermissions = userPermissions.filter(p => p.source === 'role');
-      console.log(`📊 User has ${userPermissions.length} total permissions, ${rolePermissions.length} from roles`);
-      
-      // Find the permission
-      const permission = await storage.getPermission(permissionId);
-      if (!permission) {
-        console.log(`❌ Permission not found: ${permissionId}`);
-        return res.status(404).json({ message: "Permission not found" });
-      }
-      console.log(`✅ Permission found: ${permission.code}`);
-      
-      // Check if user has this permission from roles
-      const hasFromRole = rolePermissions.some(p => p.code === permission.code);
-      console.log(`🔍 User has permission '${permission.code}' from role: ${hasFromRole}`);
-      
-      if (hasFromRole) {
-        // User has this permission from role, so we REMOVE it by adding a removal
-        console.log(`➖ Adding permission removal for role-based permission`);
-        await storage.addUserPermissionRemoval(userId, permissionId, req.user.id);
-        console.log(`✅ Permission removal added successfully`);
-      } else {
-        // User has this permission manually, so we REMOVE the manual override
-        console.log(`🗑️ Removing manual permission override`);
-        await storage.removeUserPermissionOverride(userId, permissionId);
-        console.log(`✅ Manual permission override removed successfully`);
-      }
-      
-      res.json({ message: "Permission override removed successfully" });
-    } catch (error) {
-      console.error("❌ Error removing user permission override:", error);
-      res.status(500).json({ message: "Failed to remove permission override" });
     }
   });
 
@@ -1784,8 +1609,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get customer password info for admin viewing (Protected endpoint)
-  app.get("/api/customers/:id/password-info", requireAuth, requirePermission("customer.edit.all"), async (req, res) => {
+  // Decrypt customer password for admin viewing (Protected endpoint)
+  app.get("/api/customers/:id/decrypt-password", requireAuth, requirePermission("customer.edit.all"), async (req, res) => {
     try {
       const customer = await storage.getCustomer(req.params.id);
       
@@ -1793,43 +1618,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Customer not found" });
       }
 
-      let passwordInfo = {
-        hasPassword: false,
-        password: null,
-        isEncrypted: false,
-        canView: false,
-        lastResetDate: null
-      };
+      let plainTextPassword: string;
 
-      // Try to get password from various sources
       if (customer.encryptedPassword) {
-        try {
-          // Try to decrypt the password
-          const plainTextPassword = decryptPasswordFromStorage(customer.encryptedPassword);
-          passwordInfo = {
-            hasPassword: true,
-            password: plainTextPassword as string,
-            isEncrypted: true,
-            canView: true,
-            lastResetDate: customer.updatedAt
-          };
-        } catch (decryptError) {
-          console.log("Decryption failed, checking for fallback options");
-          // If decryption fails, still provide info that password exists but can't be viewed
-          passwordInfo = {
-            hasPassword: true,
-            password: null,
-            isEncrypted: true,
-            canView: false,
-            lastResetDate: customer.updatedAt
-          };
-        }
+        // Customer has encrypted password - decrypt it
+        plainTextPassword = decryptPasswordFromStorage(customer.encryptedPassword);
+      } else if (customer.password && !customer.password.startsWith('$2b$')) {
+        // Customer has plain text password (legacy format)
+        plainTextPassword = customer.password;
+      } else {
+        // Customer has hashed password but no encrypted backup
+        return res.status(400).json({ error: "Password is hashed but no encrypted backup available" });
       }
-
-      res.json(passwordInfo);
+      
+      res.json({ password: plainTextPassword });
     } catch (error) {
-      console.error("Error getting customer password info:", error);
-      res.status(500).json({ error: "Failed to get password information" });
+      console.error("Error getting customer password:", error);
+      res.status(500).json({ error: "Failed to get password" });
     }
   });
 
@@ -1861,14 +1666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Create customer data schema dynamically since we moved to unified users table
-      const customerDataSchema = z.object({
-        name: z.string().min(1),
-        mobile: z.string().min(10),
-        email: z.string().email().optional(),
-        password: z.string().optional()
-      });
-      const customerData = customerDataSchema.parse(req.body);
+      const customerData = insertCustomerSchema.parse(req.body);
       const customer = await storage.createCustomer({
         ...customerData,
         password: customerData.password || undefined
@@ -1933,14 +1731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Create customer data schema dynamically since we moved to unified users table
-      const customerDataSchema = z.object({
-        name: z.string().min(1).optional(),
-        mobile: z.string().min(10).optional(),
-        email: z.string().email().optional(),
-        password: z.string().optional()
-      });
-      const customerData = customerDataSchema.parse(req.body);
+      const customerData = insertCustomerSchema.partial().parse(req.body);
       // Remove null values and convert to correct types
       const cleanData = Object.fromEntries(
         Object.entries(customerData).filter(([_, value]) => value !== null)
@@ -2036,7 +1827,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties", requireAuth, async (req, res) => {
     try {
       const currentUser = req.user as any;
-      const { customerId } = req.query; // Get customerId from query parameters
       
       if (!currentUser) {
         return res.status(401).json({ message: "User not found" });
@@ -2048,26 +1838,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user can view all properties or only their own
       const canViewAll = userPermissions.includes('agreement.view.all') || userPermissions.includes('customer.view.all');
       
-      // If a specific customerId is requested
-      if (customerId) {
-        // Check if admin/staff can view this customer's properties, or if customer is viewing their own
-        if (canViewAll || currentUser.id === customerId) {
-          const properties = await storage.getProperties(customerId as string);
-          res.json(properties);
-        } else {
-          return res.status(403).json({ message: "Insufficient permissions to view this customer's properties" });
-        }
+      if (canViewAll) {
+        // Admin/Staff can see all properties
+        const properties = await storage.getAllPropertiesWithCustomers();
+        res.json(properties);
       } else {
-        // No specific customer requested - use original logic
-        if (canViewAll) {
-          // Admin/Staff can see all properties
-          const properties = await storage.getAllPropertiesWithCustomers();
-          res.json(properties);
-        } else {
-          // Customer can only see their own properties
-          const properties = await storage.getProperties(currentUser.id);
-          res.json(properties);
-        }
+        // Customer can only see their own properties
+        const properties = await storage.getProperties(currentUser.id);
+        res.json(properties);
       }
     } catch (error) {
       console.error("Error fetching properties:", error);
@@ -2301,14 +2079,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
         console.log(`[PDF Download] Found ${templates.length} templates`);
         
-        const template = templates.find(t => t.isActive) || templates[0] || {
-          id: 'default-rental-agreement',
-          name: 'Default Rental Agreement',
-          isActive: true,
-          htmlTemplate: '<div style="font-family: Arial, sans-serif; padding: 20px;"><h1>Rental Agreement</h1><p>Owner: {{OWNER_NAME}}</p><p>Tenant: {{TENANT_NAME}}</p><p>Property: {{PROPERTY_FULL_ADDRESS}}</p><p>Monthly Rent: {{MONTHLY_RENT}}</p><p>Security Deposit: {{SECURITY_DEPOSIT}}</p></div>'
-        };
+        const template = templates.find(t => t.isActive) || templates[0];
         
-        if (!template?.htmlTemplate) {
+        if (!template) {
           console.error(`[PDF Download] No PDF template found for agreement ${agreement.agreementNumber}, language: ${agreement.language || 'english'}`);
           return res.status(404).json({ 
             message: "No PDF template found", 
@@ -2431,12 +2204,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[Get Content] No edited content found for agreement ${id}, generating from template`);
         // Generate content from template as fallback
         const templates = await storage.getPdfTemplates('rental_agreement', agreement.language || 'english');
-        const template = templates.find(t => t.isActive) || templates[0] || {
-          id: 'default-rental-agreement',
-          name: 'Default Rental Agreement',
-          isActive: true,
-          htmlTemplate: '<div style="font-family: Arial, sans-serif; padding: 20px;"><h1>Rental Agreement</h1><p>Owner: {{OWNER_NAME}}</p><p>Tenant: {{TENANT_NAME}}</p><p>Property: {{PROPERTY_FULL_ADDRESS}}</p><p>Monthly Rent: {{MONTHLY_RENT}}</p><p>Security Deposit: {{SECURITY_DEPOSIT}}</p></div>'
-        };
+        const template = templates.find(t => t.isActive) || templates[0];
+        
+        if (!template) {
+          return res.status(404).json({ 
+            message: "No template found to generate content",
+            errorCode: "TEMPLATE_NOT_FOUND",
+            action: "Please ensure a template is available for this agreement type"
+          });
+        }
 
         const generatedHtml = await generatePdfHtml(agreement, template.htmlTemplate, agreement.language || 'english');
         
@@ -2475,7 +2251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/societies", async (req, res) => {
     try {
-      const societyData = req.body;
+      const societyData = insertSocietySchema.parse(req.body);
       const society = await storage.createSociety(societyData);
       res.status(201).json(society);
     } catch (error) {
@@ -2507,20 +2283,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Manual expiry update endpoint
-  app.post("/api/agreements/update-expired", requireAuth, requirePermission('agreement.edit.all'), async (req, res) => {
-    try {
-      const updatedCount = await storage.updateExpiredAgreements();
-      res.json({ 
-        message: `Updated ${updatedCount} expired agreements`,
-        updatedCount 
-      });
-    } catch (error) {
-      console.error("Error updating expired agreements:", error);
-      res.status(500).json({ error: "Failed to update expired agreements" });
-    }
-  });
-
   // Agreement routes
   app.get("/api/agreements", requireAuth, async (req: any, res) => {
     try {
@@ -2530,8 +2292,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { isSuperAdmin, getDataAccessLevel, applyRoleBasedFiltering } = await import('./rbacUtils.js');
       const accessLevel = await getDataAccessLevel(req.user);
       
-      // Agreements are now accessible to all authenticated users
-      // Data will be filtered based on user's permissions below
+      // Check if user has any permission to view agreements
+      if (!accessLevel.canViewAll && !accessLevel.canViewOwn) {
+        return res.status(403).json({ message: "Insufficient permissions to view agreements" });
+      }
       
       // Prepare base filters from query parameters
       const baseFilters = {
@@ -2583,7 +2347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Checking for existing draft for customer:", agreementData.customerId);
         
         const existingDrafts = await storage.getAgreements({
-          customerId: agreementData.customerId as string,
+          customerId: agreementData.customerId,
           status: 'draft',
           limit: 1
         });
@@ -2874,7 +2638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/uploads/*", (req, res) => {
     try {
       // Extract the full path after /uploads/
-      const requestedPath = (req.params as any)['0'] || '';
+      const requestedPath = req.params['0'] || '';
       console.log(`[File Serve] Requested file: ${requestedPath}`);
       
       const filePath = path.join(process.cwd(), 'uploads', requestedPath);
@@ -2972,22 +2736,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         propertyAddress,
         notarizedDocumentUrl,
         policeVerificationDocumentUrl,
-        policeVerificationStatus,
         status,
         isImported
       } = req.body;
 
       // Validate required fields
-      if (!notarizedDocumentUrl) {
-        return res.status(400).json({ error: 'Notarized agreement document is required' });
+      if (!notarizedDocumentUrl || !policeVerificationDocumentUrl) {
+        return res.status(400).json({ error: 'Both notarized agreement and police verification document URLs are required' });
       }
-
-      // Police verification document is compulsory ONLY when status is "yes"
-      if (policeVerificationStatus === "done" && !policeVerificationDocumentUrl) {
-        return res.status(400).json({ error: 'Police verification document is compulsory when status is "Done"' });
-      }
-
-      // For "no" and "pending" status, document upload is optional during import but can be uploaded later
 
       if (!customer?.id || !ownerDetails?.name || !tenantDetails?.name) {
         return res.status(400).json({ error: 'Customer, owner, and tenant details are required' });
@@ -3006,9 +2762,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerName: customer.name,
         language: language,
         status: 'active',
-        notaryStatus: 'complete', // Imported documents already have notarized document
-        policeVerificationStatus: policeVerificationStatus || 'pending',
-        isImported: isImported || true, // Mark as imported agreement
         ownerDetails: ownerDetails,
         tenantDetails: tenantDetails,
         propertyDetails: {
@@ -3045,7 +2798,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           uploadDate: new Date().toISOString(),
           url: notarizedDocumentUrl
         },
-        documents: policeVerificationDocumentUrl ? {
+        documents: {
           policeVerificationDocument: {
             filename: "police_verification.pdf",
             originalName: "Police Verification Certificate",
@@ -3054,7 +2807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             uploadDate: new Date().toISOString(),
             url: policeVerificationDocumentUrl
           }
-        } : {}
+        }
       };
 
       // Validate the data using the insert schema
@@ -3142,80 +2895,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('[Notarized Upload] Error:', error);
       res.status(500).json({ error: 'Failed to upload notarized document' });
-    }
-  });
-
-  // Upload police verification document endpoint
-  app.post('/api/agreements/:agreementId/upload-police-verification', upload.single('policeVerificationDocument'), async (req, res) => {
-    try {
-      const { agreementId } = req.params;
-      
-      if (!req.file) {
-        return res.status(400).json({ error: 'No police verification document uploaded' });
-      }
-
-      // Validate file type (PDF, JPG, JPEG, PNG)
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-      if (!allowedTypes.includes(req.file.mimetype)) {
-        return res.status(400).json({ error: 'Only PDF, JPG, JPEG, and PNG files are allowed for police verification documents' });
-      }
-
-      const agreement = await storage.getAgreement(agreementId);
-      if (!agreement) {
-        return res.status(404).json({ error: 'Agreement not found' });
-      }
-
-      // Create a proper naming convention: AGR-XXXX-police-verification-YYYY-MM-DD
-      const currentDate = new Date().toISOString().split('T')[0];
-      const fileExtension = req.file.originalname.split('.').pop();
-      const policeVerificationFileName = `${agreement.agreementNumber}-police-verification-${currentDate}.${fileExtension}`;
-      const policeVerificationFilePath = path.join('uploads', 'police-verification', policeVerificationFileName);
-      
-      // Create police verification directory if it doesn't exist
-      const policeVerificationDir = path.join(process.cwd(), 'uploads', 'police-verification');
-      if (!fs.existsSync(policeVerificationDir)) {
-        fs.mkdirSync(policeVerificationDir, { recursive: true });
-      }
-
-      // Move file to proper location with proper name
-      const finalPath = path.join(process.cwd(), 'uploads', 'police-verification', policeVerificationFileName);
-      fs.renameSync(req.file.path, finalPath);
-      
-      // Update agreement with police verification document details and status
-      const policeVerificationDocData = {
-        filename: policeVerificationFileName,
-        originalName: req.file.originalname,
-        uploadDate: new Date().toISOString(),
-        url: `/uploads/police-verification/${policeVerificationFileName}`,
-        size: req.file.size,
-        mimetype: req.file.mimetype
-      };
-      
-      // Update the agreement's documents and police verification status
-      const currentDocuments = agreement.documents || {};
-      await storage.updateAgreement(agreementId, {
-        documents: {
-          ...currentDocuments,
-          policeVerificationDocument: policeVerificationDocData
-        },
-        policeVerificationStatus: 'done' as any // Update status to done after upload
-      });
-
-      console.log(`[Police Verification Upload] Document uploaded for agreement ${agreement.agreementNumber}: ${policeVerificationFileName}`);
-      
-      res.json({
-        success: true,
-        message: 'Police verification document uploaded successfully',
-        filename: policeVerificationFileName,
-        originalName: req.file.originalname,
-        url: `/uploads/police-verification/${policeVerificationFileName}`,
-        size: req.file.size,
-        uploadDate: policeVerificationDocData.uploadDate
-      });
-
-    } catch (error) {
-      console.error('[Police Verification Upload] Error:', error);
-      res.status(500).json({ error: 'Failed to upload police verification document' });
     }
   });
 
@@ -3397,14 +3076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Use agreement templates instead of deprecated PDF templates
-      const templateDataSchema = z.object({
-        name: z.string().min(1),
-        language: z.string(),
-        htmlTemplate: z.string(),
-        isActive: z.boolean().optional()
-      });
-      const templateData = templateDataSchema.parse(req.body);
+      const templateData = insertPdfTemplateSchema.parse(req.body);
       const template = await storage.createPdfTemplate(templateData);
       
       console.log(`Template creation: User ${req.user.id} (${req.user.role}) created template ${template.id} - Super Admin: ${isSuperAdmin(req.user)}`);
@@ -3435,18 +3107,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Use agreement templates instead of deprecated PDF templates
-      const templateDataSchema = z.object({
-        name: z.string().min(1).optional(),
-        language: z.string().optional(),
-        htmlTemplate: z.string().optional(),
-        isActive: z.boolean().optional()
-      });
-      const templateData = templateDataSchema.parse(req.body);
+      const templateData = insertPdfTemplateSchema.partial().parse(req.body);
       const template = await storage.updatePdfTemplate(req.params.id, templateData);
-      if (!template) {
-        return res.status(404).json({ message: "PDF template not found" });
-      }
       
       console.log(`Template update: User ${req.user.id} (${req.user.role}) updated template ${template.id} - Super Admin: ${isSuperAdmin(req.user)}`);
       res.json(template);
@@ -3476,12 +3138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const deleted = await storage.deletePdfTemplate(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ message: "PDF template not found" });
-      }
-      
       console.log(`Template deletion: User ${req.user.id} (${req.user.role}) deleted template ${req.params.id} - Super Admin: ${isSuperAdmin(req.user)}`);
+      await storage.deletePdfTemplate(req.params.id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting PDF template:", error);
@@ -3517,13 +3175,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Template ID and agreement data are required" });
       }
 
-      // Use fallback template since templates are no longer stored in database
-      const template = {
-        id: 'default-rental-agreement',
-        name: 'Default Rental Agreement',
-        isActive: true,
-        htmlTemplate: '<div style="font-family: Arial, sans-serif; padding: 20px;"><h1>Rental Agreement</h1><p>Owner: {{OWNER_NAME}}</p><p>Tenant: {{TENANT_NAME}}</p><p>Property: {{PROPERTY_FULL_ADDRESS}}</p><p>Monthly Rent: {{MONTHLY_RENT}}</p><p>Security Deposit: {{SECURITY_DEPOSIT}}</p></div>'
-      };
+      const template = await storage.getPdfTemplate(templateId);
+      if (!template) {
+        return res.status(404).json({ message: "PDF template not found" });
+      }
 
       // Use the new field mapping system to generate PDF HTML (now with document embedding)
       const processedHtml = await generatePdfHtml(agreementData, template.htmlTemplate);
@@ -3644,110 +3299,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
-  
-  // Setup WebSocket server for real-time updates
-  const wss = new WebSocketServer({ 
-    server: httpServer, 
-    path: '/ws',
-    clientTracking: true 
-  });
-  
-  // Store user sessions for targeted updates
-  const userSessions = new Map<string, WebSocket[]>();
-  
-  wss.on('connection', async (ws, req) => {
-    console.log('🔌 WebSocket client connected');
-    
-    // Handle authentication and user session tracking
-    ws.on('message', async (data) => {
-      try {
-        const message = JSON.parse(data.toString());
-        
-        if (message.type === 'auth') {
-          const userId = message.userId;
-          if (userId) {
-            // Track user connection
-            if (!userSessions.has(userId)) {
-              userSessions.set(userId, []);
-            }
-            userSessions.get(userId)!.push(ws);
-            
-            // Send initial permissions
-            try {
-              const permissions = await storage.getUserPermissions(userId);
-              ws.send(JSON.stringify({
-                type: 'permissions_update',
-                permissions: permissions
-              }));
-            } catch (error) {
-              console.error('Error fetching user permissions:', error);
-            }
-            
-            console.log(`👤 User ${userId} authenticated via WebSocket`);
-          }
-        }
-      } catch (error) {
-        console.error('WebSocket message error:', error);
-      }
-    });
-    
-    ws.on('close', () => {
-      // Clean up user sessions when connection closes
-      for (const [userId, connections] of Array.from(userSessions.entries())) {
-        const index = connections.indexOf(ws);
-        if (index !== -1) {
-          connections.splice(index, 1);
-          if (connections.length === 0) {
-            userSessions.delete(userId);
-          }
-          break;
-        }
-      }
-      console.log('🔌 WebSocket client disconnected');
-    });
-    
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-    });
-  });
-  
-  // Broadcast permission updates to all affected users
-  async function broadcastPermissionUpdate(roleId: string, roleName: string) {
-    try {
-      // Get all users with this role
-      const usersWithRole = await storage.getUsersByRoleId(roleId);
-      
-      for (const user of usersWithRole) {
-        const userConnections = userSessions.get(user.id);
-        if (userConnections && userConnections.length > 0) {
-          // Get updated permissions for this user
-          const updatedPermissions = await storage.getUserPermissions(user.id);
-          
-          const updateMessage = JSON.stringify({
-            type: 'permissions_update',
-            permissions: updatedPermissions,
-            reason: `Role "${roleName}" permissions updated`,
-            timestamp: new Date().toISOString()
-          });
-          
-          // Send to all connections for this user
-          userConnections.forEach(ws => {
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(updateMessage);
-            }
-          });
-          
-          console.log(`📡 Broadcasted permission update to user ${user.id} (role: ${roleName})`);
-        }
-      }
-    } catch (error) {
-      console.error('Error broadcasting permission update:', error);
-    }
-  }
-  
-  // Make broadcast function available globally
-  (httpServer as any).broadcastPermissionUpdate = broadcastPermissionUpdate;
-  
   return httpServer;
 }
 

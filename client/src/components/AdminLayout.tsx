@@ -69,9 +69,9 @@ export default function AdminLayout({ children, title, subtitle }: AdminLayoutPr
       return hasPermission('customer.view.all') || hasPermission('customer.manage');
     }
     
-    // Properties - accessible to customers (their own) and admins (all properties)
+    // Properties - requires property management permission (assuming staff+ access)
     if (item.href === "/properties") {
-      return hasPermission('agreement.view.own') || hasPermission('customer.manage') || hasPermission('system.admin');
+      return hasPermission('system.admin') || hasPermission('customer.manage');
     }
     
     // Documents - requires agreement viewing permission

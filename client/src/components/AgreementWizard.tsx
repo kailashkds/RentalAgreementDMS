@@ -746,31 +746,30 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   };
 
   const handleSocietySelect = (society: any, fieldPrefix: string) => {
-    // fieldPrefix already includes .address, so we just need to add the field name
     // @ts-ignore - Dynamic field paths for address auto-fill
-    setValue(`${fieldPrefix}.society`, society.societyName, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.address.society`, society.societyName, { shouldValidate: true, shouldDirty: true });
     // @ts-ignore
-    setValue(`${fieldPrefix}.area`, society.area, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.address.area`, society.area, { shouldValidate: true, shouldDirty: true });
     // @ts-ignore
-    setValue(`${fieldPrefix}.city`, society.city, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.address.city`, society.city, { shouldValidate: true, shouldDirty: true });
     // @ts-ignore
-    setValue(`${fieldPrefix}.pincode`, society.pincode, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.address.pincode`, society.pincode, { shouldValidate: true, shouldDirty: true });
     // @ts-ignore
-    setValue(`${fieldPrefix}.state`, society.state, { shouldValidate: true, shouldDirty: true });
+    setValue(`${fieldPrefix}.address.state`, society.state, { shouldValidate: true, shouldDirty: true });
     
     // Force form to re-render by triggering validation
     // @ts-ignore - Dynamic field paths for address auto-fill
     trigger([
       // @ts-ignore
-      `${fieldPrefix}.society`,
+      `${fieldPrefix}.address.society`,
       // @ts-ignore
-      `${fieldPrefix}.area`, 
+      `${fieldPrefix}.address.area`, 
       // @ts-ignore
-      `${fieldPrefix}.city`,
+      `${fieldPrefix}.address.city`,
       // @ts-ignore
-      `${fieldPrefix}.pincode`,
+      `${fieldPrefix}.address.pincode`,
       // @ts-ignore
-      `${fieldPrefix}.state`
+      `${fieldPrefix}.address.state`
     ]);
     
     setShowSocietySuggestions(false);
@@ -818,17 +817,13 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       console.log("Customer lookup error:", error);
       if (error instanceof Error && error.message.includes('404')) {
         console.log(`No existing customer found for ${searchType}: ${searchTerm}`);
-        // Silent fail for 404 - this is normal when typing new names
       } else {
         console.error("Customer lookup error:", error);
-        // Only show error toast for actual network/server errors, not missing customers
-        if (!(error instanceof Error && error.message.includes('404'))) {
-          toast({
-            title: "Lookup Error",
-            description: "Unable to search existing customers", 
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Lookup Failed",
+          description: "Could not check for existing customer details",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -1435,55 +1430,40 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="customerId">
-                  {canViewAllCustomers ? t("selectCustomer") : "Customer"} <span className="text-red-500">*</span>
-                </Label>
-                {canViewAllCustomers ? (
-                  <>
-                    <Select 
-                      {...register("customerId", { required: "Customer selection is required" })}
-                      value={watch("customerId") || ""} 
-                      onValueChange={(value) => setValue("customerId", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a customer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customersData?.customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name} - {customer.mobile}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.customerId && (
-                      <p className="text-sm text-red-600 mt-1">{errors.customerId.message}</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      Select an existing customer to copy their details for the agreement
-                    </p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowCustomerModal(true)}
-                      className="mt-2 text-blue-600 hover:text-blue-700"
-                    >
-                      <Plus className="mr-1 h-4 w-4" />
-                      {t("createNewCustomer")}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
-                      <div className="text-sm font-medium text-gray-900">{(user as any)?.name}</div>
-                      <div className="text-sm text-gray-500">{(user as any)?.mobile}</div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Creating agreement for your account
-                    </p>
-                  </>
+                <Label htmlFor="customerId">{t("selectCustomer")} <span className="text-red-500">*</span></Label>
+                <Select 
+                  {...register("customerId", { required: "Customer selection is required" })}
+                  value={watch("customerId") || ""} 
+                  onValueChange={(value) => setValue("customerId", value)}
+                >
+                  <SelectTrigger disabled={!canViewAllCustomers}>
+                    <SelectValue placeholder="Select a customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customersData?.customers.filter(customer => customer.id && customer.id.trim() !== '').map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name} - {customer.mobile}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.customerId && (
+                  <p className="text-sm text-red-600 mt-1">{errors.customerId.message}</p>
                 )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Select an existing customer to copy their details for the agreement
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowCustomerModal(true)}
+                  className="mt-2 text-blue-600 hover:text-blue-700"
+                  disabled={!canViewAllCustomers}
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  {t("createNewCustomer")}
+                </Button>
               </div>
 
               <div>
