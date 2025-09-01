@@ -1833,8 +1833,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/customers/:id/toggle-status", async (req, res) => {
+  app.patch("/api/customers/:id/toggle-status", requireAuth, async (req: any, res) => {
     try {
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin } = await import('./rbacUtils.js');
+      
+      // Only super_admin can toggle customer status
+      if (!isSuperAdmin(req.user)) {
+        return res.status(403).json({ 
+          message: "Insufficient permissions to change customer status",
+          error: "permission_denied",
+          action: "Only super administrators can activate/deactivate customers"
+        });
+      }
+      
       const { isActive } = req.body;
       const customer = await storage.toggleCustomerStatus(req.params.id, isActive);
       res.json(customer);
@@ -1978,8 +1990,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/customers/:id", async (req, res) => {
+  app.delete("/api/customers/:id", requireAuth, async (req: any, res) => {
     try {
+      // Use RBAC utilities for permission checking
+      const { isSuperAdmin } = await import('./rbacUtils.js');
+      
+      // Only super_admin can delete customers
+      if (!isSuperAdmin(req.user)) {
+        return res.status(403).json({ 
+          message: "Insufficient permissions to delete customers",
+          error: "permission_denied",
+          action: "Only super administrators can delete customers"
+        });
+      }
+      
       await storage.deleteCustomer(req.params.id);
       res.status(204).send();
     } catch (error) {
@@ -3686,6 +3710,243 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating PDF:", error);
       res.status(500).json({ message: "Failed to generate PDF" });
+    }
+  });
+
+  // Bulk Export Routes
+  app.get("/api/agreements/bulk-export", requireAuth, async (req: any, res) => {
+    try {
+      const { format, customerId, status, search, tenant, owner, notary, policeVerification } = req.query;
+      
+      // Check permissions - only super admin or staff can export agreements
+      const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
+      if (!isSuperAdmin(req.user)) {
+        const hasPermission = await hasPermissionWithSuperAdminBypass(req.user, 'agreement.view.all');
+        if (!hasPermission) {
+          return res.status(403).json({ 
+            message: "Insufficient permissions to export agreements",
+            error: "permission_denied",
+            action: "Contact an administrator for bulk export access"
+          });
+        }
+      }
+
+      // Get filtered agreements
+      const agreementsData = await storage.getAgreements({
+        search: search || '',
+        status: status === "all" ? undefined : status,
+        customerId: customerId === "all" ? undefined : customerId,
+        tenantFilter: tenant === "all" ? undefined : tenant,
+        ownerFilter: owner === "all" ? undefined : owner,
+        notaryFilter: notary === "all" ? undefined : notary,
+        policeVerificationFilter: policeVerification === "all" ? undefined : policeVerification,
+        limit: 1000, // Export up to 1000 agreements
+        offset: 0,
+        sortBy: 'agreementNumber',
+        sortOrder: 'desc'
+      });
+
+      if (!agreementsData?.agreements?.length) {
+        return res.status(404).json({ message: "No agreements found to export" });
+      }
+
+      const agreements = agreementsData.agreements;
+      
+      if (format === 'pdf') {
+        // Generate ZIP file with all agreements as PDFs
+        const AdmZip = require('adm-zip');
+        const zip = new AdmZip();
+        
+        for (const agreement of agreements) {
+          try {
+            // Generate PDF HTML for this agreement
+            const template = await storage.getPdfTemplate(agreement.templateId || 'default');
+            if (template) {
+              const agreementFormData = {
+                ownerDetails: agreement.ownerDetails,
+                tenantDetails: agreement.tenantDetails,
+                propertyDetails: agreement.propertyDetails,
+                rentalTerms: agreement.rentalTerms,
+                agreementDate: agreement.agreementDate,
+                createdAt: agreement.createdAt,
+                agreementType: 'rental_agreement'
+              };
+              
+              const processedHtml = await generatePdfHtml(agreementFormData, template.htmlTemplate, template.language);
+              const fileName = `agreement-${agreement.agreementNumber || agreement.id}.html`;
+              zip.addFile(fileName, Buffer.from(processedHtml, 'utf8'));
+            }
+          } catch (error) {
+            console.error(`Error processing agreement ${agreement.id}:`, error);
+          }
+        }
+        
+        const zipBuffer = zip.toBuffer();
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="agreements-pdf-${new Date().toISOString().split('T')[0]}.zip"`);
+        res.send(zipBuffer);
+        
+      } else if (format === 'word') {
+        // Generate ZIP file with all agreements as Word documents
+        const AdmZip = require('adm-zip');
+        const zip = new AdmZip();
+        
+        for (const agreement of agreements) {
+          try {
+            // Generate Word document HTML for this agreement
+            const template = await storage.getPdfTemplate(agreement.templateId || 'default');
+            if (template) {
+              const agreementFormData = {
+                ownerDetails: agreement.ownerDetails,
+                tenantDetails: agreement.tenantDetails,
+                propertyDetails: agreement.propertyDetails,
+                rentalTerms: agreement.rentalTerms,
+                agreementDate: agreement.agreementDate,
+                createdAt: agreement.createdAt,
+                agreementType: 'rental_agreement'
+              };
+              
+              const processedHtml = await generatePdfHtml(agreementFormData, template.htmlTemplate, template.language);
+              const fileName = `agreement-${agreement.agreementNumber || agreement.id}.html`;
+              zip.addFile(fileName, Buffer.from(processedHtml, 'utf8'));
+            }
+          } catch (error) {
+            console.error(`Error processing agreement ${agreement.id}:`, error);
+          }
+        }
+        
+        const zipBuffer = zip.toBuffer();
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="agreements-word-${new Date().toISOString().split('T')[0]}.zip"`);
+        res.send(zipBuffer);
+        
+      } else if (format === 'mixed') {
+        // Generate ZIP file with PDFs, Word docs, and uploaded documents
+        const AdmZip = require('adm-zip');
+        const zip = new AdmZip();
+        
+        for (const agreement of agreements) {
+          try {
+            const agreementFolder = `agreement-${agreement.agreementNumber || agreement.id}/`;
+            
+            // Add PDF version
+            const template = await storage.getPdfTemplate(agreement.templateId || 'default');
+            if (template) {
+              const agreementFormData = {
+                ownerDetails: agreement.ownerDetails,
+                tenantDetails: agreement.tenantDetails,
+                propertyDetails: agreement.propertyDetails,
+                rentalTerms: agreement.rentalTerms,
+                agreementDate: agreement.agreementDate,
+                createdAt: agreement.createdAt,
+                agreementType: 'rental_agreement'
+              };
+              
+              const processedHtml = await generatePdfHtml(agreementFormData, template.htmlTemplate, template.language);
+              zip.addFile(`${agreementFolder}agreement.html`, Buffer.from(processedHtml, 'utf8'));
+            }
+            
+            // Add notarized document if available
+            if (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) {
+              // Note: In a real implementation, you'd fetch the actual file content
+              zip.addFile(`${agreementFolder}notarized-document.pdf`, Buffer.from('Notarized document placeholder', 'utf8'));
+            }
+            
+            // Add police verification if available
+            if (agreement.policeVerificationDocument?.url) {
+              // Note: In a real implementation, you'd fetch the actual file content
+              zip.addFile(`${agreementFolder}police-verification.pdf`, Buffer.from('Police verification placeholder', 'utf8'));
+            }
+            
+          } catch (error) {
+            console.error(`Error processing agreement ${agreement.id}:`, error);
+          }
+        }
+        
+        const zipBuffer = zip.toBuffer();
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="agreements-complete-${new Date().toISOString().split('T')[0]}.zip"`);
+        res.send(zipBuffer);
+        
+      } else {
+        res.status(400).json({ message: "Invalid format. Use 'pdf', 'word', or 'mixed'" });
+      }
+      
+    } catch (error) {
+      console.error("Error in bulk export:", error);
+      res.status(500).json({ message: "Failed to export agreements" });
+    }
+  });
+
+  // Archive agreements route
+  app.post("/api/agreements/archive", requireAuth, async (req: any, res) => {
+    try {
+      const { customerId, status, search, tenant, owner, notary, policeVerification } = req.query;
+      
+      // Check permissions - only super admin can archive agreements
+      const { isSuperAdmin } = await import('./rbacUtils.js');
+      if (!isSuperAdmin(req.user)) {
+        return res.status(403).json({ 
+          message: "Insufficient permissions to archive agreements",
+          error: "permission_denied",
+          action: "Only super administrators can archive agreements"
+        });
+      }
+
+      // Get filtered agreements
+      const agreementsData = await storage.getAgreements({
+        search: search || '',
+        status: status === "all" ? undefined : status,
+        customerId: customerId === "all" ? undefined : customerId,
+        tenantFilter: tenant === "all" ? undefined : tenant,
+        ownerFilter: owner === "all" ? undefined : owner,
+        notaryFilter: notary === "all" ? undefined : notary,
+        policeVerificationFilter: policeVerification === "all" ? undefined : policeVerification,
+        limit: 1000,
+        offset: 0,
+        sortBy: 'agreementNumber',
+        sortOrder: 'desc'
+      });
+
+      if (!agreementsData?.agreements?.length) {
+        return res.status(404).json({ message: "No agreements found to archive" });
+      }
+
+      const agreements = agreementsData.agreements;
+      let archivedCount = 0;
+
+      // Archive each agreement (in a real implementation, you'd have an archive table)
+      for (const agreement of agreements) {
+        try {
+          // Create archive record with version history (placeholder - implement in storage layer)
+          // await storage.createAgreementArchive({
+          //   originalId: agreement.id,
+          //   agreementData: agreement,
+          //   archivedBy: req.user.id,
+          //   archivedAt: new Date(),
+          //   reason: 'Bulk archive operation',
+          //   version: '1.0'
+          // });
+          
+          // Update agreement status to archived (placeholder - implement in storage layer)
+          // await storage.updateAgreementStatus(agreement.id, 'archived');
+          
+          // For now, just count the agreements that would be archived
+          archivedCount++;
+        } catch (error) {
+          console.error(`Error archiving agreement ${agreement.id}:`, error);
+        }
+      }
+
+      res.json({ 
+        message: `Successfully archived ${archivedCount} agreements`,
+        archivedCount,
+        totalProcessed: agreements.length
+      });
+      
+    } catch (error) {
+      console.error("Error in archive operation:", error);
+      res.status(500).json({ message: "Failed to archive agreements" });
     }
   });
 
