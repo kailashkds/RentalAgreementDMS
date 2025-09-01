@@ -1279,19 +1279,21 @@ export class DatabaseStorage implements IStorage {
         orderByClause = asc(agreements.agreementNumber);
         break;
       case "expiry_status_asc":
-        // Sort by expiry status: expiring soon first, then active, then expired at end
+        // Sort by expiry status: expired first, then expiring soon, then active
+        console.log('📊 Using expiry_status_asc - showing expired first');
         orderByClause = [
           sql`CASE 
-            WHEN ${agreements.endDate} IS NULL THEN 1
-            WHEN ${agreements.endDate} < CURRENT_DATE THEN 2
-            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 0
-            ELSE 1
+            WHEN ${agreements.endDate} IS NULL THEN 2
+            WHEN ${agreements.endDate} < CURRENT_DATE THEN 0
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 1
+            ELSE 2
           END`,
           asc(agreements.endDate)
         ];
         break;
       case "expiry_status_desc":
         // Sort by expiry status descending (active first, then expiring soon, then expired)
+        console.log('📊 Using expiry_status_desc - showing active first');
         orderByClause = [
           sql`CASE 
             WHEN ${agreements.endDate} IS NULL THEN 0
@@ -1305,12 +1307,16 @@ export class DatabaseStorage implements IStorage {
       case "expiry_status":
       default:
         // Default expiry urgency sorting (expiring soon first with less days remaining first, then more days, expired at end)
+        console.log('📊 Using default expiry_status - showing expiring soon first');
         orderByClause = [
           sql`CASE 
-            WHEN ${agreements.status} = 'expired' THEN 1000
-            WHEN ${agreements.endDate} IS NULL THEN 999
+            WHEN ${agreements.endDate} IS NULL THEN 1000
             WHEN ${agreements.endDate} < CURRENT_DATE THEN 1000
-            ELSE 1
+            WHEN ${agreements.endDate} = CURRENT_DATE THEN 1
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '7 days' THEN 2
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '30 days' THEN 3
+            WHEN ${agreements.endDate} <= CURRENT_DATE + INTERVAL '90 days' THEN 4
+            ELSE 5
           END`,
           asc(agreements.endDate)
         ];
