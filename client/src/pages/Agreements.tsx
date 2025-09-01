@@ -341,28 +341,36 @@ export default function Agreements() {
           return aNumAsc - bNumAsc;
           
         case "expiry_status_asc":
-          // Sort by expiry status ascending (expired first, then expiring soon, then active)
+          // Sort by expiry status ascending (expiring soon first, then active, then expired at end)
           const getExpiryPriority = (agreement: any) => {
             const endDate = agreement.rentalTerms?.endDate || agreement.endDate;
-            if (!endDate) return 3; // No expiry date - lowest priority
+            if (!endDate) return 1; // No expiry date - middle priority (active)
             
             const today = new Date();
             const expiry = new Date(endDate);
             const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
             
-            if (daysUntilExpiry < 0) return 0; // Expired - highest priority
-            if (daysUntilExpiry <= 30) return 1; // Expiring soon
-            return 2; // Active
+            if (daysUntilExpiry < 0) return 2; // Expired - lowest priority (at end)
+            if (daysUntilExpiry <= 30) return 0; // Expiring soon - highest priority
+            return 1; // Active - middle priority
           };
           
           const aPriority = getExpiryPriority(a);
           const bPriority = getExpiryPriority(b);
           
           if (aPriority === bPriority) {
-            // If same status, sort by expiry date
-            const aEndDate = new Date(a.rentalTerms?.endDate || a.endDate || 0);
-            const bEndDate = new Date(b.rentalTerms?.endDate || b.endDate || 0);
-            return aEndDate.getTime() - bEndDate.getTime();
+            // If same status, handle sorting within each group
+            if (aPriority === 2) {
+              // For expired agreements: sort by expiry date DESC (most recently expired first)
+              const aEndDate = new Date(a.rentalTerms?.endDate || a.endDate || 0);
+              const bEndDate = new Date(b.rentalTerms?.endDate || b.endDate || 0);
+              return bEndDate.getTime() - aEndDate.getTime(); // Reverse order for expired
+            } else {
+              // For active/expiring agreements: sort by expiry date ASC (closest expiry first)
+              const aEndDate = new Date(a.rentalTerms?.endDate || a.endDate || 0);
+              const bEndDate = new Date(b.rentalTerms?.endDate || b.endDate || 0);
+              return aEndDate.getTime() - bEndDate.getTime();
+            }
           }
           
           return aPriority - bPriority;
