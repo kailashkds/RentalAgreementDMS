@@ -912,7 +912,7 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
   }): Promise<{ agreements: Agreement[]; total: number }> {
-    const { customerId, propertyId, status, search, dateFilter, startDate, endDate, limit = 50, offset = 0 } = filters || {};
+    const { customerId, propertyId, status, search, dateFilter, startDate, endDate, limit, offset = 0 } = filters || {};
     
     // console.log(`[Date Filter Debug] Received parameters:`, { dateFilter, startDate, endDate }); // Removed for performance
     
@@ -977,15 +977,21 @@ export class DatabaseStorage implements IStorage {
 
     const whereConditions = conditions.length > 0 ? and(...conditions) : undefined;
 
+    // Build the base query
+    let query = db
+      .select()
+      .from(agreements)
+      .leftJoin(users, eq(agreements.customerId, users.id))
+      .where(whereConditions)
+      .orderBy(asc(agreements.endDate));
+    
+    // Apply pagination only if limit is specified
+    if (limit !== undefined) {
+      query = query.limit(limit).offset(offset);
+    }
+
     const [agreementsResult, totalResult] = await Promise.all([
-      db
-        .select()
-        .from(agreements)
-        .leftJoin(users, eq(agreements.customerId, users.id))
-        .where(whereConditions)
-        .orderBy(asc(agreements.endDate))
-        .limit(limit)
-        .offset(offset),
+      query,
       db
         .select({ count: count() })
         .from(agreements)
