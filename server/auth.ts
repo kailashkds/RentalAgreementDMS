@@ -241,6 +241,18 @@ export async function setupAuth(app: Express) {
         }
         
         const { password: _, ...userWithoutPassword } = user;
+        
+        // Trigger notarized document validation on login (async, doesn't block response)
+        setImmediate(async () => {
+          try {
+            const { NotarizedDocumentValidator } = await import('./notarizedDocumentValidator');
+            const validator = new NotarizedDocumentValidator();
+            await validator.cleanupInvalidNotarizedDocuments();
+          } catch (error) {
+            console.error("[Login-Validation] Error during notarized document validation:", error);
+          }
+        });
+        
         res.json({ user: userWithoutPassword });
       });
     } catch (error) {

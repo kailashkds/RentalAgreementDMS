@@ -11,6 +11,7 @@ import { insertCustomerSchema, insertSocietySchema, insertPropertySchema, insert
 import { directFileUpload } from "./directFileUpload";
 import { upload, getFileInfo, deleteFile, readFileAsBase64 } from "./localFileUpload";
 import { seedRBAC, assignDefaultRoleToUser, assignDefaultRoleToCustomer } from "./rbacSeed";
+import { NotarizedDocumentValidator } from "./notarizedDocumentValidator";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import { decryptPasswordFromStorage, encryptPasswordForStorage } from "./encryption";
@@ -2315,7 +2316,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Agreement listing access: User ${req.user.id} (${req.user.role}) - Super Admin: ${isSuperAdmin(req.user)}, Can View All: ${accessLevel.canViewAll}, Restricted: ${!!accessLevel.restrictToUserId}`);
       
       const result = await storage.getAgreements(finalFilters);
-      res.json(result);
+      
+      // Automatically validate notarized documents and clean up invalid entries
+      try {
+        const validator = new NotarizedDocumentValidator();
+        const validationResults = await validator.validateAllNotarizedDocuments();
+        
+        if (validationResults.invalid.length > 0) {
+          console.log(`[Auto-Validation] Found ${validationResults.invalid.length} invalid notarized documents, cleaning up...`);
+          await validator.cleanupInvalidNotarizedDocuments();
+          
+          // Refresh the agreements data after cleanup
+          const refreshedResult = await storage.getAgreements(finalFilters);
+          res.json(refreshedResult);
+        } else {
+          res.json(result);
+        }
+      } catch (validationError) {
+        console.error("[Auto-Validation] Error during notarized document validation:", validationError);
+        // Return original result if validation fails
+        res.json(result);
+      }
     } catch (error) {
       console.error("Error fetching agreements:", error);
       res.status(500).json({ message: "Failed to fetch agreements" });
@@ -3006,6 +3027,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual notarized document validation endpoint
+  app.post("/api/agreements/validate-notarized", requireAuth, requirePermission('system.admin'), async (req, res) => {
+    try {
+      console.log("[Manual-Validation] Starting manual notarized document validation");
+      const validator = new NotarizedDocumentValidator();
+      const result = await validator.cleanupInvalidNotarizedDocuments();
+      
+      res.json({
+        success: true,
+        message: "Notarized document validation completed",
+        cleanedCount: result.cleanedCount,
+        validCount: result.validCount,
+        details: `Cleaned up ${result.cleanedCount} invalid entries, ${result.validCount} valid documents remain`
+      });
+    } catch (error) {
+      console.error("[Manual-Validation] Error:", error);
+      res.status(500).json({ 
+        error: "Failed to validate notarized documents",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
 
   // Update agreement with document URLs
   app.put("/api/agreements/:id/documents", async (req, res) => {
