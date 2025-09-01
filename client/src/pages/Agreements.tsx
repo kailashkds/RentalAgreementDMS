@@ -274,13 +274,22 @@ export default function Agreements() {
 
   const dateParams = calculateDateRange();
   
-  const { data: agreementsData, isLoading } = useAgreements({
+  const { data: agreementsData, isLoading, refetch } = useAgreements({
     search: searchTerm,
     status: statusFilter === "all" ? "" : statusFilter,
     ...dateParams,
     limit: 25,
     offset: (currentPage - 1) * 25,
   });
+
+  // Force refresh agreements data to ensure latest status
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      queryClient.invalidateQueries({ queryKey: ['/api/agreements'] });
+      refetch();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Auto-adjust current page when total agreements change to ensure we don't exceed max pages
   React.useEffect(() => {
@@ -780,22 +789,13 @@ export default function Agreements() {
   };
 
   const handleDownloadNotarizedFromTable = (agreement: any) => {
-    console.log('Download notarized clicked for:', agreement.agreementNumber);
-    console.log('Agreement data:', {
-      notarizedDocument: agreement.notarizedDocument,
-      notarizedDocumentUrl: agreement.notarizedDocumentUrl,
-      notaryStatus: agreement.notaryStatus
-    });
-    
     const notarizedUrl = agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl;
-    console.log('Notarized URL:', notarizedUrl);
     
     if (notarizedUrl) {
       // Create download link
       const link = document.createElement('a');
       link.href = notarizedUrl;
       link.download = agreement.notarizedDocument?.originalName || `${agreement.agreementNumber}-notarized.pdf`;
-      link.target = '_blank'; // Open in new tab as backup
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -805,7 +805,6 @@ export default function Agreements() {
         description: `Downloading ${agreement.notarizedDocument?.originalName || 'notarized document'}`,
       });
     } else {
-      console.error('No notarized URL found');
       toast({
         title: "Download Failed",
         description: "No notarized document found for this agreement",
