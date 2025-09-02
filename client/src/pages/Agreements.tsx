@@ -684,12 +684,10 @@ export default function Agreements() {
         ownerDetails: {
           name: (document.getElementById('edit-owner-name') as HTMLInputElement)?.value,
           mobile: (document.getElementById('edit-owner-mobile') as HTMLInputElement)?.value,
-          address: (document.getElementById('edit-owner-address') as HTMLTextAreaElement)?.value,
         },
         tenantDetails: {
           name: (document.getElementById('edit-tenant-name') as HTMLInputElement)?.value,
           mobile: (document.getElementById('edit-tenant-mobile') as HTMLInputElement)?.value,
-          address: (document.getElementById('edit-tenant-address') as HTMLTextAreaElement)?.value,
         },
         agreementPeriod: {
           startDate: (document.getElementById('edit-start-date') as HTMLInputElement)?.value,
@@ -1853,22 +1851,6 @@ export default function Agreements() {
                         className="mt-1"
                       />
                     </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="edit-owner-address">Address</Label>
-                      <Textarea 
-                        id="edit-owner-address"
-                        defaultValue={editingImportedAgreement.ownerDetails?.address ? 
-                          [
-                            editingImportedAgreement.ownerDetails.address.flatNo,
-                            editingImportedAgreement.ownerDetails.address.society,
-                            editingImportedAgreement.ownerDetails.address.area,
-                            editingImportedAgreement.ownerDetails.address.city
-                          ].filter(Boolean).join(', ') : ''
-                        }
-                        className="mt-1"
-                        rows={2}
-                      />
-                    </div>
                   </div>
                 </div>
 
@@ -1892,22 +1874,6 @@ export default function Agreements() {
                         id="edit-tenant-mobile"
                         defaultValue={editingImportedAgreement.tenantDetails?.mobile || ''}
                         className="mt-1"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="edit-tenant-address">Address</Label>
-                      <Textarea 
-                        id="edit-tenant-address"
-                        defaultValue={editingImportedAgreement.tenantDetails?.address ? 
-                          [
-                            editingImportedAgreement.tenantDetails.address.flatNo,
-                            editingImportedAgreement.tenantDetails.address.society,
-                            editingImportedAgreement.tenantDetails.address.area,
-                            editingImportedAgreement.tenantDetails.address.city
-                          ].filter(Boolean).join(', ') : ''
-                        }
-                        className="mt-1"
-                        rows={2}
                       />
                     </div>
                   </div>
