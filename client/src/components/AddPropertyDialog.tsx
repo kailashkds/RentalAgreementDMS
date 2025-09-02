@@ -70,7 +70,7 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
 
   const createPropertyMutation = useMutation({
     mutationFn: (data: PropertyFormData) => 
-      apiRequest('POST', '/api/properties', data),
+      apiRequest('/api/properties', 'POST', data),
     onSuccess: () => {
       toast({ 
         title: "Success", 
