@@ -119,6 +119,15 @@ export function UnifiedUserManagement() {
     }
   }, [selectedUser, showEditDialog]);
 
+  // Reset local permission changes when dialog opens or user changes
+  useEffect(() => {
+    if (showPermissionsDialog && selectedUser) {
+      console.log('Resetting permission changes for user:', selectedUser.name);
+      setLocalPermissionChanges(new Set());
+      setHasUnsavedChanges(false);
+    }
+  }, [showPermissionsDialog, selectedUser]);
+
   // Query for all permissions (for permission override management)
   const { data: allPermissions = [] } = useQuery<Permission[]>({
     queryKey: ["/api/rbac/permissions"],
@@ -382,57 +391,80 @@ export function UnifiedUserManagement() {
 
   // Function to handle permission toggle
   const handlePermissionToggle = (permissionCode: string) => {
+    console.log('Toggle clicked for permission:', permissionCode);
+    console.log('Current localPermissionChanges:', Array.from(localPermissionChanges));
+    
     const newChanges = new Set(localPermissionChanges);
     if (newChanges.has(permissionCode)) {
       newChanges.delete(permissionCode);
+      console.log('Removed from local changes:', permissionCode);
     } else {
       newChanges.add(permissionCode);
+      console.log('Added to local changes:', permissionCode);
     }
+    
+    console.log('New localPermissionChanges:', Array.from(newChanges));
     setLocalPermissionChanges(newChanges);
     setHasUnsavedChanges(newChanges.size > 0);
+    console.log('hasUnsavedChanges set to:', newChanges.size > 0);
   };
 
   // Function to save all permission changes
   const savePermissionChanges = async () => {
-    if (!selectedUser || localPermissionChanges.size === 0) return;
+    if (!selectedUser || localPermissionChanges.size === 0) {
+      console.log('No changes to save:', { selectedUser: !!selectedUser, changesSize: localPermissionChanges.size });
+      return;
+    }
 
-    const permissionCodes = Array.from(localPermissionChanges);
-    for (const permissionCode of permissionCodes) {
-      const permission = allPermissions.find(p => p.code === permissionCode);
-      if (!permission) continue;
+    console.log('Saving permission changes:', Array.from(localPermissionChanges));
 
-      const hasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
-      
-      try {
+    try {
+      const permissionCodes = Array.from(localPermissionChanges);
+      for (const permissionCode of permissionCodes) {
+        const permission = allPermissions.find(p => p.code === permissionCode);
+        if (!permission) {
+          console.log('Permission not found:', permissionCode);
+          continue;
+        }
+
+        const hasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
+        console.log(`Processing ${permissionCode}: hasPermission=${hasPermission}`);
+        
         if (hasPermission) {
           // Remove permission
+          console.log('Removing permission:', permissionCode);
           await apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides/${permission.id}`, 'DELETE');
         } else {
           // Add permission
+          console.log('Adding permission:', permissionCode);
           await apiRequest('/api/unified/users/permission-overrides', 'POST', {
             userId: selectedUser.id,
             permissionId: permission.id
           });
         }
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: `Failed to update permission: ${permissionCode}`,
-          variant: "destructive",
-        });
-        return;
       }
+
+      toast({
+        title: "Success",
+        description: "Permission changes saved successfully",
+      });
+
+      setLocalPermissionChanges(new Set());
+      setHasUnsavedChanges(false);
+      
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser.id}/permissions-with-sources`] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
+      
+      console.log('Permission changes saved successfully');
+    } catch (error) {
+      console.error('Error saving permission changes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save permission changes",
+        variant: "destructive",
+      });
     }
-
-    toast({
-      title: "Success",
-      description: "Permission changes saved successfully",
-    });
-
-    setLocalPermissionChanges(new Set());
-    setHasUnsavedChanges(false);
-    queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser.id}/permissions-with-sources`] });
-    queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
   };
 
   // Function to discard changes
