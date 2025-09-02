@@ -351,7 +351,7 @@ export class DatabaseStorage implements IStorage {
           ilike(users.name, `%${filters.search}%`),
           ilike(users.email, `%${filters.search}%`),
           ilike(users.username, `%${filters.search}%`),
-          ilike(users.phone, `%${filters.search}%`)
+          ilike(users.mobile, `%${filters.search}%`)
         )
       );
     }
