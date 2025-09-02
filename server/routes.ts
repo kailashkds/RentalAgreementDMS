@@ -1830,8 +1830,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If withAgreements filter is requested for a specific customer
       if (withAgreements === 'true' && customerId) {
-        // Only return properties where this customer has agreements
-        const properties = await storage.getPropertiesWithAgreements(customerId as string);
+        // Return ALL properties for this customer (including agreement counts)
+        const properties = await storage.getProperties(customerId as string);
         res.json(properties);
         return;
       }
