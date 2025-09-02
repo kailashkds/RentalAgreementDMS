@@ -382,11 +382,22 @@ export function UnifiedUserManagement() {
     setShowPermissionsDialog(true);
   };
 
-  // Function to check if a permission is currently enabled (considering local changes)
+  // Function to check if a permission is currently enabled (considering local changes and role vs override logic)
   const isPermissionEnabled = (permissionCode: string) => {
-    const hasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
+    const userHasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
     const hasLocalChange = localPermissionChanges.has(permissionCode);
-    return hasLocalChange ? !hasPermission : hasPermission;
+    return hasLocalChange ? !userHasPermission : userHasPermission;
+  };
+
+  // Function to get permission source info
+  const getPermissionSource = (permissionCode: string) => {
+    const permissionWithSource = userPermissionsWithSources.find(p => p.code === permissionCode);
+    return permissionWithSource ? permissionWithSource.source : null;
+  };
+
+  // Function to check if user has this permission from their role (not override)
+  const hasPermissionFromRole = (permissionCode: string) => {
+    return userPermissionsWithSources.some(p => p.code === permissionCode && p.source === 'role');
   };
 
   // Function to handle permission toggle
@@ -427,19 +438,32 @@ export function UnifiedUserManagement() {
           continue;
         }
 
-        const hasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
-        console.log(`Processing ${permissionCode}: hasPermission=${hasPermission}`);
+        const userCurrentlyHasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
+        const userHasFromRole = hasPermissionFromRole(permissionCode);
+        const willBeEnabled = isPermissionEnabled(permissionCode);
         
-        if (hasPermission) {
-          // Remove permission
-          console.log('Removing permission:', permissionCode);
-          await apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides/${permission.id}`, 'DELETE');
-        } else {
-          // Add permission
-          console.log('Adding permission:', permissionCode);
-          await apiRequest('/api/unified/users/permission-overrides', 'POST', {
-            userId: selectedUser.id,
-            permissionId: permission.id
+        console.log(`Processing ${permissionCode}: currently=${userCurrentlyHasPermission}, fromRole=${userHasFromRole}, willBe=${willBeEnabled}`);
+        
+        if (userCurrentlyHasPermission && !willBeEnabled) {
+          // User currently has permission but toggle is OFF - need to revoke it
+          if (userHasFromRole) {
+            // They have it from role, so add negative override
+            console.log('Adding negative override (revoke role permission):', permissionCode);
+            await apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides`, 'POST', {
+              permissionId: permission.id,
+              isGranted: false
+            });
+          } else {
+            // They have it from manual override, remove the override
+            console.log('Removing positive override:', permissionCode);
+            await apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides/${permission.id}`, 'DELETE');
+          }
+        } else if (!userCurrentlyHasPermission && willBeEnabled) {
+          // User doesn't have permission but toggle is ON - need to grant it
+          console.log('Adding positive override (grant permission):', permissionCode);
+          await apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides`, 'POST', {
+            permissionId: permission.id,
+            isGranted: true
           });
         }
       }

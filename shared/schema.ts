@@ -101,6 +101,7 @@ export const userPermissions = pgTable("user_permissions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
   permissionId: varchar("permission_id").references(() => permissions.id, { onDelete: 'cascade' }).notNull(),
+  isGranted: boolean("is_granted").default(true).notNull(), // true = add permission, false = remove permission
   createdAt: timestamp("created_at").defaultNow(),
   createdBy: varchar("created_by").references(() => users.id), // Who assigned this override
 });

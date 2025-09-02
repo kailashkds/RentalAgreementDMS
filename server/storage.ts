@@ -1932,30 +1932,36 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(userRoles.userId, userId));
 
-    // Get manual permission overrides
-    const manualPermissions = await db
-      .select({ code: permissions.code })
+    // Get manual permission overrides with grant/revoke status
+    const overrides = await db
+      .select({ 
+        code: permissions.code, 
+        isGranted: userPermissions.isGranted
+      })
       .from(userPermissions)
       .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
       .where(eq(userPermissions.userId, userId));
 
     const result: { code: string; source: 'role' | 'override'; roleName?: string }[] = [];
-
-    // Add role permissions
-    rolePermissions.forEach(p => {
-      result.push({
-        code: p.code,
-        source: 'role',
-        roleName: p.roleName
-      });
-    });
-
-    // Add manual overrides (only if not already from role)
     const rolePermissionCodes = new Set(rolePermissions.map(p => p.code));
-    manualPermissions.forEach(p => {
-      if (!rolePermissionCodes.has(p.code)) {
+    const revokedPermissions = new Set(overrides.filter(o => !o.isGranted).map(o => o.code));
+
+    // Add role permissions (excluding those that have been revoked)
+    rolePermissions.forEach(p => {
+      if (!revokedPermissions.has(p.code)) {
         result.push({
           code: p.code,
+          source: 'role',
+          roleName: p.roleName
+        });
+      }
+    });
+
+    // Add granted overrides (permissions not in role)
+    overrides.forEach(o => {
+      if (o.isGranted && !rolePermissionCodes.has(o.code)) {
+        result.push({
+          code: o.code,
           source: 'override'
         });
       }
@@ -1964,23 +1970,22 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async addUserPermissionOverride(userId: string, permissionId: string, createdBy: string): Promise<void> {
-    // Check if override already exists
-    const existing = await db
-      .select()
-      .from(userPermissions)
+  async addUserPermissionOverride(userId: string, permissionId: string, createdBy: string, isGranted: boolean = true): Promise<void> {
+    // Remove any existing override for this permission
+    await db
+      .delete(userPermissions)
       .where(and(
         eq(userPermissions.userId, userId),
         eq(userPermissions.permissionId, permissionId)
       ));
 
-    if (existing.length === 0) {
-      await db.insert(userPermissions).values({
-        userId,
-        permissionId,
-        createdBy
-      });
-    }
+    // Add new override
+    await db.insert(userPermissions).values({
+      userId,
+      permissionId,
+      isGranted,
+      createdBy
+    });
   }
 
   async removeUserPermissionOverride(userId: string, permissionId: string): Promise<void> {

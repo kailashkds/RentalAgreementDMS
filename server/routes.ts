@@ -660,7 +660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/unified/users/:id/permission-overrides", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { permissionId } = req.body;
+      const { permissionId, isGranted = true } = req.body;
       
       if (!permissionId) {
         return res.status(400).json({ message: "Permission ID is required" });
@@ -678,23 +678,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Permission not found" });
       }
 
-      await storage.addUserPermissionOverride(id, permissionId, req.user.id);
+      await storage.addUserPermissionOverride(id, permissionId, req.user.id, isGranted);
 
       // Log audit (non-blocking)
       try {
         await storage.createAuditLog({
-          action: 'user.permission_override_added',
+          action: isGranted ? 'user.permission_override_granted' : 'user.permission_override_revoked',
           resourceType: 'user',
           resourceId: id,
           changedBy: req.user.id,
-          diff: { permissionOverride: { added: permission.code } },
+          diff: { permissionOverride: { [isGranted ? 'granted' : 'revoked']: permission.code } },
           metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
         });
       } catch (auditError) {
         console.warn("Failed to create audit log:", auditError);
       }
 
-      res.json({ message: "Permission override added successfully" });
+      res.json({ message: `Permission override ${isGranted ? 'granted' : 'revoked'} successfully` });
     } catch (error) {
       console.error("Error adding permission override:", error);
       res.status(500).json({ message: "Failed to add permission override" });
