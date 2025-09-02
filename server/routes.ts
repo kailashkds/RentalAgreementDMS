@@ -68,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newAdmin = await storage.createUser({
         name: "Administrator",
         username: "admin",
-        phone: "9999999999",
+        mobile: "9999999999",
         firstName: "Administrator",
         lastName: null,
         password: hashedPassword,
@@ -184,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser({
         name,
         username,
-        phone: `999${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`, // Generate 10-digit phone
+        mobile: `999${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`, // Generate 10-digit mobile
         password: hashedPassword,
         status: 'active',
         isActive: true,
@@ -312,7 +312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/unified/users", requireAuth, async (req: any, res) => {
     try {
-      const { name, email, username, phone, roleId, password } = req.body;
+      const { name, email, username, mobile, roleId, password } = req.body;
       // Use RBAC utilities for permission checking
       const { isSuperAdmin, hasPermissionWithSuperAdminBypass } = await import('./rbacUtils.js');
       
@@ -351,7 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         email,
         username: finalUsername,
-        phone,
+        mobile,
         password: hashedPassword,
         status: 'active',
         isActive: true,
@@ -411,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/unified/users/:id", requireAuth, requirePermission({ permission: "user.edit.all" }), async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { name, email, username, phone, status, isActive, roleId } = req.body;
+      const { name, email, username, mobile, status, isActive, roleId } = req.body;
       
       // Get existing user
       const existingUser = await storage.getUser(id);
@@ -424,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         email,
         username,
-        phone,
+        mobile,
         status,
         isActive,
       });
@@ -462,7 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           changedBy: req.user.id,
           diff: { 
             before: existingUser, 
-            after: { name, email, username, phone, status, isActive, roleId } 
+            after: { name, email, username, mobile, status, isActive, roleId } 
           },
           metadata: { userAgent: req.headers['user-agent'], ip: req.ip }
         });

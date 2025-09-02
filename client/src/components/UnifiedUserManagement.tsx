@@ -34,7 +34,7 @@ interface UnifiedUser {
   name: string;
   email?: string;
   username?: string;
-  phone?: string;
+  mobile?: string;
   status: string;
   isActive: boolean;
   createdAt: string;
@@ -67,7 +67,7 @@ interface CreateUserData {
   name: string;
   email: string;
   username?: string;
-  phone?: string;
+  mobile?: string;
   roleId: string;
   password?: string;
 }
@@ -86,7 +86,7 @@ export function UnifiedUserManagement() {
     name: "",
     email: "",
     username: "",
-    phone: "",
+    mobile: "",
     roleId: "",
     password: "",
   });
@@ -143,7 +143,7 @@ export function UnifiedUserManagement() {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
       setShowCreateDialog(false);
-      setCreateUserData({ name: "", email: "", username: "", phone: "", roleId: "", password: "" });
+      setCreateUserData({ name: "", email: "", username: "", mobile: "", roleId: "", password: "" });
       
       // Show generated credentials if any
       if (data.credentials) {
@@ -333,7 +333,7 @@ export function UnifiedUserManagement() {
       name: user.name,
       email: user.email || "",
       username: user.username || "",
-      phone: user.phone || "",
+      mobile: user.mobile || "",
       roleId: user.roles[0]?.id || "",
       password: "",
     });
@@ -405,12 +405,12 @@ export function UnifiedUserManagement() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="mobile">Mobile</Label>
                   <Input
-                    id="phone"
-                    value={createUserData.phone}
-                    onChange={(e) => setCreateUserData({ ...createUserData, phone: e.target.value })}
-                    placeholder="Phone number"
+                    id="mobile"
+                    value={createUserData.mobile}
+                    onChange={(e) => setCreateUserData({ ...createUserData, mobile: e.target.value })}
+                    placeholder="Mobile number"
                   />
                 </div>
                 <div className="space-y-2">
@@ -543,8 +543,8 @@ export function UnifiedUserManagement() {
                         {user.email && (
                           <div className="text-sm">{user.email}</div>
                         )}
-                        {user.phone && (
-                          <div className="text-sm text-muted-foreground">{user.phone}</div>
+                        {user.mobile && (
+                          <div className="text-sm text-muted-foreground">{user.mobile}</div>
                         )}
                       </div>
                     </TableCell>
@@ -686,12 +686,12 @@ export function UnifiedUserManagement() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-phone">Phone</Label>
+              <Label htmlFor="edit-mobile">Mobile</Label>
               <Input
-                id="edit-phone"
-                value={createUserData.phone}
-                onChange={(e) => setCreateUserData({ ...createUserData, phone: e.target.value })}
-                placeholder="Phone number"
+                id="edit-mobile"
+                value={createUserData.mobile}
+                onChange={(e) => setCreateUserData({ ...createUserData, mobile: e.target.value })}
+                placeholder="Mobile number"
               />
             </div>
             <div className="space-y-2">
