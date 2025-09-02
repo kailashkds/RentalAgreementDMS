@@ -41,10 +41,12 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
   });
 
   // Fetch customers when no customerId is provided (for general property creation)
-  const { data: customers = [] } = useQuery<any[]>({
+  const { data: customersData } = useQuery<{ customers: any[] }>({
     queryKey: ['/api/customers'],
     enabled: open && !customerId
   });
+  
+  const customers = customersData?.customers || [];
 
   // Get unique buildings/societies for autocomplete
   const buildingOptions = societies
