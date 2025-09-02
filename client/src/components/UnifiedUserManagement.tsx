@@ -302,11 +302,13 @@ export function UnifiedUserManagement() {
   const savePermissionChangesMutation = useMutation({
     mutationFn: async ({ userId, changes }: { userId: string; changes: Set<string> }) => {
       const promises = [];
+      const changeArray = Array.from(changes);
       
-      for (const permissionId of changes) {
-        const userPermission = userPermissionsWithSources.find(up => 
-          allPermissions.find(p => p.id === permissionId && p.code === up.code)
-        );
+      for (const permissionId of changeArray) {
+        const permission = allPermissions.find(p => p.id === permissionId);
+        if (!permission) continue;
+        
+        const userPermission = userPermissionsWithSources.find(up => up.code === permission.code);
         const hasPermission = !!userPermission;
         const isOverride = userPermission?.source === 'override';
         
@@ -907,12 +909,12 @@ export function UnifiedUserManagement() {
                     <div className="text-sm text-muted-foreground">{permission.description}</div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {displayState && isFromRole && !pendingPermissionChanges.has(permission.id) && (
+                    {hasPermission && isFromRole && !pendingPermissionChanges.has(permission.id) && (
                       <Badge variant="secondary" data-testid={`badge-from-role-${permission.code}`}>
                         From Role: {userPermission.roleName}
                       </Badge>
                     )}
-                    {displayState && isOverride && !pendingPermissionChanges.has(permission.id) && (
+                    {hasPermission && isOverride && !pendingPermissionChanges.has(permission.id) && (
                       <Badge variant="default" data-testid={`badge-override-${permission.code}`}>
                         Override
                       </Badge>
@@ -926,7 +928,7 @@ export function UnifiedUserManagement() {
                       variant={displayState ? "destructive" : "default"}
                       size="sm"
                       onClick={() => handlePermissionToggle(permission.id)}
-                      disabled={(hasPermission && isFromRole && !pendingPermissionChanges.has(permission.id))}
+                      disabled={hasPermission && isFromRole && !pendingPermissionChanges.has(permission.id)}
                       data-testid={`button-toggle-permission-${permission.code}`}
                     >
                       {hasPermission && isFromRole && !pendingPermissionChanges.has(permission.id)
