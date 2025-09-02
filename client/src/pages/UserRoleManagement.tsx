@@ -31,8 +31,6 @@ import {
   Eye,
   EyeOff,
   Info,
-  Download,
-  Upload,
   UserCheck
 } from "lucide-react";
 
@@ -612,14 +610,6 @@ export default function UserRoleManagement() {
               </div>
               
               <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import CSV
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
                 <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>
                   <DialogTrigger asChild>
                     <Button data-testid="button-add-user">
