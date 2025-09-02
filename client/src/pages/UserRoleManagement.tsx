@@ -1093,13 +1093,15 @@ export default function UserRoleManagement() {
                               <Users className="h-4 w-4 mr-2" />
                               Manage Users
                             </DropdownMenuItem>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Role
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
+                            {/* Hide delete option if role is assigned to users */}
+                            {users.filter(u => u.roles?.some(userRole => userRole.id === role.id)).length === 0 && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Role
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Delete Role</AlertDialogTitle>
@@ -1118,6 +1120,7 @@ export default function UserRoleManagement() {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
