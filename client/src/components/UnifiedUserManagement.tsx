@@ -83,8 +83,7 @@ export function UnifiedUserManagement() {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
   const [passwordResult, setPasswordResult] = useState<string>("");
-  const [localPermissionChanges, setLocalPermissionChanges] = useState<Set<string>>(new Set());
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [permissionLoadingStates, setPermissionLoadingStates] = useState<Set<string>>(new Set());
   const [createUserData, setCreateUserData] = useState<CreateUserData>({
     name: "",
     email: "",
@@ -119,14 +118,12 @@ export function UnifiedUserManagement() {
     }
   }, [selectedUser, showEditDialog]);
 
-  // Reset local permission changes when dialog opens or user changes
+  // Reset loading states when dialog opens or closes
   useEffect(() => {
-    if (showPermissionsDialog && selectedUser) {
-      console.log('Resetting permission changes for user:', selectedUser.name);
-      setLocalPermissionChanges(new Set());
-      setHasUnsavedChanges(false);
+    if (!showPermissionsDialog) {
+      setPermissionLoadingStates(new Set());
     }
-  }, [showPermissionsDialog, selectedUser]);
+  }, [showPermissionsDialog]);
 
   // Query for all permissions (for permission override management)
   const { data: allPermissions = [] } = useQuery<Permission[]>({
@@ -286,44 +283,40 @@ export function UnifiedUserManagement() {
     },
   });
 
-  // Add permission override mutation
-  const addPermissionOverrideMutation = useMutation({
-    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
-      return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId });
+  // Immediate permission toggle mutation
+  const togglePermissionMutation = useMutation({
+    mutationFn: async ({ userId, permissionCode, shouldEnable }: { userId: string; permissionCode: string; shouldEnable: boolean }) => {
+      const permission = allPermissions.find(p => p.code === permissionCode);
+      if (!permission) throw new Error('Permission not found');
+      
+      if (shouldEnable) {
+        return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId: permission.id });
+      } else {
+        return await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permission.id}`, 'DELETE');
+      }
     },
-    onSuccess: () => {
-      toast({
-        title: "Permission Added",
-        description: "Permission override added successfully",
-      });
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
+      
+      // Remove from loading state
+      setPermissionLoadingStates(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.permissionCode);
+        return newSet;
+      });
     },
-    onError: (error: any) => {
+    onError: (error: any, variables) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to add permission override",
+        description: error.message || "Failed to toggle permission",
         variant: "destructive",
       });
-    },
-  });
-
-  // Remove permission override mutation
-  const removePermissionOverrideMutation = useMutation({
-    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
-      return await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE');
-    },
-    onSuccess: () => {
-      toast({
-        title: "Permission Removed",
-        description: "Permission override removed successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove permission override",
-        variant: "destructive",
+      
+      // Remove from loading state
+      setPermissionLoadingStates(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.permissionCode);
+        return newSet;
       });
     },
   });
@@ -377,162 +370,55 @@ export function UnifiedUserManagement() {
 
   const openPermissionsDialog = (user: UnifiedUser) => {
     setSelectedUser(user);
-    setLocalPermissionChanges(new Set());
-    setHasUnsavedChanges(false);
+    setPermissionLoadingStates(new Set());
     setShowPermissionsDialog(true);
   };
 
-  // Function to handle closing permissions dialog with unsaved changes warning
-  const handleClosePermissionsDialog = (open: boolean) => {
-    if (!open && hasUnsavedChanges) {
-      // User is trying to close with unsaved changes - warn them
-      const shouldClose = confirm(
-        `You have ${localPermissionChanges.size} unsaved permission changes. ` +
-        "Closing this dialog will discard these changes. Are you sure?"
-      );
-      if (shouldClose) {
-        discardChanges();
-        setShowPermissionsDialog(false);
-      }
-      // If they cancel, don't close the dialog
-      return;
-    }
-    setShowPermissionsDialog(open);
+  // Simple dialog close handler
+  const handleClosePermissionsDialog = () => {
+    setShowPermissionsDialog(false);
+    setPermissionLoadingStates(new Set());
   };
 
-  // Function to check if a permission is currently enabled (considering local changes and role vs override logic)
+  // Simple permission check functions
   const isPermissionEnabled = (permissionCode: string) => {
-    const userHasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
-    const hasLocalChange = localPermissionChanges.has(permissionCode);
-    return hasLocalChange ? !userHasPermission : userHasPermission;
+    return userPermissionsWithSources.some(p => p.code === permissionCode);
   };
 
-  // Function to get permission source info
   const getPermissionSource = (permissionCode: string) => {
     const permissionWithSource = userPermissionsWithSources.find(p => p.code === permissionCode);
     return permissionWithSource ? permissionWithSource.source : null;
   };
 
-  // Function to check if user has this permission from their role (not override)
   const hasPermissionFromRole = (permissionCode: string) => {
     return userPermissionsWithSources.some(p => p.code === permissionCode && p.source === 'role');
   };
 
-  // Function to handle permission toggle
-  const handlePermissionToggle = (permissionCode: string) => {
-    if (!selectedUser || allPermissions.length === 0) {
+  const isPermissionLoading = (permissionCode: string) => {
+    return permissionLoadingStates.has(permissionCode);
+  };
+
+  // Immediate permission toggle handler
+  const handlePermissionToggle = async (permissionCode: string) => {
+    if (!selectedUser || allPermissions.length === 0 || isPermissionLoading(permissionCode)) {
       return;
     }
     
-    const newChanges = new Set(localPermissionChanges);
-    if (newChanges.has(permissionCode)) {
-      newChanges.delete(permissionCode);
-    } else {
-      newChanges.add(permissionCode);
-    }
+    const currentlyEnabled = isPermissionEnabled(permissionCode);
+    const shouldEnable = !currentlyEnabled;
     
-    setLocalPermissionChanges(newChanges);
-    setHasUnsavedChanges(newChanges.size > 0);
+    // Add to loading state
+    setPermissionLoadingStates(prev => new Set([...prev, permissionCode]));
+    
+    // Make immediate API call
+    togglePermissionMutation.mutate({
+      userId: selectedUser.id,
+      permissionCode,
+      shouldEnable
+    });
   };
 
-  // Function to save all permission changes (batch processing)
-  const savePermissionChanges = async () => {
-    if (!selectedUser || localPermissionChanges.size === 0) {
-      console.log('No changes to save:', { selectedUser: !!selectedUser, changesSize: localPermissionChanges.size });
-      return;
-    }
-
-    console.log('Batch saving permission changes:', Array.from(localPermissionChanges));
-
-    try {
-      // Prepare all operations first
-      const operations = [];
-      const permissionCodes = Array.from(localPermissionChanges);
-      
-      for (const permissionCode of permissionCodes) {
-        const permission = allPermissions.find(p => p.code === permissionCode);
-        if (!permission) {
-          console.log('Permission not found:', permissionCode);
-          continue;
-        }
-
-        const userCurrentlyHasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
-        const userHasFromRole = hasPermissionFromRole(permissionCode);
-        const willBeEnabled = isPermissionEnabled(permissionCode);
-        
-        console.log(`Preparing operation for ${permissionCode}: currently=${userCurrentlyHasPermission}, fromRole=${userHasFromRole}, willBe=${willBeEnabled}`);
-        
-        if (userCurrentlyHasPermission && !willBeEnabled) {
-          // User currently has permission but toggle is OFF - need to revoke it
-          if (userHasFromRole) {
-            // They have it from role, so add negative override
-            operations.push({
-              type: 'negative_override',
-              permissionCode,
-              permissionId: permission.id,
-              action: () => apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides`, 'POST', {
-                permissionId: permission.id,
-                isGranted: false
-              })
-            });
-          } else {
-            // They have it from manual override, remove the override
-            operations.push({
-              type: 'remove_override',
-              permissionCode,
-              permissionId: permission.id,
-              action: () => apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides/${permission.id}`, 'DELETE')
-            });
-          }
-        } else if (!userCurrentlyHasPermission && willBeEnabled) {
-          // User doesn't have permission but toggle is ON - need to grant it
-          operations.push({
-            type: 'positive_override',
-            permissionCode,
-            permissionId: permission.id,
-            action: () => apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides`, 'POST', {
-              permissionId: permission.id,
-              isGranted: true
-            })
-          });
-        }
-      }
-
-      // Execute all operations
-      console.log(`Executing ${operations.length} operations...`);
-      for (const operation of operations) {
-        console.log(`Executing ${operation.type} for ${operation.permissionCode}`);
-        await operation.action();
-      }
-
-      toast({
-        title: "Success",
-        description: `${operations.length} permission changes applied successfully`,
-      });
-
-      setLocalPermissionChanges(new Set());
-      setHasUnsavedChanges(false);
-      
-      // Invalidate specific queries to refresh data without full page reload
-      await queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser.id}/permissions-with-sources`] });
-      // Don't invalidate users list to avoid full refresh
-      
-      console.log('All permission changes saved successfully');
-    } catch (error) {
-      console.error('Error saving permission changes:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save permission changes",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Function to discard changes
-  const discardChanges = () => {
-    setLocalPermissionChanges(new Set());
-    setHasUnsavedChanges(false);
-  };
+  // All permission changes are now handled immediately through togglePermissionMutation
 
   return (
     <div className="space-y-6">
@@ -934,48 +820,18 @@ export function UnifiedUserManagement() {
       </Dialog>
 
       {/* Permissions Management Dialog */}
-      <Dialog open={showPermissionsDialog} onOpenChange={handleClosePermissionsDialog}>
+      <Dialog open={showPermissionsDialog} onOpenChange={(open) => !open && handleClosePermissionsDialog()}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Manage Permissions for {selectedUser?.name}
-              {hasUnsavedChanges && (
-                <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
-                  {localPermissionChanges.size} unsaved changes
-                </Badge>
-              )}
             </DialogTitle>
             <DialogDescription>
-              Toggle permissions to see immediate visual feedback. Click "Apply All Changes" to save modifications.
-              {hasUnsavedChanges && (
-                <span className="block text-orange-600 font-medium mt-1">
-                  ⚠️ You have unsaved changes that will be lost if you close this dialog.
-                </span>
-              )}
+              Toggle permissions to grant or revoke immediately. Changes are saved instantly.
             </DialogDescription>
           </DialogHeader>
           
-          {/* Unsaved Changes Banner */}
-          {hasUnsavedChanges && (
-            <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
-                  <span className="text-sm font-medium">You have unsaved changes</span>
-                </div>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={discardChanges}
-                  data-testid="button-discard-changes"
-                >
-                  Discard Changes
-                </Button>
-              </div>
-            </div>
-          )}
-
           <div className="space-y-6">
             {/* Current Role & Permissions */}
             <div>
@@ -991,10 +847,6 @@ export function UnifiedUserManagement() {
                     </span>
                   </div>
                 ))}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="text-green-600">+{Array.from(localPermissionChanges).filter(code => !userPermissionsWithSources.some(p => p.code === code)).length} added</span>
-                  <span className="text-red-600">-{Array.from(localPermissionChanges).filter(code => userPermissionsWithSources.some(p => p.code === code)).length} removed</span>
-                </div>
               </div>
             </div>
 
@@ -1024,50 +876,22 @@ export function UnifiedUserManagement() {
                     <div className="space-y-2">
                       {permissions.map((permission) => {
                         const isEnabled = isPermissionEnabled(permission.code);
-                        const hasOriginalPermission = userPermissionsWithSources.some(p => p.code === permission.code);
-                        const hasLocalChange = localPermissionChanges.has(permission.code);
-                        const originalSource = userPermissionsWithSources.find(p => p.code === permission.code)?.source;
+                        const isLoading = isPermissionLoading(permission.code);
+                        const originalSource = getPermissionSource(permission.code);
                         const hasFromRole = hasPermissionFromRole(permission.code);
                         
-                        // Determine the permission status and badges to show
-                        let statusBadges = [];
-                        
-                        if (hasLocalChange) {
-                          // Show pending change status
-                          if (!hasOriginalPermission && isEnabled) {
-                            // Adding new permission
-                            statusBadges.push(
-                              <Badge key="pending-add" variant="default" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
-                                Will Add Manually
-                              </Badge>
-                            );
-                          } else if (hasOriginalPermission && !isEnabled) {
-                            // Removing existing permission
-                            if (hasFromRole) {
-                              statusBadges.push(
-                                <Badge key="pending-revoke" variant="destructive" className="text-xs">
-                                  Will Remove Role Permission
-                                </Badge>
-                              );
-                            } else {
-                              statusBadges.push(
-                                <Badge key="pending-remove" variant="destructive" className="text-xs">
-                                  Will Remove Manual Permission
-                                </Badge>
-                              );
-                            }
-                          }
-                        } else if (hasOriginalPermission) {
-                          // Show current source
+                        // Determine the permission status badge
+                        let statusBadge = null;
+                        if (isEnabled) {
                           if (originalSource === 'role') {
-                            statusBadges.push(
-                              <Badge key="from-role" variant="secondary" className="text-xs">
+                            statusBadge = (
+                              <Badge variant="secondary" className="text-xs">
                                 From Role
                               </Badge>
                             );
                           } else {
-                            statusBadges.push(
-                              <Badge key="manual" variant="outline" className="text-xs border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-300">
+                            statusBadge = (
+                              <Badge variant="outline" className="text-xs border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-300">
                                 Added Manually
                               </Badge>
                             );
@@ -1078,7 +902,7 @@ export function UnifiedUserManagement() {
                           <div 
                             key={permission.id}
                             className={`flex items-center justify-between py-3 px-4 border rounded-lg hover:bg-muted/50 transition-colors ${
-                              hasLocalChange ? 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/20' : ''
+                              isLoading ? 'border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20' : ''
                             }`}
                           >
                             <div className="flex-1">
@@ -1088,23 +912,23 @@ export function UnifiedUserManagement() {
                                     part.charAt(0).toUpperCase() + part.slice(1)
                                   ).join(' ')}
                                 </span>
-                                {statusBadges}
+                                {statusBadge}
+                                {isLoading && (
+                                  <Badge variant="default" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                    Updating...
+                                  </Badge>
+                                )}
                               </div>
                               <p className="text-xs text-muted-foreground mt-1">
                                 {permission.description}
                               </p>
-                              {hasLocalChange && (
-                                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1 italic">
-                                  ⏳ Changes pending - click "Save Changes" to apply
-                                </p>
-                              )}
                             </div>
                             <PermissionGuard permission="user.edit.all">
                               <Switch
                                 checked={isEnabled}
+                                disabled={isLoading}
                                 onCheckedChange={() => handlePermissionToggle(permission.code)}
                                 data-testid={`toggle-${permission.code}`}
-                                className={hasLocalChange ? 'border-yellow-300' : ''}
                               />
                             </PermissionGuard>
                           </div>
@@ -1117,83 +941,14 @@ export function UnifiedUserManagement() {
             </div>
           </div>
 
-          {/* Pending Changes Summary */}
-          {hasUnsavedChanges && (
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <h5 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
-                Pending Changes ({localPermissionChanges.size})
-              </h5>
-              <div className="space-y-1">
-                {Array.from(localPermissionChanges).map(permissionCode => {
-                  const permission = allPermissions.find(p => p.code === permissionCode);
-                  const userCurrentlyHas = userPermissionsWithSources.some(p => p.code === permissionCode);
-                  const userHasFromRole = hasPermissionFromRole(permissionCode);
-                  const willBeEnabled = isPermissionEnabled(permissionCode);
-                  
-                  let changeDescription = '';
-                  let changeType = '';
-                  
-                  if (!userCurrentlyHas && willBeEnabled) {
-                    changeDescription = `Add "${permission?.code}" manually`;
-                    changeType = 'add';
-                  } else if (userCurrentlyHas && !willBeEnabled) {
-                    if (userHasFromRole) {
-                      changeDescription = `Remove "${permission?.code}" (override role permission)`;
-                      changeType = 'remove-role';
-                    } else {
-                      changeDescription = `Remove "${permission?.code}" (remove manual permission)`;
-                      changeType = 'remove-manual';
-                    }
-                  }
-                  
-                  return (
-                    <div key={permissionCode} className="flex items-center gap-2 text-xs">
-                      {changeType === 'add' && <span className="text-green-600 font-mono">+</span>}
-                      {changeType.startsWith('remove') && <span className="text-red-600 font-mono">-</span>}
-                      <span className="text-muted-foreground">{changeDescription}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 italic">
-                These changes will be applied when you click "Apply All Changes"
-              </p>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center justify-end pt-4 border-t">
             <Button 
               variant="outline" 
-              onClick={() => handleClosePermissionsDialog(false)}
+              onClick={handleClosePermissionsDialog}
               data-testid="button-close-permissions"
             >
-              {hasUnsavedChanges ? "Cancel (Discard Changes)" : "Close"}
+              Close
             </Button>
-            <div className="flex gap-2">
-              {hasUnsavedChanges && (
-                <Button 
-                  variant="outline" 
-                  onClick={discardChanges}
-                  data-testid="button-discard-changes"
-                >
-                  Discard Changes
-                </Button>
-              )}
-              <Button 
-                onClick={savePermissionChanges}
-                disabled={!hasUnsavedChanges}
-                data-testid="button-save-changes"
-                className={hasUnsavedChanges ? 'bg-blue-600 hover:bg-blue-700' : ''}
-              >
-                {hasUnsavedChanges ? 'Apply All Changes' : 'Save Changes'}
-                {hasUnsavedChanges && (
-                  <span className="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded">
-                    {localPermissionChanges.size}
-                  </span>
-                )}
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
