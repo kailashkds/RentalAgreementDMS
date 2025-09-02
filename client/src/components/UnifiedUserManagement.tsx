@@ -382,6 +382,24 @@ export function UnifiedUserManagement() {
     setShowPermissionsDialog(true);
   };
 
+  // Function to handle closing permissions dialog with unsaved changes warning
+  const handleClosePermissionsDialog = (open: boolean) => {
+    if (!open && hasUnsavedChanges) {
+      // User is trying to close with unsaved changes - warn them
+      const shouldClose = confirm(
+        `You have ${localPermissionChanges.size} unsaved permission changes. ` +
+        "Closing this dialog will discard these changes. Are you sure?"
+      );
+      if (shouldClose) {
+        discardChanges();
+        setShowPermissionsDialog(false);
+      }
+      // If they cancel, don't close the dialog
+      return;
+    }
+    setShowPermissionsDialog(open);
+  };
+
   // Function to check if a permission is currently enabled (considering local changes and role vs override logic)
   const isPermissionEnabled = (permissionCode: string) => {
     const userHasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
@@ -498,9 +516,9 @@ export function UnifiedUserManagement() {
       setLocalPermissionChanges(new Set());
       setHasUnsavedChanges(false);
       
-      // Invalidate queries to refresh data
+      // Invalidate specific queries to refresh data without full page reload
       await queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser.id}/permissions-with-sources`] });
-      await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
+      // Don't invalidate users list to avoid full refresh
       
       console.log('All permission changes saved successfully');
     } catch (error) {
@@ -919,15 +937,25 @@ export function UnifiedUserManagement() {
       </Dialog>
 
       {/* Permissions Management Dialog */}
-      <Dialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog}>
+      <Dialog open={showPermissionsDialog} onOpenChange={handleClosePermissionsDialog}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Manage Permissions for {selectedUser?.name}
+              {hasUnsavedChanges && (
+                <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
+                  {localPermissionChanges.size} unsaved changes
+                </Badge>
+              )}
             </DialogTitle>
             <DialogDescription>
-              Manage individual permissions for this user. These permissions will be added to or removed from their role-based permissions.
+              Toggle permissions to see immediate visual feedback. Click "Apply All Changes" to save modifications.
+              {hasUnsavedChanges && (
+                <span className="block text-orange-600 font-medium mt-1">
+                  ⚠️ You have unsaved changes that will be lost if you close this dialog.
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
           
@@ -1140,10 +1168,10 @@ export function UnifiedUserManagement() {
           <div className="flex items-center justify-between pt-4 border-t">
             <Button 
               variant="outline" 
-              onClick={() => setShowPermissionsDialog(false)}
+              onClick={() => handleClosePermissionsDialog(false)}
               data-testid="button-close-permissions"
             >
-              Close
+              {hasUnsavedChanges ? "Cancel (Discard Changes)" : "Close"}
             </Button>
             <div className="flex gap-2">
               {hasUnsavedChanges && (
