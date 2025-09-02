@@ -4,9 +4,10 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building, MapPin, Eye, Users, FileText, Edit } from "lucide-react";
+import { Building, MapPin, Eye, Users, FileText, Edit, Plus } from "lucide-react";
 import AdminLayout from "@/components/AdminLayout";
 import { EditPropertyDialog } from "@/components/EditPropertyDialog";
+import { AddPropertyDialog } from "@/components/AddPropertyDialog";
 
 interface Property {
   id: string;
@@ -42,6 +43,8 @@ interface PropertyWithCustomer extends Property {
 export default function Properties() {
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
 
   const { data: properties, isLoading, refetch } = useQuery<PropertyWithCustomer[]>({
     queryKey: ['/api/properties/all'],
@@ -61,6 +64,19 @@ export default function Properties() {
     refetch();
   };
 
+  const handleAddProperty = () => {
+    setShowAddDialog(true);
+  };
+
+  const handleCloseAddDialog = () => {
+    setShowAddDialog(false);
+    setSelectedCustomerId("");
+  };
+
+  const handlePropertyAdded = () => {
+    refetch();
+  };
+
   if (isLoading) {
     return (
       <AdminLayout title="Properties" subtitle="Manage all properties">
@@ -76,6 +92,13 @@ export default function Properties() {
           <h2 className="text-xl font-semibold" data-testid="text-properties-count">
             {properties?.length || 0} Properties
           </h2>
+          <Button 
+            onClick={handleAddProperty}
+            data-testid="button-add-property"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Property
+          </Button>
         </div>
 
         {properties && properties.length === 0 ? (
@@ -210,6 +233,12 @@ export default function Properties() {
         onClose={handleCloseEditDialog}
         property={editingProperty}
         onPropertyUpdated={handlePropertyUpdated}
+      />
+
+      <AddPropertyDialog
+        open={showAddDialog}
+        onClose={handleCloseAddDialog}
+        onPropertyAdded={handlePropertyAdded}
       />
     </AdminLayout>
   );

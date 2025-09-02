@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const propertySchema = z.object({
-  customerId: z.string(),
+  customerId: z.string().min(1, "Customer is required"),
   flatNumber: z.string().min(1, "Flat/House number is required"),
   society: z.string().min(1, "Society/Building name is required"),
   area: z.string().min(1, "Area is required"),
@@ -27,7 +27,7 @@ type PropertyFormData = z.infer<typeof propertySchema>;
 interface AddPropertyDialogProps {
   open: boolean;
   onClose: () => void;
-  customerId: string;
+  customerId?: string; // Optional for cases where customer needs to be selected
   onPropertyAdded: () => void;
 }
 
@@ -40,6 +40,12 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
     enabled: open
   });
 
+  // Fetch customers when no customerId is provided (for general property creation)
+  const { data: customers = [] } = useQuery<any[]>({
+    queryKey: ['/api/customers'],
+    enabled: open && !customerId
+  });
+
   // Get unique buildings/societies for autocomplete
   const buildingOptions = societies
     .map(s => s.societyName)
@@ -49,7 +55,7 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
   const form = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),
     defaultValues: {
-      customerId,
+      customerId: customerId || "",
       flatNumber: "",
       society: "",
       area: "",
@@ -68,7 +74,11 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
         title: "Success", 
         description: "Property added successfully" 
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/properties?customerId=${customerId}`] });
+      // Invalidate both specific customer properties and all properties
+      if (customerId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/properties?customerId=${customerId}`] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['/api/properties/all'] });
       onPropertyAdded();
       form.reset();
     },
@@ -109,6 +119,33 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {!customerId && (
+              <FormField
+                control={form.control}
+                name="customerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-customer">
+                          <SelectValue placeholder="Select a customer" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {customers.map((customer: any) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name} - {customer.mobile}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            
             <FormField
               control={form.control}
               name="flatNumber"
