@@ -1619,20 +1619,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Customer not found" });
       }
 
-      let plainTextPassword: string;
-
-      if (customer.encryptedPassword) {
-        // Customer has encrypted password - decrypt it
-        plainTextPassword = decryptPasswordFromStorage(customer.encryptedPassword);
-      } else if (customer.password && !customer.password.startsWith('$2b$')) {
-        // Customer has plain text password (legacy format)
-        plainTextPassword = customer.password;
-      } else {
-        // Customer has hashed password but no encrypted backup
-        return res.status(400).json({ error: "Password is hashed but no encrypted backup available" });
-      }
-      
-      res.json({ password: plainTextPassword });
+      // In the unified system, customer passwords are stored in plain text for admin access
+      res.json({ password: customer.password });
     } catch (error) {
       console.error("Error getting customer password:", error);
       res.status(500).json({ error: "Failed to get password" });

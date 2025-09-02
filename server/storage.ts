@@ -667,27 +667,50 @@ export class DatabaseStorage implements IStorage {
 
   async resetCustomerPassword(id: string, newPassword: string): Promise<Customer> {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    const encryptedPassword = encryptPasswordForStorage(newPassword);
+    // Note: We don't store encryptedPassword for customers in the unified system
+    // Passwords are stored in plain text for admin access as per requirements
     
-    const [customer] = await db
-      .update(customers)
+    const [user] = await db
+      .update(users)
       .set({ 
-        password: hashedPassword, // Store bcrypt hashed password for authentication
-        encryptedPassword: encryptedPassword, // Store encrypted password for admin viewing
+        password: newPassword, // Store plain text password for admin viewing
         updatedAt: new Date() 
       })
-      .where(eq(customers.id, id))
+      .where(and(eq(users.id, id), eq(users.defaultRole, 'Customer')))
       .returning();
-    return customer;
+    
+    // Convert unified user to customer format
+    return {
+      id: user.id,
+      name: user.name,
+      mobile: user.mobile!,
+      email: user.email,
+      password: user.password,
+      isActive: user.status === 'active',
+      createdAt: user.createdAt!,
+      updatedAt: user.updatedAt!,
+    } as Customer;
   }
 
   async toggleCustomerStatus(id: string, isActive: boolean): Promise<Customer> {
-    const [customer] = await db
-      .update(customers)
-      .set({ isActive, updatedAt: new Date() })
-      .where(eq(customers.id, id))
+    const status = isActive ? 'active' : 'inactive';
+    const [user] = await db
+      .update(users)
+      .set({ status, updatedAt: new Date() })
+      .where(and(eq(users.id, id), eq(users.defaultRole, 'Customer')))
       .returning();
-    return customer;
+    
+    // Convert unified user to customer format
+    return {
+      id: user.id,
+      name: user.name,
+      mobile: user.mobile!,
+      email: user.email,
+      password: user.password,
+      isActive: user.status === 'active',
+      createdAt: user.createdAt!,
+      updatedAt: user.updatedAt!,
+    } as Customer;
   }
 
   // Migration helper functions for password encryption
