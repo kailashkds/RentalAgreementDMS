@@ -78,7 +78,7 @@ export function AddPropertyDialog({ open, onClose, customerId, onPropertyAdded }
       });
       // Invalidate both specific customer properties and all properties
       if (customerId) {
-        queryClient.invalidateQueries({ queryKey: [`/api/properties?customerId=${customerId}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/properties?customerId=${customerId}&withAgreements=true`] });
       }
       queryClient.invalidateQueries({ queryKey: ['/api/properties/all'] });
       onPropertyAdded();
