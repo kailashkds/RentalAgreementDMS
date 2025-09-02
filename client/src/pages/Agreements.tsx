@@ -295,6 +295,8 @@ export default function Agreements() {
     if (notaryFilter && notaryFilter !== "all") {
       const notaryStatus = agreement.status === "draft" 
         ? "complete_first" 
+        : agreement.status === "expired" 
+        ? "expired"
         : agreement.status === "active" 
         ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) 
           ? "notarized" 
@@ -1131,6 +1133,7 @@ export default function Agreements() {
                 <SelectItem value="all">All Notary</SelectItem>
                 <SelectItem value="notarized">Notarized</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
                 <SelectItem value="complete_first">Complete First</SelectItem>
               </SelectContent>
             </Select>
@@ -1432,6 +1435,8 @@ export default function Agreements() {
                                   className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
                                     agreement.status === "draft"
                                       ? "bg-gray-100 text-gray-800"
+                                      : agreement.status === "expired"
+                                      ? "bg-red-100 text-red-800"
                                       : agreement.status === "active"
                                       ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
                                         ? "bg-green-100 text-green-800"
@@ -1441,6 +1446,8 @@ export default function Agreements() {
                                 >
                                   {agreement.status === "draft"
                                     ? "Draft"
+                                    : agreement.status === "expired"
+                                    ? "Expired"
                                     : agreement.status === "active"
                                     ? (agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl)
                                       ? "Complete"
@@ -1615,8 +1622,8 @@ export default function Agreements() {
                               <Download className="h-4 w-4" />
                             </Button>
                           ) : null}
-                          {/* Edit Button - Show only if user has edit permission and can edit this agreement */}
-                          {(hasPermission(PERMISSIONS.AGREEMENT_EDIT_ALL) || hasPermission(PERMISSIONS.AGREEMENT_EDIT_OWN)) && canEditNotarizedAgreement(agreement) && (
+                          {/* Edit Button - Show only if user has edit permission, can edit this agreement, and agreement is not expired */}
+                          {(hasPermission(PERMISSIONS.AGREEMENT_EDIT_ALL) || hasPermission(PERMISSIONS.AGREEMENT_EDIT_OWN)) && canEditNotarizedAgreement(agreement) && agreement.status !== 'expired' && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
@@ -2700,7 +2707,7 @@ export default function Agreements() {
               {/* Action Buttons */}
               <div className="bg-gradient-to-r from-slate-50 to-slate-100 p-6 rounded-lg border border-slate-200 shadow-sm">
                 <div className="flex flex-wrap justify-center gap-3">
-                  {canEditNotarizedAgreement(viewingAgreement) && (
+                  {canEditNotarizedAgreement(viewingAgreement) && viewingAgreement.status !== 'expired' && (
                     <Button
                       onClick={() => {
                         if (isImportedAgreement(viewingAgreement)) {
