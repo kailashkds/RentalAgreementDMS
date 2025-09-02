@@ -1637,7 +1637,6 @@ export class DatabaseStorage implements IStorage {
   async deleteRole(id: string): Promise<void> {
     await db.delete(rolePermissionsTable).where(eq(rolePermissionsTable.roleId, id));
     await db.delete(userRoles).where(eq(userRoles.roleId, id));
-    await db.delete(customerRoles).where(eq(customerRoles.roleId, id));
     await db.delete(roles).where(eq(roles.id, id));
   }
 
