@@ -272,18 +272,30 @@ export function UnifiedUserManagement() {
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
       return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId });
     },
-    onSuccess: () => {
+    onSuccess: (data, { permissionId }) => {
       toast({
         title: "Permission Added",
         description: "Permission override added successfully",
       });
       queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
+      // Clear pending state
+      setPendingPermissions(prev => {
+        const newSet = new Set(Array.from(prev));
+        newSet.delete(permissionId);
+        return newSet;
+      });
     },
-    onError: (error: any) => {
+    onError: (error: any, { permissionId }) => {
       toast({
         title: "Error",
         description: error.message || "Failed to add permission override",
         variant: "destructive",
+      });
+      // Clear pending state on error too
+      setPendingPermissions(prev => {
+        const newSet = new Set(Array.from(prev));
+        newSet.delete(permissionId);
+        return newSet;
       });
     },
   });
@@ -293,18 +305,30 @@ export function UnifiedUserManagement() {
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
       return await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE');
     },
-    onSuccess: () => {
+    onSuccess: (data, { permissionId }) => {
       toast({
         title: "Permission Removed",
         description: "Permission override removed successfully",
       });
       queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
+      // Clear pending state
+      setPendingPermissions(prev => {
+        const newSet = new Set(Array.from(prev));
+        newSet.delete(permissionId);
+        return newSet;
+      });
     },
-    onError: (error: any) => {
+    onError: (error: any, { permissionId }) => {
       toast({
         title: "Error",
         description: error.message || "Failed to remove permission override",
         variant: "destructive",
+      });
+      // Clear pending state on error too
+      setPendingPermissions(prev => {
+        const newSet = new Set(Array.from(prev));
+        newSet.delete(permissionId);
+        return newSet;
       });
     },
   });
@@ -994,28 +1018,12 @@ export function UnifiedUserManagement() {
                                   addPermissionOverrideMutation.mutate({
                                     userId: selectedUser!.id,
                                     permissionId: permission.id
-                                  }, {
-                                    onSettled: () => {
-                                      setPendingPermissions(prev => {
-                                        const newSet = new Set(Array.from(prev));
-                                        newSet.delete(permission.id);
-                                        return newSet;
-                                      });
-                                    }
                                   });
                                 } else if (!checked && permission.hasPermission && permission.isOverride) {
                                   // Remove permission override (only if it's an override, not role-based)
                                   removePermissionOverrideMutation.mutate({
                                     userId: selectedUser!.id,
                                     permissionId: permission.id
-                                  }, {
-                                    onSettled: () => {
-                                      setPendingPermissions(prev => {
-                                        const newSet = new Set(Array.from(prev));
-                                        newSet.delete(permission.id);
-                                        return newSet;
-                                      });
-                                    }
                                   });
                                 }
                               }}
