@@ -479,10 +479,19 @@ export default function UserRoleManagement() {
     // Remove duplicates from role permissions
     const uniqueRolePermissions = Array.from(new Set(rolePermissions));
     
+    // Calculate inherited permissions (role permissions minus manually removed ones)
+    const inherited = uniqueRolePermissions.filter(p => !manualRemoved.includes(p));
+    
+    // Calculate manual permissions (only those not already in role permissions)
+    const manual = manualAdded.filter(p => !uniqueRolePermissions.includes(p));
+    
+    // Calculate total permissions (inherited + manual, then remove duplicates)
+    const total = Array.from(new Set([...inherited, ...manualAdded]));
+    
     return {
-      inherited: uniqueRolePermissions.filter(p => !manualRemoved.includes(p)),
-      manual: manualAdded.filter(p => !uniqueRolePermissions.includes(p)),
-      total: [...uniqueRolePermissions.filter(p => !manualRemoved.includes(p)), ...manualAdded.filter(p => !uniqueRolePermissions.includes(p))]
+      inherited,
+      manual,
+      total
     };
   };
 
