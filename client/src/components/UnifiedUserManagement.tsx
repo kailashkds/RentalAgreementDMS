@@ -91,6 +91,10 @@ export function UnifiedUserManagement() {
     roleId: "",
     password: "",
   });
+  
+  // Local state for permission changes (before saving)
+  const [pendingPermissionChanges, setPendingPermissionChanges] = useState<Set<string>>(new Set());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -294,6 +298,51 @@ export function UnifiedUserManagement() {
     },
   });
 
+  // Batch save mutations
+  const savePermissionChangesMutation = useMutation({
+    mutationFn: async ({ userId, changes }: { userId: string; changes: Set<string> }) => {
+      const promises = [];
+      
+      for (const permissionId of changes) {
+        const userPermission = userPermissionsWithSources.find(up => 
+          allPermissions.find(p => p.id === permissionId && p.code === up.code)
+        );
+        const hasPermission = !!userPermission;
+        const isOverride = userPermission?.source === 'override';
+        
+        if (hasPermission && isOverride) {
+          // Remove permission override
+          promises.push(
+            apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE')
+          );
+        } else if (!hasPermission) {
+          // Add permission override
+          promises.push(
+            apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId })
+          );
+        }
+      }
+      
+      return await Promise.all(promises);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Permissions Updated",
+        description: "All permission changes saved successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
+      setPendingPermissionChanges(new Set());
+      setHasUnsavedChanges(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save permission changes",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!createUserData.name || !createUserData.roleId) {
@@ -343,7 +392,30 @@ export function UnifiedUserManagement() {
 
   const openPermissionsDialog = (user: UnifiedUser) => {
     setSelectedUser(user);
+    setPendingPermissionChanges(new Set());
+    setHasUnsavedChanges(false);
     setShowPermissionsDialog(true);
+  };
+  
+  const handlePermissionToggle = (permissionId: string) => {
+    const newPendingChanges = new Set(pendingPermissionChanges);
+    
+    if (newPendingChanges.has(permissionId)) {
+      newPendingChanges.delete(permissionId);
+    } else {
+      newPendingChanges.add(permissionId);
+    }
+    
+    setPendingPermissionChanges(newPendingChanges);
+    setHasUnsavedChanges(newPendingChanges.size > 0);
+  };
+  
+  const getPermissionDisplayState = (permission: Permission, userPermission: PermissionWithSource | undefined) => {
+    const hasPermission = !!userPermission;
+    const isPending = pendingPermissionChanges.has(permission.id);
+    
+    // If there's a pending change, flip the current state
+    return isPending ? !hasPermission : hasPermission;
   };
 
   return (
@@ -822,6 +894,7 @@ export function UnifiedUserManagement() {
               const hasPermission = !!userPermission;
               const isFromRole = userPermission?.source === 'role';
               const isOverride = userPermission?.source === 'override';
+              const displayState = getPermissionDisplayState(permission, userPermission);
 
               return (
                 <div 
@@ -834,48 +907,33 @@ export function UnifiedUserManagement() {
                     <div className="text-sm text-muted-foreground">{permission.description}</div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {hasPermission && isFromRole && (
+                    {displayState && isFromRole && !pendingPermissionChanges.has(permission.id) && (
                       <Badge variant="secondary" data-testid={`badge-from-role-${permission.code}`}>
                         From Role: {userPermission.roleName}
                       </Badge>
                     )}
-                    {hasPermission && isOverride && (
+                    {displayState && isOverride && !pendingPermissionChanges.has(permission.id) && (
                       <Badge variant="default" data-testid={`badge-override-${permission.code}`}>
                         Override
                       </Badge>
                     )}
+                    {pendingPermissionChanges.has(permission.id) && (
+                      <Badge variant="outline" data-testid={`badge-pending-${permission.code}`}>
+                        Pending Change
+                      </Badge>
+                    )}
                     <Button
-                      variant={hasPermission ? "destructive" : "default"}
+                      variant={displayState ? "destructive" : "default"}
                       size="sm"
-                      onClick={() => {
-                        if (hasPermission && isOverride) {
-                          // Only allow removing override permissions, not role-based ones
-                          removePermissionOverrideMutation.mutate({
-                            userId: selectedUser!.id,
-                            permissionId: permission.id
-                          });
-                        } else if (!hasPermission) {
-                          // Add permission override
-                          addPermissionOverrideMutation.mutate({
-                            userId: selectedUser!.id,
-                            permissionId: permission.id
-                          });
-                        }
-                      }}
-                      disabled={
-                        addPermissionOverrideMutation.isPending || 
-                        removePermissionOverrideMutation.isPending ||
-                        (hasPermission && isFromRole) // Disable for role-based permissions
-                      }
+                      onClick={() => handlePermissionToggle(permission.id)}
+                      disabled={(hasPermission && isFromRole && !pendingPermissionChanges.has(permission.id))}
                       data-testid={`button-toggle-permission-${permission.code}`}
                     >
-                      {addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending
-                        ? "Updating..."
-                        : hasPermission && isFromRole
-                          ? "From Role"
-                          : hasPermission 
-                            ? "Remove" 
-                            : "Add"
+                      {hasPermission && isFromRole && !pendingPermissionChanges.has(permission.id)
+                        ? "From Role"
+                        : displayState 
+                          ? "Remove" 
+                          : "Add"
                       }
                     </Button>
                   </div>
@@ -883,10 +941,36 @@ export function UnifiedUserManagement() {
               );
             })}
           </div>
-          <div className="flex justify-end">
-            <Button onClick={() => setShowPermissionsDialog(false)}>
-              Close
-            </Button>
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-muted-foreground">
+              {hasUnsavedChanges && `${pendingPermissionChanges.size} unsaved change(s)`}
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setPendingPermissionChanges(new Set());
+                  setHasUnsavedChanges(false);
+                  setShowPermissionsDialog(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (hasUnsavedChanges && selectedUser) {
+                    savePermissionChangesMutation.mutate({
+                      userId: selectedUser.id,
+                      changes: pendingPermissionChanges
+                    });
+                  }
+                }}
+                disabled={!hasUnsavedChanges || savePermissionChangesMutation.isPending}
+                data-testid="button-save-permission-changes"
+              >
+                {savePermissionChangesMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
