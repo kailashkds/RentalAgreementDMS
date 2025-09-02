@@ -711,7 +711,8 @@ export default function Agreements() {
         },
         propertyType: (document.querySelector('[name="edit-property-type"]') as HTMLSelectElement)?.value || 
                       editingImportedAgreement.propertyType || "residential",
-        propertyDescription: (document.getElementById('edit-property-description') as HTMLInputElement)?.value,
+        propertyDescription: (document.getElementById('edit-property-description') as HTMLInputElement)?.value || 
+                            editingImportedAgreement.propertyDescription || "",
         startDate: (document.getElementById('edit-start-date') as HTMLInputElement)?.value,
         endDate: (document.getElementById('edit-end-date') as HTMLInputElement)?.value,
       };
@@ -2024,7 +2025,7 @@ export default function Agreements() {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="edit-property-type">Property Type <span className="text-red-500">*</span></Label>
+                      <Label htmlFor="edit-property-type">Property Type</Label>
                       <Select name="edit-property-type" defaultValue={editingImportedAgreement.propertyType || "residential"}>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select property type" />
@@ -2038,7 +2039,7 @@ export default function Agreements() {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="edit-property-description">Property Description <span className="text-red-500">*</span></Label>
+                      <Label htmlFor="edit-property-description">Property Description</Label>
                       <Input 
                         id="edit-property-description"
                         defaultValue={editingImportedAgreement.propertyDescription || ''}
@@ -2871,12 +2872,10 @@ export default function Agreements() {
                         </p>
                       </div>
                     )}
-                    {viewingImportedAgreement.propertyType && (
-                      <div>
-                        <span className="text-sm font-medium text-slate-600">Property Type:</span>
-                        <p className="text-slate-900 capitalize">{viewingImportedAgreement.propertyType}</p>
-                      </div>
-                    )}
+                    <div>
+                      <span className="text-sm font-medium text-slate-600">Property Type:</span>
+                      <p className="text-slate-900 capitalize">{viewingImportedAgreement.propertyType || "residential"}</p>
+                    </div>
                     {viewingImportedAgreement.propertyDescription && (
                       <div>
                         <span className="text-sm font-medium text-slate-600">Property Description:</span>

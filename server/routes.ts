@@ -2460,17 +2460,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const agreementData = insertAgreementSchema.partial().parse(req.body);
+      // Parse the incoming data
+      let parsedData = insertAgreementSchema.partial().parse(req.body);
+      
+      // For backward compatibility, set default property type for imported agreements if missing
+      if (existingAgreement.isImported && !parsedData.propertyType) {
+        parsedData.propertyType = "residential";
+      }
+      
       console.log("Parsed agreement data successfully");
       
-      const agreement = await storage.updateAgreement(req.params.id, agreementData);
+      const agreement = await storage.updateAgreement(req.params.id, parsedData);
       console.log("Agreement updated successfully:", agreement.id);
       
       // Clear edited content if form data changed to force regeneration with new data
       // This ensures additional clauses and other dynamic content updates properly
-      if (agreementData.additionalClauses || agreementData.rentalTerms || 
-          agreementData.ownerDetails || agreementData.tenantDetails || 
-          agreementData.propertyDetails) {
+      if (parsedData.additionalClauses || parsedData.rentalTerms || 
+          parsedData.ownerDetails || parsedData.tenantDetails || 
+          parsedData.propertyDetails || parsedData.propertyType || 
+          parsedData.propertyDescription) {
         console.log("Form data changed, clearing edited content to force regeneration");
         await storage.clearEditedContent(req.params.id);
       }
