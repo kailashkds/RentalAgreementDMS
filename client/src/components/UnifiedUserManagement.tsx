@@ -363,17 +363,6 @@ export function UnifiedUserManagement() {
     setPendingPermissions(new Set());
   };
 
-  const handleTogglePermission = (permissionId: string, currentState: boolean, isFromRole: boolean) => {
-    if (isFromRole) return; // Cannot toggle role-based permissions
-    
-    const newState = !currentState;
-    setLocalPermissionChanges(prev => {
-      const newMap = new Map(prev);
-      newMap.set(permissionId, newState);
-      return newMap;
-    });
-    setHasUnsavedChanges(true);
-  };
 
   const handleSaveChanges = () => {
     if (!selectedUser || localPermissionChanges.size === 0) return;
@@ -1041,15 +1030,23 @@ export function UnifiedUserManagement() {
                           <div className="flex items-center ml-4">
                             <Switch
                               checked={(() => {
-                                const hasLocalChange = localPermissionChanges.has(permission.id);
-                                return hasLocalChange ? localPermissionChanges.get(permission.id)! : permission.hasPermission;
+                                // If we have a local change, use that, otherwise use the original state
+                                if (localPermissionChanges.has(permission.id)) {
+                                  return localPermissionChanges.get(permission.id)!;
+                                }
+                                return permission.hasPermission;
                               })()}
-                              onCheckedChange={() => {
-                                const currentState = (() => {
-                                  const hasLocalChange = localPermissionChanges.has(permission.id);
-                                  return hasLocalChange ? localPermissionChanges.get(permission.id)! : permission.hasPermission;
-                                })();
-                                handleTogglePermission(permission.id, currentState, permission.isFromRole);
+                              onCheckedChange={(newCheckedState) => {
+                                // Don't allow toggling role-based permissions
+                                if (permission.isFromRole || permission.isPending) return;
+                                
+                                // Set the new state directly in local changes
+                                setLocalPermissionChanges(prev => {
+                                  const newMap = new Map(prev);
+                                  newMap.set(permission.id, newCheckedState);
+                                  return newMap;
+                                });
+                                setHasUnsavedChanges(true);
                               }}
                               disabled={permission.isFromRole || permission.isPending}
                               data-testid={`switch-permission-${permissionId}`}
