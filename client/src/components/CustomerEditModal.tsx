@@ -56,7 +56,7 @@ export default function CustomerEditModal({ isOpen, onClose, customer }: Custome
     
     setIsLoading(true);
     try {
-      await apiRequest("PUT", `/api/customers/${customer.id}`, formData);
+      await apiRequest(`/api/customers/${customer.id}`, "PUT", formData);
       
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       

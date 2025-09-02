@@ -39,7 +39,7 @@ export default function SystemSettings() {
 
   const saveSettingsMutation = useMutation({
     mutationFn: (settingsData: SystemSettings) => 
-      apiRequest("PUT", "/api/admin/settings", settingsData),
+      apiRequest("/api/admin/settings", "PUT", settingsData),
     onSuccess: () => {
       toast({
         title: "Success",

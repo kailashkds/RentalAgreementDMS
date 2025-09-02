@@ -61,7 +61,7 @@ export default function Customers() {
     }
 
     try {
-      await apiRequest("DELETE", `/api/customers/${customer.id}`);
+      await apiRequest(`/api/customers/${customer.id}`, "DELETE");
 
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
@@ -97,7 +97,7 @@ export default function Customers() {
   const handleToggleStatus = async (customer: any) => {
     try {
       const newStatus = !customer.isActive;
-      await apiRequest("PATCH", `/api/customers/${customer.id}/toggle-status`, {
+      await apiRequest(`/api/customers/${customer.id}/toggle-status`, "PATCH", {
         isActive: newStatus
       });
       

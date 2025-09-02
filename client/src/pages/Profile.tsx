@@ -29,7 +29,7 @@ export default function Profile() {
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: typeof profileData) => 
-      apiRequest("PUT", "/api/admin/profile", data),
+      apiRequest("/api/admin/profile", "PUT", data),
     onSuccess: () => {
       toast({
         title: "Success",
@@ -47,7 +47,7 @@ export default function Profile() {
 
   const changePasswordMutation = useMutation({
     mutationFn: (data: typeof passwordData) => 
-      apiRequest("PUT", "/api/admin/change-password", data),
+      apiRequest("/api/admin/change-password", "PUT", data),
     onSuccess: () => {
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
       toast({

@@ -28,7 +28,7 @@ export default function SocietyModal({ isOpen, onClose }: SocietyModalProps) {
 
   const onSubmit = async (data: SocietyFormData) => {
     try {
-      const response = await apiRequest("POST", "/api/societies", data);
+      const response = await apiRequest("/api/societies", "POST", data);
       const society = await response.json();
       
       queryClient.invalidateQueries({ queryKey: ["/api/societies"] });
