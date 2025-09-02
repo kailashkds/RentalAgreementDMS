@@ -1976,6 +1976,12 @@ export default function Agreements() {
                         placeholder="e.g., 380015"
                       />
                     </div>
+                    
+                    {/* Separator for additional property information */}
+                    <div className="md:col-span-3 border-t border-slate-200 pt-4 mt-2">
+                      <h4 className="text-sm font-medium text-slate-700 mb-3">Additional Property Information</h4>
+                    </div>
+                    
                     <div>
                       <Label htmlFor="edit-property-type">Property Type <span className="text-red-500">*</span></Label>
                       <Select name="edit-property-type" defaultValue={editingImportedAgreement.propertyType || "residential"}>
