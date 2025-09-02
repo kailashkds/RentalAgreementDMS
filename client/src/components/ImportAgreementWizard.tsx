@@ -80,7 +80,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   // Use permission-based check instead of role check
   const canViewAllCustomers = hasPermission('customer.view.all') || hasPermission('customer.manage');
   
-  const [currentStep, setCurrentStep] = useState(!canViewAllCustomers ? 2 : 1); // Skip step 1 for customers
+  const [currentStep, setCurrentStep] = useState(1); // Always start at step 1
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
