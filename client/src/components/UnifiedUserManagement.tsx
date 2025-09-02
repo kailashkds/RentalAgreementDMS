@@ -420,17 +420,20 @@ export function UnifiedUserManagement() {
     console.log('hasUnsavedChanges set to:', newChanges.size > 0);
   };
 
-  // Function to save all permission changes
+  // Function to save all permission changes (batch processing)
   const savePermissionChanges = async () => {
     if (!selectedUser || localPermissionChanges.size === 0) {
       console.log('No changes to save:', { selectedUser: !!selectedUser, changesSize: localPermissionChanges.size });
       return;
     }
 
-    console.log('Saving permission changes:', Array.from(localPermissionChanges));
+    console.log('Batch saving permission changes:', Array.from(localPermissionChanges));
 
     try {
+      // Prepare all operations first
+      const operations = [];
       const permissionCodes = Array.from(localPermissionChanges);
+      
       for (const permissionCode of permissionCodes) {
         const permission = allPermissions.find(p => p.code === permissionCode);
         if (!permission) {
@@ -442,35 +445,54 @@ export function UnifiedUserManagement() {
         const userHasFromRole = hasPermissionFromRole(permissionCode);
         const willBeEnabled = isPermissionEnabled(permissionCode);
         
-        console.log(`Processing ${permissionCode}: currently=${userCurrentlyHasPermission}, fromRole=${userHasFromRole}, willBe=${willBeEnabled}`);
+        console.log(`Preparing operation for ${permissionCode}: currently=${userCurrentlyHasPermission}, fromRole=${userHasFromRole}, willBe=${willBeEnabled}`);
         
         if (userCurrentlyHasPermission && !willBeEnabled) {
           // User currently has permission but toggle is OFF - need to revoke it
           if (userHasFromRole) {
             // They have it from role, so add negative override
-            console.log('Adding negative override (revoke role permission):', permissionCode);
-            await apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides`, 'POST', {
+            operations.push({
+              type: 'negative_override',
+              permissionCode,
               permissionId: permission.id,
-              isGranted: false
+              action: () => apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides`, 'POST', {
+                permissionId: permission.id,
+                isGranted: false
+              })
             });
           } else {
             // They have it from manual override, remove the override
-            console.log('Removing positive override:', permissionCode);
-            await apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides/${permission.id}`, 'DELETE');
+            operations.push({
+              type: 'remove_override',
+              permissionCode,
+              permissionId: permission.id,
+              action: () => apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides/${permission.id}`, 'DELETE')
+            });
           }
         } else if (!userCurrentlyHasPermission && willBeEnabled) {
           // User doesn't have permission but toggle is ON - need to grant it
-          console.log('Adding positive override (grant permission):', permissionCode);
-          await apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides`, 'POST', {
+          operations.push({
+            type: 'positive_override',
+            permissionCode,
             permissionId: permission.id,
-            isGranted: true
+            action: () => apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides`, 'POST', {
+              permissionId: permission.id,
+              isGranted: true
+            })
           });
         }
       }
 
+      // Execute all operations
+      console.log(`Executing ${operations.length} operations...`);
+      for (const operation of operations) {
+        console.log(`Executing ${operation.type} for ${operation.permissionCode}`);
+        await operation.action();
+      }
+
       toast({
         title: "Success",
-        description: "Permission changes saved successfully",
+        description: `${operations.length} permission changes applied successfully`,
       });
 
       setLocalPermissionChanges(new Set());
@@ -480,7 +502,7 @@ export function UnifiedUserManagement() {
       await queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser.id}/permissions-with-sources`] });
       await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
       
-      console.log('Permission changes saved successfully');
+      console.log('All permission changes saved successfully');
     } catch (error) {
       console.error('Error saving permission changes:', error);
       toast({
@@ -980,39 +1002,84 @@ export function UnifiedUserManagement() {
                         const hasOriginalPermission = userPermissionsWithSources.some(p => p.code === permission.code);
                         const hasLocalChange = localPermissionChanges.has(permission.code);
                         const originalSource = userPermissionsWithSources.find(p => p.code === permission.code)?.source;
+                        const hasFromRole = hasPermissionFromRole(permission.code);
+                        
+                        // Determine the permission status and badges to show
+                        let statusBadges = [];
+                        
+                        if (hasLocalChange) {
+                          // Show pending change status
+                          if (!hasOriginalPermission && isEnabled) {
+                            // Adding new permission
+                            statusBadges.push(
+                              <Badge key="pending-add" variant="default" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                                Will Add Manually
+                              </Badge>
+                            );
+                          } else if (hasOriginalPermission && !isEnabled) {
+                            // Removing existing permission
+                            if (hasFromRole) {
+                              statusBadges.push(
+                                <Badge key="pending-revoke" variant="destructive" className="text-xs">
+                                  Will Remove Role Permission
+                                </Badge>
+                              );
+                            } else {
+                              statusBadges.push(
+                                <Badge key="pending-remove" variant="destructive" className="text-xs">
+                                  Will Remove Manual Permission
+                                </Badge>
+                              );
+                            }
+                          }
+                        } else if (hasOriginalPermission) {
+                          // Show current source
+                          if (originalSource === 'role') {
+                            statusBadges.push(
+                              <Badge key="from-role" variant="secondary" className="text-xs">
+                                From Role
+                              </Badge>
+                            );
+                          } else {
+                            statusBadges.push(
+                              <Badge key="manual" variant="outline" className="text-xs border-blue-200 text-blue-700 dark:border-blue-800 dark:text-blue-300">
+                                Added Manually
+                              </Badge>
+                            );
+                          }
+                        }
                         
                         return (
                           <div 
                             key={permission.id}
-                            className="flex items-center justify-between py-2 px-3 border rounded-lg hover:bg-muted/50"
+                            className={`flex items-center justify-between py-3 px-4 border rounded-lg hover:bg-muted/50 transition-colors ${
+                              hasLocalChange ? 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/20' : ''
+                            }`}
                           >
                             <div className="flex-1">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-sm font-medium">
                                   {permission.code.split('.').slice(1).map(part => 
                                     part.charAt(0).toUpperCase() + part.slice(1)
                                   ).join(' ')}
                                 </span>
-                                {hasOriginalPermission && !hasLocalChange && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {originalSource === 'role' ? 'Role' : 'Manual'}
-                                  </Badge>
-                                )}
-                                {hasLocalChange && (
-                                  <Badge variant={isEnabled ? "default" : "destructive"} className="text-xs">
-                                    {isEnabled ? 'Pending +' : 'Pending -'}
-                                  </Badge>
-                                )}
+                                {statusBadges}
                               </div>
                               <p className="text-xs text-muted-foreground mt-1">
                                 {permission.description}
                               </p>
+                              {hasLocalChange && (
+                                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1 italic">
+                                  ⏳ Changes pending - click "Save Changes" to apply
+                                </p>
+                              )}
                             </div>
                             <PermissionGuard permission="user.edit.all">
                               <Switch
                                 checked={isEnabled}
                                 onCheckedChange={() => handlePermissionToggle(permission.code)}
                                 data-testid={`toggle-${permission.code}`}
+                                className={hasLocalChange ? 'border-yellow-300' : ''}
                               />
                             </PermissionGuard>
                           </div>
@@ -1025,6 +1092,51 @@ export function UnifiedUserManagement() {
             </div>
           </div>
 
+          {/* Pending Changes Summary */}
+          {hasUnsavedChanges && (
+            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <h5 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
+                Pending Changes ({localPermissionChanges.size})
+              </h5>
+              <div className="space-y-1">
+                {Array.from(localPermissionChanges).map(permissionCode => {
+                  const permission = allPermissions.find(p => p.code === permissionCode);
+                  const userCurrentlyHas = userPermissionsWithSources.some(p => p.code === permissionCode);
+                  const userHasFromRole = hasPermissionFromRole(permissionCode);
+                  const willBeEnabled = isPermissionEnabled(permissionCode);
+                  
+                  let changeDescription = '';
+                  let changeType = '';
+                  
+                  if (!userCurrentlyHas && willBeEnabled) {
+                    changeDescription = `Add "${permission?.code}" manually`;
+                    changeType = 'add';
+                  } else if (userCurrentlyHas && !willBeEnabled) {
+                    if (userHasFromRole) {
+                      changeDescription = `Remove "${permission?.code}" (override role permission)`;
+                      changeType = 'remove-role';
+                    } else {
+                      changeDescription = `Remove "${permission?.code}" (remove manual permission)`;
+                      changeType = 'remove-manual';
+                    }
+                  }
+                  
+                  return (
+                    <div key={permissionCode} className="flex items-center gap-2 text-xs">
+                      {changeType === 'add' && <span className="text-green-600 font-mono">+</span>}
+                      {changeType.startsWith('remove') && <span className="text-red-600 font-mono">-</span>}
+                      <span className="text-muted-foreground">{changeDescription}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-2 italic">
+                These changes will be applied when you click "Apply All Changes"
+              </p>
+            </div>
+          )}
+
           <div className="flex items-center justify-between pt-4 border-t">
             <Button 
               variant="outline" 
@@ -1036,12 +1148,26 @@ export function UnifiedUserManagement() {
             <div className="flex gap-2">
               {hasUnsavedChanges && (
                 <Button 
-                  onClick={savePermissionChanges}
-                  data-testid="button-save-changes"
+                  variant="outline" 
+                  onClick={discardChanges}
+                  data-testid="button-discard-changes"
                 >
-                  Save Changes
+                  Discard Changes
                 </Button>
               )}
+              <Button 
+                onClick={savePermissionChanges}
+                disabled={!hasUnsavedChanges}
+                data-testid="button-save-changes"
+                className={hasUnsavedChanges ? 'bg-blue-600 hover:bg-blue-700' : ''}
+              >
+                {hasUnsavedChanges ? 'Apply All Changes' : 'Save Changes'}
+                {hasUnsavedChanges && (
+                  <span className="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded">
+                    {localPermissionChanges.size}
+                  </span>
+                )}
+              </Button>
             </div>
           </div>
         </DialogContent>
