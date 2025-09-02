@@ -136,6 +136,10 @@ export function EnhancedRoleManagement() {
     description: "",
     permissions: new Set<string>(),
   });
+  
+  // Local state for permission toggles (immediate updates)
+  const [localPermissionState, setLocalPermissionState] = useState<Map<string, Set<string>>>(new Map());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -254,6 +258,57 @@ export function EnhancedRoleManagement() {
     setSelectedRole(null);
   };
 
+  // Save all permission changes to database
+  const saveAllPermissionChanges = useMutation({
+    mutationFn: async () => {
+      const changes = Array.from(localPermissionState.entries());
+      
+      for (const [roleId, newPermissions] of changes) {
+        const originalRole = roles.find(r => r.id === roleId);
+        const originalPermissions = new Set(originalRole?.permissions.map(p => p.id) || []);
+        
+        // Determine changes
+        const toAdd = Array.from(newPermissions).filter(p => !originalPermissions.has(p));
+        const toRemove = Array.from(originalPermissions).filter(p => !newPermissions.has(p));
+        
+        // Remove permissions
+        for (const permissionId of toRemove) {
+          await apiRequest('/api/rbac/remove-role-permission', 'DELETE', {
+            roleId,
+            permissionId,
+          });
+        }
+        
+        // Add permissions
+        for (const permissionId of toAdd) {
+          await apiRequest('/api/rbac/assign-role-permission', 'POST', {
+            roleId,
+            permissionId,
+          });
+        }
+      }
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "All permission changes saved successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/rbac/roles'] });
+      setLocalPermissionState(new Map());
+      setHasUnsavedChanges(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save permission changes",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Discard unsaved changes
+  const discardChanges = () => {
+    setLocalPermissionState(new Map());
+    setHasUnsavedChanges(false);
+  };
+
   const openEditDialog = (role: Role) => {
     setSelectedRole(role);
     setRoleData({
@@ -331,6 +386,32 @@ export function EnhancedRoleManagement() {
       newPermissions.add(permissionId);
     }
     setRoleData({ ...roleData, permissions: newPermissions });
+  };
+
+  // Handle immediate permission toggle for existing roles
+  const handleRolePermissionToggle = (roleId: string, permissionId: string) => {
+    const currentRolePermissions = localPermissionState.get(roleId) || new Set(
+      roles.find(r => r.id === roleId)?.permissions.map(p => p.id) || []
+    );
+    
+    const newPermissions = new Set(currentRolePermissions);
+    if (newPermissions.has(permissionId)) {
+      newPermissions.delete(permissionId);
+    } else {
+      newPermissions.add(permissionId);
+    }
+    
+    setLocalPermissionState(prev => new Map(prev.set(roleId, newPermissions)));
+    setHasUnsavedChanges(true);
+  };
+
+  // Get effective permissions for a role (local state or original)
+  const getEffectivePermissions = (roleId: string) => {
+    const localPerms = localPermissionState.get(roleId);
+    if (localPerms) return localPerms;
+    
+    const role = roles.find(r => r.id === roleId);
+    return new Set(role?.permissions.map(p => p.id) || []);
   };
 
   const renderPermissionForm = () => (
@@ -554,12 +635,46 @@ export function EnhancedRoleManagement() {
         </PermissionGuard>
       </div>
 
+      {/* Unsaved Changes Banner */}
+      {hasUnsavedChanges && (
+        <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Settings className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  You have unsaved permission changes
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={discardChanges}
+                  data-testid="button-discard-changes"
+                >
+                  Discard Changes
+                </Button>
+                <Button 
+                  size="sm"
+                  onClick={() => saveAllPermissionChanges.mutate()}
+                  disabled={saveAllPermissionChanges.isPending}
+                  data-testid="button-save-changes"
+                >
+                  {saveAllPermissionChanges.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Roles Table */}
       <Card>
         <CardHeader>
           <CardTitle>Roles ({roles.length})</CardTitle>
           <CardDescription>
-            Manage roles and their permissions with smart defaults
+            Manage roles and their permissions. Toggle permissions instantly and save when ready.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -570,100 +685,145 @@ export function EnhancedRoleManagement() {
               No roles found
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Permissions</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {roles.map((role) => (
-                  <TableRow key={role.id}>
-                    <TableCell>
+            <div className="space-y-4">
+              {roles.map((role) => (
+                <Card key={role.id} className="relative">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium">{role.name}</div>
+                        <div className="font-medium text-lg">{role.name}</div>
                         {role.description && (
                           <div className="text-sm text-muted-foreground">{role.description}</div>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1 max-w-md">
-                        {role.permissions.slice(0, 3).map((permission) => (
-                          <Badge key={permission.id} variant="secondary" className="text-xs">
-                            {permission.code}
-                          </Badge>
-                        ))}
-                        {role.permissions.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{role.permissions.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {new Date().toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <PermissionGuard permission="role.manage">
-                            <DropdownMenuItem onClick={() => openEditDialog(role)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                          </PermissionGuard>
-                          <PermissionGuard permission="role.manage">
-                            <DropdownMenuItem onClick={() => openCloneDialog(role)}>
-                              <Copy className="h-4 w-4 mr-2" />
-                              Clone
-                            </DropdownMenuItem>
-                          </PermissionGuard>
-                          <PermissionGuard permission="role.manage">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem 
-                                  onSelect={(e) => e.preventDefault()}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Role</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete the role "{role.name}"? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => deleteRoleMutation.mutate(role.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline" className="text-xs">
+                          {getEffectivePermissions(role.id).size} permissions
+                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <PermissionGuard permission="role.manage">
+                              <DropdownMenuItem onClick={() => openEditDialog(role)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Role Details
+                              </DropdownMenuItem>
+                            </PermissionGuard>
+                            <PermissionGuard permission="role.manage">
+                              <DropdownMenuItem onClick={() => openCloneDialog(role)}>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Clone
+                              </DropdownMenuItem>
+                            </PermissionGuard>
+                            <PermissionGuard permission="role.manage">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem 
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="text-destructive"
                                   >
+                                    <Trash2 className="h-4 w-4 mr-2" />
                                     Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </PermissionGuard>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Role</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete the role "{role.name}"? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteRoleMutation.mutate(role.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </PermissionGuard>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {PERMISSION_CATEGORIES.map((category) => {
+                        const { basePermissions, ownPermissions, allPermissions } = getCategoryPermissions(category);
+                        const effectivePermissions = getEffectivePermissions(role.id);
+                        const Icon = category.icon;
+                        
+                        // Check if this category has any permissions for this role
+                        const categoryPermissions = [...basePermissions, ...ownPermissions, ...allPermissions];
+                        const hasAnyPermissions = categoryPermissions.some(p => effectivePermissions.has(p.id));
+                        
+                        if (categoryPermissions.length === 0) return null;
+                        
+                        return (
+                          <div key={category.title} className="border rounded-lg p-3">
+                            <div className="flex items-center space-x-2 mb-3">
+                              <Icon className="h-4 w-4 text-primary" />
+                              <span className="font-medium text-sm">{category.title}</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                              {basePermissions.map((permission) => (
+                                <div key={permission.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`${role.id}-${permission.id}`}
+                                    checked={effectivePermissions.has(permission.id)}
+                                    onCheckedChange={() => handleRolePermissionToggle(role.id, permission.id)}
+                                    data-testid={`toggle-${role.name}-${permission.code}`}
+                                  />
+                                  <Label htmlFor={`${role.id}-${permission.id}`} className="text-xs cursor-pointer">
+                                    {permission.description}
+                                  </Label>
+                                </div>
+                              ))}
+                              {ownPermissions.map((permission) => (
+                                <div key={permission.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`${role.id}-${permission.id}`}
+                                    checked={effectivePermissions.has(permission.id)}
+                                    onCheckedChange={() => handleRolePermissionToggle(role.id, permission.id)}
+                                    data-testid={`toggle-${role.name}-${permission.code}`}
+                                  />
+                                  <Label htmlFor={`${role.id}-${permission.id}`} className="text-xs cursor-pointer">
+                                    {permission.description}
+                                  </Label>
+                                  <Badge variant="outline" className="text-xs">Own</Badge>
+                                </div>
+                              ))}
+                              {allPermissions.map((permission) => (
+                                <div key={permission.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`${role.id}-${permission.id}`}
+                                    checked={effectivePermissions.has(permission.id)}
+                                    onCheckedChange={() => handleRolePermissionToggle(role.id, permission.id)}
+                                    data-testid={`toggle-${role.name}-${permission.code}`}
+                                  />
+                                  <Label htmlFor={`${role.id}-${permission.id}`} className="text-xs cursor-pointer">
+                                    {permission.description}
+                                  </Label>
+                                  <Badge variant="default" className="text-xs">All</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
