@@ -704,8 +704,6 @@ export default function Agreements() {
             state: (document.getElementById('edit-state') as HTMLInputElement)?.value,
             pincode: (document.getElementById('edit-pincode') as HTMLInputElement)?.value,
           },
-          purpose: (document.querySelector('[name="edit-purpose"]') as HTMLSelectElement)?.value || 
-                   editingImportedAgreement.propertyDetails?.purpose || "residential",
         },
         propertyType: (document.querySelector('[name="edit-property-type"]') as HTMLSelectElement)?.value || 
                       editingImportedAgreement.propertyType || "residential",
@@ -1979,19 +1977,7 @@ export default function Agreements() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="edit-purpose">Property Purpose <span className="text-red-500">*</span></Label>
-                      <Select name="edit-purpose" defaultValue={editingImportedAgreement.propertyDetails?.purpose || "residential"}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Select property purpose" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="residential">Residential</SelectItem>
-                          <SelectItem value="commercial">Commercial</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-property-type">Property Type</Label>
+                      <Label htmlFor="edit-property-type">Property Type <span className="text-red-500">*</span></Label>
                       <Select name="edit-property-type" defaultValue={editingImportedAgreement.propertyType || "residential"}>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Select property type" />
