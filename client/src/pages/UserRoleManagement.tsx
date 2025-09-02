@@ -268,6 +268,27 @@ export default function UserRoleManagement() {
     },
   });
 
+  // Toggle user status mutation
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      return await apiRequest(`/api/unified/users/${id}/toggle-status`, 'PATCH', { isActive });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Status Updated",
+        description: "User status updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update status",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Permission override mutations
   const addPermissionOverrideMutation = useMutation({
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
@@ -809,6 +830,21 @@ export default function UserRoleManagement() {
                               <DropdownMenuItem onClick={() => openManagePermissions(user)}>
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Manage Permissions
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => toggleUserStatusMutation.mutate({ id: user.id, isActive: !user.isActive })}
+                              >
+                                {user.isActive ? (
+                                  <>
+                                    <EyeOff className="h-4 w-4 mr-2" />
+                                    Deactivate User
+                                  </>
+                                ) : (
+                                  <>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    Activate User
+                                  </>
+                                )}
                               </DropdownMenuItem>
                               {(currentUser as any)?.id !== user.id && (
                                 <AlertDialog>
