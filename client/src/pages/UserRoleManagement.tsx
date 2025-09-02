@@ -402,6 +402,7 @@ export default function UserRoleManagement() {
       }
     } catch (error) {
       console.error(`Failed to toggle permission ${permissionName}:`, error);
+      // Error toast is already handled in the mutation's onError handler
     }
   };
 
@@ -1136,7 +1137,7 @@ export default function UserRoleManagement() {
                             <div className="flex items-center space-x-2">
                               <Switch 
                                 checked={hasPermission}
-                                disabled={permissionsLoading}
+                                disabled={addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
                                 onCheckedChange={(checked) => {
                                   handlePermissionToggle(managingPermissionsUser.id, permission.id, permission.name, checked);
                                 }}
