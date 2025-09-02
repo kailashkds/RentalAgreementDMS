@@ -686,7 +686,7 @@ export default function UserRoleManagement() {
                     <TableHead className="w-[200px]">User</TableHead>
                     <TableHead className="w-[180px]">Contact</TableHead>
                     <TableHead className="w-[120px]">Role</TableHead>
-                    <TableHead className="w-[300px]">Permissions</TableHead>
+                    <TableHead className="w-[150px]">Permissions</TableHead>
                     <TableHead className="w-[100px]">Status</TableHead>
                     <TableHead className="w-[80px]">Actions</TableHead>
                   </TableRow>
@@ -750,7 +750,7 @@ export default function UserRoleManagement() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
