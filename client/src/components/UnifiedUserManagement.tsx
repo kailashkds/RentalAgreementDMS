@@ -286,6 +286,47 @@ export function UnifiedUserManagement() {
     },
   });
 
+  // Add permission override mutation
+  const addPermissionOverrideMutation = useMutation({
+    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
+      return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Permission Added",
+        description: "Permission override added successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add permission override",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove permission override mutation
+  const removePermissionOverrideMutation = useMutation({
+    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
+      return await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      toast({
+        title: "Permission Removed",
+        description: "Permission override removed successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove permission override",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();

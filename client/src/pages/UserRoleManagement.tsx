@@ -291,6 +291,56 @@ export default function UserRoleManagement() {
     },
   });
 
+  // Permission override mutations
+  const addPermissionOverrideMutation = useMutation({
+    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
+      const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId });
+      return response.json();
+    },
+    onSuccess: async () => {
+      // Invalidate and refetch queries to update UI immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/unified/permissions"] });
+      // Force a refetch of the current data
+      await queryClient.refetchQueries({ queryKey: ["/api/unified/users"] });
+      toast({
+        title: "Success",
+        description: "Permission override added successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add permission override",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removePermissionOverrideMutation = useMutation({
+    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
+      const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, "DELETE");
+      return response.json();
+    },
+    onSuccess: async () => {
+      // Invalidate and refetch queries to update UI immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/unified/permissions"] });
+      // Force a refetch of the current data
+      await queryClient.refetchQueries({ queryKey: ["/api/unified/users"] });
+      toast({
+        title: "Success", 
+        description: "Permission override removed successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove permission override",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Role assignment mutations
   const assignRoleMutation = useMutation({
@@ -419,10 +469,18 @@ export default function UserRoleManagement() {
   };
 
   const handlePermissionToggle = async (userId: string, permissionId: string, permissionName: string, checked: boolean) => {
-    // This function is deprecated - permission toggles should now be handled
-    // by the UnifiedUserManagement component with local state management
-    // and batch saving functionality
-    console.log('Permission toggle attempted, but should use new local state approach');
+    try {
+      if (checked) {
+        // Add permission override
+        await addPermissionOverrideMutation.mutateAsync({ userId, permissionId });
+      } else {
+        // Remove permission override
+        await removePermissionOverrideMutation.mutateAsync({ userId, permissionId });
+      }
+    } catch (error) {
+      console.error(`Failed to toggle permission ${permissionName}:`, error);
+      // Error toast is already handled in the mutation's onError handler
+    }
   };
 
   const handleUserSubmit = (e: React.FormEvent) => {
