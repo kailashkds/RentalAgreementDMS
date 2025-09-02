@@ -848,12 +848,14 @@ export function UnifiedUserManagement() {
                       variant={hasPermission ? "destructive" : "default"}
                       size="sm"
                       onClick={() => {
-                        if (hasPermission) {
+                        if (hasPermission && isOverride) {
+                          // Only allow removing override permissions, not role-based ones
                           removePermissionOverrideMutation.mutate({
                             userId: selectedUser!.id,
                             permissionId: permission.id
                           });
-                        } else {
+                        } else if (!hasPermission) {
+                          // Add permission override
                           addPermissionOverrideMutation.mutate({
                             userId: selectedUser!.id,
                             permissionId: permission.id
@@ -862,15 +864,18 @@ export function UnifiedUserManagement() {
                       }}
                       disabled={
                         addPermissionOverrideMutation.isPending || 
-                        removePermissionOverrideMutation.isPending
+                        removePermissionOverrideMutation.isPending ||
+                        (hasPermission && isFromRole) // Disable for role-based permissions
                       }
                       data-testid={`button-toggle-permission-${permission.code}`}
                     >
                       {addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending
                         ? "Updating..."
-                        : hasPermission 
-                          ? "Remove" 
-                          : "Add"
+                        : hasPermission && isFromRole
+                          ? "From Role"
+                          : hasPermission 
+                            ? "Remove" 
+                            : "Add"
                       }
                     </Button>
                   </div>
