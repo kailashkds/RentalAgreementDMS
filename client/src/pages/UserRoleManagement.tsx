@@ -784,10 +784,10 @@ export default function UserRoleManagement() {
                         </TableCell>
                         <TableCell>
                           <Badge 
-                            variant={user.isActive ? "default" : "secondary"}
+                            variant={user.status === 'active' ? "default" : "secondary"}
                             data-testid={`status-${user.id}`}
                           >
-                            {user.isActive ? "Active" : "Inactive"}
+                            {user.status === 'active' ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -832,9 +832,9 @@ export default function UserRoleManagement() {
                                 Manage Permissions
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={() => toggleUserStatusMutation.mutate({ id: user.id, isActive: !user.isActive })}
+                                onClick={() => toggleUserStatusMutation.mutate({ id: user.id, isActive: user.status !== 'active' })}
                               >
-                                {user.isActive ? (
+                                {user.status === 'active' ? (
                                   <>
                                     <EyeOff className="h-4 w-4 mr-2" />
                                     Deactivate User
