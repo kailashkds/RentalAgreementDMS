@@ -84,9 +84,11 @@ export default function UserRoleManagement() {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
+  const [isViewPermissionsModalOpen, setIsViewPermissionsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [managingPermissionsUser, setManagingPermissionsUser] = useState<User | null>(null);
+  const [viewingPermissionsUser, setViewingPermissionsUser] = useState<User | null>(null);
   const [showPermissions, setShowPermissions] = useState<string | null>(null);
 
   // User form data
@@ -752,10 +754,13 @@ export default function UserRoleManagement() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setShowPermissions(showPermissions === user.id ? null : user.id)}
-                              data-testid={`button-show-permissions-${user.id}`}
+                              onClick={() => {
+                                setViewingPermissionsUser(user);
+                                setIsViewPermissionsModalOpen(true);
+                              }}
+                              data-testid={`button-view-permissions-${user.id}`}
                             >
-                              {showPermissions === user.id ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              <Eye className="h-4 w-4" />
                               <span className="ml-1">{userPermissions.total.length}</span>
                             </Button>
                             {userPermissions.manual.length > 0 && (
@@ -764,32 +769,6 @@ export default function UserRoleManagement() {
                               </Badge>
                             )}
                           </div>
-                          {showPermissions === user.id && (
-                            <div className="mt-2 p-3 bg-muted rounded text-xs space-y-3 max-w-none">
-                              <div>
-                                <strong>Inherited ({userPermissions.inherited.length}):</strong>
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {userPermissions.inherited.map(permission => (
-                                    <Badge key={permission} variant="outline" className="text-[10px] px-2 py-1 whitespace-nowrap">
-                                      {formatPermissionName(permission)}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                              {userPermissions.manual.length > 0 && (
-                                <div>
-                                  <strong>Manual ({userPermissions.manual.length}):</strong>
-                                  <div className="flex flex-wrap gap-1 mt-2">
-                                    {userPermissions.manual.map(permission => (
-                                      <Badge key={permission} variant="default" className="text-[10px] px-2 py-1 whitespace-nowrap">
-                                        {formatPermissionName(permission)}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </TableCell>
                         <TableCell>
                           <Badge 
@@ -1179,6 +1158,78 @@ export default function UserRoleManagement() {
             </Button>
             <Button onClick={() => setIsPermissionsModalOpen(false)}>
               Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View User Permissions Modal */}
+      <Dialog open={isViewPermissionsModalOpen} onOpenChange={setIsViewPermissionsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              User Permissions - {viewingPermissionsUser?.name || 'Unknown User'}
+            </DialogTitle>
+            <DialogDescription>
+              View all permissions for this user. Permissions are inherited from roles and can be manually added.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {viewingPermissionsUser && (
+            <div className="space-y-6">
+              {(() => {
+                const userPermissions = getUserPermissions(viewingPermissionsUser);
+                return (
+                  <>
+                    {/* Inherited from Roles */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">
+                        Inherited from Roles ({userPermissions.inherited.length})
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {userPermissions.inherited.map(permission => (
+                          <Badge key={permission} variant="outline" className="text-sm px-3 py-1">
+                            {formatPermissionName(permission)}
+                          </Badge>
+                        ))}
+                        {userPermissions.inherited.length === 0 && (
+                          <p className="text-muted-foreground text-sm">No permissions inherited from roles.</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Manual Permissions */}
+                    {userPermissions.manual.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold mb-3">
+                          Manual Permissions ({userPermissions.manual.length})
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {userPermissions.manual.map(permission => (
+                            <Badge key={permission} variant="default" className="text-sm px-3 py-1">
+                              {formatPermissionName(permission)}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Total Summary */}
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Total Permissions: {userPermissions.total.length}</strong>
+                      </p>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+          
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setIsViewPermissionsModalOpen(false)}>
+              Close
             </Button>
           </div>
         </DialogContent>
