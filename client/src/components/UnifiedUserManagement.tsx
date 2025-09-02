@@ -760,71 +760,98 @@ export function UnifiedUserManagement() {
 
       {/* Permissions Management Dialog */}
       <Dialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Manage Permissions - {selectedUser?.name}</DialogTitle>
+            <DialogTitle>User Permissions - {selectedUser?.name}</DialogTitle>
             <DialogDescription>
-              View and manage user permissions. Role permissions are inherited automatically, 
-              while manual overrides can be added or removed by Super Admins.
+              View all permissions for this user. Permissions are inherited from roles and can be manually added.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6">
-            {/* Current Permissions */}
+            {/* Inherited from Roles Section */}
             <div>
-              <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+              <h4 className="text-sm font-medium mb-4 flex items-center gap-2">
                 <Shield className="h-4 w-4" />
-                Current Permissions
+                Inherited from Roles ({userPermissionsWithSources.filter(p => p.source === 'role').length})
               </h4>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {userPermissionsWithSources.map((permission, index) => (
-                  <div 
-                    key={`${permission.code}-${index}`}
-                    className="flex items-center justify-between p-2 bg-muted rounded-lg"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono">{permission.code}</span>
-                      {permission.source === 'role' ? (
-                        <Badge variant="default" className="text-xs">
-                          Role: {permission.roleName}
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">
-                          Manual Override
-                        </Badge>
-                      )}
+              <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                {userPermissionsWithSources
+                  .filter(permission => permission.source === 'role')
+                  .map((permission, index) => (
+                    <div 
+                      key={`${permission.code}-${index}`}
+                      className="p-2 bg-muted rounded text-center"
+                    >
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {permission.code.split('.').map(part => 
+                          part.charAt(0).toUpperCase() + part.slice(1)
+                        ).join(' ')}
+                      </span>
                     </div>
-                    {permission.source === 'override' && (
-                      <PermissionGuard permission="user.edit.all">
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => {
-                            const permissionObj = allPermissions.find(p => p.code === permission.code);
-                            if (permissionObj && selectedUser) {
-                              removePermissionOverrideMutation.mutate({
-                                userId: selectedUser.id,
-                                permissionId: permissionObj.id
-                              });
-                            }
-                          }}
-                          disabled={removePermissionOverrideMutation.isPending}
-                        >
-                          Remove
-                        </Button>
-                      </PermissionGuard>
-                    )}
+                  ))
+                }
+                {userPermissionsWithSources.filter(p => p.source === 'role').length === 0 && (
+                  <div className="col-span-2 text-sm text-muted-foreground py-4 text-center">
+                    No role-based permissions found.
                   </div>
-                ))}
-                {userPermissionsWithSources.length === 0 && (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    No permissions found for this user.
-                  </p>
                 )}
               </div>
             </div>
 
-            {/* Add Manual Permission Override */}
+            {/* Manual Overrides Section */}
+            {userPermissionsWithSources.some(p => p.source === 'override') && (
+              <div>
+                <h4 className="text-sm font-medium mb-4 flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Manual Overrides ({userPermissionsWithSources.filter(p => p.source === 'override').length})
+                </h4>
+                <div className="space-y-2">
+                  {userPermissionsWithSources
+                    .filter(permission => permission.source === 'override')
+                    .map((permission, index) => (
+                      <div 
+                        key={`${permission.code}-${index}`}
+                        className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800"
+                      >
+                        <span className="text-sm font-medium">
+                          {permission.code.split('.').map(part => 
+                            part.charAt(0).toUpperCase() + part.slice(1)
+                          ).join(' ')}
+                        </span>
+                        <PermissionGuard permission="user.edit.all">
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              const permissionObj = allPermissions.find(p => p.code === permission.code);
+                              if (permissionObj && selectedUser) {
+                                removePermissionOverrideMutation.mutate({
+                                  userId: selectedUser.id,
+                                  permissionId: permissionObj.id
+                                });
+                              }
+                            }}
+                            disabled={removePermissionOverrideMutation.isPending}
+                          >
+                            Remove
+                          </Button>
+                        </PermissionGuard>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
+
+            {/* Total Permissions Count */}
+            <div className="pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Total Permissions: {userPermissionsWithSources.length}
+              </div>
+            </div>
+
+            {/* Add Manual Permission Override - Only for Super Admins */}
             <PermissionGuard permission="user.edit.all">
               <div>
                 <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
@@ -877,7 +904,7 @@ export function UnifiedUserManagement() {
             </PermissionGuard>
           </div>
 
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end pt-4 border-t">
             <Button onClick={() => setShowPermissionsDialog(false)}>
               Close
             </Button>
