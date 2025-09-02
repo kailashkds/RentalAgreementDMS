@@ -677,16 +677,16 @@ export default function UserRoleManagement() {
             </div>
 
             {/* Users Table */}
-            <Card>
-              <Table>
+            <Card className="overflow-x-auto">
+              <Table className="min-w-[1200px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Permissions</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-[200px]">User</TableHead>
+                    <TableHead className="w-[180px]">Contact</TableHead>
+                    <TableHead className="w-[120px]">Role</TableHead>
+                    <TableHead className="w-[300px]">Permissions</TableHead>
+                    <TableHead className="w-[100px]">Status</TableHead>
+                    <TableHead className="w-[80px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -765,12 +765,12 @@ export default function UserRoleManagement() {
                             )}
                           </div>
                           {showPermissions === user.id && (
-                            <div className="mt-2 p-2 bg-muted rounded text-xs space-y-1">
+                            <div className="mt-2 p-3 bg-muted rounded text-xs space-y-3 max-w-none">
                               <div>
                                 <strong>Inherited ({userPermissions.inherited.length}):</strong>
-                                <div className="flex flex-wrap gap-1 mt-1">
+                                <div className="flex flex-wrap gap-1 mt-2">
                                   {userPermissions.inherited.map(permission => (
-                                    <Badge key={permission} variant="outline" className="text-xs">
+                                    <Badge key={permission} variant="outline" className="text-[10px] px-2 py-1 whitespace-nowrap">
                                       {formatPermissionName(permission)}
                                     </Badge>
                                   ))}
@@ -779,9 +779,9 @@ export default function UserRoleManagement() {
                               {userPermissions.manual.length > 0 && (
                                 <div>
                                   <strong>Manual ({userPermissions.manual.length}):</strong>
-                                  <div className="flex flex-wrap gap-1 mt-1">
+                                  <div className="flex flex-wrap gap-1 mt-2">
                                     {userPermissions.manual.map(permission => (
-                                      <Badge key={permission} variant="default" className="text-xs">
+                                      <Badge key={permission} variant="default" className="text-[10px] px-2 py-1 whitespace-nowrap">
                                         {formatPermissionName(permission)}
                                       </Badge>
                                     ))}
