@@ -404,6 +404,12 @@ export default function UserRoleManagement() {
     });
   };
 
+  const openCreateUser = () => {
+    setEditingUser(null);
+    resetUserForm();
+    setIsUserModalOpen(true);
+  };
+
   const openEditUser = (user: User) => {
     setEditingUser(user);
     
@@ -612,7 +618,7 @@ export default function UserRoleManagement() {
               <div className="flex items-center space-x-2">
                 <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>
                   <DialogTrigger asChild>
-                    <Button data-testid="button-add-user">
+                    <Button onClick={openCreateUser} data-testid="button-add-user">
                       <Plus className="h-4 w-4 mr-2" />
                       Add User
                     </Button>
