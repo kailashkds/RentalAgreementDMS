@@ -33,8 +33,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adminUser: adminUser ? { 
           id: adminUser.id, 
           username: adminUser.username, 
-          phone: adminUser.phone, 
-          name: `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() 
+          mobile: adminUser.mobile, 
+          name: adminUser.name 
         } : null,
         totalAdmins: allAdmins.users.length,
         environment: process.env.NODE_ENV || 'development'
@@ -58,8 +58,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Admin already exists", 
           admin: { 
             username: existingAdmin.username, 
-            phone: existingAdmin.phone, 
-            name: `${existingAdmin.firstName || ''} ${existingAdmin.lastName || ''}`.trim() 
+            mobile: existingAdmin.mobile, 
+            name: existingAdmin.name 
           } 
         });
       }
@@ -69,10 +69,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: "Administrator",
         username: "admin",
         mobile: "9999999999",
-        firstName: "Administrator",
-        lastName: null,
         password: hashedPassword,
-        defaultRole: "super_admin",
         status: "active"
       });
       
@@ -80,8 +77,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Admin created successfully", 
         admin: { 
           username: newAdmin.username, 
-          phone: newAdmin.phone, 
-          name: `${newAdmin.firstName || ''} ${newAdmin.lastName || ''}`.trim() 
+          mobile: newAdmin.mobile, 
+          name: newAdmin.name 
         } 
       });
     } catch (error) {
@@ -140,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let permissions: string[];
       
       // Check if user is a customer based on their role
-      const isCustomer = req.user!.role === 'Customer' || req.user!.defaultRole === 'Customer';
+      const isCustomer = req.user!.role === 'Customer';
       
       if (isCustomer) {
         permissions = await storage.getCustomerPermissions(req.user!.id);
@@ -2423,7 +2420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           Object.keys(existingAgreement.notarizedDocument).length > 0) {
         
         // Check if user is a customer based on their role
-        const isCustomer = req.user!.role === 'Customer' || req.user!.defaultRole === 'Customer';
+        const isCustomer = req.user!.role === 'Customer';
         
         let canEditNotarized = false;
         
@@ -2796,6 +2793,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to download file from URL and save locally
+  async function downloadFileFromUrl(url: string, localPath: string, fileName: string): Promise<{ success: boolean; localUrl: string; error?: string }> {
+    try {
+      console.log(`[File Download] Downloading ${url} to ${localPath}/${fileName}`);
+      
+      // Ensure directory exists
+      if (!fs.existsSync(localPath)) {
+        fs.mkdirSync(localPath, { recursive: true });
+        console.log(`[File Download] Created directory: ${localPath}`);
+      }
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const buffer = await response.arrayBuffer();
+      const fullPath = path.join(localPath, fileName);
+      
+      fs.writeFileSync(fullPath, Buffer.from(buffer));
+      console.log(`[File Download] File saved: ${fullPath} (${buffer.byteLength} bytes)`);
+      
+      return {
+        success: true,
+        localUrl: `/uploads/${path.relative(path.join(process.cwd(), 'uploads'), fullPath).replace(/\\/g, '/')}`
+      };
+    } catch (error) {
+      console.error(`[File Download] Error downloading ${url}:`, error);
+      return {
+        success: false,
+        localUrl: url, // Keep original URL as fallback
+        error: String(error)
+      };
+    }
+  }
+
   // Import existing agreement endpoint
   app.post('/api/agreements/import', async (req, res) => {
     try {
@@ -2832,6 +2865,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         language: language,
         notarizedDocumentUrl: notarizedDocumentUrl,
         policeVerificationDocumentUrl: policeVerificationDocumentUrl
+      });
+
+      // Download and save files locally
+      console.log('[Import Agreement] Downloading files...');
+      
+      // Use temporary filename for now, will be renamed after agreement creation
+      const timestamp = new Date().toISOString().split('T')[0];
+      const tempId = `TEMP-${Date.now()}`;
+      const notarizedFileName = `${tempId}-notarized-${timestamp}.pdf`;
+      const notarizedResult = await downloadFileFromUrl(
+        notarizedDocumentUrl,
+        path.join(process.cwd(), 'uploads', 'notarized'),
+        notarizedFileName
+      );
+      
+      // Download police verification document
+      const policeFileName = `${tempId}-police-verification-${timestamp}.pdf`;
+      const policeResult = await downloadFileFromUrl(
+        policeVerificationDocumentUrl,
+        path.join(process.cwd(), 'uploads', 'police-verification'),
+        policeFileName
+      );
+      
+      console.log('[Import Agreement] File download results:', {
+        notarized: notarizedResult.success ? 'success' : notarizedResult.error,
+        police: policeResult.success ? 'success' : policeResult.error
       });
 
       // Create the agreement in the database using the proper schema format
@@ -2871,21 +2930,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endDate: agreementPeriod.endDate,
         agreementDate: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD format
         notarizedDocument: {
-          filename: "notarized_document.pdf",
+          filename: notarizedFileName,
           originalName: "Notarized Rent Agreement",
           fileType: "application/pdf",
           size: 0,
           uploadDate: new Date().toISOString(),
-          url: notarizedDocumentUrl
+          url: notarizedResult.localUrl
         },
         documents: {
           policeVerificationDocument: {
-            filename: "police_verification.pdf",
+            filename: policeFileName,
             originalName: "Police Verification Certificate",
             fileType: "application/pdf",
             size: 0,
             uploadDate: new Date().toISOString(),
-            url: policeVerificationDocumentUrl
+            url: policeResult.localUrl
           }
         },
         isImported: true,
@@ -2896,6 +2955,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate the data using the insert schema
       const validatedData = insertAgreementSchema.parse(agreementData);
       const agreement = await storage.createAgreement(validatedData);
+
+      // Rename files to use the actual agreement number
+      const finalNotarizedFileName = `${agreement.agreementNumber}-notarized-${timestamp}.pdf`;
+      const finalPoliceFileName = `${agreement.agreementNumber}-police-verification-${timestamp}.pdf`;
+      
+      if (notarizedResult.success) {
+        const oldNotarizedPath = path.join(process.cwd(), 'uploads', 'notarized', notarizedFileName);
+        const newNotarizedPath = path.join(process.cwd(), 'uploads', 'notarized', finalNotarizedFileName);
+        fs.renameSync(oldNotarizedPath, newNotarizedPath);
+        
+        // Update the agreement with the correct filename
+        await storage.updateAgreement(agreement.id, {
+          notarizedDocument: {
+            filename: finalNotarizedFileName,
+            originalName: "Notarized Rent Agreement",
+            fileType: "application/pdf",
+            size: 0,
+            uploadDate: new Date().toISOString(),
+            url: `/uploads/notarized/${finalNotarizedFileName}`
+          }
+        });
+      }
+      
+      if (policeResult.success) {
+        const oldPolicePath = path.join(process.cwd(), 'uploads', 'police-verification', policeFileName);
+        const newPolicePath = path.join(process.cwd(), 'uploads', 'police-verification', finalPoliceFileName);
+        fs.renameSync(oldPolicePath, newPolicePath);
+        
+        // Update the agreement with the correct filename
+        await storage.updateAgreement(agreement.id, {
+          documents: {
+            policeVerificationDocument: {
+              filename: finalPoliceFileName,
+              originalName: "Police Verification Certificate",
+              fileType: "application/pdf",
+              size: 0,
+              uploadDate: new Date().toISOString(),
+              url: `/uploads/police-verification/${finalPoliceFileName}`
+            }
+          }
+        });
+      }
 
       console.log(`[Import Agreement] Successfully imported agreement ${agreement.agreementNumber}`);
 
@@ -2914,6 +3015,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error importing agreement:", error);
       res.status(500).json({ error: 'Failed to import agreement' });
+    }
+  });
+
+  // Repair missing imported files endpoint
+  app.post('/api/agreements/:agreementId/repair-files', async (req, res) => {
+    try {
+      const { agreementId } = req.params;
+      const agreement = await storage.getAgreement(agreementId);
+      
+      if (!agreement) {
+        return res.status(404).json({ error: 'Agreement not found' });
+      }
+      
+      console.log(`[File Repair] Repairing files for agreement ${agreement.agreementNumber}`);
+      
+      const repairs = {
+        notarized: { attempted: false, success: false, error: null as string | null },
+        police: { attempted: false, success: false, error: null as string | null }
+      };
+      
+      // Repair notarized document if missing
+      if (agreement.notarizedDocument?.url && !fs.existsSync(path.join(process.cwd(), 'uploads', 'notarized', agreement.notarizedDocument.filename || ''))) {
+        repairs.notarized.attempted = true;
+        const notarizedFileName = `${agreement.agreementNumber}-notarized-${new Date().toISOString().split('T')[0]}.pdf`;
+        const notarizedResult = await downloadFileFromUrl(
+          agreement.notarizedDocument.url,
+          path.join(process.cwd(), 'uploads', 'notarized'),
+          notarizedFileName
+        );
+        
+        if (notarizedResult.success) {
+          // Update database with new local URL
+          await storage.updateAgreement(agreementId, {
+            notarizedDocument: {
+              ...agreement.notarizedDocument,
+              filename: notarizedFileName,
+              url: notarizedResult.localUrl
+            }
+          });
+          repairs.notarized.success = true;
+        } else {
+          repairs.notarized.error = notarizedResult.error || 'Unknown error';
+        }
+      }
+      
+      // Repair police verification document if missing
+      if (agreement.documents?.policeVerificationDocument?.url) {
+        const policeUrl = agreement.documents.policeVerificationDocument.url;
+        const policePath = path.join(process.cwd(), policeUrl.replace('/uploads/', 'uploads/'));
+        
+        if (!fs.existsSync(policePath)) {
+          repairs.police.attempted = true;
+          const policeFileName = `${agreement.agreementNumber}-police-verification-${new Date().toISOString().split('T')[0]}.pdf`;
+          const policeResult = await downloadFileFromUrl(
+            policeUrl,
+            path.join(process.cwd(), 'uploads', 'police-verification'),
+            policeFileName
+          );
+          
+          if (policeResult.success) {
+            // Update database with new local URL
+            const updatedDocuments = {
+              ...agreement.documents,
+              policeVerificationDocument: {
+                ...agreement.documents.policeVerificationDocument,
+                filename: policeFileName,
+                url: policeResult.localUrl
+              }
+            };
+            
+            await storage.updateAgreement(agreementId, {
+              documents: updatedDocuments
+            });
+            repairs.police.success = true;
+          } else {
+            repairs.police.error = policeResult.error || 'Unknown error';
+          }
+        }
+      }
+      
+      res.json({
+        success: true,
+        message: 'File repair completed',
+        repairs: repairs
+      });
+      
+    } catch (error) {
+      console.error('[File Repair] Error:', error);
+      res.status(500).json({ error: 'Failed to repair files' });
     }
   });
 
