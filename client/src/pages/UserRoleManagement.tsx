@@ -268,6 +268,51 @@ export default function UserRoleManagement() {
     },
   });
 
+  // Permission override mutations
+  const addPermissionOverrideMutation = useMutation({
+    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
+      const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/permissions"] });
+      toast({
+        title: "Success",
+        description: "Permission override added successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add permission override",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removePermissionOverrideMutation = useMutation({
+    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
+      const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, "DELETE");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/permissions"] });
+      toast({
+        title: "Success",
+        description: "Permission override removed successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove permission override",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Helper functions
   const resetUserForm = () => {
     setUserFormData({
@@ -320,6 +365,20 @@ export default function UserRoleManagement() {
   const openManagePermissions = (user: User) => {
     setManagingPermissionsUser(user);
     setIsPermissionsModalOpen(true);
+  };
+
+  const handlePermissionToggle = async (userId: string, permissionId: string, permissionName: string, checked: boolean) => {
+    try {
+      if (checked) {
+        // Add permission override
+        await addPermissionOverrideMutation.mutateAsync({ userId, permissionId });
+      } else {
+        // Remove permission override
+        await removePermissionOverrideMutation.mutateAsync({ userId, permissionId });
+      }
+    } catch (error) {
+      console.error(`Failed to toggle permission ${permissionName}:`, error);
+    }
   };
 
   const handleUserSubmit = (e: React.FormEvent) => {
@@ -1055,9 +1114,7 @@ export default function UserRoleManagement() {
                                 checked={hasPermission}
                                 disabled={permissionsLoading}
                                 onCheckedChange={(checked) => {
-                                  // Here you would implement the logic to add/remove manual permissions
-                                  // This would require an API endpoint for managing user permissions
-                                  console.log(`Toggle permission ${permission.name} for user ${managingPermissionsUser.id}: ${checked}`);
+                                  handlePermissionToggle(managingPermissionsUser.id, permission.id, permission.name, checked);
                                 }}
                               />
                             </div>
