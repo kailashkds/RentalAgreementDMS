@@ -92,6 +92,49 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       customerId: !canViewAllCustomers ? (user as any)?.id : undefined,
       language: "english",
       additionalClauses: [],
+      ownerDetails: {
+        name: "",
+        address: {
+          flatNo: "",
+          society: "",
+          area: "",
+          city: "",
+          state: "",
+          pincode: "",
+          district: "",
+          landmark: ""
+        }
+      },
+      tenantDetails: {
+        name: "",
+        address: {
+          flatNo: "",
+          society: "",
+          area: "",
+          city: "",
+          state: "",
+          pincode: "",
+          district: "",
+          landmark: ""
+        }
+      },
+      propertyDetails: {
+        type: "",
+        purpose: "residential",
+        furnishedStatus: "",
+        areaInSqFt: 0,
+        additionalItems: "",
+        address: {
+          flatNo: "",
+          society: "",
+          area: "",
+          city: "",
+          state: "",
+          pincode: "",
+          district: "",
+          landmark: ""
+        }
+      },
       rentalTerms: {
         tenure: "11_months", // Default to 11 months
         startDate: "",
