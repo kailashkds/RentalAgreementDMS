@@ -98,6 +98,8 @@ export function UnifiedUserManagement() {
   const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
   const [passwordResult, setPasswordResult] = useState<string>("");
   const [pendingPermissions, setPendingPermissions] = useState<Set<string>>(new Set());
+  const [localPermissionChanges, setLocalPermissionChanges] = useState<Map<string, boolean>>(new Map());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [createUserData, setCreateUserData] = useState<CreateUserData>({
     name: "",
     email: "",
@@ -267,73 +269,41 @@ export function UnifiedUserManagement() {
     },
   });
 
-  // Add permission override mutation
-  const addPermissionOverrideMutation = useMutation({
-    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
-      return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId });
+  // Batch save permissions mutation
+  const saveBatchPermissionsMutation = useMutation({
+    mutationFn: async ({ userId, changes }: { userId: string; changes: Array<{ permissionId: string; action: 'add' | 'remove' }> }) => {
+      // Process all permission changes as batch operations
+      const results = await Promise.all(
+        changes.map(async ({ permissionId, action }) => {
+          if (action === 'add') {
+            return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId });
+          } else {
+            return await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE');
+          }
+        })
+      );
+      return results;
     },
-    onSuccess: (data, { userId, permissionId }) => {
+    onSuccess: (data, { userId }) => {
       toast({
-        title: "Permission Added",
-        description: "Permission override added successfully",
+        title: "Permissions Updated",
+        description: `${localPermissionChanges.size} permission changes applied successfully`,
       });
       // Force refetch of permissions data
       queryClient.refetchQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
       queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
-      // Clear pending state
-      setPendingPermissions(prev => {
-        const newSet = new Set(Array.from(prev));
-        newSet.delete(permissionId);
-        return newSet;
-      });
+      // Clear local state
+      setLocalPermissionChanges(new Map());
+      setHasUnsavedChanges(false);
+      setPendingPermissions(new Set());
     },
-    onError: (error: any, { permissionId }) => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to add permission override",
+        description: error.message || "Failed to apply permission changes",
         variant: "destructive",
       });
-      // Clear pending state on error too
-      setPendingPermissions(prev => {
-        const newSet = new Set(Array.from(prev));
-        newSet.delete(permissionId);
-        return newSet;
-      });
-    },
-  });
-
-  // Remove permission override mutation
-  const removePermissionOverrideMutation = useMutation({
-    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
-      return await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE');
-    },
-    onSuccess: (data, { userId, permissionId }) => {
-      toast({
-        title: "Permission Removed",
-        description: "Permission override removed successfully",
-      });
-      // Force refetch of permissions data
-      queryClient.refetchQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
-      queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
-      // Clear pending state
-      setPendingPermissions(prev => {
-        const newSet = new Set(Array.from(prev));
-        newSet.delete(permissionId);
-        return newSet;
-      });
-    },
-    onError: (error: any, { permissionId }) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove permission override",
-        variant: "destructive",
-      });
-      // Clear pending state on error too
-      setPendingPermissions(prev => {
-        const newSet = new Set(Array.from(prev));
-        newSet.delete(permissionId);
-        return newSet;
-      });
+      setPendingPermissions(new Set());
     },
   });
 
@@ -387,6 +357,52 @@ export function UnifiedUserManagement() {
   const openPermissionsDialog = (user: UnifiedUser) => {
     setSelectedUser(user);
     setShowPermissionsDialog(true);
+    // Reset local state when opening dialog
+    setLocalPermissionChanges(new Map());
+    setHasUnsavedChanges(false);
+    setPendingPermissions(new Set());
+  };
+
+  const handleTogglePermission = (permissionId: string, currentState: boolean, isFromRole: boolean) => {
+    if (isFromRole) return; // Cannot toggle role-based permissions
+    
+    const newState = !currentState;
+    setLocalPermissionChanges(prev => {
+      const newMap = new Map(prev);
+      newMap.set(permissionId, newState);
+      return newMap;
+    });
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSaveChanges = () => {
+    if (!selectedUser || localPermissionChanges.size === 0) return;
+    
+    const changes: Array<{ permissionId: string; action: 'add' | 'remove' }> = [];
+    
+    localPermissionChanges.forEach((newState, permissionId) => {
+      const currentPermission = userPermissionsWithSources.find(p => p.code === allPermissions.find(ap => ap.id === permissionId)?.code);
+      const currentHasPermission = !!currentPermission;
+      
+      if (newState && !currentHasPermission) {
+        changes.push({ permissionId, action: 'add' });
+      } else if (!newState && currentHasPermission && currentPermission?.source === 'override') {
+        changes.push({ permissionId, action: 'remove' });
+      }
+    });
+    
+    if (changes.length > 0) {
+      setPendingPermissions(new Set(changes.map(c => c.permissionId)));
+      saveBatchPermissionsMutation.mutate({
+        userId: selectedUser.id,
+        changes
+      });
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    setLocalPermissionChanges(new Map());
+    setHasUnsavedChanges(false);
   };
 
   return (
@@ -1003,33 +1019,37 @@ export function UnifiedUserManagement() {
                               )}
                               {permission.isPending && (
                                 <Badge variant="outline" className="text-xs text-blue-600">
-                                  Pending +
+                                  Saving...
                                 </Badge>
                               )}
+                              {(() => {
+                                const hasLocalChange = localPermissionChanges.has(permission.id);
+                                const localState = localPermissionChanges.get(permission.id);
+                                if (hasLocalChange && localState !== permission.hasPermission) {
+                                  return (
+                                    <Badge variant="outline" className="text-xs text-amber-600">
+                                      {localState ? 'Adding' : 'Removing'}
+                                    </Badge>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                             <div className="text-xs text-muted-foreground truncate">{permission.description}</div>
                           </div>
                           
                           <div className="flex items-center ml-4">
                             <Switch
-                              checked={permission.hasPermission}
-                              onCheckedChange={(checked) => {
-                                // Set pending state
-                                setPendingPermissions(prev => new Set(Array.from(prev).concat([permission.id])));
-                                
-                                if (checked && !permission.hasPermission) {
-                                  // Add permission override
-                                  addPermissionOverrideMutation.mutate({
-                                    userId: selectedUser!.id,
-                                    permissionId: permission.id
-                                  });
-                                } else if (!checked && permission.hasPermission && permission.isOverride) {
-                                  // Remove permission override (only if it's an override, not role-based)
-                                  removePermissionOverrideMutation.mutate({
-                                    userId: selectedUser!.id,
-                                    permissionId: permission.id
-                                  });
-                                }
+                              checked={(() => {
+                                const hasLocalChange = localPermissionChanges.has(permission.id);
+                                return hasLocalChange ? localPermissionChanges.get(permission.id)! : permission.hasPermission;
+                              })()}
+                              onCheckedChange={() => {
+                                const currentState = (() => {
+                                  const hasLocalChange = localPermissionChanges.has(permission.id);
+                                  return hasLocalChange ? localPermissionChanges.get(permission.id)! : permission.hasPermission;
+                                })();
+                                handleTogglePermission(permission.id, currentState, permission.isFromRole);
                               }}
                               disabled={permission.isFromRole || permission.isPending}
                               data-testid={`switch-permission-${permissionId}`}
@@ -1044,16 +1064,52 @@ export function UnifiedUserManagement() {
             })()}
           </div>
           
-          <div className="flex justify-end pt-4 border-t">
-            <Button 
-              onClick={() => {
-                setShowPermissionsDialog(false);
-                setPendingPermissions(new Set());
-              }} 
-              data-testid="button-close-permissions-dialog"
-            >
-              Done
-            </Button>
+          <div className="flex justify-between pt-4 border-t">
+            <div className="flex items-center gap-2">
+              {hasUnsavedChanges && (
+                <Badge variant="outline" className="text-amber-600">
+                  {localPermissionChanges.size} unsaved changes
+                </Badge>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {hasUnsavedChanges && (
+                <>
+                  <Button 
+                    variant="outline"
+                    onClick={handleDiscardChanges}
+                    data-testid="button-discard-changes"
+                  >
+                    Discard
+                  </Button>
+                  <Button 
+                    onClick={handleSaveChanges}
+                    disabled={saveBatchPermissionsMutation.isPending}
+                    data-testid="button-save-changes"
+                  >
+                    {saveBatchPermissionsMutation.isPending ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </>
+              )}
+              <Button 
+                variant={hasUnsavedChanges ? "outline" : "default"}
+                onClick={() => {
+                  if (hasUnsavedChanges) {
+                    if (confirm('You have unsaved changes. Are you sure you want to close without saving?')) {
+                      setShowPermissionsDialog(false);
+                      handleDiscardChanges();
+                      setPendingPermissions(new Set());
+                    }
+                  } else {
+                    setShowPermissionsDialog(false);
+                    setPendingPermissions(new Set());
+                  }
+                }} 
+                data-testid="button-close-permissions-dialog"
+              >
+                {hasUnsavedChanges ? 'Cancel' : 'Done'}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
