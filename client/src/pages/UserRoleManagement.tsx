@@ -33,6 +33,7 @@ import {
   Info,
   Download,
   Upload,
+  RefreshCw,
   UserCheck
 } from "lucide-react";
 
@@ -1026,6 +1027,14 @@ export default function UserRoleManagement() {
                             <DropdownMenuItem onClick={() => openEditRole(role)}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Role
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Users className="h-4 w-4 mr-2" />
+                              Manage Users
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Reset Permissions
                             </DropdownMenuItem>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
