@@ -133,37 +133,124 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
 
   const handleNext = () => {
     if (validateStepWithToast(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 5));
+      setCurrentStep(prev => Math.min(prev + 1, maxSteps));
     }
   };
 
   const handlePrevious = () => {
-    const minStep = !canViewAllCustomers ? 2 : 1; // Customers can't go to step 1
-    setCurrentStep(prev => Math.max(prev - 1, minStep));
+    setCurrentStep(prev => Math.max(prev - 1, 1)); // All users can go back to step 1
   };
 
   const validateStep = (step: number): boolean => {
+    // For customers (4-step flow)
+    if (!canViewAllCustomers) {
+      switch (step) {
+        case 1:
+          return !!(formData.ownerDetails.name && formData.ownerDetails.mobile);
+        case 2:
+          return !!(formData.tenantDetails.name && formData.tenantDetails.mobile);
+        case 3:
+          return !!(
+            formData.agreementPeriod.startDate && 
+            formData.agreementPeriod.endDate &&
+            formData.propertyAddress.flatNo &&
+            formData.propertyAddress.society &&
+            formData.propertyAddress.area &&
+            formData.propertyAddress.city &&
+            formData.propertyAddress.state &&
+            formData.propertyAddress.pincode &&
+            formData.propertyType &&
+            formData.propertyDescription
+          );
+        case 4:
+          return !!(documents.notarizedDocument && documents.policeVerificationDocument);
+        default:
+          return true;
+      }
+    }
+    
+    // For admins (5-step flow)
     switch (step) {
       case 1:
-        // Skip validation for step 1 if customer is logged in
-        if (!canViewAllCustomers) return true;
         return !!(formData.customer.id && formData.language);
       case 2:
         return !!(formData.ownerDetails.name && formData.ownerDetails.mobile);
       case 3:
         return !!(formData.tenantDetails.name && formData.tenantDetails.mobile);
       case 4:
-        return !!(formData.agreementPeriod.startDate && formData.agreementPeriod.endDate &&
-                 formData.propertyAddress.flatNo && formData.propertyAddress.society &&
-                 formData.propertyAddress.area && formData.propertyAddress.city &&
-                 formData.propertyAddress.state && formData.propertyAddress.pincode &&
-                 formData.propertyType && formData.propertyDescription);
+        return !!(
+          formData.agreementPeriod.startDate && 
+          formData.agreementPeriod.endDate &&
+          formData.propertyAddress.flatNo &&
+          formData.propertyAddress.society &&
+          formData.propertyAddress.area &&
+          formData.propertyAddress.city &&
+          formData.propertyAddress.state &&
+          formData.propertyAddress.pincode &&
+          formData.propertyType &&
+          formData.propertyDescription
+        );
+      case 5:
+        return !!(documents.notarizedDocument && documents.policeVerificationDocument);
       default:
         return true;
     }
   };
 
   const validateStepWithToast = (step: number): boolean => {
+    // For customers (4-step flow)
+    if (!canViewAllCustomers) {
+      switch (step) {
+        case 1:
+          if (!formData.ownerDetails.name || !formData.ownerDetails.mobile) {
+            toast({
+              title: "Required fields missing",
+              description: "Please fill in landlord name and mobile number",
+              variant: "destructive",
+            });
+            return false;
+          }
+          return true;
+        case 2:
+          if (!formData.tenantDetails.name || !formData.tenantDetails.mobile) {
+            toast({
+              title: "Required fields missing",
+              description: "Please fill in tenant name and mobile number",
+              variant: "destructive",
+            });
+            return false;
+          }
+          return true;
+        case 3:
+          if (!formData.agreementPeriod.startDate || !formData.agreementPeriod.endDate ||
+              !formData.propertyAddress.flatNo || !formData.propertyAddress.society ||
+              !formData.propertyAddress.area || !formData.propertyAddress.city ||
+              !formData.propertyAddress.state || !formData.propertyAddress.pincode ||
+              !formData.propertyType || !formData.propertyDescription) {
+            toast({
+              title: "Required fields missing",
+              description: "Please fill in all agreement period, property address, property type, and property description fields",
+              variant: "destructive",
+            });
+            return false;
+          }
+          return true;
+        case 4:
+          if (!documents.notarizedDocument || !documents.policeVerificationDocument) {
+            toast({
+              title: "Required documents missing",
+              description: "Please upload both notarized agreement and police verification certificate",
+              variant: "destructive",
+            });
+            return false;
+          }
+          return true;
+        default:
+          return true;
+      }
+    }
+    
+    // For admins (5-step flow)
     switch (step) {
       case 1:
         if (!formData.customer.id || !formData.language) {
@@ -209,6 +296,16 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
           return false;
         }
         return true;
+      case 5:
+        if (!documents.notarizedDocument || !documents.policeVerificationDocument) {
+          toast({
+            title: "Required documents missing",
+            description: "Please upload both notarized agreement and police verification certificate",
+            variant: "destructive",
+          });
+          return false;
+        }
+        return true;
       default:
         return true;
     }
@@ -226,10 +323,17 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
 
     setIsSubmitting(true);
     try {
+      // For customers, use their auto-filled data
+      const customerData = !canViewAllCustomers 
+        ? { id: user?.id || "", name: user?.name || "", mobile: user?.mobile || "" }
+        : formData.customer;
+      
+      const languageData = !canViewAllCustomers ? "english" : formData.language;
+      
       // Submit agreement data with document URLs
       const agreementData = {
-        customer: formData.customer,
-        language: formData.language,
+        customer: customerData,
+        language: languageData,
         ownerDetails: formData.ownerDetails,
         tenantDetails: formData.tenantDetails,
         agreementPeriod: formData.agreementPeriod,
@@ -274,7 +378,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
   };
 
   const handleClose = () => {
-    setCurrentStep(1);
+    setCurrentStep(1); // Always start at step 1
     setDocuments({});
     setFormData({
       customer: { id: "", name: "", mobile: "" },
@@ -522,9 +626,361 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
     }
   };
 
+  const renderAgreementAndPropertyStep = () => {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Agreement Period & Property Address</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Agreement Duration Section */}
+          <div className="space-y-4">
+            <h4 className="text-md font-semibold text-gray-800">Agreement Duration</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="start-date">Agreement Start Date *</Label>
+                <Input
+                  id="start-date"
+                  type="date"
+                  value={formData.agreementPeriod.startDate}
+                  onChange={(e) => {
+                    const startDate = e.target.value;
+                    setFormData(prev => ({
+                      ...prev,
+                      agreementPeriod: { ...prev.agreementPeriod, startDate }
+                    }));
+                    // Auto-calculate end date if 11 months tenure is selected
+                    if (formData.agreementPeriod.tenure === "11_months" && startDate) {
+                      const start = new Date(startDate);
+                      const end = new Date(start);
+                      end.setMonth(end.getMonth() + 11);
+                      setFormData(prev => ({
+                        ...prev,
+                        agreementPeriod: { ...prev.agreementPeriod, endDate: end.toISOString().split('T')[0] }
+                      }));
+                    }
+                  }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="tenure">Agreement Tenure *</Label>
+                <Select 
+                  value={formData.agreementPeriod.tenure} 
+                  onValueChange={(value: "11_months" | "custom") => {
+                    setFormData(prev => ({
+                      ...prev,
+                      agreementPeriod: { ...prev.agreementPeriod, tenure: value }
+                    }));
+                    // Auto-calculate end date if 11 months is selected and start date exists
+                    if (value === "11_months" && formData.agreementPeriod.startDate) {
+                      const start = new Date(formData.agreementPeriod.startDate);
+                      const end = new Date(start);
+                      end.setMonth(end.getMonth() + 11);
+                      setFormData(prev => ({
+                        ...prev,
+                        agreementPeriod: { ...prev.agreementPeriod, endDate: end.toISOString().split('T')[0] }
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select tenure" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="11_months">11 Months</SelectItem>
+                    <SelectItem value="custom">Custom Duration</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="end-date">Agreement End Date *</Label>
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={formData.agreementPeriod.endDate}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    agreementPeriod: { ...prev.agreementPeriod, endDate: e.target.value }
+                  }))}
+                  disabled={formData.agreementPeriod.tenure === "11_months"}
+                  className={formData.agreementPeriod.tenure === "11_months" ? "bg-gray-100" : ""}
+                />
+                {formData.agreementPeriod.tenure === "11_months" && (
+                  <p className="text-xs text-gray-500 mt-1">Auto-calculated</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Property Address Section */}
+          <div className="space-y-4">
+            <h4 className="text-md font-semibold text-gray-800">Property Address</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="flat-no">Flat/House Number *</Label>
+                <Input
+                  id="flat-no"
+                  value={formData.propertyAddress.flatNo}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    propertyAddress: { ...prev.propertyAddress, flatNo: e.target.value }
+                  }))}
+                  placeholder="e.g., A-101"
+                />
+              </div>
+              <div className="relative">
+                <Label htmlFor="society">Society/Building *</Label>
+                <Input
+                  id="society"
+                  value={formData.propertyAddress.society}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData(prev => ({
+                      ...prev,
+                      propertyAddress: { ...prev.propertyAddress, society: value }
+                    }));
+                    fetchSocietyAddresses(value);
+                  }}
+                  placeholder="e.g., ABC Apartments"
+                />
+                {showSocietySuggestions && societySuggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                    {societySuggestions.map((society) => (
+                      <div
+                        key={society.id}
+                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                        onClick={() => handleSocietySelect(society, 'property')}
+                      >
+                        <div className="font-medium">{society.societyName}</div>
+                        <div className="text-gray-600">{society.area}, {society.city} - {society.pincode}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Start typing to search for existing societies
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="area">Area *</Label>
+                <Input
+                  id="area"
+                  value={formData.propertyAddress.area}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    propertyAddress: { ...prev.propertyAddress, area: e.target.value }
+                  }))}
+                  placeholder="e.g., Satellite"
+                />
+              </div>
+              <div>
+                <Label htmlFor="city">City *</Label>
+                <Input
+                  id="city"
+                  value={formData.propertyAddress.city}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    propertyAddress: { ...prev.propertyAddress, city: e.target.value }
+                  }))}
+                  placeholder="e.g., Ahmedabad"
+                />
+              </div>
+              <div>
+                <Label htmlFor="state">State *</Label>
+                <Input
+                  id="state"
+                  value={formData.propertyAddress.state}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    propertyAddress: { ...prev.propertyAddress, state: e.target.value }
+                  }))}
+                  placeholder="e.g., Gujarat"
+                />
+              </div>
+              <div>
+                <Label htmlFor="pincode">Pincode *</Label>
+                <Input
+                  id="pincode"
+                  value={formData.propertyAddress.pincode}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    propertyAddress: { ...prev.propertyAddress, pincode: e.target.value }
+                  }))}
+                  placeholder="e.g., 380015"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Property Type Section */}
+          <div className="space-y-4">
+            <h4 className="text-md font-semibold text-gray-800">Property Details</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="property-type">Property Type *</Label>
+                <Select 
+                  value={formData.propertyType} 
+                  onValueChange={(value: "commercial" | "industrial" | "office" | "residential") => 
+                    setFormData(prev => ({ ...prev, propertyType: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select property type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="residential">Residential</SelectItem>
+                    <SelectItem value="commercial">Commercial</SelectItem>
+                    <SelectItem value="industrial">Industrial</SelectItem>
+                    <SelectItem value="office">Office</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="property-description">Property Description *</Label>
+                <Input
+                  id="property-description"
+                  value={formData.propertyDescription}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    propertyDescription: e.target.value
+                  }))}
+                  placeholder="e.g., 2BHK, 3BHK, Shop, Office Space"
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderDocumentsStep = () => {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload Documents</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <Label className="text-sm font-medium text-gray-700">Notarized Rent Agreement *</Label>
+              </div>
+              {documents.notarizedDocument ? (
+                <FilePreview
+                  fileUrl={documents.notarizedDocument as string}
+                  fileName={(documents.notarizedDocument_metadata as any)?.filename || "Notarized Rent Agreement"}
+                  fileType={(documents.notarizedDocument_metadata as any)?.fileType}
+                  onRemove={() => setDocuments(prev => ({ ...prev, notarizedDocument: "", notarizedDocument_metadata: undefined }))}
+                  className="w-full"
+                />
+              ) : (
+                <LocalFileUploader
+                  maxSize={5242880} // 5MB
+                  onUploadComplete={(result) => handleDocumentUpload("notarizedDocument", result)}
+                  className="w-full"
+                >
+                  <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <FileText className="w-6 h-6 text-gray-500" />
+                      </div>
+                      <p className="text-sm text-gray-600">Click to upload notarized agreement</p>
+                      <p className="text-xs text-gray-500">PDF only (Max 5MB)</p>
+                    </div>
+                  </div>
+                </LocalFileUploader>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Shield className="h-5 w-5 text-green-600" />
+                <Label className="text-sm font-medium text-gray-700">Police Verification Certificate *</Label>
+              </div>
+              {documents.policeVerificationDocument ? (
+                <FilePreview
+                  fileUrl={documents.policeVerificationDocument as string}
+                  fileName={(documents.policeVerificationDocument_metadata as any)?.filename || "Police Verification Certificate"}
+                  fileType={(documents.policeVerificationDocument_metadata as any)?.fileType}
+                  onRemove={() => setDocuments(prev => ({ ...prev, policeVerificationDocument: "", policeVerificationDocument_metadata: undefined }))}
+                  className="w-full"
+                />
+              ) : (
+                <LocalFileUploader
+                  maxSize={5242880} // 5MB
+                  onUploadComplete={(result) => handleDocumentUpload("policeVerificationDocument", result)}
+                  className="w-full"
+                >
+                  <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-gray-500" />
+                      </div>
+                      <p className="text-sm text-gray-600">Click to upload police verification</p>
+                      <p className="text-xs text-gray-500">PDF only (Max 5MB)</p>
+                    </div>
+                  </div>
+                </LocalFileUploader>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> Both documents are required to import an existing agreement. 
+              The agreement will be saved as "Active" status once imported.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
+        // For customers, show landlord details directly
+        if (!canViewAllCustomers) {
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Step 1: Landlord Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="ownerName">Landlord Name <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="ownerName"
+                      value={formData.ownerDetails.name}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        ownerDetails: { ...prev.ownerDetails, name: e.target.value }
+                      }))}
+                      placeholder="Enter landlord name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="ownerMobile">Landlord Mobile <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="ownerMobile"
+                      value={formData.ownerDetails.mobile}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        ownerDetails: { ...prev.ownerDetails, mobile: e.target.value }
+                      }))}
+                      placeholder="Enter landlord mobile number"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        }
+        
+        // For admins, show customer selection
         return (
           <Card>
             <CardHeader>
@@ -588,6 +1044,46 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         );
 
       case 2:
+        // For customers, show tenant details
+        if (!canViewAllCustomers) {
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Step 2: Tenant Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="tenantName">Tenant Name <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="tenantName"
+                      value={formData.tenantDetails.name}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        tenantDetails: { ...prev.tenantDetails, name: e.target.value }
+                      }))}
+                      placeholder="Enter tenant name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tenantMobile">Tenant Mobile <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="tenantMobile"
+                      value={formData.tenantDetails.mobile}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        tenantDetails: { ...prev.tenantDetails, mobile: e.target.value }
+                      }))}
+                      placeholder="Enter tenant mobile number"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        }
+        
+        // For admins, show owner details
         return (
           <Card>
             <CardHeader>
@@ -660,6 +1156,13 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         );
 
       case 3:
+        // For customers, show Agreement & Property details
+        if (!canViewAllCustomers) {
+          // This is the same content as case 4 for admins - need to move that content here
+          return renderAgreementAndPropertyStep();
+        }
+        
+        // For admins, show tenant details
         return (
           <Card>
             <CardHeader>
@@ -732,329 +1235,40 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         );
 
       case 4:
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Step 4: Agreement Period & Property Address</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Agreement Duration Section */}
-              <div className="space-y-4">
-                <h4 className="text-md font-semibold text-gray-800">Agreement Duration</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="start-date">Agreement Start Date *</Label>
-                    <Input
-                      id="start-date"
-                      type="date"
-                      value={formData.agreementPeriod.startDate}
-                      onChange={(e) => {
-                        const startDate = e.target.value;
-                        setFormData(prev => ({
-                          ...prev,
-                          agreementPeriod: { ...prev.agreementPeriod, startDate }
-                        }));
-                        // Auto-calculate end date if 11 months tenure is selected
-                        if (formData.agreementPeriod.tenure === "11_months" && startDate) {
-                          const start = new Date(startDate);
-                          const end = new Date(start);
-                          end.setMonth(end.getMonth() + 11);
-                          setFormData(prev => ({
-                            ...prev,
-                            agreementPeriod: { ...prev.agreementPeriod, endDate: end.toISOString().split('T')[0] }
-                          }));
-                        }
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="tenure">Agreement Tenure *</Label>
-                    <Select 
-                      value={formData.agreementPeriod.tenure} 
-                      onValueChange={(value: "11_months" | "custom") => {
-                        setFormData(prev => ({
-                          ...prev,
-                          agreementPeriod: { ...prev.agreementPeriod, tenure: value }
-                        }));
-                        // Auto-calculate end date if 11 months is selected and start date exists
-                        if (value === "11_months" && formData.agreementPeriod.startDate) {
-                          const start = new Date(formData.agreementPeriod.startDate);
-                          const end = new Date(start);
-                          end.setMonth(end.getMonth() + 11);
-                          setFormData(prev => ({
-                            ...prev,
-                            agreementPeriod: { ...prev.agreementPeriod, endDate: end.toISOString().split('T')[0] }
-                          }));
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select tenure" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="11_months">11 Months</SelectItem>
-                        <SelectItem value="custom">Custom Duration</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="end-date">Agreement End Date *</Label>
-                    <Input
-                      id="end-date"
-                      type="date"
-                      value={formData.agreementPeriod.endDate}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        agreementPeriod: { ...prev.agreementPeriod, endDate: e.target.value }
-                      }))}
-                      disabled={formData.agreementPeriod.tenure === "11_months"}
-                      className={formData.agreementPeriod.tenure === "11_months" ? "bg-gray-100" : ""}
-                    />
-                    {formData.agreementPeriod.tenure === "11_months" && (
-                      <p className="text-xs text-gray-500 mt-1">Auto-calculated</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Property Address Section */}
-              <div className="space-y-4">
-                <h4 className="text-md font-semibold text-gray-800">Property Address</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="flat-no">Flat/House Number *</Label>
-                    <Input
-                      id="flat-no"
-                      value={formData.propertyAddress.flatNo}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        propertyAddress: { ...prev.propertyAddress, flatNo: e.target.value }
-                      }))}
-                      placeholder="e.g., A-101"
-                    />
-                  </div>
-                  <div className="relative">
-                    <Label htmlFor="society">Society/Building *</Label>
-                    <Input
-                      id="society"
-                      value={formData.propertyAddress.society}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setFormData(prev => ({
-                          ...prev,
-                          propertyAddress: { ...prev.propertyAddress, society: value }
-                        }));
-                        fetchSocietyAddresses(value);
-                      }}
-                      placeholder="e.g., ABC Apartments"
-                    />
-                    {showSocietySuggestions && societySuggestions.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                        {societySuggestions.map((society) => (
-                          <div
-                            key={society.id}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                            onClick={() => handleSocietySelect(society, 'property')}
-                          >
-                            <div className="font-medium">{society.societyName}</div>
-                            <div className="text-gray-600">{society.area}, {society.city} - {society.pincode}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      Start typing to search for existing societies
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor="area">Area *</Label>
-                    <Input
-                      id="area"
-                      value={formData.propertyAddress.area}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        propertyAddress: { ...prev.propertyAddress, area: e.target.value }
-                      }))}
-                      placeholder="e.g., Satellite"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="city">City *</Label>
-                    <Input
-                      id="city"
-                      value={formData.propertyAddress.city}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        propertyAddress: { ...prev.propertyAddress, city: e.target.value }
-                      }))}
-                      placeholder="e.g., Ahmedabad"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="state">State *</Label>
-                    <Input
-                      id="state"
-                      value={formData.propertyAddress.state}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        propertyAddress: { ...prev.propertyAddress, state: e.target.value }
-                      }))}
-                      placeholder="e.g., Gujarat"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="pincode">Pincode *</Label>
-                    <Input
-                      id="pincode"
-                      value={formData.propertyAddress.pincode}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        propertyAddress: { ...prev.propertyAddress, pincode: e.target.value }
-                      }))}
-                      placeholder="e.g., 380015"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Property Type Section */}
-              <div className="space-y-4">
-                <h4 className="text-md font-semibold text-gray-800">Property Details</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="property-type">Property Type *</Label>
-                    <Select 
-                      value={formData.propertyType} 
-                      onValueChange={(value: "commercial" | "industrial" | "office" | "residential") => 
-                        setFormData(prev => ({ ...prev, propertyType: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select property type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="residential">Residential</SelectItem>
-                        <SelectItem value="commercial">Commercial</SelectItem>
-                        <SelectItem value="industrial">Industrial</SelectItem>
-                        <SelectItem value="office">Office</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="property-description">Property Description *</Label>
-                    <Input
-                      id="property-description"
-                      value={formData.propertyDescription}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        propertyDescription: e.target.value
-                      }))}
-                      placeholder="e.g., 2BHK, 3BHK, Shop, Office Space"
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
+        // For customers, show documents step
+        if (!canViewAllCustomers) {
+          return renderDocumentsStep();
+        }
+        
+        // For admins, show Agreement & Property details
+        return renderAgreementAndPropertyStep();
 
       case 5:
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Step 5: Upload Documents</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    <Label className="text-sm font-medium text-gray-700">Notarized Rent Agreement *</Label>
-                  </div>
-                  {documents.notarizedDocument ? (
-                    <FilePreview
-                      fileUrl={documents.notarizedDocument as string}
-                      fileName={(documents.notarizedDocument_metadata as any)?.filename || "Notarized Rent Agreement"}
-                      fileType={(documents.notarizedDocument_metadata as any)?.fileType}
-                      onRemove={() => setDocuments(prev => ({ ...prev, notarizedDocument: "", notarizedDocument_metadata: undefined }))}
-                      className="w-full"
-                    />
-                  ) : (
-                    <LocalFileUploader
-                      maxSize={5242880} // 5MB
-                      onUploadComplete={(result) => handleDocumentUpload("notarizedDocument", result)}
-                      className="w-full"
-                    >
-                      <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
-                        <div className="flex flex-col items-center space-y-2">
-                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                            <FileText className="w-6 h-6 text-gray-500" />
-                          </div>
-                          <p className="text-sm text-gray-600">Click to upload notarized agreement</p>
-                          <p className="text-xs text-gray-500">PDF only (Max 5MB)</p>
-                        </div>
-                      </div>
-                    </LocalFileUploader>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Shield className="h-5 w-5 text-green-600" />
-                    <Label className="text-sm font-medium text-gray-700">Police Verification Certificate *</Label>
-                  </div>
-                  {documents.policeVerificationDocument ? (
-                    <FilePreview
-                      fileUrl={documents.policeVerificationDocument as string}
-                      fileName={(documents.policeVerificationDocument_metadata as any)?.filename || "Police Verification Certificate"}
-                      fileType={(documents.policeVerificationDocument_metadata as any)?.fileType}
-                      onRemove={() => setDocuments(prev => ({ ...prev, policeVerificationDocument: "", policeVerificationDocument_metadata: undefined }))}
-                      className="w-full"
-                    />
-                  ) : (
-                    <LocalFileUploader
-                      maxSize={5242880} // 5MB
-                      onUploadComplete={(result) => handleDocumentUpload("policeVerificationDocument", result)}
-                      className="w-full"
-                    >
-                      <div className="border-2 border-dashed rounded-lg p-6 text-center transition-all cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100">
-                        <div className="flex flex-col items-center space-y-2">
-                          <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                            <Shield className="w-6 h-6 text-gray-500" />
-                          </div>
-                          <p className="text-sm text-gray-600">Click to upload police verification</p>
-                          <p className="text-xs text-gray-500">PDF only (Max 5MB)</p>
-                        </div>
-                      </div>
-                    </LocalFileUploader>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Both documents are required to import an existing agreement. 
-                  The agreement will be saved as "Active" status once imported.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        );
+        // Only admins reach step 5 (customers stop at step 4)
+        return renderDocumentsStep();
 
       default:
         return null;
     }
   };
 
-  const progress = (currentStep / 5) * 100;
+  const maxSteps = !canViewAllCustomers ? 4 : 5;
+  const progress = (currentStep / maxSteps) * 100;
 
-  const STEPS = [
-    { id: 1, title: "Customer Info" },
-    { id: 2, title: "Owner Details" },
-    { id: 3, title: "Tenant Details" },
-    { id: 4, title: "Agreement & Property" },
-    { id: 5, title: "Documents" },
-  ];
+  const STEPS = !canViewAllCustomers 
+    ? [
+        { id: 1, title: "Landlord Details" },
+        { id: 2, title: "Tenant Details" },
+        { id: 3, title: "Agreement & Property" },
+        { id: 4, title: "Documents" },
+      ]
+    : [
+        { id: 1, title: "Customer Info" },
+        { id: 2, title: "Owner Details" },
+        { id: 3, title: "Tenant Details" },
+        { id: 4, title: "Agreement & Property" },
+        { id: 5, title: "Documents" },
+      ];
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -1112,7 +1326,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
               type="button"
               variant="outline"
               onClick={handlePrevious}
-              disabled={currentStep === (!canViewAllCustomers ? 2 : 1)}
+              disabled={currentStep === 1}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Previous
@@ -1127,7 +1341,7 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                 <X className="mr-2 h-4 w-4" />
                 Close
               </Button>
-              {currentStep < 5 ? (
+              {currentStep < maxSteps ? (
                 <Button 
                   type="button" 
                   onClick={handleNext} 
