@@ -1521,16 +1521,18 @@ export default function Agreements() {
                                 <div className="space-y-2">
                                   {isImportedAgreement(agreement) ? (
                                     <>
-                                      {/* For imported agreements, show notarized PDF and police verification */}
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
-                                        onClick={() => handleDownloadNotarizedFromTable(agreement)}
-                                      >
-                                        <Award className="h-4 w-4 mr-2" />
-                                        Notarized Agreement PDF
-                                      </Button>
+                                      {/* For imported agreements, show notarized PDF only if actually notarized */}
+                                      {(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
+                                          onClick={() => handleDownloadNotarizedFromTable(agreement)}
+                                        >
+                                          <Award className="h-4 w-4 mr-2" />
+                                          Notarized Agreement PDF
+                                        </Button>
+                                      )}
                                       <Button
                                         variant="ghost"
                                         size="sm"
@@ -1553,15 +1555,17 @@ export default function Agreements() {
                                         <Download className="h-4 w-4 mr-2" />
                                         Agreement PDF
                                       </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="w-full justify-start text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                        onClick={() => handleDownloadNotarizedFromTable(agreement)}
-                                      >
-                                        <Award className="h-4 w-4 mr-2" />
-                                        Notarized Document
-                                      </Button>
+                                      {(agreement.notarizedDocument?.url || agreement.notarizedDocumentUrl) && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="w-full justify-start text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                          onClick={() => handleDownloadNotarizedFromTable(agreement)}
+                                        >
+                                          <Award className="h-4 w-4 mr-2" />
+                                          Notarized Document
+                                        </Button>
+                                      )}
                                     </>
                                   )}
                                 </div>
