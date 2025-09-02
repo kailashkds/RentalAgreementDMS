@@ -97,7 +97,7 @@ export function UnifiedUserManagement() {
 
   // Query for all permissions (for permission override management)
   const { data: allPermissions = [] } = useQuery<Permission[]>({
-    queryKey: ["/api/rbac/permissions"],
+    queryKey: ["/api/unified/permissions"],
     enabled: showPermissionsDialog && !!selectedUser,
   });
 
@@ -126,7 +126,7 @@ export function UnifiedUserManagement() {
 
   // Fetch roles for dropdown
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
-    queryKey: ['/api/rbac/roles'],
+    queryKey: ['/api/unified/roles'],
   }) as { data: Role[]; isLoading: boolean };
 
   const users = usersData?.users || [];
