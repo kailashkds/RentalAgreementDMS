@@ -277,7 +277,9 @@ export function UnifiedUserManagement() {
         title: "Permission Added",
         description: "Permission override added successfully",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
+      // Force refetch of permissions data
+      queryClient.refetchQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
       // Clear pending state
       setPendingPermissions(prev => {
         const newSet = new Set(Array.from(prev));
@@ -310,7 +312,9 @@ export function UnifiedUserManagement() {
         title: "Permission Removed",
         description: "Permission override removed successfully",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
+      // Force refetch of permissions data
+      queryClient.refetchQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
       // Clear pending state
       setPendingPermissions(prev => {
         const newSet = new Set(Array.from(prev));
