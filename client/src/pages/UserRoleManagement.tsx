@@ -428,6 +428,12 @@ export default function UserRoleManagement() {
     setIsUserModalOpen(true);
   };
 
+  const openCreateRole = () => {
+    setEditingRole(null);
+    resetRoleForm();
+    setIsRoleModalOpen(true);
+  };
+
   const openEditRole = (role: Role) => {
     setEditingRole(role);
     setRoleFormData({
@@ -961,7 +967,7 @@ export default function UserRoleManagement() {
               
               <Dialog open={isRoleModalOpen} onOpenChange={setIsRoleModalOpen}>
                 <DialogTrigger asChild>
-                  <Button data-testid="button-add-role">
+                  <Button onClick={openCreateRole} data-testid="button-add-role">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Role
                   </Button>
