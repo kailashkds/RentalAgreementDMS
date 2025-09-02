@@ -272,12 +272,12 @@ export function UnifiedUserManagement() {
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
       return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId });
     },
-    onSuccess: (data, { permissionId }) => {
+    onSuccess: (data, { userId, permissionId }) => {
       toast({
         title: "Permission Added",
         description: "Permission override added successfully",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
       // Clear pending state
       setPendingPermissions(prev => {
         const newSet = new Set(Array.from(prev));
@@ -305,12 +305,12 @@ export function UnifiedUserManagement() {
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
       return await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE');
     },
-    onSuccess: (data, { permissionId }) => {
+    onSuccess: (data, { userId, permissionId }) => {
       toast({
         title: "Permission Removed",
         description: "Permission override removed successfully",
       });
-      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
       // Clear pending state
       setPendingPermissions(prev => {
         const newSet = new Set(Array.from(prev));
