@@ -298,9 +298,12 @@ export default function UserRoleManagement() {
       const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId });
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/unified/permissions"] });
+    onSuccess: async () => {
+      // Invalidate and refetch queries to update UI immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/unified/permissions"] });
+      // Force a refetch of the current data
+      await queryClient.refetchQueries({ queryKey: ["/api/unified/users"] });
       toast({
         title: "Success",
         description: "Permission override added successfully",
@@ -320,11 +323,14 @@ export default function UserRoleManagement() {
       const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, "DELETE");
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/unified/permissions"] });
+    onSuccess: async () => {
+      // Invalidate and refetch queries to update UI immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/unified/permissions"] });
+      // Force a refetch of the current data
+      await queryClient.refetchQueries({ queryKey: ["/api/unified/users"] });
       toast({
-        title: "Success",
+        title: "Success", 
         description: "Permission override removed successfully",
       });
     },
@@ -1120,17 +1126,17 @@ export default function UserRoleManagement() {
                       <Badge variant="outline" className="text-xs">
                         {categoryPermissions.filter(p => {
                           const userPermissions = getUserPermissions(managingPermissionsUser);
-                          return userPermissions.total.includes(p.code || p.name);
+                          return userPermissions.total.includes(p.name);
                         }).length}/{categoryPermissions.length}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-1 gap-2">
                       {categoryPermissions.map((permission) => {
                         const userPermissions = getUserPermissions(managingPermissionsUser);
-                        const hasPermission = userPermissions.total.includes(permission.code || permission.name);
-                        const isFromRole = managingPermissionsUser.roles?.[0]?.permissions?.includes(permission.code || permission.name) || false;
-                        const isManuallyAdded = managingPermissionsUser.manualPermissions?.added?.includes(permission.code || permission.name) || false;
-                        const isManuallyRemoved = managingPermissionsUser.manualPermissions?.removed?.includes(permission.code || permission.name) || false;
+                        const hasPermission = userPermissions.total.includes(permission.name);
+                        const isFromRole = managingPermissionsUser.roles?.[0]?.permissions?.includes(permission.name) || false;
+                        const isManuallyAdded = managingPermissionsUser.manualPermissions?.added?.includes(permission.name) || false;
+                        const isManuallyRemoved = managingPermissionsUser.manualPermissions?.removed?.includes(permission.name) || false;
                         
                         return (
                           <div key={permission.name} className="flex items-center justify-between p-2 border rounded">
@@ -1148,7 +1154,7 @@ export default function UserRoleManagement() {
                                 checked={hasPermission}
                                 disabled={addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
                                 onCheckedChange={(checked) => {
-                                  handlePermissionToggle(managingPermissionsUser.id, permission.id, permission.code || permission.name, checked);
+                                  handlePermissionToggle(managingPermissionsUser.id, permission.id, permission.name, checked);
                                 }}
                               />
                             </div>
