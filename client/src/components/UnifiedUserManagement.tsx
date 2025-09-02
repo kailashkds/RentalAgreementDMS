@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { PermissionGuard } from "./PermissionGuard";
@@ -62,6 +63,19 @@ interface PermissionWithSource {
   code: string;
   source: 'role' | 'override';
   roleName?: string;
+  isGranted?: boolean;
+  isPending?: boolean;
+}
+
+interface GroupedPermission {
+  category: string;
+  permissions: (Permission & {
+    userPermission?: PermissionWithSource;
+    hasPermission: boolean;
+    isFromRole: boolean;
+    isOverride: boolean;
+    isPending?: boolean;
+  })[];
 }
 
 interface CreateUserData {
@@ -83,6 +97,7 @@ export function UnifiedUserManagement() {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
   const [passwordResult, setPasswordResult] = useState<string>("");
+  const [pendingPermissions, setPendingPermissions] = useState<Set<string>>(new Set());
   const [createUserData, setCreateUserData] = useState<CreateUserData>({
     name: "",
     email: "",
@@ -874,90 +889,158 @@ export function UnifiedUserManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Permission Management Dialog */}
+      {/* Permission Management Dialog - Production Version */}
       <Dialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Manage Permissions - {selectedUser?.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Manage Permissions for {selectedUser?.name}
+            </DialogTitle>
             <DialogDescription>
-              Manage individual permission overrides for this user. Role-based permissions are inherited automatically,
-              and you can add additional permissions or remove role-based permissions.
+              Manage individual permissions for this user. These permissions will be added to or removed from their role-based permissions.
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Current Role & Permissions Summary */}
+          {selectedUser && selectedUser.roles.length > 0 && (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <div className="font-medium text-sm">Current Role & Permissions</div>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{selectedUser.roles[0]?.name}</Badge>
+                  <span className="text-muted-foreground">
+                    Base Role: {userPermissionsWithSources.filter(p => p.source === 'role').length} permissions
+                  </span>
+                </div>
+                <div className="text-muted-foreground">
+                  <span className="text-blue-600">+{userPermissionsWithSources.filter(p => p.source === 'override').length} added</span>
+                  {" | "}
+                  <span className="text-red-600">-0 removed</span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Available Permissions */}
           <div className="space-y-4 overflow-y-auto max-h-96">
-            {allPermissions.map((permission) => {
-              const userPermission = userPermissionsWithSources.find(up => up.code === permission.code);
-              const hasPermission = !!userPermission;
-              const isFromRole = userPermission?.source === 'role';
-              const isOverride = userPermission?.source === 'override';
-
-              return (
-                <div 
-                  key={permission.id} 
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                  data-testid={`permission-item-${permission.code}`}
-                >
-                  <div className="flex-1">
-                    <div className="font-medium" data-testid={`permission-name-${permission.code}`}>
-                      {permission.description}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {permission.code}
-                    </div>
+            <div className="font-medium">Available Permissions</div>
+            
+            {(() => {
+              // Group permissions by category
+              const grouped = allPermissions.reduce((acc, permission) => {
+                const category = permission.code.split('.')[0].toUpperCase();
+                const userPermission = userPermissionsWithSources.find(up => up.code === permission.code);
+                const hasPermission = !!userPermission;
+                const isFromRole = userPermission?.source === 'role';
+                const isOverride = userPermission?.source === 'override';
+                const isPending = pendingPermissions.has(permission.id);
+                
+                if (!acc[category]) {
+                  acc[category] = [];
+                }
+                acc[category].push({
+                  ...permission,
+                  userPermission,
+                  hasPermission,
+                  isFromRole,
+                  isOverride,
+                  isPending
+                });
+                return acc;
+              }, {} as Record<string, any[]>);
+              
+              return Object.entries(grouped).map(([category, permissions]) => (
+                <div key={category} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-sm text-muted-foreground">{category}</div>
+                    <div className="text-xs text-muted-foreground">{permissions.filter(p => p.hasPermission).length}/{permissions.length}</div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    {hasPermission && isFromRole && (
-                      <Badge variant="secondary" data-testid={`badge-from-role-${permission.code}`}>
-                        From Role: {userPermission.roleName}
-                      </Badge>
-                    )}
-                    {hasPermission && isOverride && (
-                      <Badge variant="default" data-testid={`badge-override-${permission.code}`}>
-                        Override
-                      </Badge>
-                    )}
-                    <Button
-                      variant={hasPermission ? "destructive" : "default"}
-                      size="sm"
-                      onClick={() => {
-                        if (hasPermission && isOverride) {
-                          // Only allow removing override permissions, not role-based ones
-                          removePermissionOverrideMutation.mutate({
-                            userId: selectedUser!.id,
-                            permissionId: permission.id
-                          });
-                        } else if (!hasPermission) {
-                          // Add permission override
-                          addPermissionOverrideMutation.mutate({
-                            userId: selectedUser!.id,
-                            permissionId: permission.id
-                          });
-                        }
-                      }}
-                      disabled={
-                        addPermissionOverrideMutation.isPending || 
-                        removePermissionOverrideMutation.isPending ||
-                        (hasPermission && isFromRole) // Disable for role-based permissions
-                      }
-                      data-testid={`button-toggle-permission-${permission.code}`}
-                    >
-                      {addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending
-                        ? "Updating..."
-                        : hasPermission && isFromRole
-                          ? "From Role"
-                          : hasPermission 
-                            ? "Remove" 
-                            : "Add"
-                      }
-                    </Button>
+                  
+                  <div className="space-y-2">
+                    {permissions.map((permission) => {
+                      const permissionId = permission.code.replace(/\./g, '-');
+                      
+                      return (
+                        <div 
+                          key={permission.id} 
+                          className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-md"
+                          data-testid={`permission-item-${permissionId}`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <div className="font-medium text-sm truncate">{permission.description.replace(' permission', '')}</div>
+                              {permission.isFromRole && (
+                                <Badge variant="secondary" className="text-xs">Role</Badge>
+                              )}
+                              {permission.isPending && (
+                                <Badge variant="outline" className="text-xs text-blue-600">
+                                  Pending +
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">{permission.description}</div>
+                          </div>
+                          
+                          <div className="flex items-center ml-4">
+                            <Switch
+                              checked={permission.hasPermission}
+                              onCheckedChange={(checked) => {
+                                // Set pending state
+                                setPendingPermissions(prev => new Set(Array.from(prev).concat([permission.id])));
+                                
+                                if (checked && !permission.hasPermission) {
+                                  // Add permission override
+                                  addPermissionOverrideMutation.mutate({
+                                    userId: selectedUser!.id,
+                                    permissionId: permission.id
+                                  }, {
+                                    onSettled: () => {
+                                      setPendingPermissions(prev => {
+                                        const newSet = new Set(Array.from(prev));
+                                        newSet.delete(permission.id);
+                                        return newSet;
+                                      });
+                                    }
+                                  });
+                                } else if (!checked && permission.hasPermission && permission.isOverride) {
+                                  // Remove permission override (only if it's an override, not role-based)
+                                  removePermissionOverrideMutation.mutate({
+                                    userId: selectedUser!.id,
+                                    permissionId: permission.id
+                                  }, {
+                                    onSettled: () => {
+                                      setPendingPermissions(prev => {
+                                        const newSet = new Set(Array.from(prev));
+                                        newSet.delete(permission.id);
+                                        return newSet;
+                                      });
+                                    }
+                                  });
+                                }
+                              }}
+                              disabled={permission.isFromRole || permission.isPending}
+                              data-testid={`switch-permission-${permissionId}`}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              );
-            })}
+              ));
+            })()}
           </div>
-          <div className="flex justify-end">
-            <Button onClick={() => setShowPermissionsDialog(false)} data-testid="button-close-permissions-dialog">
-              Close
+          
+          <div className="flex justify-end pt-4 border-t">
+            <Button 
+              onClick={() => {
+                setShowPermissionsDialog(false);
+                setPendingPermissions(new Set());
+              }} 
+              data-testid="button-close-permissions-dialog"
+            >
+              Done
             </Button>
           </div>
         </DialogContent>
