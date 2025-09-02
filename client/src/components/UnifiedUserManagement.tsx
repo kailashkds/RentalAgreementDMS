@@ -691,7 +691,7 @@ export function UnifiedUserManagement() {
                 id="edit-mobile"
                 value={createUserData.mobile}
                 onChange={(e) => setCreateUserData({ ...createUserData, mobile: e.target.value })}
-                placeholder="Mobile number"
+                placeholder="Enter mobile number"
               />
             </div>
             <div className="space-y-2">
