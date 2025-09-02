@@ -769,30 +769,27 @@ export function UnifiedUserManagement() {
           </DialogHeader>
           
           <div className="space-y-6">
-            {/* Inherited from Roles Section */}
+            {/* Inherited Permissions Section */}
             <div>
-              <h4 className="text-sm font-medium mb-4 flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Inherited from Roles ({userPermissionsWithSources.filter(p => p.source === 'role').length})
+              <h4 className="text-sm font-medium mb-3 text-muted-foreground">
+                Inherited ({userPermissionsWithSources.filter(p => p.source === 'role').length}):
               </h4>
-              <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+              <div className="space-y-1 max-h-48 overflow-y-auto">
                 {userPermissionsWithSources
                   .filter(permission => permission.source === 'role')
                   .map((permission, index) => (
                     <div 
                       key={`${permission.code}-${index}`}
-                      className="p-2 bg-muted rounded text-center"
+                      className="text-sm text-muted-foreground pl-4"
                     >
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {permission.code.split('.').map(part => 
-                          part.charAt(0).toUpperCase() + part.slice(1)
-                        ).join(' ')}
-                      </span>
+                      {permission.code.split('.').map(part => 
+                        part.charAt(0).toUpperCase() + part.slice(1)
+                      ).join(' ')}
                     </div>
                   ))
                 }
                 {userPermissionsWithSources.filter(p => p.source === 'role').length === 0 && (
-                  <div className="col-span-2 text-sm text-muted-foreground py-4 text-center">
+                  <div className="text-sm text-muted-foreground py-4 text-center pl-4">
                     No role-based permissions found.
                   </div>
                 )}
