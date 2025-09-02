@@ -1079,15 +1079,6 @@ export default function UserRoleManagement() {
                         <Badge variant="secondary">
                           {users.filter(u => u.roles?.some(userRole => userRole.id === role.id)).length} users
                         </Badge>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => openRoleAssignments(role)}
-                          data-testid={`button-manage-role-${role.id}`}
-                        >
-                          <Users className="h-4 w-4 mr-2" />
-                          Manage Users
-                        </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" data-testid={`button-role-actions-${role.id}`}>
@@ -1099,7 +1090,7 @@ export default function UserRoleManagement() {
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Role
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openRoleAssignments(role)}>
                               <Users className="h-4 w-4 mr-2" />
                               Manage Users
                             </DropdownMenuItem>
