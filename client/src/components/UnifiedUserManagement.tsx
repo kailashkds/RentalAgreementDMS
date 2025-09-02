@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +93,20 @@ export function UnifiedUserManagement() {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Update form data when selectedUser changes
+  useEffect(() => {
+    if (selectedUser && showEditDialog) {
+      setCreateUserData({
+        name: selectedUser.name,
+        email: selectedUser.email || "",
+        username: selectedUser.username || "",
+        mobile: selectedUser.mobile || "",
+        roleId: selectedUser.roles[0]?.id || "",
+        password: "",
+      });
+    }
+  }, [selectedUser, showEditDialog]);
 
   // Query for all permissions (for permission override management)
   const { data: allPermissions = [] } = useQuery<Permission[]>({
