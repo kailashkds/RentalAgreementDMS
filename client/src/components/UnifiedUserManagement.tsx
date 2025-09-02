@@ -90,6 +90,14 @@ export function UnifiedUserManagement() {
     roleId: "",
     password: "",
   });
+  const [editUserData, setEditUserData] = useState<CreateUserData>({
+    name: "",
+    email: "",
+    username: "",
+    mobile: "",
+    roleId: "",
+    password: "",
+  });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -97,7 +105,7 @@ export function UnifiedUserManagement() {
   // Update form data when selectedUser changes
   useEffect(() => {
     if (selectedUser && showEditDialog) {
-      setCreateUserData({
+      setEditUserData({
         name: selectedUser.name,
         email: selectedUser.email || "",
         username: selectedUser.username || "",
@@ -190,6 +198,7 @@ export function UnifiedUserManagement() {
       queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
       setShowEditDialog(false);
       setSelectedUser(null);
+      setEditUserData({ name: "", email: "", username: "", mobile: "", roleId: "", password: "" });
     },
     onError: (error: any) => {
       toast({
@@ -326,7 +335,7 @@ export function UnifiedUserManagement() {
     
     updateUserMutation.mutate({
       id: selectedUser.id,
-      userData: createUserData,
+      userData: editUserData,
     });
   };
 
@@ -675,8 +684,8 @@ export function UnifiedUserManagement() {
               <Label htmlFor="edit-name">Name</Label>
               <Input
                 id="edit-name"
-                value={createUserData.name}
-                onChange={(e) => setCreateUserData({ ...createUserData, name: e.target.value })}
+                value={editUserData.name}
+                onChange={(e) => setEditUserData({ ...editUserData, name: e.target.value })}
                 placeholder="Full name"
               />
             </div>
@@ -685,8 +694,8 @@ export function UnifiedUserManagement() {
               <Input
                 id="edit-email"
                 type="email"
-                value={createUserData.email}
-                onChange={(e) => setCreateUserData({ ...createUserData, email: e.target.value })}
+                value={editUserData.email}
+                onChange={(e) => setEditUserData({ ...editUserData, email: e.target.value })}
                 placeholder="email@example.com"
               />
             </div>
@@ -694,8 +703,8 @@ export function UnifiedUserManagement() {
               <Label htmlFor="edit-username">Username</Label>
               <Input
                 id="edit-username"
-                value={createUserData.username}
-                onChange={(e) => setCreateUserData({ ...createUserData, username: e.target.value })}
+                value={editUserData.username}
+                onChange={(e) => setEditUserData({ ...editUserData, username: e.target.value })}
                 placeholder="Username"
               />
             </div>
@@ -703,14 +712,14 @@ export function UnifiedUserManagement() {
               <Label htmlFor="edit-mobile">Mobile</Label>
               <Input
                 id="edit-mobile"
-                value={createUserData.mobile}
-                onChange={(e) => setCreateUserData({ ...createUserData, mobile: e.target.value })}
+                value={editUserData.mobile}
+                onChange={(e) => setEditUserData({ ...editUserData, mobile: e.target.value })}
                 placeholder="Enter mobile number"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-role">Role</Label>
-              <Select value={createUserData.roleId} onValueChange={(value) => setCreateUserData({ ...createUserData, roleId: value })}>
+              <Select value={editUserData.roleId} onValueChange={(value) => setEditUserData({ ...editUserData, roleId: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
