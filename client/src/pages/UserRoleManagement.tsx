@@ -835,22 +835,26 @@ export default function UserRoleManagement() {
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Manage Permissions
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => toggleUserStatusMutation.mutate({ id: user.id, isActive: user.status !== 'active' })}
-                              >
-                                {user.status === 'active' ? (
-                                  <>
-                                    <EyeOff className="h-4 w-4 mr-2" />
-                                    Deactivate User
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    Activate User
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                              {(currentUser as any)?.id !== user.id && (
+                              {/* Hide deactivate option for Super Admin */}
+                              {!(user.roles?.some(role => role.name === 'Super Admin')) && (
+                                <DropdownMenuItem 
+                                  onClick={() => toggleUserStatusMutation.mutate({ id: user.id, isActive: user.status !== 'active' })}
+                                >
+                                  {user.status === 'active' ? (
+                                    <>
+                                      <EyeOff className="h-4 w-4 mr-2" />
+                                      Deactivate User
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      Activate User
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                              )}
+                              {/* Hide delete option for Super Admin and current user */}
+                              {(currentUser as any)?.id !== user.id && !(user.roles?.some(role => role.name === 'Super Admin')) && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
