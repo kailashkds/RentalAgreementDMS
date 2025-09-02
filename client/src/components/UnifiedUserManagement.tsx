@@ -91,10 +91,6 @@ export function UnifiedUserManagement() {
     roleId: "",
     password: "",
   });
-  
-  // Local state for permission changes (before saving)
-  const [pendingPermissionChanges, setPendingPermissionChanges] = useState<Set<string>>(new Set());
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -298,53 +294,6 @@ export function UnifiedUserManagement() {
     },
   });
 
-  // Batch save mutations
-  const savePermissionChangesMutation = useMutation({
-    mutationFn: async ({ userId, changes }: { userId: string; changes: Set<string> }) => {
-      const promises = [];
-      const changeArray = Array.from(changes);
-      
-      for (const permissionId of changeArray) {
-        const permission = allPermissions.find(p => p.id === permissionId);
-        if (!permission) continue;
-        
-        const userPermission = userPermissionsWithSources.find(up => up.code === permission.code);
-        const hasPermission = !!userPermission;
-        const isOverride = userPermission?.source === 'override';
-        
-        if (hasPermission && isOverride) {
-          // Remove permission override
-          promises.push(
-            apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE')
-          );
-        } else if (!hasPermission) {
-          // Add permission override
-          promises.push(
-            apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId })
-          );
-        }
-      }
-      
-      return await Promise.all(promises);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Permissions Updated",
-        description: "All permission changes saved successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`] });
-      setPendingPermissionChanges(new Set());
-      setHasUnsavedChanges(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save permission changes",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!createUserData.name || !createUserData.roleId) {
@@ -394,30 +343,7 @@ export function UnifiedUserManagement() {
 
   const openPermissionsDialog = (user: UnifiedUser) => {
     setSelectedUser(user);
-    setPendingPermissionChanges(new Set());
-    setHasUnsavedChanges(false);
     setShowPermissionsDialog(true);
-  };
-  
-  const handlePermissionToggle = (permissionId: string) => {
-    const newPendingChanges = new Set(pendingPermissionChanges);
-    
-    if (newPendingChanges.has(permissionId)) {
-      newPendingChanges.delete(permissionId);
-    } else {
-      newPendingChanges.add(permissionId);
-    }
-    
-    setPendingPermissionChanges(newPendingChanges);
-    setHasUnsavedChanges(newPendingChanges.size > 0);
-  };
-  
-  const getPermissionDisplayState = (permission: Permission, userPermission: PermissionWithSource | undefined) => {
-    const hasPermission = !!userPermission;
-    const isPending = pendingPermissionChanges.has(permission.id);
-    
-    // If there's a pending change, flip the current state
-    return isPending ? !hasPermission : hasPermission;
   };
 
   return (
@@ -458,6 +384,7 @@ export function UnifiedUserManagement() {
                     onChange={(e) => setCreateUserData({ ...createUserData, name: e.target.value })}
                     placeholder="Full name"
                     required
+                    data-testid="input-name"
                   />
                 </div>
                 <div className="space-y-2">
@@ -468,6 +395,7 @@ export function UnifiedUserManagement() {
                     value={createUserData.email}
                     onChange={(e) => setCreateUserData({ ...createUserData, email: e.target.value })}
                     placeholder="email@example.com"
+                    data-testid="input-email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -477,6 +405,7 @@ export function UnifiedUserManagement() {
                     value={createUserData.username}
                     onChange={(e) => setCreateUserData({ ...createUserData, username: e.target.value })}
                     placeholder="Username (auto-generated if empty)"
+                    data-testid="input-username"
                   />
                 </div>
                 <div className="space-y-2">
@@ -486,17 +415,18 @@ export function UnifiedUserManagement() {
                     value={createUserData.phone}
                     onChange={(e) => setCreateUserData({ ...createUserData, phone: e.target.value })}
                     placeholder="Phone number"
+                    data-testid="input-phone"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Role *</Label>
                   <Select value={createUserData.roleId} onValueChange={(value) => setCreateUserData({ ...createUserData, roleId: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger data-testid="select-role">
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
                     <SelectContent>
                       {roles.map((role) => (
-                        <SelectItem key={role.id} value={role.id}>
+                        <SelectItem key={role.id} value={role.id} data-testid={`option-role-${role.name.toLowerCase()}`}>
                           {role.name}
                         </SelectItem>
                       ))}
@@ -510,7 +440,8 @@ export function UnifiedUserManagement() {
                     type="password"
                     value={createUserData.password}
                     onChange={(e) => setCreateUserData({ ...createUserData, password: e.target.value })}
-                    placeholder="Leave empty to auto-generate"
+                    placeholder="Password (auto-generated if empty)"
+                    data-testid="input-password"
                   />
                 </div>
                 <div className="flex justify-end space-x-2">
@@ -518,13 +449,14 @@ export function UnifiedUserManagement() {
                     type="button"
                     variant="outline"
                     onClick={() => setShowCreateDialog(false)}
+                    data-testid="button-cancel-create"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
                     disabled={createUserMutation.isPending}
-                    data-testid="button-create-user-submit"
+                    data-testid="button-create-user"
                   >
                     {createUserMutation.isPending ? "Creating..." : "Create User"}
                   </Button>
@@ -535,29 +467,79 @@ export function UnifiedUserManagement() {
         </PermissionGuard>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="stat-total-users">
+              {usersData?.total || 0}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <Eye className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600" data-testid="stat-active-users">
+              {users.filter(user => user.isActive).length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Inactive Users</CardTitle>
+            <EyeOff className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600" data-testid="stat-inactive-users">
+              {users.filter(user => !user.isActive).length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Roles</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="stat-total-roles">
+              {roles.length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Filters</CardTitle>
-          <CardDescription>Filter users by search term, role, or status</CardDescription>
+          <CardTitle>Filters & Search</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search by name, email, or username..."
+                  placeholder="Search users..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
-                  data-testid="input-user-search"
+                  data-testid="input-search-users"
                 />
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="w-full md:w-48">
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger data-testid="select-role-filter">
                   <SelectValue placeholder="Filter by role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -569,8 +551,10 @@ export function UnifiedUserManagement() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="w-full md:w-48">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger data-testid="select-status-filter">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -587,58 +571,57 @@ export function UnifiedUserManagement() {
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-xl">Users</CardTitle>
-              <CardDescription>
-                {usersLoading ? "Loading..." : `${users.length} user(s) found`}
-              </CardDescription>
-            </div>
-          </div>
+          <CardTitle>Users List</CardTitle>
+          <CardDescription>
+            Complete list of all users with their roles and permissions
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {usersLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-muted-foreground">Loading users...</div>
-            </div>
-          ) : users.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <User className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold">No users found</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
-                  ? "No users match your current filters."
-                  : "Get started by creating your first user."}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Roles</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usersLoading ? (
                   <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="w-[100px]">Actions</TableHead>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        <span className="ml-2">Loading users...</span>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
+                ) : users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  users.map((user) => (
                     <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                       <TableCell>
                         <div>
                           <div className="font-medium" data-testid={`text-user-name-${user.id}`}>
                             {user.name}
                           </div>
-                          <div className="text-sm text-muted-foreground" data-testid={`text-user-username-${user.id}`}>
-                            @{user.username}
-                          </div>
+                          {user.username && (
+                            <div className="text-sm text-muted-foreground">
+                              @{user.username}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1">
+                        <div>
                           {user.email && (
                             <div className="text-sm" data-testid={`text-user-email-${user.id}`}>
                               {user.email}
@@ -654,7 +637,11 @@ export function UnifiedUserManagement() {
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {user.roles.map((role) => (
-                            <Badge key={role.id} variant="secondary" data-testid={`badge-role-${role.id}`}>
+                            <Badge
+                              key={role.id}
+                              variant="secondary"
+                              data-testid={`badge-role-${role.name.toLowerCase()}-${user.id}`}
+                            >
                               {role.name}
                             </Badge>
                           ))}
@@ -663,54 +650,56 @@ export function UnifiedUserManagement() {
                       <TableCell>
                         {getStatusBadge(user.isActive, user.status)}
                       </TableCell>
-                      <TableCell>
-                        <div className="text-sm" data-testid={`text-user-created-${user.id}`}>
-                          {formatDateToDDMMYYYY(user.createdAt)}
-                        </div>
+                      <TableCell data-testid={`text-user-created-${user.id}`}>
+                        {formatDateToDDMMYYYY(user.createdAt)}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="sm"
                               data-testid={`button-user-actions-${user.id}`}
                             >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuContent align="end">
                             <PermissionGuard permission="user.edit.all">
-                              <DropdownMenuItem onClick={() => openEditDialog(user)}>
+                              <DropdownMenuItem onClick={() => openEditDialog(user)} data-testid={`action-edit-${user.id}`}>
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit User
                               </DropdownMenuItem>
                             </PermissionGuard>
                             
                             <PermissionGuard permission="user.manage">
-                              <DropdownMenuItem onClick={() => openPermissionsDialog(user)}>
-                                <Shield className="h-4 w-4 mr-2" />
+                              <DropdownMenuItem onClick={() => openPermissionsDialog(user)} data-testid={`action-permissions-${user.id}`}>
+                                <Settings className="h-4 w-4 mr-2" />
                                 Manage Permissions
                               </DropdownMenuItem>
                             </PermissionGuard>
-                            
+
                             <PermissionGuard permission="user.edit.all">
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => resetPasswordMutation.mutate(user.id)}
                                 disabled={resetPasswordMutation.isPending}
+                                data-testid={`action-reset-password-${user.id}`}
                               >
                                 <RotateCcw className="h-4 w-4 mr-2" />
                                 Reset Password
                               </DropdownMenuItem>
                             </PermissionGuard>
-                            
+
                             <PermissionGuard permission="user.edit.all">
-                              <DropdownMenuItem 
-                                onClick={() => toggleStatusMutation.mutate({ 
-                                  id: user.id, 
-                                  isActive: !user.isActive 
-                                })}
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  toggleStatusMutation.mutate({
+                                    id: user.id,
+                                    isActive: !user.isActive,
+                                  })
+                                }
                                 disabled={toggleStatusMutation.isPending}
+                                data-testid={`action-toggle-status-${user.id}`}
                               >
                                 {user.isActive ? (
                                   <>
@@ -725,13 +714,13 @@ export function UnifiedUserManagement() {
                                 )}
                               </DropdownMenuItem>
                             </PermissionGuard>
-                            
+
                             <PermissionGuard permission="user.delete.all">
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem 
+                                  <DropdownMenuItem
                                     onSelect={(e) => e.preventDefault()}
-                                    className="text-destructive"
+                                    data-testid={`action-delete-${user.id}`}
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Delete User
@@ -741,15 +730,15 @@ export function UnifiedUserManagement() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete User</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete "{user.name}"? This action cannot be undone.
+                                      Are you sure you want to delete {user.name}? This action cannot be undone.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() => deleteUserMutation.mutate(user.id)}
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                       disabled={deleteUserMutation.isPending}
+                                      data-testid={`button-confirm-delete-${user.id}`}
                                     >
                                       {deleteUserMutation.isPending ? "Deleting..." : "Delete"}
                                     </AlertDialogAction>
@@ -761,11 +750,11 @@ export function UnifiedUserManagement() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -787,6 +776,7 @@ export function UnifiedUserManagement() {
                 onChange={(e) => setCreateUserData({ ...createUserData, name: e.target.value })}
                 placeholder="Full name"
                 required
+                data-testid="input-edit-name"
               />
             </div>
             <div className="space-y-2">
@@ -797,6 +787,7 @@ export function UnifiedUserManagement() {
                 value={createUserData.email}
                 onChange={(e) => setCreateUserData({ ...createUserData, email: e.target.value })}
                 placeholder="email@example.com"
+                data-testid="input-edit-email"
               />
             </div>
             <div className="space-y-2">
@@ -806,6 +797,7 @@ export function UnifiedUserManagement() {
                 value={createUserData.username}
                 onChange={(e) => setCreateUserData({ ...createUserData, username: e.target.value })}
                 placeholder="Username"
+                data-testid="input-edit-username"
               />
             </div>
             <div className="space-y-2">
@@ -815,12 +807,13 @@ export function UnifiedUserManagement() {
                 value={createUserData.phone}
                 onChange={(e) => setCreateUserData({ ...createUserData, phone: e.target.value })}
                 placeholder="Phone number"
+                data-testid="input-edit-phone"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-role">Role *</Label>
               <Select value={createUserData.roleId} onValueChange={(value) => setCreateUserData({ ...createUserData, roleId: value })}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="select-edit-role">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -837,13 +830,14 @@ export function UnifiedUserManagement() {
                 type="button"
                 variant="outline"
                 onClick={() => setShowEditDialog(false)}
+                data-testid="button-cancel-edit"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={updateUserMutation.isPending}
-                data-testid="button-update-user-submit"
+                data-testid="button-update-user"
               >
                 {updateUserMutation.isPending ? "Updating..." : "Update User"}
               </Button>
@@ -852,41 +846,41 @@ export function UnifiedUserManagement() {
         </DialogContent>
       </Dialog>
 
-      {/* Password Result Dialog */}
+      {/* Password Reset Result Dialog */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Password Reset</DialogTitle>
+            <DialogTitle>Password Reset Successful</DialogTitle>
             <DialogDescription>
-              The password has been reset successfully. Please share this with the user.
+              The new password has been generated for the user.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="p-4 bg-muted rounded-lg">
-              <div className="text-center">
-                <div className="text-sm text-muted-foreground mb-2">New Password</div>
-                <div className="text-lg font-mono font-bold">{passwordResult}</div>
+              <Label className="text-sm font-medium">New Password:</Label>
+              <div className="font-mono text-lg mt-1 break-all" data-testid="text-new-password">
+                {passwordResult}
               </div>
             </div>
-            <div className="flex justify-end">
-              <Button onClick={() => setShowPasswordDialog(false)}>
-                Close
-              </Button>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Please securely share this password with the user. They should change it upon first login.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setShowPasswordDialog(false)} data-testid="button-close-password-dialog">
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Permission Management Dialog */}
       <Dialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog}>
-        <DialogContent className="sm:max-w-[800px] max-h-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <Shield className="h-5 w-5" />
-              <span>Manage Permissions - {selectedUser?.name}</span>
-            </DialogTitle>
+            <DialogTitle>Manage Permissions - {selectedUser?.name}</DialogTitle>
             <DialogDescription>
-              Manage user permissions. Permissions from roles are automatically included, 
+              Manage individual permission overrides for this user. Role-based permissions are inherited automatically,
               and you can add additional permissions or remove role-based permissions.
             </DialogDescription>
           </DialogHeader>
@@ -896,46 +890,64 @@ export function UnifiedUserManagement() {
               const hasPermission = !!userPermission;
               const isFromRole = userPermission?.source === 'role';
               const isOverride = userPermission?.source === 'override';
-              const displayState = getPermissionDisplayState(permission, userPermission);
 
               return (
                 <div 
                   key={permission.id} 
                   className="flex items-center justify-between p-3 border rounded-lg"
-                  data-testid={`permission-row-${permission.code}`}
+                  data-testid={`permission-item-${permission.code}`}
                 >
-                  <div className="space-y-1">
-                    <div className="font-medium">{permission.code}</div>
-                    <div className="text-sm text-muted-foreground">{permission.description}</div>
+                  <div className="flex-1">
+                    <div className="font-medium" data-testid={`permission-name-${permission.code}`}>
+                      {permission.description}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {permission.code}
+                    </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {hasPermission && isFromRole && !pendingPermissionChanges.has(permission.id) && (
+                    {hasPermission && isFromRole && (
                       <Badge variant="secondary" data-testid={`badge-from-role-${permission.code}`}>
                         From Role: {userPermission.roleName}
                       </Badge>
                     )}
-                    {hasPermission && isOverride && !pendingPermissionChanges.has(permission.id) && (
+                    {hasPermission && isOverride && (
                       <Badge variant="default" data-testid={`badge-override-${permission.code}`}>
                         Override
                       </Badge>
                     )}
-                    {pendingPermissionChanges.has(permission.id) && (
-                      <Badge variant="outline" data-testid={`badge-pending-${permission.code}`}>
-                        Pending Change
-                      </Badge>
-                    )}
                     <Button
-                      variant={displayState ? "destructive" : "default"}
+                      variant={hasPermission ? "destructive" : "default"}
                       size="sm"
-                      onClick={() => handlePermissionToggle(permission.id)}
-                      disabled={hasPermission && isFromRole && !pendingPermissionChanges.has(permission.id)}
+                      onClick={() => {
+                        if (hasPermission && isOverride) {
+                          // Only allow removing override permissions, not role-based ones
+                          removePermissionOverrideMutation.mutate({
+                            userId: selectedUser!.id,
+                            permissionId: permission.id
+                          });
+                        } else if (!hasPermission) {
+                          // Add permission override
+                          addPermissionOverrideMutation.mutate({
+                            userId: selectedUser!.id,
+                            permissionId: permission.id
+                          });
+                        }
+                      }}
+                      disabled={
+                        addPermissionOverrideMutation.isPending || 
+                        removePermissionOverrideMutation.isPending ||
+                        (hasPermission && isFromRole) // Disable for role-based permissions
+                      }
                       data-testid={`button-toggle-permission-${permission.code}`}
                     >
-                      {hasPermission && isFromRole && !pendingPermissionChanges.has(permission.id)
-                        ? "From Role"
-                        : displayState 
-                          ? "Remove" 
-                          : "Add"
+                      {addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending
+                        ? "Updating..."
+                        : hasPermission && isFromRole
+                          ? "From Role"
+                          : hasPermission 
+                            ? "Remove" 
+                            : "Add"
                       }
                     </Button>
                   </div>
@@ -943,36 +955,10 @@ export function UnifiedUserManagement() {
               );
             })}
           </div>
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-muted-foreground">
-              {hasUnsavedChanges && `${pendingPermissionChanges.size} unsaved change(s)`}
-            </div>
-            <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setPendingPermissionChanges(new Set());
-                  setHasUnsavedChanges(false);
-                  setShowPermissionsDialog(false);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  if (hasUnsavedChanges && selectedUser) {
-                    savePermissionChangesMutation.mutate({
-                      userId: selectedUser.id,
-                      changes: pendingPermissionChanges
-                    });
-                  }
-                }}
-                disabled={!hasUnsavedChanges || savePermissionChangesMutation.isPending}
-                data-testid="button-save-permission-changes"
-              >
-                {savePermissionChangesMutation.isPending ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
+          <div className="flex justify-end">
+            <Button onClick={() => setShowPermissionsDialog(false)} data-testid="button-close-permissions-dialog">
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
