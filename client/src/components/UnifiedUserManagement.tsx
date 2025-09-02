@@ -774,13 +774,13 @@ export function UnifiedUserManagement() {
               <h4 className="text-sm font-medium mb-3 text-muted-foreground">
                 Inherited ({userPermissionsWithSources.filter(p => p.source === 'role').length}):
               </h4>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
+              <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto">
                 {userPermissionsWithSources
                   .filter(permission => permission.source === 'role')
                   .map((permission, index) => (
                     <div 
                       key={`${permission.code}-${index}`}
-                      className="text-sm text-muted-foreground pl-4"
+                      className="px-3 py-1 bg-muted rounded-md text-xs text-muted-foreground"
                     >
                       {permission.code.split('.').map(part => 
                         part.charAt(0).toUpperCase() + part.slice(1)
@@ -789,7 +789,7 @@ export function UnifiedUserManagement() {
                   ))
                 }
                 {userPermissionsWithSources.filter(p => p.source === 'role').length === 0 && (
-                  <div className="text-sm text-muted-foreground py-4 text-center pl-4">
+                  <div className="text-sm text-muted-foreground py-4 text-center w-full">
                     No role-based permissions found.
                   </div>
                 )}
