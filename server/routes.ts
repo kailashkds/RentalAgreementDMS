@@ -1828,6 +1828,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties", requireAuth, async (req, res) => {
     try {
       const currentUser = req.user as any;
+      const { customerId, withAgreements } = req.query;
       
       if (!currentUser) {
         return res.status(401).json({ message: "User not found" });
@@ -1838,6 +1839,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user can view all properties or only their own
       const canViewAll = userPermissions.includes('agreement.view.all') || userPermissions.includes('customer.view.all');
+      
+      // If withAgreements filter is requested for a specific customer
+      if (withAgreements === 'true' && customerId) {
+        // Only return properties where this customer has agreements
+        const properties = await storage.getPropertiesWithAgreements(customerId as string);
+        res.json(properties);
+        return;
+      }
       
       if (canViewAll) {
         // Admin/Staff can see all properties

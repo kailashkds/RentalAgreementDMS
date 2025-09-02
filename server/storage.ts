@@ -777,6 +777,53 @@ export class DatabaseStorage implements IStorage {
       .orderBy(properties.society, properties.flatNumber);
   }
 
+  async getPropertiesWithAgreements(customerId: string): Promise<Property[]> {
+    // Get only properties where this customer has agreements
+    const result = await db
+      .select({
+        id: properties.id,
+        customerId: properties.customerId,
+        flatNumber: properties.flatNumber,
+        building: properties.building,
+        society: properties.society,
+        area: properties.area,
+        city: properties.city,
+        state: properties.state,
+        pincode: properties.pincode,
+        district: properties.district,
+        landmark: properties.landmark,
+        propertyType: properties.propertyType,
+        purpose: properties.purpose,
+        isActive: properties.isActive,
+        createdAt: properties.createdAt,
+        updatedAt: properties.updatedAt,
+      })
+      .from(properties)
+      .innerJoin(agreements, eq(properties.id, agreements.propertyId))
+      .where(eq(agreements.customerId, customerId))
+      .groupBy(
+        properties.id,
+        properties.customerId,
+        properties.flatNumber,
+        properties.building,
+        properties.society,
+        properties.area,
+        properties.city,
+        properties.state,
+        properties.pincode,
+        properties.district,
+        properties.landmark,
+        properties.propertyType,
+        properties.purpose,
+        properties.isActive,
+        properties.createdAt,
+        properties.updatedAt
+      )
+      .orderBy(properties.society, properties.flatNumber);
+
+    return result;
+  }
+
   async getProperty(id: string): Promise<Property | undefined> {
     const [property] = await db.select().from(properties).where(eq(properties.id, id));
     return property;

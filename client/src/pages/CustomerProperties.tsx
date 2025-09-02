@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building, MapPin, Plus, Eye, ArrowLeft } from "lucide-react";
-import { AddPropertyDialog } from "@/components/AddPropertyDialog";
+import { Building, MapPin, Eye, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 interface Property {
@@ -36,7 +35,6 @@ interface Customer {
 
 export default function CustomerProperties() {
   const { customerId } = useParams();
-  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const { data: customer, isLoading: customerLoading } = useQuery<Customer>({
     queryKey: [`/api/customers/${customerId}`],
@@ -44,14 +42,10 @@ export default function CustomerProperties() {
   });
 
   const { data: properties, isLoading: propertiesLoading, refetch } = useQuery<Property[]>({
-    queryKey: [`/api/properties?customerId=${customerId}`],
+    queryKey: [`/api/properties?customerId=${customerId}&withAgreements=true`],
     enabled: !!customerId
   });
 
-  const handlePropertyAdded = () => {
-    refetch();
-    setShowAddDialog(false);
-  };
 
   if (customerLoading || propertiesLoading) {
     return <div className="p-6">Loading...</div>;
@@ -82,26 +76,21 @@ export default function CustomerProperties() {
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold" data-testid="text-properties-count">
-          {properties?.length || 0} Properties
+          {properties?.length || 0} Properties with Agreements
         </h2>
-        <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-property">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Property
-        </Button>
       </div>
 
       {properties && properties.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
             <Building className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Properties Found</h3>
+            <h3 className="text-lg font-semibold mb-2">No Properties with Agreements</h3>
             <p className="text-muted-foreground mb-4">
-              This customer doesn't have any properties yet.
+              This customer doesn't have any properties with agreements yet.
             </p>
-            <Button onClick={() => setShowAddDialog(true)} data-testid="button-add-first-property">
-              <Plus className="h-4 w-4 mr-2" />
-              Add First Property
-            </Button>
+            <p className="text-sm text-muted-foreground">
+              Only properties where this customer has created agreements are shown here.
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -176,14 +165,6 @@ export default function CustomerProperties() {
         </Card>
       )}
 
-      {customerId && (
-        <AddPropertyDialog
-          open={showAddDialog}
-          onClose={() => setShowAddDialog(false)}
-          customerId={customerId}
-          onPropertyAdded={handlePropertyAdded}
-        />
-      )}
     </div>
   );
 }
