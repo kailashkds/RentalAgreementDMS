@@ -90,6 +90,8 @@ export default function UserRoleManagement() {
   const [managingPermissionsUser, setManagingPermissionsUser] = useState<User | null>(null);
   const [viewingPermissionsUser, setViewingPermissionsUser] = useState<User | null>(null);
   const [showPermissions, setShowPermissions] = useState<string | null>(null);
+  const [isRoleAssignmentModalOpen, setIsRoleAssignmentModalOpen] = useState(false);
+  const [managingRoleAssignments, setManagingRoleAssignments] = useState<Role | null>(null);
 
   // User form data
   const [userFormData, setUserFormData] = useState({
@@ -343,6 +345,47 @@ export default function UserRoleManagement() {
     },
   });
 
+  // Role assignment mutations
+  const assignRoleMutation = useMutation({
+    mutationFn: async ({ userId, roleId }: { userId: string; roleId: string }) => {
+      return await apiRequest(`/api/unified/users/${userId}`, "PUT", { roleId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      toast({
+        title: "Success",
+        description: "Role assigned successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign role",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeRoleMutation = useMutation({
+    mutationFn: async ({ userId }: { userId: string }) => {
+      return await apiRequest(`/api/unified/users/${userId}`, "PUT", { roleId: "" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+      toast({
+        title: "Success",
+        description: "Role removed successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove role",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Helper functions
   const resetUserForm = () => {
     setUserFormData({
@@ -395,6 +438,25 @@ export default function UserRoleManagement() {
   const openManagePermissions = (user: User) => {
     setManagingPermissionsUser(user);
     setIsPermissionsModalOpen(true);
+  };
+
+  const openRoleAssignments = (role: Role) => {
+    setManagingRoleAssignments(role);
+    setIsRoleAssignmentModalOpen(true);
+  };
+
+  const handleRoleAssignmentToggle = async (user: User, role: Role, isAssigned: boolean) => {
+    if (isAssigned) {
+      // Remove role from user
+      removeRoleMutation.mutate({ userId: user.id });
+    } else {
+      // Assign role to user
+      assignRoleMutation.mutate({ userId: user.id, roleId: role.id });
+    }
+  };
+
+  const isUserAssignedToRole = (user: User, roleId: string): boolean => {
+    return user.roles?.some(role => role.id === roleId) || false;
   };
 
   const handlePermissionToggle = async (userId: string, permissionId: string, permissionName: string, checked: boolean) => {
@@ -1017,6 +1079,15 @@ export default function UserRoleManagement() {
                         <Badge variant="secondary">
                           {users.filter(u => u.roles?.some(userRole => userRole.id === role.id)).length} users
                         </Badge>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openRoleAssignments(role)}
+                          data-testid={`button-manage-role-${role.id}`}
+                        >
+                          <Users className="h-4 w-4 mr-2" />
+                          Manage Users
+                        </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" data-testid={`button-role-actions-${role.id}`}>
@@ -1249,6 +1320,75 @@ export default function UserRoleManagement() {
           
           <div className="flex justify-end pt-4">
             <Button onClick={() => setIsViewPermissionsModalOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Assignment Dialog */}
+      <Dialog open={isRoleAssignmentModalOpen} onOpenChange={setIsRoleAssignmentModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Manage Users - Role: {managingRoleAssignments?.name}
+            </DialogTitle>
+            <DialogDescription>
+              All users in the system - check/uncheck to assign/remove from this role
+            </DialogDescription>
+          </DialogHeader>
+          
+          {managingRoleAssignments && (
+            <div className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12"></TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Username</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Current Role</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => {
+                    const isAssigned = isUserAssignedToRole(user, managingRoleAssignments.id);
+                    const currentRole = user.roles?.[0]?.name || 'No Role';
+                    
+                    return (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={isAssigned}
+                            onCheckedChange={() => handleRoleAssignmentToggle(user, managingRoleAssignments, isAssigned)}
+                            data-testid={`checkbox-assign-role-${user.id}`}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.username || '-'}</TableCell>
+                        <TableCell>{user.email || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant={currentRole === managingRoleAssignments.name ? "default" : "secondary"}>
+                            {currentRole}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={user.isActive ? "default" : "destructive"}>
+                            {user.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setIsRoleAssignmentModalOpen(false)}>
               Close
             </Button>
           </div>
