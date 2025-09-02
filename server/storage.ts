@@ -494,7 +494,7 @@ export class DatabaseStorage implements IStorage {
         
         return {
           id: user.id,
-          name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          name: user.name || '',
           mobile: user.mobile,
           email: user.email,
           password: user.password,
@@ -519,7 +519,7 @@ export class DatabaseStorage implements IStorage {
     // Convert unified user to customer format
     return {
       id: user.id,
-      name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      name: user.name || '',
       mobile: user.mobile!,
       email: user.email,
       password: user.password,
@@ -536,7 +536,7 @@ export class DatabaseStorage implements IStorage {
     // Convert unified user to customer format
     return {
       id: user.id,
-      name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      name: user.name || '',
       mobile: user.mobile!,
       email: user.email,
       password: user.password,
@@ -1961,8 +1961,7 @@ export class DatabaseStorage implements IStorage {
         user: {
           id: users.id,
           email: users.email,
-          firstName: users.firstName,
-          lastName: users.lastName,
+          name: users.name,
         },
       })
       .from(auditLogs)
@@ -2011,8 +2010,7 @@ export class DatabaseStorage implements IStorage {
         user: {
           id: users.id,
           email: users.email,
-          firstName: users.firstName,
-          lastName: users.lastName,
+          name: users.name,
         },
       })
       .from(auditLogs)
