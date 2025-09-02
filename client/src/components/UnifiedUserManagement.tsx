@@ -420,22 +420,19 @@ export function UnifiedUserManagement() {
 
   // Function to handle permission toggle
   const handlePermissionToggle = (permissionCode: string) => {
-    console.log('Toggle clicked for permission:', permissionCode);
-    console.log('Current localPermissionChanges:', Array.from(localPermissionChanges));
+    if (!selectedUser || allPermissions.length === 0) {
+      return;
+    }
     
     const newChanges = new Set(localPermissionChanges);
     if (newChanges.has(permissionCode)) {
       newChanges.delete(permissionCode);
-      console.log('Removed from local changes:', permissionCode);
     } else {
       newChanges.add(permissionCode);
-      console.log('Added to local changes:', permissionCode);
     }
     
-    console.log('New localPermissionChanges:', Array.from(newChanges));
     setLocalPermissionChanges(newChanges);
     setHasUnsavedChanges(newChanges.size > 0);
-    console.log('hasUnsavedChanges set to:', newChanges.size > 0);
   };
 
   // Function to save all permission changes (batch processing)
