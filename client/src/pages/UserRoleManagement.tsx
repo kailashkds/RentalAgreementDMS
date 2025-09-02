@@ -43,6 +43,7 @@ interface User {
   name: string;
   email?: string;
   phone?: string;
+  mobile?: string; // Add mobile field from API
   status: string;
   isActive: boolean;
   defaultRole?: string;
@@ -123,7 +124,7 @@ export default function UserRoleManagement() {
 
   // User mutations
   const createUserMutation = useMutation({
-    mutationFn: (userData: typeof userFormData) => 
+    mutationFn: (userData: any) => 
       apiRequest("/api/unified/users", "POST", userData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
@@ -144,7 +145,7 @@ export default function UserRoleManagement() {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<typeof userFormData> }) => 
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest(`/api/unified/users/${id}`, "PUT", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
@@ -365,7 +366,7 @@ export default function UserRoleManagement() {
       username: user.username,
       name: user.name,
       email: user.email || "",
-      phone: user.phone || "",
+      phone: user.mobile || "", // Use mobile field from API instead of phone
       password: "",
       roleId: userRole?.id || "", // Use the actual role ID for proper Select mapping
       status: user.status
@@ -404,10 +405,18 @@ export default function UserRoleManagement() {
 
   const handleUserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Map phone field to mobile for API compatibility
+    const { phone, ...restFormData } = userFormData;
+    const apiData = {
+      ...restFormData,
+      mobile: phone
+    };
+    
     if (editingUser) {
-      updateUserMutation.mutate({ id: editingUser.id, data: userFormData });
+      updateUserMutation.mutate({ id: editingUser.id, data: apiData });
     } else {
-      createUserMutation.mutate(userFormData);
+      createUserMutation.mutate(apiData);
     }
   };
 
