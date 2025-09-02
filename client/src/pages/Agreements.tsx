@@ -709,6 +709,9 @@ export default function Agreements() {
           purpose: (document.querySelector('[name="edit-purpose"]') as HTMLSelectElement)?.value || 
                    editingImportedAgreement.propertyDetails?.purpose || "residential",
         },
+        propertyType: (document.querySelector('[name="edit-property-type"]') as HTMLSelectElement)?.value || 
+                      editingImportedAgreement.propertyType || "residential",
+        propertyDescription: (document.getElementById('edit-property-description') as HTMLInputElement)?.value,
         startDate: (document.getElementById('edit-start-date') as HTMLInputElement)?.value,
         endDate: (document.getElementById('edit-end-date') as HTMLInputElement)?.value,
       };
@@ -2020,6 +2023,29 @@ export default function Agreements() {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div>
+                      <Label htmlFor="edit-property-type">Property Type <span className="text-red-500">*</span></Label>
+                      <Select name="edit-property-type" defaultValue={editingImportedAgreement.propertyType || "residential"}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select property type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="residential">Residential</SelectItem>
+                          <SelectItem value="commercial">Commercial</SelectItem>
+                          <SelectItem value="industrial">Industrial</SelectItem>
+                          <SelectItem value="office">Office</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-property-description">Property Description <span className="text-red-500">*</span></Label>
+                      <Input 
+                        id="edit-property-description"
+                        defaultValue={editingImportedAgreement.propertyDescription || ''}
+                        className="mt-1"
+                        placeholder="e.g., 2BHK, 3BHK, Shop, Office Space"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -2843,6 +2869,18 @@ export default function Agreements() {
                             ].filter(Boolean).join(', ')}
                           />
                         </p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.propertyType && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Property Type:</span>
+                        <p className="text-slate-900 capitalize">{viewingImportedAgreement.propertyType}</p>
+                      </div>
+                    )}
+                    {viewingImportedAgreement.propertyDescription && (
+                      <div>
+                        <span className="text-sm font-medium text-slate-600">Property Description:</span>
+                        <p className="text-slate-900">{viewingImportedAgreement.propertyDescription}</p>
                       </div>
                     )}
                     {viewingImportedAgreement.propertyDetails.purpose && (

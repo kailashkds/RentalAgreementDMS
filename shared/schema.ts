@@ -252,6 +252,13 @@ export const agreements: any = pgTable("agreements", {
   editedHtml: text("edited_html"), // Stores the edited HTML content for this specific agreement
   editedAt: timestamp("edited_at"), // When the content was last edited
   
+  // Import tracking
+  isImported: boolean("is_imported").default(false),
+  
+  // Property type fields for imported agreements
+  propertyType: varchar("property_type", { length: 20 }), // commercial, industrial, office, residential
+  propertyDescription: text("property_description"), // 2BHK, 3BHK, etc.
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

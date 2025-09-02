@@ -69,6 +69,8 @@ interface ImportAgreementData {
     state: string;
     pincode: string;
   };
+  propertyType: "commercial" | "industrial" | "office" | "residential";
+  propertyDescription: string;
 }
 
 export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreementWizardProps) {
@@ -117,7 +119,9 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
       city: "",
       state: "",
       pincode: ""
-    }
+    },
+    propertyType: "residential" as const,
+    propertyDescription: ""
   });
 
   // Fetch customers for autocomplete
@@ -152,7 +156,8 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         return !!(formData.agreementPeriod.startDate && formData.agreementPeriod.endDate &&
                  formData.propertyAddress.flatNo && formData.propertyAddress.society &&
                  formData.propertyAddress.area && formData.propertyAddress.city &&
-                 formData.propertyAddress.state && formData.propertyAddress.pincode);
+                 formData.propertyAddress.state && formData.propertyAddress.pincode &&
+                 formData.propertyType && formData.propertyDescription);
       default:
         return true;
     }
@@ -194,10 +199,11 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         if (!formData.agreementPeriod.startDate || !formData.agreementPeriod.endDate ||
             !formData.propertyAddress.flatNo || !formData.propertyAddress.society ||
             !formData.propertyAddress.area || !formData.propertyAddress.city ||
-            !formData.propertyAddress.state || !formData.propertyAddress.pincode) {
+            !formData.propertyAddress.state || !formData.propertyAddress.pincode ||
+            !formData.propertyType || !formData.propertyDescription) {
           toast({
             title: "Required fields missing",
-            description: "Please fill in all agreement period and property address fields",
+            description: "Please fill in all agreement period, property address, property type, and property description fields",
             variant: "destructive",
           });
           return false;
@@ -228,6 +234,8 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         tenantDetails: formData.tenantDetails,
         agreementPeriod: formData.agreementPeriod,
         propertyAddress: formData.propertyAddress,
+        propertyType: formData.propertyType,
+        propertyDescription: formData.propertyDescription,
         notarizedDocumentUrl: documents.notarizedDocument,
         policeVerificationDocumentUrl: documents.policeVerificationDocument,
         status: 'active', // Imported agreements are active
@@ -285,7 +293,9 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
         city: "",
         state: "",
         pincode: ""
-      }
+      },
+      propertyType: "residential" as const,
+      propertyDescription: ""
     });
     onClose();
   };
@@ -902,6 +912,44 @@ export default function ImportAgreementWizard({ isOpen, onClose }: ImportAgreeme
                         propertyAddress: { ...prev.propertyAddress, pincode: e.target.value }
                       }))}
                       placeholder="e.g., 380015"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Property Type Section */}
+              <div className="space-y-4">
+                <h4 className="text-md font-semibold text-gray-800">Property Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="property-type">Property Type *</Label>
+                    <Select 
+                      value={formData.propertyType} 
+                      onValueChange={(value: "commercial" | "industrial" | "office" | "residential") => 
+                        setFormData(prev => ({ ...prev, propertyType: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select property type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="residential">Residential</SelectItem>
+                        <SelectItem value="commercial">Commercial</SelectItem>
+                        <SelectItem value="industrial">Industrial</SelectItem>
+                        <SelectItem value="office">Office</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="property-description">Property Description *</Label>
+                    <Input
+                      id="property-description"
+                      value={formData.propertyDescription}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        propertyDescription: e.target.value
+                      }))}
+                      placeholder="e.g., 2BHK, 3BHK, Shop, Office Space"
                     />
                   </div>
                 </div>

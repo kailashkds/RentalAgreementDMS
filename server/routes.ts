@@ -2801,6 +2801,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tenantDetails,
         agreementPeriod,
         propertyAddress,
+        propertyType,
+        propertyDescription,
         notarizedDocumentUrl,
         policeVerificationDocumentUrl,
         status,
@@ -2814,6 +2816,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!customer?.id || !ownerDetails?.name || !tenantDetails?.name) {
         return res.status(400).json({ error: 'Customer, owner, and tenant details are required' });
+      }
+
+      if (!propertyType || !propertyDescription) {
+        return res.status(400).json({ error: 'Property type and property description are required' });
       }
 
       console.log('[Import Agreement] Processing import:', {
@@ -2839,7 +2845,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             city: propertyAddress.city,
             state: propertyAddress.state,
             pincode: propertyAddress.pincode
-          }
+          },
+          type: propertyType,
+          description: propertyDescription
         },
         rentalTerms: {
           startDate: agreementPeriod.startDate,
@@ -2874,7 +2882,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             uploadDate: new Date().toISOString(),
             url: policeVerificationDocumentUrl
           }
-        }
+        },
+        isImported: true,
+        propertyType: propertyType,
+        propertyDescription: propertyDescription
       };
 
       // Validate the data using the insert schema
