@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { PermissionGuard } from "./PermissionGuard";
@@ -82,6 +83,8 @@ export function UnifiedUserManagement() {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
   const [passwordResult, setPasswordResult] = useState<string>("");
+  const [localPermissionChanges, setLocalPermissionChanges] = useState<Set<string>>(new Set());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [createUserData, setCreateUserData] = useState<CreateUserData>({
     name: "",
     email: "",
@@ -365,7 +368,77 @@ export function UnifiedUserManagement() {
 
   const openPermissionsDialog = (user: UnifiedUser) => {
     setSelectedUser(user);
+    setLocalPermissionChanges(new Set());
+    setHasUnsavedChanges(false);
     setShowPermissionsDialog(true);
+  };
+
+  // Function to check if a permission is currently enabled (considering local changes)
+  const isPermissionEnabled = (permissionCode: string) => {
+    const hasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
+    const hasLocalChange = localPermissionChanges.has(permissionCode);
+    return hasLocalChange ? !hasPermission : hasPermission;
+  };
+
+  // Function to handle permission toggle
+  const handlePermissionToggle = (permissionCode: string) => {
+    const newChanges = new Set(localPermissionChanges);
+    if (newChanges.has(permissionCode)) {
+      newChanges.delete(permissionCode);
+    } else {
+      newChanges.add(permissionCode);
+    }
+    setLocalPermissionChanges(newChanges);
+    setHasUnsavedChanges(newChanges.size > 0);
+  };
+
+  // Function to save all permission changes
+  const savePermissionChanges = async () => {
+    if (!selectedUser || localPermissionChanges.size === 0) return;
+
+    const permissionCodes = Array.from(localPermissionChanges);
+    for (const permissionCode of permissionCodes) {
+      const permission = allPermissions.find(p => p.code === permissionCode);
+      if (!permission) continue;
+
+      const hasPermission = userPermissionsWithSources.some(p => p.code === permissionCode);
+      
+      try {
+        if (hasPermission) {
+          // Remove permission
+          await apiRequest(`/api/unified/users/${selectedUser.id}/permission-overrides/${permission.id}`, 'DELETE');
+        } else {
+          // Add permission
+          await apiRequest('/api/unified/users/permission-overrides', 'POST', {
+            userId: selectedUser.id,
+            permissionId: permission.id
+          });
+        }
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: `Failed to update permission: ${permissionCode}`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    toast({
+      title: "Success",
+      description: "Permission changes saved successfully",
+    });
+
+    setLocalPermissionChanges(new Set());
+    setHasUnsavedChanges(false);
+    queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${selectedUser.id}/permissions-with-sources`] });
+    queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
+  };
+
+  // Function to discard changes
+  const discardChanges = () => {
+    setLocalPermissionChanges(new Set());
+    setHasUnsavedChanges(false);
   };
 
   return (
@@ -771,149 +844,149 @@ export function UnifiedUserManagement() {
       <Dialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>User Permissions - {selectedUser?.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Manage Permissions for {selectedUser?.name}
+            </DialogTitle>
             <DialogDescription>
-              View all permissions for this user. Permissions are inherited from roles and can be manually added.
+              Manage individual permissions for this user. These permissions will be added to or removed from their role-based permissions.
             </DialogDescription>
           </DialogHeader>
           
+          {/* Unsaved Changes Banner */}
+          {hasUnsavedChanges && (
+            <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
+                  <span className="text-sm font-medium">You have unsaved changes</span>
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={discardChanges}
+                  data-testid="button-discard-changes"
+                >
+                  Discard Changes
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-6">
-            {/* Inherited Permissions Section */}
+            {/* Current Role & Permissions */}
             <div>
-              <h4 className="text-sm font-medium mb-3 text-muted-foreground">
-                Inherited ({userPermissionsWithSources.filter(p => p.source === 'role').length}):
-              </h4>
-              <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto">
-                {userPermissionsWithSources
-                  .filter(permission => permission.source === 'role')
-                  .map((permission, index) => (
-                    <div 
-                      key={`${permission.code}-${index}`}
-                      className="px-3 py-1 bg-muted rounded-md text-xs text-muted-foreground"
-                    >
-                      {permission.code.split('.').map(part => 
-                        part.charAt(0).toUpperCase() + part.slice(1)
-                      ).join(' ')}
+              <h4 className="text-sm font-medium mb-3">Current Role & Permissions</h4>
+              <div className="space-y-2">
+                {selectedUser?.roles.map((role) => (
+                  <div key={role.id} className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {role.name}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      Base Role: {userPermissionsWithSources.filter(p => p.source === 'role').length} permissions
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="text-green-600">+{Array.from(localPermissionChanges).filter(code => !userPermissionsWithSources.some(p => p.code === code)).length} added</span>
+                  <span className="text-red-600">-{Array.from(localPermissionChanges).filter(code => userPermissionsWithSources.some(p => p.code === code)).length} removed</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Available Permissions */}
+            <div>
+              <h4 className="text-sm font-medium mb-3">Available Permissions</h4>
+              
+              {/* Group permissions by category */}
+              {(() => {
+                const groupedPermissions = allPermissions.reduce((acc, permission) => {
+                  const category = permission.code.split('.')[0].toUpperCase();
+                  if (!acc[category]) acc[category] = [];
+                  acc[category].push(permission);
+                  return acc;
+                }, {} as Record<string, Permission[]>);
+
+                return Object.entries(groupedPermissions).map(([category, permissions]) => (
+                  <div key={category} className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {category}
+                      </h5>
+                      <span className="text-xs text-muted-foreground">
+                        {permissions.filter(p => isPermissionEnabled(p.code)).length}/{permissions.length}
+                      </span>
                     </div>
-                  ))
-                }
-                {userPermissionsWithSources.filter(p => p.source === 'role').length === 0 && (
-                  <div className="text-sm text-muted-foreground py-4 text-center w-full">
-                    No role-based permissions found.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Manual Overrides Section */}
-            {userPermissionsWithSources.some(p => p.source === 'override') && (
-              <div>
-                <h4 className="text-sm font-medium mb-4 flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Manual Overrides ({userPermissionsWithSources.filter(p => p.source === 'override').length})
-                </h4>
-                <div className="space-y-2">
-                  {userPermissionsWithSources
-                    .filter(permission => permission.source === 'override')
-                    .map((permission, index) => (
-                      <div 
-                        key={`${permission.code}-${index}`}
-                        className="flex items-center justify-between p-2 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800"
-                      >
-                        <span className="text-sm font-medium">
-                          {permission.code.split('.').map(part => 
-                            part.charAt(0).toUpperCase() + part.slice(1)
-                          ).join(' ')}
-                        </span>
-                        <PermissionGuard permission="user.edit.all">
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => {
-                              const permissionObj = allPermissions.find(p => p.code === permission.code);
-                              if (permissionObj && selectedUser) {
-                                removePermissionOverrideMutation.mutate({
-                                  userId: selectedUser.id,
-                                  permissionId: permissionObj.id
-                                });
-                              }
-                            }}
-                            disabled={removePermissionOverrideMutation.isPending}
+                    <div className="space-y-2">
+                      {permissions.map((permission) => {
+                        const isEnabled = isPermissionEnabled(permission.code);
+                        const hasOriginalPermission = userPermissionsWithSources.some(p => p.code === permission.code);
+                        const hasLocalChange = localPermissionChanges.has(permission.code);
+                        const originalSource = userPermissionsWithSources.find(p => p.code === permission.code)?.source;
+                        
+                        return (
+                          <div 
+                            key={permission.id}
+                            className="flex items-center justify-between py-2 px-3 border rounded-lg hover:bg-muted/50"
                           >
-                            Remove
-                          </Button>
-                        </PermissionGuard>
-                      </div>
-                    ))
-                  }
-                </div>
-              </div>
-            )}
-
-            {/* Total Permissions Count */}
-            <div className="pt-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                Total Permissions: {userPermissionsWithSources.length}
-              </div>
-            </div>
-
-            {/* Add Manual Permission Override - Only for Super Admins */}
-            <PermissionGuard permission="user.edit.all">
-              <div>
-                <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Manual Permission Override
-                </h4>
-                <div className="space-y-3">
-                  <div className="max-h-48 overflow-y-auto border rounded-lg">
-                    {allPermissions
-                      .filter(permission => 
-                        !userPermissionsWithSources.some(up => up.code === permission.code)
-                      )
-                      .map((permission) => (
-                        <div 
-                          key={permission.id}
-                          className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-muted/50"
-                        >
-                          <div>
-                            <span className="text-sm font-mono">{permission.code}</span>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {permission.description}
-                            </p>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">
+                                  {permission.code.split('.').slice(1).map(part => 
+                                    part.charAt(0).toUpperCase() + part.slice(1)
+                                  ).join(' ')}
+                                </span>
+                                {hasOriginalPermission && !hasLocalChange && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {originalSource === 'role' ? 'Role' : 'Manual'}
+                                  </Badge>
+                                )}
+                                {hasLocalChange && (
+                                  <Badge variant={isEnabled ? "default" : "destructive"} className="text-xs">
+                                    {isEnabled ? 'Pending +' : 'Pending -'}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {permission.description}
+                              </p>
+                            </div>
+                            <PermissionGuard permission="user.edit.all">
+                              <Switch
+                                checked={isEnabled}
+                                onCheckedChange={() => handlePermissionToggle(permission.code)}
+                                data-testid={`toggle-${permission.code}`}
+                              />
+                            </PermissionGuard>
                           </div>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              if (selectedUser) {
-                                addPermissionOverrideMutation.mutate({
-                                  userId: selectedUser.id,
-                                  permissionId: permission.id
-                                });
-                              }
-                            }}
-                            disabled={addPermissionOverrideMutation.isPending}
-                          >
-                            Add
-                          </Button>
-                        </div>
-                      ))}
-                    {allPermissions.filter(permission => 
-                      !userPermissionsWithSources.some(up => up.code === permission.code)
-                    ).length === 0 && (
-                      <div className="p-4 text-center text-sm text-muted-foreground">
-                        No additional permissions available to add.
-                      </div>
-                    )}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              </div>
-            </PermissionGuard>
+                ));
+              })()}
+            </div>
           </div>
 
-          <div className="flex justify-end pt-4 border-t">
-            <Button onClick={() => setShowPermissionsDialog(false)}>
+          <div className="flex items-center justify-between pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowPermissionsDialog(false)}
+              data-testid="button-close-permissions"
+            >
               Close
             </Button>
+            <div className="flex gap-2">
+              {hasUnsavedChanges && (
+                <Button 
+                  onClick={savePermissionChanges}
+                  data-testid="button-save-changes"
+                >
+                  Save Changes
+                </Button>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
