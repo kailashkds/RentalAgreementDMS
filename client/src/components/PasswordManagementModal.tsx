@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,12 +31,19 @@ export default function PasswordManagementModal({
   customer, 
   onPasswordReset 
 }: PasswordManagementModalProps) {
-  const [showPassword, setShowPassword] = useState(false);
   const [decryptedPassword, setDecryptedPassword] = useState<string | null>(null);
   const [decryptInProgress, setDecryptInProgress] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [isResetting, setIsResetting] = useState(false);
   const { toast } = useToast();
+
+  // Reset state when modal opens/closes or customer changes
+  useEffect(() => {
+    if (!isOpen) {
+      setDecryptedPassword(null);
+      setNewPassword("");
+    }
+  }, [isOpen, customer?.id]);
 
   if (!customer) return null;
 
@@ -167,8 +174,8 @@ export default function PasswordManagementModal({
             <div className="relative">
               <Input
                 id="current-password"
-                type={showPassword ? "text" : "password"}
-                value={showPassword && decryptedPassword ? decryptedPassword : "•••••••••••"}
+                type="text"
+                value={decryptedPassword || "•••••••••••"}
                 readOnly
                 className="pr-10 bg-gray-50"
                 data-testid="input-current-password"
@@ -179,17 +186,16 @@ export default function PasswordManagementModal({
                 size="sm"
                 className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                 onClick={() => {
-                  if (!showPassword && !decryptedPassword) {
+                  if (!decryptedPassword) {
                     handleDecryptPassword();
                   }
-                  setShowPassword(!showPassword);
                 }}
                 disabled={decryptInProgress}
                 data-testid="button-toggle-password-visibility"
               >
                 {decryptInProgress ? (
                   <div className="animate-spin h-4 w-4 border border-gray-400 border-t-transparent rounded-full" />
-                ) : showPassword ? (
+                ) : decryptedPassword ? (
                   <EyeOff className="h-4 w-4 text-gray-400" />
                 ) : (
                   <Eye className="h-4 w-4 text-gray-400" />
