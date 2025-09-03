@@ -116,17 +116,29 @@ export function UnifiedUserManagement() {
   const { data: allPermissions = [] } = useQuery<Permission[]>({
     queryKey: ["/api/unified/permissions"],
     enabled: showPermissionsDialog && !!selectedUser,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: Infinity,
   });
 
   // Query for user permissions with sources
   const { data: userPermissionsWithSources = [] } = useQuery<PermissionWithSource[]>({
     queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`],
     enabled: showPermissionsDialog && !!selectedUser,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: Infinity,
   });
 
   // Fetch users with roles
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['/api/unified/users'],
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: Infinity,
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
@@ -144,6 +156,10 @@ export function UnifiedUserManagement() {
   // Fetch roles for dropdown
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
     queryKey: ['/api/unified/roles'],
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: Infinity,
   }) as { data: Role[]; isLoading: boolean };
 
   const users = usersData?.users || [];
