@@ -1053,23 +1053,12 @@ export function UnifiedUserManagement() {
                           
                           <div className="flex items-center ml-4">
                             <Switch
-                              checked={(() => {
-                                const hasLocalChange = localPermissionChanges.has(permission.id);
-                                const localValue = localPermissionChanges.get(permission.id);
-                                const dbValue = permission.hasPermission;
-                                
-                                // Debug logging for this specific permission
-                                if (permission.name === 'agreement.create') {
-                                  console.log(`[${permission.name}] hasLocal: ${hasLocalChange}, local: ${localValue}, db: ${dbValue}, hasUnsaved: ${hasUnsavedChanges}`);
+                              checked={useMemo(() => {
+                                if (localPermissionChanges.has(permission.id)) {
+                                  return localPermissionChanges.get(permission.id)!;
                                 }
-                                
-                                // Always prioritize local changes to maintain visual consistency
-                                if (hasLocalChange) {
-                                  return localValue!;
-                                }
-                                // Fallback to database state only when no local changes exist
-                                return dbValue;
-                              })()}
+                                return permission.hasPermission;
+                              }, [permission.id, permission.hasPermission, localPermissionChanges])}
                               onCheckedChange={(checked) => {
                                 // Don't allow toggling role-based permissions
                                 if (permission.isFromRole) return;
