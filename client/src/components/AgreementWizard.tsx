@@ -2082,7 +2082,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   <div>
                     <Label>{t("purpose")}</Label>
                     <Select 
-                      value={watch("propertyDetails.purpose")} 
+                      value={watch("propertyDetails.purpose") || "residential"} 
                       onValueChange={(value) => setValue("propertyDetails.purpose", value)}
                     >
                       <SelectTrigger>
