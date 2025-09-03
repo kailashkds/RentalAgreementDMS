@@ -125,17 +125,21 @@ export function UnifiedUserManagement() {
     enabled: showPermissionsDialog && !!selectedUser,
   });
 
-  // Set original permission states when data loads
+  // Set original permission states when data loads for the first time
   useEffect(() => {
-    if (showPermissionsDialog && selectedUser && allPermissions.length > 0 && userPermissionsWithSources.length >= 0) {
-      const originalStates = new Map<string, boolean>();
-      allPermissions.forEach(permission => {
-        const userPermission = userPermissionsWithSources.find((p: any) => p.code === permission.code);
-        originalStates.set(permission.id, !!userPermission);
-      });
-      setOriginalPermissionStates(originalStates);
+    if (showPermissionsDialog && selectedUser && allPermissions.length > 0 && userPermissionsWithSources !== null) {
+      // Only set original states if they haven't been set yet (first time dialog opens with data)
+      if (originalPermissionStates.size === 0) {
+        const originalStates = new Map<string, boolean>();
+        allPermissions.forEach(permission => {
+          const userPermission = userPermissionsWithSources.find((p: any) => p.code === permission.code);
+          originalStates.set(permission.id, !!userPermission);
+        });
+        setOriginalPermissionStates(originalStates);
+        console.log('Setting original permission states:', originalStates);
+      }
     }
-  }, [showPermissionsDialog, selectedUser, allPermissions, userPermissionsWithSources]);
+  }, [showPermissionsDialog, selectedUser, allPermissions, userPermissionsWithSources, originalPermissionStates.size]);
 
   // Users query
   const { data: usersData } = useQuery({
@@ -391,19 +395,23 @@ export function UnifiedUserManagement() {
 
   const handlePermissionToggle = (permissionId: string, checked: boolean) => {
     const originalState = originalPermissionStates.get(permissionId) || false;
+    console.log('Permission toggle:', { permissionId, checked, originalState, isBackToOriginal: checked === originalState });
     
     // Update local changes
     const newChanges = new Map(localPermissionChanges);
     if (checked === originalState) {
       // Back to original state, no change needed
       newChanges.delete(permissionId);
+      console.log('Removing from changes - back to original state');
     } else {
       // Different from original state, record the change
       newChanges.set(permissionId, checked);
+      console.log('Adding to changes - different from original');
     }
     
     setLocalPermissionChanges(newChanges);
     setHasUnsavedChanges(newChanges.size > 0);
+    console.log('Total changes:', newChanges.size);
   };
 
   const getChangesSummary = (): { adding: number; removing: number } => {
