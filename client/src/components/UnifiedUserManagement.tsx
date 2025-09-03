@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1053,12 +1053,22 @@ export function UnifiedUserManagement() {
                           
                           <div className="flex items-center ml-4">
                             <Switch
-                              checked={useMemo(() => {
-                                if (localPermissionChanges.has(permission.id)) {
-                                  return localPermissionChanges.get(permission.id)!;
+                              checked={(() => {
+                                // Always use local state if it exists, regardless of any other state
+                                const localState = localPermissionChanges.get(permission.id);
+                                const dbState = permission.hasPermission;
+                                
+                                // Debug logging for specific permission
+                                if (permission.name === 'agreement.create') {
+                                  console.log(`🔄 [${permission.name}] Local: ${localState}, DB: ${dbState}, HasUnsaved: ${hasUnsavedChanges}, Applied: ${isChangesApplied}`);
                                 }
-                                return permission.hasPermission;
-                              }, [permission.id, permission.hasPermission, localPermissionChanges])}
+                                
+                                if (localState !== undefined) {
+                                  return localState;
+                                }
+                                // Only use database state when no local override exists
+                                return dbState;
+                              })()}
                               onCheckedChange={(checked) => {
                                 // Don't allow toggling role-based permissions
                                 if (permission.isFromRole) return;
