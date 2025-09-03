@@ -660,20 +660,27 @@ export default function Agreements() {
   };
 
   const handleDownloadPoliceVerification = (agreement: any) => {
-    // Try multiple possible paths for police verification document
+    // Check ALL possible paths for police verification document (backward compatibility)
     const policeVerificationUrl = 
+      // Current structure: documents.policeVerificationDocument.url
       agreement.documents?.policeVerificationDocument?.url ||
+      // Alternative structure: policeVerificationDocument.url
       agreement.policeVerificationDocument?.url ||
-      agreement.policeVerificationDocumentUrl;
+      // Direct URL: policeVerificationDocumentUrl
+      agreement.policeVerificationDocumentUrl ||
+      // Legacy pattern: documents.policeVerificationDocumentUrl
+      agreement.documents?.policeVerificationDocumentUrl;
     
     if (policeVerificationUrl) {
       const link = document.createElement('a');
       link.href = policeVerificationUrl;
       
-      // Try multiple possible paths for the filename
+      // Try multiple possible paths for the filename (backward compatibility)
       const filename = 
         agreement.documents?.policeVerificationDocument?.originalName ||
+        agreement.documents?.policeVerificationDocument?.filename ||
         agreement.policeVerificationDocument?.originalName ||
+        agreement.policeVerificationDocument?.filename ||
         `${agreement.agreementNumber}-police-verification.pdf`;
       
       link.download = filename;
@@ -683,12 +690,20 @@ export default function Agreements() {
       
       toast({
         title: "Download Started",
-        description: "Police verification document download started",
+        description: `Downloading: ${filename}`,
       });
     } else {
+      // Debug info for troubleshooting
+      console.log('Police verification document not found. Agreement structure:', {
+        agreementNumber: agreement.agreementNumber,
+        documents: agreement.documents,
+        policeVerificationDocument: agreement.policeVerificationDocument,
+        policeVerificationDocumentUrl: agreement.policeVerificationDocumentUrl
+      });
+      
       toast({
         title: "Download Error", 
-        description: "Police verification document not found",
+        description: "Police verification document not found. Please check if the document was uploaded properly.",
         variant: "destructive",
       });
     }
@@ -1100,10 +1115,19 @@ export default function Agreements() {
     }
   };
 
-  // Helper function to check if agreement is imported
+  // Helper function to check if agreement is imported (backward compatibility)
   const isImportedAgreement = (agreement: any) => {
-    // Only imported agreements have police verification documents
-    return agreement?.documents?.policeVerificationDocument?.url;
+    // Check ALL possible paths for police verification documents to ensure backward compatibility
+    const hasPoliceVerification = 
+      agreement?.documents?.policeVerificationDocument?.url ||
+      agreement?.policeVerificationDocument?.url ||
+      agreement?.policeVerificationDocumentUrl ||
+      agreement?.documents?.policeVerificationDocumentUrl ||
+      // Also check if it's explicitly marked as imported
+      agreement?.is_imported === true ||
+      agreement?.isImported === true;
+    
+    return hasPoliceVerification;
   };
 
   const getStatusBadge = (status: string | undefined) => {
