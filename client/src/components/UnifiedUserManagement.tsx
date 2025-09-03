@@ -300,6 +300,7 @@ export function UnifiedUserManagement() {
       setIsChangesApplied(true);
       setHasUnsavedChanges(false);
       setPendingPermissions(new Set());
+      // Note: We keep localPermissionChanges intact until dialog closes
       
       // Show success message
       toast({
