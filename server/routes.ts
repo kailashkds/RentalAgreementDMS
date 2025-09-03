@@ -662,6 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { permissionId, isGranted = true } = req.body;
       
+      
       if (!permissionId) {
         return res.status(400).json({ message: "Permission ID is required" });
       }

@@ -518,6 +518,9 @@ export default function UserRoleManagement() {
       
       await Promise.all(promises);
       
+      // Invalidate and refetch user data to show updated permissions
+      await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
+      
       // Clear local state after successful save
       setLocalPermissionChanges(new Map());
       setHasUnsavedChanges(false);
