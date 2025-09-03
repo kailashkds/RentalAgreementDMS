@@ -263,9 +263,11 @@ export function UnifiedUserManagement() {
       const results = await Promise.all(
         changes.map(async ({ permissionId, action }) => {
           if (action === 'add') {
-            return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId });
+            // Grant permission (positive override)
+            return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId, isGranted: true });
           } else {
-            return await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE');
+            // Revoke permission (negative override) - this allows overriding role permissions
+            return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId, isGranted: false });
           }
         })
       );
@@ -288,13 +290,11 @@ export function UnifiedUserManagement() {
         description: "Permission changes applied successfully",
       });
       
-      // Auto-close the permissions dialog after showing notification
-      setTimeout(() => {
-        setShowPermissionsDialog(false);
-        // Clear local state only when dialog actually closes
-        setLocalPermissionChanges(new Map());
-        setHasUnsavedChanges(false);
-      }, 1500); // Close after 1.5 seconds to let user see the notification
+      // Close the permissions dialog immediately
+      setShowPermissionsDialog(false);
+      // Clear local state when dialog closes
+      setLocalPermissionChanges(new Map());
+      setHasUnsavedChanges(false);
     },
     onError: (error: any) => {
       toast({
@@ -409,8 +409,11 @@ export function UnifiedUserManagement() {
       const currentHasPermission = !!currentPermission;
       
       if (newState && !currentHasPermission) {
+        // Add permission - user wants this permission
         changes.push({ permissionId, action: 'add' });
-      } else if (!newState && currentHasPermission && currentPermission?.source === 'override') {
+      } else if (!newState && currentHasPermission) {
+        // Remove permission - user wants to revoke this permission (even if it comes from role)
+        // This will create a negative override if the permission comes from a role
         changes.push({ permissionId, action: 'remove' });
       }
     });

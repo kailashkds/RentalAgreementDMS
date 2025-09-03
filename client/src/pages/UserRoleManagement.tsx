@@ -522,10 +522,11 @@ export default function UserRoleManagement() {
             permissionId 
           }));
         } else if (!newCheckedState && currentHasPermission) {
-          // Remove permission using DELETE endpoint
-          promises.push(removePermissionOverrideMutation.mutateAsync({ 
+          // Revoke permission using negative override (allows overriding role permissions)
+          promises.push(addPermissionOverrideMutation.mutateAsync({ 
             userId: managingPermissionsUser.id, 
-            permissionId
+            permissionId,
+            isGranted: false
           }));
         }
       });
@@ -543,13 +544,11 @@ export default function UserRoleManagement() {
         description: `${localPermissionChanges.size} permission changes applied successfully`,
       });
       
-      // Auto-close the permissions dialog after showing notification
-      setTimeout(() => {
-        setIsPermissionsModalOpen(false);
-        // Clear local state only when dialog actually closes
-        setLocalPermissionChanges(new Map());
-        setHasUnsavedChanges(false);
-      }, 1500);
+      // Close the permissions dialog immediately
+      setIsPermissionsModalOpen(false);
+      // Clear local state when dialog closes
+      setLocalPermissionChanges(new Map());
+      setHasUnsavedChanges(false);
       
     } catch (error) {
       console.error('Failed to save permission changes:', error);
