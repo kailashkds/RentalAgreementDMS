@@ -205,6 +205,8 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       if (existingFormData.propertyDetails) {
         console.log("=== PROPERTY DETAILS BREAKDOWN ===");
         console.log("All property keys:", Object.keys(existingFormData.propertyDetails));
+        console.log("Purpose field value:", existingFormData.propertyDetails.purpose);
+        console.log("PropertyType field value:", existingFormData.propertyDetails.propertyType);
         console.log("Property address keys:", existingFormData.propertyDetails.address ? Object.keys(existingFormData.propertyDetails.address) : "No address");
       }
       
@@ -261,7 +263,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
           type: existingFormData.propertyDetails?.type || "",
           place: existingFormData.propertyDetails?.place || "",
           areaInSqFt: existingFormData.propertyDetails?.areaInSqFt || existingFormData.propertyDetails?.area || "",
-          purpose: existingFormData.propertyDetails?.purpose || "residential",
+          purpose: existingFormData.propertyDetails?.purpose || existingFormData.propertyDetails?.propertyType || "residential",
           furnishedStatus: existingFormData.propertyDetails?.furnishedStatus || existingFormData.propertyDetails?.furnishing || "",
           additionalItems: existingFormData.propertyDetails?.additionalItems || existingFormData.propertyDetails?.description || "",
           address: {
