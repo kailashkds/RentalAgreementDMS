@@ -447,6 +447,9 @@ export default function UserRoleManagement() {
   const openManagePermissions = (user: User) => {
     setManagingPermissionsUser(user);
     setIsPermissionsModalOpen(true);
+    // Reset local state when opening dialog
+    setLocalPermissionChanges(new Map());
+    setHasUnsavedChanges(false);
   };
 
   const openRoleAssignments = (role: Role) => {
@@ -468,19 +471,65 @@ export default function UserRoleManagement() {
     return user.roles?.some(role => role.id === roleId) || false;
   };
 
-  const handlePermissionToggle = async (userId: string, permissionId: string, permissionName: string, checked: boolean) => {
+  // Local state for permission changes
+  const [localPermissionChanges, setLocalPermissionChanges] = useState<Map<string, boolean>>(new Map());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const handlePermissionToggle = (userId: string, permissionId: string, permissionName: string, checked: boolean) => {
+    // Visual-only change - no API calls
+    setLocalPermissionChanges(prev => {
+      const newMap = new Map(prev);
+      newMap.set(permissionId, checked);
+      return newMap;
+    });
+    setHasUnsavedChanges(true);
+  };
+
+  // Batch save all permission changes
+  const handleSavePermissionChanges = async () => {
+    if (!managingPermissionsUser || localPermissionChanges.size === 0) return;
+    
     try {
-      if (checked) {
-        // Add permission override
-        await addPermissionOverrideMutation.mutateAsync({ userId, permissionId });
-      } else {
-        // Remove permission override
-        await removePermissionOverrideMutation.mutateAsync({ userId, permissionId });
-      }
+      const promises: Promise<any>[] = [];
+      
+      localPermissionChanges.forEach((checked, permissionId) => {
+        if (checked) {
+          promises.push(addPermissionOverrideMutation.mutateAsync({ 
+            userId: managingPermissionsUser.id, 
+            permissionId 
+          }));
+        } else {
+          promises.push(removePermissionOverrideMutation.mutateAsync({ 
+            userId: managingPermissionsUser.id, 
+            permissionId 
+          }));
+        }
+      });
+      
+      await Promise.all(promises);
+      
+      // Clear local state after successful save
+      setLocalPermissionChanges(new Map());
+      setHasUnsavedChanges(false);
+      
+      toast({
+        title: "Permissions Updated",
+        description: `${localPermissionChanges.size} permission changes applied successfully`,
+      });
+      
     } catch (error) {
-      console.error(`Failed to toggle permission ${permissionName}:`, error);
-      // Error toast is already handled in the mutation's onError handler
+      console.error('Failed to save permission changes:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save some permission changes",
+        variant: "destructive",
+      });
     }
+  };
+
+  const handleDiscardPermissionChanges = () => {
+    setLocalPermissionChanges(new Map());
+    setHasUnsavedChanges(false);
   };
 
   const handleUserSubmit = (e: React.FormEvent) => {
@@ -1212,13 +1261,30 @@ export default function UserRoleManagement() {
                                 {isFromRole && <Badge variant="outline" className="text-xs">Role</Badge>}
                                 {isManuallyAdded && <Badge variant="default" className="text-xs bg-green-100 text-green-800">+Added</Badge>}
                                 {isManuallyRemoved && <Badge variant="default" className="text-xs bg-red-100 text-red-800">-Removed</Badge>}
+                                {(() => {
+                                  const hasLocalChange = localPermissionChanges.has(permission.id);
+                                  const localState = localPermissionChanges.get(permission.id);
+                                  if (hasLocalChange && localState !== hasPermission) {
+                                    return (
+                                      <Badge variant="outline" className="text-xs text-amber-600">
+                                        {localState ? 'Adding' : 'Removing'}
+                                      </Badge>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
                               <p className="text-xs text-muted-foreground">{permission.description}</p>
                             </div>
                             <div className="flex items-center space-x-2">
                               <Switch 
-                                checked={hasPermission}
-                                disabled={addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
+                                checked={(() => {
+                                  // If we have a local change, use that, otherwise use the original state
+                                  if (localPermissionChanges.has(permission.id)) {
+                                    return localPermissionChanges.get(permission.id)!;
+                                  }
+                                  return hasPermission;
+                                })()}
                                 onCheckedChange={(checked) => {
                                   handlePermissionToggle(managingPermissionsUser.id, permission.id, permission.name, checked);
                                 }}
@@ -1234,13 +1300,41 @@ export default function UserRoleManagement() {
             </div>
           )}
           
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={() => setIsPermissionsModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => setIsPermissionsModalOpen(false)}>
-              Save Changes
-            </Button>
+          <div className="flex justify-between items-center pt-4 border-t">
+            <div className="flex items-center gap-2">
+              {hasUnsavedChanges && (
+                <Badge variant="outline" className="text-amber-600">
+                  {localPermissionChanges.size} unsaved changes
+                </Badge>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {hasUnsavedChanges && (
+                <>
+                  <Button 
+                    variant="outline"
+                    onClick={handleDiscardPermissionChanges}
+                  >
+                    Discard
+                  </Button>
+                  <Button 
+                    onClick={handleSavePermissionChanges}
+                    disabled={addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
+                  >
+                    {(addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending) ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </>
+              )}
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsPermissionsModalOpen(false);
+                  handleDiscardPermissionChanges(); // Clean up on close
+                }}
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
