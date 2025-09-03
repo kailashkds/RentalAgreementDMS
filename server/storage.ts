@@ -2032,14 +2032,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCustomerPermissions(customerId: string): Promise<string[]> {
-    const result = await db
+    // Get permissions from user roles (unified system)
+    const rolePermissions = await db
       .select({ code: permissions.code })
-      .from(customerRoles)
-      .innerJoin(rolePermissionsTable, eq(customerRoles.roleId, rolePermissionsTable.roleId))
+      .from(userRoles)
+      .innerJoin(rolePermissionsTable, eq(userRoles.roleId, rolePermissionsTable.roleId))
       .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
-      .where(eq(customerRoles.customerId, customerId));
+      .where(eq(userRoles.userId, customerId));
 
-    return result.map(row => row.code);
+    // Get manual permission overrides (user-specific permissions)
+    const userPermissionOverrides = await db
+      .select({ code: permissions.code, isGranted: userPermissions.isGranted })
+      .from(userPermissions)
+      .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
+      .where(eq(userPermissions.userId, customerId));
+
+    // Combine role permissions with user overrides
+    const rolePermissionCodes = rolePermissions.map(row => row.code);
+    const grantedOverrides = userPermissionOverrides
+      .filter(row => row.isGranted)
+      .map(row => row.code);
+    const deniedOverrides = userPermissionOverrides
+      .filter(row => !row.isGranted)
+      .map(row => row.code);
+
+    // Start with role permissions, add granted overrides, remove denied overrides
+    const finalPermissions = new Set([...rolePermissionCodes, ...grantedOverrides]);
+    deniedOverrides.forEach(permission => finalPermissions.delete(permission));
+
+    return Array.from(finalPermissions);
   }
 
   // Audit logging operations implementation
