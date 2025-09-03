@@ -686,13 +686,12 @@ export class DatabaseStorage implements IStorage {
 
   async resetCustomerPassword(id: string, newPassword: string): Promise<Customer> {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    // Note: We don't store encryptedPassword for customers in the unified system
-    // Passwords are stored in plain text for admin access as per requirements
+    // Store hashed password for secure login authentication
     
     const [user] = await db
       .update(users)
       .set({ 
-        password: newPassword, // Store plain text password for admin viewing
+        password: hashedPassword, // Store hashed password for secure authentication
         updatedAt: new Date() 
       })
       .where(and(eq(users.id, id), eq(users.defaultRole, 'Customer')))
