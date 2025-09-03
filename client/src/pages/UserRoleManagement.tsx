@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -437,6 +437,8 @@ export default function UserRoleManagement() {
     // Reset local state when opening dialog
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
+    // Store original permission states - we'll set them after the query loads
+    setOriginalPermissionStates(new Map());
     // Force refresh user data when opening dialog
     queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
   };
@@ -463,15 +465,34 @@ export default function UserRoleManagement() {
   // Local state for permission changes
   const [localPermissionChanges, setLocalPermissionChanges] = useState<Map<string, boolean>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [originalPermissionStates, setOriginalPermissionStates] = useState<Map<string, boolean>>(new Map());
+
+  // Set original permission states when dialog opens and data loads
+  useEffect(() => {
+    if (isPermissionsModalOpen && managingPermissionsUser && permissions.length > 0) {
+      const userPermissions = getUserPermissions(managingPermissionsUser);
+      const originalStates = new Map<string, boolean>();
+      permissions.forEach(permission => {
+        originalStates.set(permission.id, userPermissions.total.includes(permission.name));
+      });
+      setOriginalPermissionStates(originalStates);
+    }
+  }, [isPermissionsModalOpen, managingPermissionsUser, permissions]);
 
   const handlePermissionToggle = (userId: string, permissionId: string, permissionName: string, checked: boolean) => {
+    const originalState = originalPermissionStates.get(permissionId) || false;
+    
     // Visual-only change - no API calls
-    setLocalPermissionChanges(prev => {
-      const newMap = new Map(prev);
+    const newMap = new Map(localPermissionChanges);
+    if (checked === originalState) {
+      // Back to original state, no change needed
+      newMap.delete(permissionId);
+    } else {
+      // Different from original state, record the change
       newMap.set(permissionId, checked);
-      return newMap;
-    });
-    setHasUnsavedChanges(true);
+    }
+    setLocalPermissionChanges(newMap);
+    setHasUnsavedChanges(newMap.size > 0);
   };
 
   // Get changes summary for confirmation dialog
