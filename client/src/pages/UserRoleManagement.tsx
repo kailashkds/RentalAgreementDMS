@@ -491,14 +491,24 @@ export default function UserRoleManagement() {
     
     try {
       const promises: Promise<any>[] = [];
+      const userPermissions = getUserPermissions(managingPermissionsUser);
       
-      localPermissionChanges.forEach((checked, permissionId) => {
-        if (checked) {
+      localPermissionChanges.forEach((newCheckedState, permissionId) => {
+        // Find the permission object to get the permission name
+        const permission = permissions.find(p => p.id === permissionId);
+        if (!permission) return;
+        
+        const currentHasPermission = userPermissions.total.includes(permission.name);
+        
+        // If new state is different from current state, make the change
+        if (newCheckedState && !currentHasPermission) {
+          // Add permission
           promises.push(addPermissionOverrideMutation.mutateAsync({ 
             userId: managingPermissionsUser.id, 
             permissionId 
           }));
-        } else {
+        } else if (!newCheckedState && currentHasPermission) {
+          // Remove permission
           promises.push(removePermissionOverrideMutation.mutateAsync({ 
             userId: managingPermissionsUser.id, 
             permissionId 
