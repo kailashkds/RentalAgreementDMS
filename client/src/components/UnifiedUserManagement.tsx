@@ -1048,19 +1048,24 @@ export function UnifiedUserManagement() {
                               })()}
                               onCheckedChange={(newCheckedState) => {
                                 // Don't allow toggling role-based permissions
-                                if (permission.isFromRole || permission.isPending) return;
+                                if (permission.isFromRole) {
+                                  console.log('❌ Blocked: Cannot toggle role-based permission');
+                                  return;
+                                }
                                 
-                                console.log('Toggle clicked - Visual only change:', permission.id, newCheckedState);
+                                console.log('✅ Toggle clicked - VISUAL ONLY:', permission.code, 'new state:', newCheckedState);
                                 
-                                // Set the new state directly in local changes - NO API CALLS
+                                // CRITICAL: This should ONLY change local state, NO API CALLS!
                                 setLocalPermissionChanges(prev => {
                                   const newMap = new Map(prev);
                                   newMap.set(permission.id, newCheckedState);
+                                  console.log('📝 Local state updated for', permission.code, '- Total changes:', newMap.size);
                                   return newMap;
                                 });
                                 setHasUnsavedChanges(true);
+                                console.log('🚨 If you see API calls in server logs now, there is a bug!');
                               }}
-                              disabled={permission.isFromRole || permission.isPending}
+                              disabled={permission.isFromRole}
                               data-testid={`switch-permission-${permissionId}`}
                             />
                           </div>
