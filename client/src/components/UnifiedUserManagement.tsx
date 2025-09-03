@@ -394,7 +394,8 @@ export function UnifiedUserManagement() {
     let removing = 0;
     
     localPermissionChanges.forEach((newState, permissionId) => {
-      const currentState = getCurrentPermissionState(permissionId);
+      // Get the ORIGINAL state before any local changes
+      const originalState = getCurrentPermissionState(permissionId);
       const permission = allPermissions.find(ap => ap.id === permissionId);
       const currentPermission = userPermissionsWithSources.find(p => p.code === permission?.code);
       
@@ -403,17 +404,23 @@ export function UnifiedUserManagement() {
       const rolePermissionCodes = userRoles.flatMap((role: any) => role.permissions?.map((p: any) => p.code) || []);
       const isRolePermission = permission ? rolePermissionCodes.includes(permission.code) : false;
       
-      if (newState && !currentState) {
-        if (!isRolePermission) {
-          adding++; // Adding a new permission not in role
+      // Only count as a change if the new state is different from the original state
+      if (newState !== originalState) {
+        if (newState && !originalState) {
+          // Going from false to true
+          if (!isRolePermission) {
+            adding++; // Adding a new permission not in role
+          }
+          // Don't count restoring role permissions as a change (back to default)
+        } else if (!newState && originalState) {
+          // Going from true to false
+          if (currentPermission?.source === 'role') {
+            removing++; // Revoking a role permission
+          }
+          // Don't count removing added permissions as a change (back to default)
         }
-        // Don't count restoring role permissions as a change (back to default)
-      } else if (!newState && currentState) {
-        if (currentPermission?.source === 'role') {
-          removing++; // Revoking a role permission
-        }
-        // Don't count removing added permissions as a change (back to default)
       }
+      // If newState === originalState, it means we're back to the original state, so no change
     });
     
     return { adding, removing };

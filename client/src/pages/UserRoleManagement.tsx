@@ -487,7 +487,8 @@ export default function UserRoleManagement() {
       const permission = permissions.find(p => p.id === permissionId);
       if (!permission) return;
       
-      const currentHasPermission = userPermissions.total.includes(permission.name);
+      // Get the ORIGINAL state before any local changes
+      const originalState = userPermissions.total.includes(permission.name);
       const currentPermissionSource = userPermissions.inherited.includes(permission.name) ? 'role' : 'override';
       
       // Check if this permission exists in user's role
@@ -495,17 +496,23 @@ export default function UserRoleManagement() {
       const rolePermissionCodes = userRoles.flatMap((role: any) => role.permissions?.map((p: any) => p.code) || []);
       const isRolePermission = rolePermissionCodes.includes(permission.name);
       
-      if (newCheckedState && !currentHasPermission) {
-        if (!isRolePermission) {
-          adding++; // Adding a new permission not in role
+      // Only count as a change if the new state is different from the original state
+      if (newCheckedState !== originalState) {
+        if (newCheckedState && !originalState) {
+          // Going from false to true
+          if (!isRolePermission) {
+            adding++; // Adding a new permission not in role
+          }
+          // Don't count restoring role permissions as a change (back to default)
+        } else if (!newCheckedState && originalState) {
+          // Going from true to false
+          if (currentPermissionSource === 'role') {
+            removing++; // Revoking a role permission
+          }
+          // Don't count removing added permissions as a change (back to default)
         }
-        // Don't count restoring role permissions as a change (back to default)
-      } else if (!newCheckedState && currentHasPermission) {
-        if (currentPermissionSource === 'role') {
-          removing++; // Revoking a role permission
-        }
-        // Don't count removing added permissions as a change (back to default)
       }
+      // If newCheckedState === originalState, it means we're back to the original state, so no change
     });
     
     return { adding, removing };
