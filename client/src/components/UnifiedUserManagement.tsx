@@ -278,13 +278,8 @@ export function UnifiedUserManagement() {
         queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] })
       ]);
       
-      // Wait longer for the queries to actually complete before clearing local state
-      // This prevents the UI from briefly showing old state before new data is available
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Clear local state after ensuring queries are refreshing
-      setLocalPermissionChanges(new Map());
-      setHasUnsavedChanges(false);
+      // DO NOT clear local state here - keep the toggles in their updated state
+      // Local state will be cleared when the dialog is closed
       setShowConfirmDialog(false);
       
       // Show success message
@@ -296,6 +291,9 @@ export function UnifiedUserManagement() {
       // Auto-close the permissions dialog after showing notification
       setTimeout(() => {
         setShowPermissionsDialog(false);
+        // Clear local state only when dialog actually closes
+        setLocalPermissionChanges(new Map());
+        setHasUnsavedChanges(false);
       }, 1500); // Close after 1.5 seconds to let user see the notification
     },
     onError: (error: any) => {
@@ -361,6 +359,9 @@ export function UnifiedUserManagement() {
     // Reset local state when opening dialog
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
+    // Force refresh user data when opening dialog
+    queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
+    queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${user.id}/permissions-with-sources`] });
   };
 
   const getCurrentPermissionState = (permissionId: string): boolean => {

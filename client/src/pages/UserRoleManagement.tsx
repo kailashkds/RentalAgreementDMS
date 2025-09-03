@@ -427,6 +427,8 @@ export default function UserRoleManagement() {
     // Reset local state when opening dialog
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
+    // Force refresh user data when opening dialog
+    queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
   };
 
   const openRoleAssignments = (role: Role) => {
@@ -524,13 +526,8 @@ export default function UserRoleManagement() {
       // Invalidate and refetch user data to show updated permissions
       await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
       
-      // Wait longer for the queries to actually complete before clearing local state
-      // This prevents the UI from briefly showing old state before new data is available
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Clear local state after ensuring fresh data is available
-      setLocalPermissionChanges(new Map());
-      setHasUnsavedChanges(false);
+      // DO NOT clear local state here - keep the toggles in their updated state
+      // Local state will be cleared when the dialog is closed or discarded
       
       toast({
         title: "Permissions Updated",
@@ -540,6 +537,9 @@ export default function UserRoleManagement() {
       // Auto-close the permissions dialog after showing notification
       setTimeout(() => {
         setIsPermissionsModalOpen(false);
+        // Clear local state only when dialog actually closes
+        setLocalPermissionChanges(new Map());
+        setHasUnsavedChanges(false);
       }, 1500);
       
     } catch (error) {
