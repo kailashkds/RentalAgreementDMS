@@ -286,27 +286,25 @@ export function UnifiedUserManagement() {
     },
     onSuccess: async (data, { userId }) => {
       const changeCount = localPermissionChanges.size;
+      
+      // Clear local state immediately to prevent UI flickering
+      setLocalPermissionChanges(new Map());
+      setHasUnsavedChanges(false);
+      setPendingPermissions(new Set());
+      
+      // Then refetch the data
+      try {
+        await queryClient.refetchQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
+      } catch (error) {
+        console.error('Error refetching permissions:', error);
+      }
+      
+      // Show success message after everything is done
       toast({
         title: "Permissions Updated",
         description: `${changeCount} permission changes applied successfully`,
       });
-      
-      // Wait for permissions data to be refetched before clearing local state
-      try {
-        await queryClient.refetchQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
-        await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
-        
-        // Only clear local state after data is fresh
-        setLocalPermissionChanges(new Map());
-        setHasUnsavedChanges(false);
-        setPendingPermissions(new Set());
-      } catch (error) {
-        console.error('Error refetching permissions:', error);
-        // Clear state anyway to prevent stuck state
-        setLocalPermissionChanges(new Map());
-        setHasUnsavedChanges(false);
-        setPendingPermissions(new Set());
-      }
     },
     onError: (error: any) => {
       toast({
