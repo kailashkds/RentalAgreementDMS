@@ -287,21 +287,13 @@ export function UnifiedUserManagement() {
     onSuccess: async (data, { userId }) => {
       const changeCount = localPermissionChanges.size;
       
-      // Refetch the data and clear local state after successful save
-      try {
-        await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
-        await queryClient.invalidateQueries({ queryKey: ['/api/unified/permissions'] });
-        // Wait for the refetch to complete before clearing local state
-        await queryClient.refetchQueries({ queryKey: ['/api/unified/users'] });
-        await queryClient.refetchQueries({ queryKey: ['/api/unified/permissions'] });
-      } catch (error) {
-        console.error('Error refetching permissions:', error);
-      }
+      // Don't refetch data - user's toggle states are locked in place
       
-      // Mark changes as saved but keep local state until dialog closes 
+      // DON'T change any toggle states - user's changes are locked in
+      // Only hide the save button
       setHasUnsavedChanges(false);
       setPendingPermissions(new Set());
-      // Keep localPermissionChanges to maintain visual consistency
+      // localPermissionChanges stays exactly as user set them
       
       // Show success message
       toast({
