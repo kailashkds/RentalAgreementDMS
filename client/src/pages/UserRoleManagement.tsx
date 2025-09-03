@@ -291,54 +291,30 @@ export default function UserRoleManagement() {
     },
   });
 
-  // Permission override mutations
+  // Permission override mutations - DISABLED to prevent conflicts with UnifiedUserManagement
   const addPermissionOverrideMutation = useMutation({
     mutationFn: async ({ userId, permissionId, isGranted = true }: { userId: string; permissionId: string; isGranted?: boolean }) => {
-      const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId, isGranted });
-      return response.json();
+      // DISABLED: Conflicts with UnifiedUserManagement batch approach
+      return Promise.resolve({});
     },
     onSuccess: async () => {
-      // Invalidate and refetch queries to update UI immediately
-      await queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/unified/permissions"] });
-      // Force a refetch of the current data
-      await queryClient.refetchQueries({ queryKey: ["/api/unified/users"] });
-      toast({
-        title: "Success",
-        description: "Permission override added successfully",
-      });
+      // DISABLED
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add permission override",
-        variant: "destructive",
-      });
+      // DISABLED
     },
   });
 
   const removePermissionOverrideMutation = useMutation({
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
-      const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, "DELETE");
-      return response.json();
+      // DISABLED: Conflicts with UnifiedUserManagement batch approach
+      return Promise.resolve({});
     },
     onSuccess: async () => {
-      // Invalidate and refetch queries to update UI immediately
-      await queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/unified/permissions"] });
-      // Force a refetch of the current data
-      await queryClient.refetchQueries({ queryKey: ["/api/unified/users"] });
-      toast({
-        title: "Success", 
-        description: "Permission override removed successfully",
-      });
+      // DISABLED
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove permission override",
-        variant: "destructive",
-      });
+      // DISABLED
     },
   });
 
