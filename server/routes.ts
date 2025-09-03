@@ -695,7 +695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn("Failed to create audit log:", auditError);
       }
 
-      res.json({ message: `Permission override ${isGranted ? 'granted' : 'revoked'} successfully` });
+      res.json({ success: true });
     } catch (error) {
       console.error("Error adding permission override:", error);
       res.status(500).json({ message: "Failed to add permission override" });
@@ -734,7 +734,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn("Failed to create audit log:", auditError);
       }
 
-      res.json({ message: "Permission override removed successfully" });
+      res.json({ success: true });
     } catch (error) {
       console.error("Error removing permission override:", error);
       res.status(500).json({ message: "Failed to remove permission override" });
