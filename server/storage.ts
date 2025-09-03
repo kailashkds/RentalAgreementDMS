@@ -1902,14 +1902,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async customerHasPermission(customerId: string, permissionCode: string): Promise<boolean> {
-    const result = await db
-      .select({ count: count() })
-      .from(customerRoles)
-      .innerJoin(rolePermissionsTable, eq(customerRoles.roleId, rolePermissionsTable.roleId))
-      .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
-      .where(and(eq(customerRoles.customerId, customerId), eq(permissions.code, permissionCode)));
-
-    return result[0].count > 0;
+    // Use unified user system - customers are also users now
+    return this.userHasPermission(customerId, permissionCode);
   }
 
   async getUserPermissions(userId: string): Promise<string[]> {
