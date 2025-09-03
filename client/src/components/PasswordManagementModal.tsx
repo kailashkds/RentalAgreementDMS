@@ -33,6 +33,7 @@ export default function PasswordManagementModal({
 }: PasswordManagementModalProps) {
   const [decryptedPassword, setDecryptedPassword] = useState<string | null>(null);
   const [decryptInProgress, setDecryptInProgress] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [isResetting, setIsResetting] = useState(false);
   const { toast } = useToast();
@@ -41,6 +42,7 @@ export default function PasswordManagementModal({
   useEffect(() => {
     if (!isOpen) {
       setDecryptedPassword(null);
+      setIsPasswordVisible(false);
       setNewPassword("");
     }
   }, [isOpen, customer?.id]);
@@ -54,6 +56,7 @@ export default function PasswordManagementModal({
     try {
       const response = await apiRequest(`/api/customers/${customer.id}/decrypt-password`);
       setDecryptedPassword(response.password);
+      setIsPasswordVisible(true);
     } catch (error) {
       console.error('Failed to decrypt password:', error);
       toast({
@@ -63,6 +66,16 @@ export default function PasswordManagementModal({
       });
     } finally {
       setDecryptInProgress(false);
+    }
+  };
+
+  const togglePasswordVisibility = () => {
+    if (!decryptedPassword) {
+      // If password hasn't been fetched yet, fetch it
+      handleDecryptPassword();
+    } else {
+      // If password is already fetched, just toggle visibility
+      setIsPasswordVisible(!isPasswordVisible);
     }
   };
 
@@ -175,7 +188,7 @@ export default function PasswordManagementModal({
               <Input
                 id="current-password"
                 type="text"
-                value={decryptedPassword || "•••••••••••"}
+                value={isPasswordVisible ? decryptedPassword || "•••••••••••" : "•••••••••••"}
                 readOnly
                 className="pr-10 bg-gray-50"
                 data-testid="input-current-password"
@@ -185,17 +198,13 @@ export default function PasswordManagementModal({
                 variant="ghost"
                 size="sm"
                 className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                onClick={() => {
-                  if (!decryptedPassword) {
-                    handleDecryptPassword();
-                  }
-                }}
+                onClick={togglePasswordVisibility}
                 disabled={decryptInProgress}
                 data-testid="button-toggle-password-visibility"
               >
                 {decryptInProgress ? (
                   <div className="animate-spin h-4 w-4 border border-gray-400 border-t-transparent rounded-full" />
-                ) : decryptedPassword ? (
+                ) : isPasswordVisible ? (
                   <EyeOff className="h-4 w-4 text-gray-400" />
                 ) : (
                   <Eye className="h-4 w-4 text-gray-400" />
