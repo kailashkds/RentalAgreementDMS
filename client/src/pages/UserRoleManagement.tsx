@@ -524,7 +524,10 @@ export default function UserRoleManagement() {
       // Invalidate and refetch user data to show updated permissions
       await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
       
-      // Clear local state after successful save
+      // Wait a brief moment for the queries to start refetching before clearing local state
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Clear local state after successful save and query refresh
       setLocalPermissionChanges(new Map());
       setHasUnsavedChanges(false);
       

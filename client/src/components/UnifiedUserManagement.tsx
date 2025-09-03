@@ -272,10 +272,16 @@ export function UnifiedUserManagement() {
       return results;
     },
     onSuccess: async (data, { userId }) => {
-      // Invalidate the user permissions query to refresh the data
-      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
+      // Invalidate both user permissions and users list queries to refresh the data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] })
+      ]);
       
-      // Clear local state
+      // Wait a brief moment for the queries to start refetching before clearing local state
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Clear local state after ensuring queries are refreshing
       setLocalPermissionChanges(new Map());
       setHasUnsavedChanges(false);
       setShowConfirmDialog(false);
