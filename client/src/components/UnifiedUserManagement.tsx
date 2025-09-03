@@ -269,9 +269,11 @@ export function UnifiedUserManagement() {
     },
   });
 
-  // Batch save permissions mutation
+  // Batch save permissions mutation - ONLY CALLED FROM SAVE BUTTON
   const saveBatchPermissionsMutation = useMutation({
     mutationFn: async ({ userId, changes }: { userId: string; changes: Array<{ permissionId: string; action: 'add' | 'remove' }> }) => {
+      console.log('🚀 BATCH SAVE TRIGGERED - Making API calls now:', changes);
+      
       // Process all permission changes as batch operations
       const results = await Promise.all(
         changes.map(async ({ permissionId, action }) => {
@@ -365,7 +367,12 @@ export function UnifiedUserManagement() {
 
 
   const handleSaveChanges = () => {
-    if (!selectedUser || localPermissionChanges.size === 0) return;
+    console.log('🎯 SAVE CHANGES BUTTON CLICKED - This is the ONLY place API calls should happen');
+    
+    if (!selectedUser || localPermissionChanges.size === 0) {
+      console.log('❌ No changes to save');
+      return;
+    }
     
     const changes: Array<{ permissionId: string; action: 'add' | 'remove' }> = [];
     
@@ -381,11 +388,14 @@ export function UnifiedUserManagement() {
     });
     
     if (changes.length > 0) {
+      console.log('✅ Preparing to save changes:', changes);
       setPendingPermissions(new Set(changes.map(c => c.permissionId)));
       saveBatchPermissionsMutation.mutate({
         userId: selectedUser.id,
         changes
       });
+    } else {
+      console.log('❌ No valid changes to save');
     }
   };
 
