@@ -1031,7 +1031,7 @@ export function UnifiedUserManagement() {
                                   );
                                 }
                                 // Show "Updated" badge when changes are saved but local state still active
-                                if (!hasUnsavedChanges && hasLocalChange && localState !== permission.hasPermission) {
+                                if (!hasUnsavedChanges && hasLocalChange) {
                                   return (
                                     <Badge variant="outline" className="text-xs text-green-600">
                                       Updated
@@ -1047,10 +1047,11 @@ export function UnifiedUserManagement() {
                           <div className="flex items-center ml-4">
                             <Switch
                               checked={(() => {
-                                // If we have a local change, use that, otherwise use the original state
+                                // If we have a local change, always use that to maintain visual consistency
                                 if (localPermissionChanges.has(permission.id)) {
                                   return localPermissionChanges.get(permission.id)!;
                                 }
+                                // Otherwise use the database state
                                 return permission.hasPermission;
                               })()}
                               onCheckedChange={(checked) => {
