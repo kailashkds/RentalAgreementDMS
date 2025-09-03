@@ -1058,8 +1058,8 @@ export function UnifiedUserManagement() {
                                 const localState = localPermissionChanges.get(permission.id);
                                 const dbState = permission.hasPermission;
                                 
-                                // Debug logging for specific permission
-                                if (permission.name === 'agreement.create') {
+                                // Debug logging for any permission that has local changes or for first few permissions
+                                if (localState !== undefined || permission.name.includes('agreement')) {
                                   console.log(`🔄 [${permission.name}] Local: ${localState}, DB: ${dbState}, HasUnsaved: ${hasUnsavedChanges}, Applied: ${isChangesApplied}`);
                                 }
                                 
@@ -1073,10 +1073,13 @@ export function UnifiedUserManagement() {
                                 // Don't allow toggling role-based permissions
                                 if (permission.isFromRole) return;
                                 
+                                console.log(`🖱️ TOGGLE [${permission.name}] from ${permission.hasPermission} to ${checked}`);
+                                
                                 // Update local state only - no API calls
                                 setLocalPermissionChanges(prev => {
                                   const newMap = new Map(prev);
                                   newMap.set(permission.id, checked);
+                                  console.log(`📝 Local state updated for [${permission.name}]: ${checked}`);
                                   return newMap;
                                 });
                                 setHasUnsavedChanges(true);
