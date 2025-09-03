@@ -287,27 +287,19 @@ export function UnifiedUserManagement() {
     onSuccess: async (data, { userId }) => {
       const changeCount = localPermissionChanges.size;
       
-      // First refetch the data to get the updated state
+      // Refetch the data in the background but don't clear local state
       try {
         await queryClient.refetchQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
         await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
-        
-        // Small delay to ensure the UI has updated with the new data
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Clear local state only after data is refreshed
-        setLocalPermissionChanges(new Map());
-        setHasUnsavedChanges(false);
-        setPendingPermissions(new Set());
       } catch (error) {
         console.error('Error refetching permissions:', error);
-        // Clear state anyway to prevent stuck state
-        setLocalPermissionChanges(new Map());
-        setHasUnsavedChanges(false);
-        setPendingPermissions(new Set());
       }
       
-      // Show success message after everything is done
+      // Clear unsaved changes flag since changes are now saved
+      setHasUnsavedChanges(false);
+      setPendingPermissions(new Set());
+      
+      // Show success message
       toast({
         title: "Permissions Updated",
         description: `${changeCount} permission changes applied successfully`,
@@ -1130,11 +1122,15 @@ export function UnifiedUserManagement() {
                   if (hasUnsavedChanges) {
                     if (confirm('You have unsaved changes. Are you sure you want to close without saving?')) {
                       setShowPermissionsDialog(false);
-                      handleDiscardChanges();
+                      // Clear all local state when discarding changes
+                      setLocalPermissionChanges(new Map());
+                      setHasUnsavedChanges(false);
                       setPendingPermissions(new Set());
                     }
                   } else {
                     setShowPermissionsDialog(false);
+                    // Clear all local state when closing normally
+                    setLocalPermissionChanges(new Map());
                     setPendingPermissions(new Set());
                   }
                 }} 
