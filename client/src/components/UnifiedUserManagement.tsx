@@ -1128,6 +1128,18 @@ export function UnifiedUserManagement() {
             </div>
             <div className="flex gap-2">
               <Button 
+                variant="outline"
+                onClick={() => {
+                  setShowPermissionsDialog(false);
+                  setLocalPermissionChanges(new Map());
+                  setHasUnsavedChanges(false);
+                }}
+                disabled={saveBatchPermissionsMutation.isPending}
+                data-testid="button-cancel-permissions"
+              >
+                Cancel
+              </Button>
+              <Button 
                 variant={hasUnsavedChanges ? "default" : "outline"}
                 onClick={handleCloseOrSave}
                 disabled={saveBatchPermissionsMutation.isPending}

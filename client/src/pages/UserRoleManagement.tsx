@@ -1344,12 +1344,24 @@ export default function UserRoleManagement() {
             </div>
             <div className="flex gap-2">
               <Button 
+                variant="outline"
+                onClick={() => {
+                  setIsPermissionsModalOpen(false);
+                  handleDiscardPermissionChanges();
+                }}
+                disabled={addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
+                data-testid="button-cancel-permissions"
+              >
+                Cancel
+              </Button>
+              <Button 
                 variant={hasUnsavedChanges ? "default" : "outline"}
                 onClick={hasUnsavedChanges ? () => setShowConfirmDialog(true) : () => {
                   setIsPermissionsModalOpen(false);
                   handleDiscardPermissionChanges();
                 }}
                 disabled={addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
+                data-testid="button-save-close-permissions"
               >
                 {(addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending) 
                   ? 'Saving...' 
