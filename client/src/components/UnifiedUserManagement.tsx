@@ -288,19 +288,22 @@ export function UnifiedUserManagement() {
     onSuccess: async (data, { userId }) => {
       const changeCount = localPermissionChanges.size;
       
-      // Refetch the data in the background but don't clear local state
+      // Refetch the data and clear local state after successful save
       try {
-        await queryClient.refetchQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
         await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/unified/permissions'] });
+        // Wait for the refetch to complete before clearing local state
+        await queryClient.refetchQueries({ queryKey: ['/api/unified/users'] });
+        await queryClient.refetchQueries({ queryKey: ['/api/unified/permissions'] });
       } catch (error) {
         console.error('Error refetching permissions:', error);
       }
       
-      // Mark changes as applied but keep local state for visual consistency
-      setIsChangesApplied(true);
+      // Clear all local state now that fresh data is loaded
+      setLocalPermissionChanges(new Map());
       setHasUnsavedChanges(false);
+      setIsChangesApplied(false);
       setPendingPermissions(new Set());
-      // Note: We keep localPermissionChanges intact until dialog closes
       
       // Show success message
       toast({
@@ -1051,11 +1054,11 @@ export function UnifiedUserManagement() {
                           <div className="flex items-center ml-4">
                             <Switch
                               checked={(() => {
-                                // If we have a local change, always use that to maintain visual consistency
+                                // Always prioritize local changes to maintain visual consistency
                                 if (localPermissionChanges.has(permission.id)) {
                                   return localPermissionChanges.get(permission.id)!;
                                 }
-                                // Otherwise use the database state
+                                // Fallback to database state only when no local changes exist
                                 return permission.hasPermission;
                               })()}
                               onCheckedChange={(checked) => {
