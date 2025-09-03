@@ -299,11 +299,11 @@ export function UnifiedUserManagement() {
         console.error('Error refetching permissions:', error);
       }
       
-      // Clear all local state now that fresh data is loaded
-      setLocalPermissionChanges(new Map());
+      // Mark as successfully applied but keep local state until dialog closes
       setHasUnsavedChanges(false);
-      setIsChangesApplied(false);
+      setIsChangesApplied(true);
       setPendingPermissions(new Set());
+      // Keep localPermissionChanges until dialog closes to maintain visual consistency
       
       // Show success message
       toast({
@@ -1054,12 +1054,21 @@ export function UnifiedUserManagement() {
                           <div className="flex items-center ml-4">
                             <Switch
                               checked={(() => {
+                                const hasLocalChange = localPermissionChanges.has(permission.id);
+                                const localValue = localPermissionChanges.get(permission.id);
+                                const dbValue = permission.hasPermission;
+                                
+                                // Debug logging for this specific permission
+                                if (permission.name === 'agreement.create') {
+                                  console.log(`[${permission.name}] hasLocal: ${hasLocalChange}, local: ${localValue}, db: ${dbValue}, hasUnsaved: ${hasUnsavedChanges}`);
+                                }
+                                
                                 // Always prioritize local changes to maintain visual consistency
-                                if (localPermissionChanges.has(permission.id)) {
-                                  return localPermissionChanges.get(permission.id)!;
+                                if (hasLocalChange) {
+                                  return localValue!;
                                 }
                                 // Fallback to database state only when no local changes exist
-                                return permission.hasPermission;
+                                return dbValue;
                               })()}
                               onCheckedChange={(checked) => {
                                 // Don't allow toggling role-based permissions
