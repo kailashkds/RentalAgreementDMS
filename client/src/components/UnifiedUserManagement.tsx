@@ -287,8 +287,10 @@ export function UnifiedUserManagement() {
     onSuccess: async (data, { userId }) => {
       const changeCount = localPermissionChanges.size;
       
-      // Close the popup immediately after successful save
-      setShowPermissionsDialog(false);
+      // Invalidate the user permissions query to refresh the data
+      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
+      
+      // Clear local state
       setLocalPermissionChanges(new Map());
       setHasUnsavedChanges(false);
       setPendingPermissions(new Set());
