@@ -366,23 +366,16 @@ export function UnifiedUserManagement() {
   const handlePermissionToggle = (permissionId: string, checked: boolean) => {
     const currentState = getCurrentPermissionState(permissionId);
     
-    // Update local state
-    setLocalPermissionChanges(prev => {
-      const newMap = new Map(prev);
-      if (checked === currentState) {
-        // If reverting to original state, remove from changes
-        newMap.delete(permissionId);
-      } else {
-        // If different from original state, track the change
-        newMap.set(permissionId, checked);
-      }
-      
-      // Update hasUnsavedChanges based on the updated map
-      const hasChanges = newMap.size > 0;
-      setHasUnsavedChanges(hasChanges);
-      
-      return newMap;
-    });
+    // Update local changes
+    const newChanges = new Map(localPermissionChanges);
+    if (checked === currentState) {
+      newChanges.delete(permissionId);
+    } else {
+      newChanges.set(permissionId, checked);
+    }
+    
+    setLocalPermissionChanges(newChanges);
+    setHasUnsavedChanges(newChanges.size > 0);
   };
 
   const getChangesSummary = (): { adding: number; removing: number } => {
