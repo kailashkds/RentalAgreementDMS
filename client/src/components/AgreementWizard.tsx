@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { X, ArrowLeft, ArrowRight, Plus, Trash2, Copy, Download, Loader2 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { formatDateToDDMMYYYY, formatDateForInput, formatInputDateToDisplay } from "@/lib/dateUtils";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useSocieties } from "@/hooks/useSocieties";
@@ -87,7 +87,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   const mobileTimeout = useRef<NodeJS.Timeout | null>(null);
   const addressTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const { register, handleSubmit, watch, setValue, reset, trigger, getValues, formState: { errors } } = useForm<AgreementFormData>({
+  const { register, handleSubmit, watch, setValue, reset, trigger, getValues, control, formState: { errors } } = useForm<AgreementFormData>({
     defaultValues: {
       customerId: !canViewAllCustomers ? (user as any)?.id : undefined,
       language: "english",
@@ -2101,19 +2101,26 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   </div>
                   <div>
                     <Label>{t("purpose")}</Label>
-                    <Select 
-                      value={watch("propertyDetails.purpose") || "residential"} 
-                      onValueChange={(value) => setValue("propertyDetails.purpose", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("selectPurpose")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="residential">{t("residential")}</SelectItem>
-                        <SelectItem value="commercial">{t("commercial")}</SelectItem>
-                        <SelectItem value="mixed">{t("mixedUse")}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="propertyDetails.purpose"
+                      control={control}
+                      defaultValue="residential"
+                      render={({ field }) => (
+                        <Select 
+                          value={field.value || "residential"} 
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("selectPurpose")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="residential">{t("residential")}</SelectItem>
+                            <SelectItem value="commercial">{t("commercial")}</SelectItem>
+                            <SelectItem value="mixed">{t("mixedUse")}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                     {errors.propertyDetails?.purpose && (
                       <p className="text-sm text-red-600 mt-1">{errors.propertyDetails.purpose.message}</p>
                     )}
