@@ -1494,11 +1494,15 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="customerId">{t("selectCustomer")} <span className="text-red-500">*</span></Label>
-                <Select 
-                  {...register("customerId", { required: "Customer selection is required" })}
-                  value={watch("customerId") || ""} 
-                  onValueChange={(value) => setValue("customerId", value)}
-                >
+                <Controller
+                  name="customerId"
+                  control={control}
+                  rules={{ required: "Customer selection is required" }}
+                  render={({ field }) => (
+                    <Select 
+                      value={field.value || ""} 
+                      onValueChange={field.onChange}
+                    >
                   <SelectTrigger disabled={!canViewAllCustomers}>
                     <SelectValue placeholder="Select a customer" />
                   </SelectTrigger>
@@ -1509,7 +1513,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                       </SelectItem>
                     ))}
                   </SelectContent>
-                </Select>
+                    </Select>
+                  )}
+                />
                 {errors.customerId && (
                   <p className="text-sm text-red-600 mt-1">{errors.customerId.message}</p>
                 )}
@@ -1531,18 +1537,25 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
 
               <div>
                 <Label htmlFor="language">{t("selectLanguage")}</Label>
-                <Select value={watchedLanguage} onValueChange={(value) => setValue("language", value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.value} value={lang.value}>
-                        {lang.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="language"
+                  control={control}
+                  defaultValue="english"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LANGUAGES.map((lang) => (
+                          <SelectItem key={lang.value} value={lang.value}>
+                            {lang.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
           </div>
@@ -2127,19 +2140,26 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                   </div>
                   <div>
                     <Label>{t("furnishedStatus")}</Label>
-                    <Select 
-                      value={watch("propertyDetails.furnishedStatus")} 
-                      onValueChange={(value) => setValue("propertyDetails.furnishedStatus", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("selectStatus")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="fully_furnished">Fully Furnished</SelectItem>
-                        <SelectItem value="semi_furnished">Semi Furnished</SelectItem>
-                        <SelectItem value="unfurnished">Unfurnished</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="propertyDetails.furnishedStatus"
+                      control={control}
+                      defaultValue="unfurnished"
+                      render={({ field }) => (
+                        <Select 
+                          value={field.value} 
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("selectStatus")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fully_furnished">Fully Furnished</SelectItem>
+                            <SelectItem value="semi_furnished">Semi Furnished</SelectItem>
+                            <SelectItem value="unfurnished">Unfurnished</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <Label>{t("additionalItems")}</Label>
@@ -2216,19 +2236,24 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                 </div>
                 <div>
                   <Label>{t("agreementTenure")}</Label>
-                  <Select 
-                    value={watch("rentalTerms.tenure")} 
-                    onValueChange={(value) => {
-                      setValue("rentalTerms.tenure", value as "11_months" | "custom");
-                      // Auto-calculate end date if 11 months is selected and start date exists
-                      if (value === "11_months" && watch("rentalTerms.startDate")) {
-                        const startDate = new Date(watch("rentalTerms.startDate"));
-                        const endDate = new Date(startDate);
-                        endDate.setMonth(endDate.getMonth() + 11);
-                        setValue("rentalTerms.endDate", endDate.toISOString().split('T')[0]);
-                      }
-                    }}
-                  >
+                  <Controller
+                    name="rentalTerms.tenure"
+                    control={control}
+                    defaultValue="11_months"
+                    render={({ field }) => (
+                      <Select 
+                        value={field.value} 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Auto-calculate end date if 11 months is selected and start date exists
+                          if (value === "11_months" && watch("rentalTerms.startDate")) {
+                            const startDate = new Date(watch("rentalTerms.startDate"));
+                            const endDate = new Date(startDate);
+                            endDate.setMonth(endDate.getMonth() + 11);
+                            setValue("rentalTerms.endDate", endDate.toISOString().split('T')[0]);
+                          }
+                        }}
+                      >
                     <SelectTrigger>
                       <SelectValue placeholder={t("selectTenure")} />
                     </SelectTrigger>
@@ -2236,7 +2261,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                       <SelectItem value="11_months">{t("months11")}</SelectItem>
                       <SelectItem value="custom">{t("customDuration")}</SelectItem>
                     </SelectContent>
-                  </Select>
+                      </Select>
+                    )}
+                  />
                 </div>
                 <div>
                   <Label>{t("agreementEndDate")}</Label>
@@ -2311,15 +2338,22 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>{t("maintenanceCharge")}</Label>
-                  <Select value={watch("rentalTerms.maintenance")} onValueChange={(value) => setValue("rentalTerms.maintenance", value as "included" | "excluded")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("selectOption")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="included">{t("included")}</SelectItem>
-                      <SelectItem value="excluded">{t("excluded")}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Controller
+                    name="rentalTerms.maintenance"
+                    control={control}
+                    defaultValue="included"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("selectOption")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="included">{t("included")}</SelectItem>
+                          <SelectItem value="excluded">{t("excluded")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                 </div>
                 <div>
                   <Label>{t("noticePeriod")}</Label>
