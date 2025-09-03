@@ -292,30 +292,40 @@ export default function UserRoleManagement() {
     },
   });
 
-  // Permission override mutations - DISABLED to prevent conflicts with UnifiedUserManagement
+  // Permission override mutations - Re-enabled for UserRoleManagement
   const addPermissionOverrideMutation = useMutation({
     mutationFn: async ({ userId, permissionId, isGranted = true }: { userId: string; permissionId: string; isGranted?: boolean }) => {
-      // DISABLED: Conflicts with UnifiedUserManagement batch approach
-      return Promise.resolve({});
+      const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId, isGranted });
+      return response.json();
     },
     onSuccess: async () => {
-      // DISABLED
+      // No automatic state clearing or dialog closing here - handled in batch save
     },
     onError: (error: any) => {
-      // DISABLED
+      console.error('Permission override error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update permission",
+        variant: "destructive",
+      });
     },
   });
 
   const removePermissionOverrideMutation = useMutation({
     mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
-      // DISABLED: Conflicts with UnifiedUserManagement batch approach
-      return Promise.resolve({});
+      const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, "DELETE");
+      return response.json();
     },
     onSuccess: async () => {
-      // DISABLED
+      // No automatic state clearing or dialog closing here - handled in batch save
     },
     onError: (error: any) => {
-      // DISABLED
+      console.error('Permission override removal error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove permission",
+        variant: "destructive",
+      });
     },
   });
 
@@ -512,11 +522,10 @@ export default function UserRoleManagement() {
             permissionId 
           }));
         } else if (!newCheckedState && currentHasPermission) {
-          // Remove permission (revoke with isGranted: false)
-          promises.push(addPermissionOverrideMutation.mutateAsync({ 
+          // Remove permission using DELETE endpoint
+          promises.push(removePermissionOverrideMutation.mutateAsync({ 
             userId: managingPermissionsUser.id, 
-            permissionId,
-            isGranted: false
+            permissionId
           }));
         }
       });
