@@ -395,8 +395,25 @@ export function UnifiedUserManagement() {
     
     localPermissionChanges.forEach((newState, permissionId) => {
       const currentState = getCurrentPermissionState(permissionId);
-      if (newState && !currentState) adding++;
-      if (!newState && currentState) removing++;
+      const permission = allPermissions.find(ap => ap.id === permissionId);
+      const currentPermission = userPermissionsWithSources.find(p => p.code === permission?.code);
+      
+      // Check if this permission exists in user's role
+      const userRoles = selectedUser?.roles || [];
+      const rolePermissionCodes = userRoles.flatMap((role: any) => role.permissions?.map((p: any) => p.code) || []);
+      const isRolePermission = permission ? rolePermissionCodes.includes(permission.code) : false;
+      
+      if (newState && !currentState) {
+        if (!isRolePermission) {
+          adding++; // Adding a new permission not in role
+        }
+        // Don't count restoring role permissions as a change (back to default)
+      } else if (!newState && currentState) {
+        if (currentPermission?.source === 'role') {
+          removing++; // Revoking a role permission
+        }
+        // Don't count removing added permissions as a change (back to default)
+      }
     });
     
     return { adding, removing };
@@ -1184,8 +1201,8 @@ export function UnifiedUserManagement() {
                 return (
                   <div className="space-y-2">
                     <div>You are about to change permissions for <strong>{selectedUser?.name}</strong>:</div>
-                    {adding > 0 && <div className="text-blue-600">Adding {adding} permissions</div>}
-                    {removing > 0 && <div className="text-red-600">Removing {removing} permissions</div>}
+                    {adding > 0 && <div className="text-blue-600">Adding {adding} new permissions</div>}
+                    {removing > 0 && <div className="text-red-600">Revoking {removing} role permissions</div>}
                     <div className="text-sm text-muted-foreground mt-2">
                       These changes will take effect immediately and may affect the user's access to system features.
                     </div>

@@ -488,11 +488,23 @@ export default function UserRoleManagement() {
       if (!permission) return;
       
       const currentHasPermission = userPermissions.total.includes(permission.name);
+      const currentPermissionSource = userPermissions.inherited.includes(permission.name) ? 'role' : 'override';
+      
+      // Check if this permission exists in user's role
+      const userRoles = managingPermissionsUser?.roles || [];
+      const rolePermissionCodes = userRoles.flatMap((role: any) => role.permissions?.map((p: any) => p.code) || []);
+      const isRolePermission = rolePermissionCodes.includes(permission.name);
       
       if (newCheckedState && !currentHasPermission) {
-        adding++;
+        if (!isRolePermission) {
+          adding++; // Adding a new permission not in role
+        }
+        // Don't count restoring role permissions as a change (back to default)
       } else if (!newCheckedState && currentHasPermission) {
-        removing++;
+        if (currentPermissionSource === 'role') {
+          removing++; // Revoking a role permission
+        }
+        // Don't count removing added permissions as a change (back to default)
       }
     });
     
@@ -515,9 +527,9 @@ export default function UserRoleManagement() {
         const currentHasPermission = userPermissions.total.includes(permission.name);
         
         // Check if this permission exists in user's role
-        const userRoles = managingPermissionsUser.roles;
+        const userRoles = managingPermissionsUser.roles || [];
         const rolePermissionCodes = userRoles.flatMap((role: any) => role.permissions?.map((p: any) => p.code) || []);
-        const isRolePermission = rolePermissionCodes.includes(permission.code);
+        const isRolePermission = rolePermissionCodes.includes(permission.name);
         
         // If new state is different from current state, make the change
         if (newCheckedState && !currentHasPermission) {
@@ -1398,8 +1410,8 @@ export default function UserRoleManagement() {
                 return (
                   <div className="space-y-2">
                     <div>You are about to change permissions for <strong>{managingPermissionsUser?.name}</strong>:</div>
-                    {adding > 0 && <div className="text-blue-600">Adding {adding} permissions</div>}
-                    {removing > 0 && <div className="text-red-600">Removing {removing} permissions</div>}
+                    {adding > 0 && <div className="text-blue-600">Adding {adding} new permissions</div>}
+                    {removing > 0 && <div className="text-red-600">Revoking {removing} role permissions</div>}
                     <div className="text-sm text-muted-foreground mt-2">
                       These changes will take effect immediately and may affect the user's access to system features.
                     </div>
