@@ -655,14 +655,34 @@ export function EnhancedRoleManagement() {
                 >
                   Discard Changes
                 </Button>
-                <Button 
-                  size="sm"
-                  onClick={() => saveAllPermissionChanges.mutate()}
-                  disabled={saveAllPermissionChanges.isPending}
-                  data-testid="button-save-changes"
-                >
-                  {saveAllPermissionChanges.isPending ? "Saving..." : "Save Changes"}
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      size="sm"
+                      disabled={saveAllPermissionChanges.isPending}
+                      data-testid="button-save-changes"
+                    >
+                      {saveAllPermissionChanges.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirm Permission Changes</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to save all permission changes? This will update the role permissions immediately and affect all users with these roles.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => saveAllPermissionChanges.mutate()}
+                        disabled={saveAllPermissionChanges.isPending}
+                      >
+                        {saveAllPermissionChanges.isPending ? "Saving..." : "Save Changes"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </CardContent>
