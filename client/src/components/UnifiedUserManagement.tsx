@@ -1022,10 +1022,19 @@ export function UnifiedUserManagement() {
                               {(() => {
                                 const hasLocalChange = localPermissionChanges.has(permission.id);
                                 const localState = localPermissionChanges.get(permission.id);
-                                if (hasLocalChange && localState !== permission.hasPermission) {
+                                // Only show "Adding/Removing" if there are unsaved changes
+                                if (hasUnsavedChanges && hasLocalChange && localState !== permission.hasPermission) {
                                   return (
                                     <Badge variant="outline" className="text-xs text-amber-600">
                                       {localState ? 'Adding' : 'Removing'}
+                                    </Badge>
+                                  );
+                                }
+                                // Show "Updated" badge when changes are saved but local state still active
+                                if (!hasUnsavedChanges && hasLocalChange && localState !== permission.hasPermission) {
+                                  return (
+                                    <Badge variant="outline" className="text-xs text-green-600">
+                                      Updated
                                     </Badge>
                                   );
                                 }
