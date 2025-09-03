@@ -116,29 +116,17 @@ export function UnifiedUserManagement() {
   const { data: allPermissions = [] } = useQuery<Permission[]>({
     queryKey: ["/api/unified/permissions"],
     enabled: showPermissionsDialog && !!selectedUser,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: Infinity,
   });
 
   // Query for user permissions with sources
   const { data: userPermissionsWithSources = [] } = useQuery<PermissionWithSource[]>({
     queryKey: [`/api/unified/users/${selectedUser?.id}/permissions-with-sources`],
     enabled: showPermissionsDialog && !!selectedUser,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: Infinity,
   });
 
   // Fetch users with roles
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['/api/unified/users'],
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: Infinity,
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
@@ -156,10 +144,6 @@ export function UnifiedUserManagement() {
   // Fetch roles for dropdown
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
     queryKey: ['/api/unified/roles'],
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    staleTime: Infinity,
   }) as { data: Role[]; isLoading: boolean };
 
   const users = usersData?.users || [];
@@ -303,13 +287,11 @@ export function UnifiedUserManagement() {
     onSuccess: async (data, { userId }) => {
       const changeCount = localPermissionChanges.size;
       
-      // Don't refetch data - user's toggle states are locked in place
-      
-      // DON'T change any toggle states - user's changes are locked in
-      // Only hide the save button
+      // Close the popup immediately after successful save
+      setShowPermissionsDialog(false);
+      setLocalPermissionChanges(new Map());
       setHasUnsavedChanges(false);
       setPendingPermissions(new Set());
-      // localPermissionChanges stays exactly as user set them
       
       // Show success message
       toast({
