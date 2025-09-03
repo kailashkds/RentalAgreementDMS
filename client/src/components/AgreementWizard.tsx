@@ -87,7 +87,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
   const mobileTimeout = useRef<NodeJS.Timeout | null>(null);
   const addressTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  const { register, handleSubmit, watch, setValue, reset, trigger, formState: { errors } } = useForm<AgreementFormData>({
+  const { register, handleSubmit, watch, setValue, reset, trigger, getValues, formState: { errors } } = useForm<AgreementFormData>({
     defaultValues: {
       customerId: !canViewAllCustomers ? (user as any)?.id : undefined,
       language: "english",
@@ -292,7 +292,25 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
       };
       
       console.log("Form data being loaded:", formDataToLoad);
+      console.log("Purpose field value being set:", formDataToLoad.propertyDetails?.purpose);
+      
+      // Ensure Purpose field has a value
+      if (!formDataToLoad.propertyDetails.purpose) {
+        formDataToLoad.propertyDetails.purpose = "residential";
+        console.log("Setting default purpose value to 'residential'");
+      }
+      
       reset(formDataToLoad);
+      
+      // Explicitly set Purpose field after reset
+      setTimeout(() => {
+        const currentPurpose = getValues("propertyDetails.purpose");
+        console.log("Purpose value after reset:", currentPurpose);
+        if (!currentPurpose) {
+          setValue("propertyDetails.purpose", "residential");
+          console.log("Explicitly set purpose to 'residential' after reset");
+        }
+      }, 100);
       
       // Load existing documents
       if (existingFormData.documents) {
@@ -2094,6 +2112,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                         <SelectItem value="mixed">{t("mixedUse")}</SelectItem>
                       </SelectContent>
                     </Select>
+                    {errors.propertyDetails?.purpose && (
+                      <p className="text-sm text-red-600 mt-1">{errors.propertyDetails.purpose.message}</p>
+                    )}
                   </div>
                   <div>
                     <Label>{t("furnishedStatus")}</Label>
