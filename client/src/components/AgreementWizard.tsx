@@ -614,6 +614,7 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     if (currentStep < STEPS.length && canProceed(currentStep)) {
       // Only clear fields when creating new agreements, not when editing
       if (!editingAgreement) {
+        console.log("Clearing fields for new agreement");
         // Clear fields when moving between sections (only for new agreements)
         if (currentStep === 1) {
           // Moving from owner to tenant - clear all tenant fields
