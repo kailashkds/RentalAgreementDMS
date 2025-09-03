@@ -492,9 +492,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
     return validateStep(stepNumber);
   };
 
-  // Load existing agreement data when editing
+  // Load existing agreement data when editing (only for agreementId mode, not editingAgreement mode)
   useEffect(() => {
-    if (isOpen && agreementId) {
+    if (isOpen && agreementId && !editingAgreement) {
       // Fetch and populate form with existing agreement data
       const loadAgreement = async () => {
         try {
