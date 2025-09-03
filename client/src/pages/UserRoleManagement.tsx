@@ -434,12 +434,9 @@ export default function UserRoleManagement() {
   const openManagePermissions = (user: User) => {
     setManagingPermissionsUser(user);
     setIsPermissionsModalOpen(true);
-    // Reset local state when opening dialog
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
-    // Store original permission states - we'll set them after the query loads
     setOriginalPermissionStates(new Map());
-    // Force refresh user data when opening dialog
     queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
   };
 
@@ -467,10 +464,8 @@ export default function UserRoleManagement() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [originalPermissionStates, setOriginalPermissionStates] = useState<Map<string, boolean>>(new Map());
 
-  // Set original permission states when dialog opens and data loads for the first time
   useEffect(() => {
     if (isPermissionsModalOpen && managingPermissionsUser && permissions.length > 0) {
-      // Only set original states if they haven't been set yet (first time dialog opens with data)
       if (originalPermissionStates.size === 0) {
         const userPermissions = getUserPermissions(managingPermissionsUser);
         const originalStates = new Map<string, boolean>();
@@ -478,29 +473,25 @@ export default function UserRoleManagement() {
           originalStates.set(permission.id, userPermissions.total.includes(permission.name));
         });
         setOriginalPermissionStates(originalStates);
-        console.log('Setting original permission states (UserRoleManagement):', originalStates);
       }
     }
   }, [isPermissionsModalOpen, managingPermissionsUser, permissions, originalPermissionStates.size]);
 
   const handlePermissionToggle = (userId: string, permissionId: string, permissionName: string, checked: boolean) => {
-    const originalState = originalPermissionStates.get(permissionId) || false;
-    console.log('Permission toggle (UserRoleManagement):', { permissionId, checked, originalState, isBackToOriginal: checked === originalState });
-    
-    // Visual-only change - no API calls
     const newMap = new Map(localPermissionChanges);
-    if (checked === originalState) {
-      // Back to original state, no change needed
+    
+    // Simple approach: if toggled back to current state, remove from changes
+    const userPermissions = getUserPermissions(managingPermissionsUser!);
+    const currentState = userPermissions.total.includes(permissionName);
+    
+    if (checked === currentState) {
       newMap.delete(permissionId);
-      console.log('Removing from changes - back to original state');
     } else {
-      // Different from original state, record the change
       newMap.set(permissionId, checked);
-      console.log('Adding to changes - different from original');
     }
+    
     setLocalPermissionChanges(newMap);
     setHasUnsavedChanges(newMap.size > 0);
-    console.log('Total changes:', newMap.size);
   };
 
   // Get changes summary for confirmation dialog

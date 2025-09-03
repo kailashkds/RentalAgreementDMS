@@ -125,26 +125,18 @@ export function UnifiedUserManagement() {
     enabled: showPermissionsDialog && !!selectedUser,
   });
 
-  // Set original permission states when data loads for the first time
   useEffect(() => {
     if (showPermissionsDialog && selectedUser && allPermissions.length > 0 && userPermissionsWithSources.length >= 0) {
-      // Only set original states if they haven't been set yet 
       if (originalPermissionStates.size === 0) {
         const originalStates = new Map<string, boolean>();
-        console.log('Creating original states from data:', { allPermissions: allPermissions.length, userPermissions: userPermissionsWithSources.length });
-        
         allPermissions.forEach(permission => {
           const userPermission = userPermissionsWithSources.find((p: any) => p.code === permission.code);
-          const hasPermission = !!userPermission;
-          originalStates.set(permission.id, hasPermission);
-          console.log(`Permission ${permission.code}: original state = ${hasPermission}`);
+          originalStates.set(permission.id, !!userPermission);
         });
-        
         setOriginalPermissionStates(originalStates);
-        console.log('Set original permission states:', Array.from(originalStates.entries()));
       }
     }
-  }, [showPermissionsDialog, selectedUser, allPermissions, userPermissionsWithSources]);
+  }, [showPermissionsDialog, selectedUser, allPermissions, userPermissionsWithSources, originalPermissionStates.size]);
 
   // Users query
   const { data: usersData } = useQuery({
@@ -381,12 +373,9 @@ export function UnifiedUserManagement() {
   const openPermissionsDialog = (user: UnifiedUser) => {
     setSelectedUser(user);
     setShowPermissionsDialog(true);
-    // Reset ALL local state when opening dialog
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
     setOriginalPermissionStates(new Map());
-    console.log('Opening permissions dialog for user:', user.id);
-    // Force refresh user data when opening dialog
     queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
     queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${user.id}/permissions-with-sources`] });
   };
@@ -399,24 +388,18 @@ export function UnifiedUserManagement() {
   };
 
   const handlePermissionToggle = (permissionId: string, checked: boolean) => {
-    const originalState = originalPermissionStates.get(permissionId) || false;
-    console.log('Permission toggle:', { permissionId, checked, originalState, isBackToOriginal: checked === originalState });
-    
-    // Update local changes
     const newChanges = new Map(localPermissionChanges);
-    if (checked === originalState) {
-      // Back to original state, no change needed
+    
+    // Simple approach: if toggled back to current state, remove from changes
+    const currentState = getCurrentPermissionState(permissionId);
+    if (checked === currentState) {
       newChanges.delete(permissionId);
-      console.log('Removing from changes - back to original state');
     } else {
-      // Different from original state, record the change
       newChanges.set(permissionId, checked);
-      console.log('Adding to changes - different from original');
     }
     
     setLocalPermissionChanges(newChanges);
     setHasUnsavedChanges(newChanges.size > 0);
-    console.log('Total changes:', newChanges.size);
   };
 
   const getChangesSummary = (): { adding: number; removing: number } => {
