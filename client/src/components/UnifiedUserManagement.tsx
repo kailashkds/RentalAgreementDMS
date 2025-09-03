@@ -129,7 +129,7 @@ export function UnifiedUserManagement() {
     queryKey: ["/api/unified/users"],
   });
 
-  const users = usersData?.users || [];
+  const users = (usersData as any)?.users || [];
 
   // Roles query
   const { data: roles = [] } = useQuery<Role[]>({
@@ -430,7 +430,7 @@ export function UnifiedUserManagement() {
 
     if (searchTerm) {
       filtered = filtered.filter(
-        (user) =>
+        (user: any) =>
           user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
           (user.username && user.username.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -438,13 +438,13 @@ export function UnifiedUserManagement() {
     }
 
     if (roleFilter !== "all") {
-      filtered = filtered.filter((user) =>
-        user.roles.some((role) => role.id === roleFilter)
+      filtered = filtered.filter((user: any) =>
+        user.roles.some((role: any) => role.id === roleFilter)
       );
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter((user) => {
+      filtered = filtered.filter((user: any) => {
         if (statusFilter === "active") {
           return user.isActive && user.status !== "inactive";
         } else if (statusFilter === "inactive") {
@@ -587,7 +587,7 @@ export function UnifiedUserManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" data-testid="stat-total-users">
-              {usersData?.total || 0}
+              {(usersData as any)?.total || 0}
             </div>
           </CardContent>
         </Card>
@@ -599,7 +599,7 @@ export function UnifiedUserManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600" data-testid="stat-active-users">
-              {users.filter(user => user.isActive).length}
+              {users.filter((user: any) => user.isActive).length}
             </div>
           </CardContent>
         </Card>
@@ -611,7 +611,7 @@ export function UnifiedUserManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600" data-testid="stat-inactive-users">
-              {users.filter(user => !user.isActive).length}
+              {users.filter((user: any) => !user.isActive).length}
             </div>
           </CardContent>
         </Card>
@@ -709,7 +709,7 @@ export function UnifiedUserManagement() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsers.map((user) => (
+                  filteredUsers.map((user: any) => (
                     <TableRow key={user.id} data-testid={`user-row-${user.id}`}>
                       <TableCell>
                         <div className="flex items-center space-x-3">
@@ -740,7 +740,7 @@ export function UnifiedUserManagement() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          {user.roles.map((role) => (
+                          {user.roles.map((role: any) => (
                             <Badge key={role.id} variant="secondary" data-testid={`user-role-${user.id}-${role.name.toLowerCase()}`}>
                               {role.name}
                             </Badge>
