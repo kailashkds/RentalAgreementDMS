@@ -1048,6 +1048,7 @@ export function UnifiedUserManagement() {
                                 : permission.hasPermission}
                               onCheckedChange={(checked) => {
                                 if (permission.isFromRole) return;
+                                // Only update local state - no API calls
                                 setLocalPermissionChanges(prev => {
                                   const newMap = new Map(prev);
                                   newMap.set(permission.id, checked);
