@@ -514,13 +514,26 @@ export default function UserRoleManagement() {
         
         const currentHasPermission = userPermissions.total.includes(permission.name);
         
+        // Check if this permission exists in user's role
+        const userRoles = managingPermissionsUser.roles;
+        const rolePermissionCodes = userRoles.flatMap((role: any) => role.permissions?.map((p: any) => p.code) || []);
+        const isRolePermission = rolePermissionCodes.includes(permission.code);
+        
         // If new state is different from current state, make the change
         if (newCheckedState && !currentHasPermission) {
-          // Add permission
-          promises.push(addPermissionOverrideMutation.mutateAsync({ 
-            userId: managingPermissionsUser.id, 
-            permissionId 
-          }));
+          if (isRolePermission) {
+            // Restoring a role permission - delete the negative override to restore default
+            promises.push(removePermissionOverrideMutation.mutateAsync({ 
+              userId: managingPermissionsUser.id, 
+              permissionId
+            }));
+          } else {
+            // Adding a new permission - create positive override
+            promises.push(addPermissionOverrideMutation.mutateAsync({ 
+              userId: managingPermissionsUser.id, 
+              permissionId 
+            }));
+          }
         } else if (!newCheckedState && currentHasPermission) {
           // Revoke permission using negative override (allows overriding role permissions)
           promises.push(addPermissionOverrideMutation.mutateAsync({ 

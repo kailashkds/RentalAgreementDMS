@@ -258,16 +258,19 @@ export function UnifiedUserManagement() {
 
   // Batch permission changes mutation - Production workflow
   const saveBatchPermissionsMutation = useMutation({
-    mutationFn: async ({ userId, changes }: { userId: string; changes: Array<{ permissionId: string; action: 'add' | 'remove' }> }) => {
+    mutationFn: async ({ userId, changes }: { userId: string; changes: Array<{ permissionId: string; action: 'add' | 'remove' | 'restore' }> }) => {
       // Process all permission changes as batch operations
       const results = await Promise.all(
         changes.map(async ({ permissionId, action }) => {
           if (action === 'add') {
             // Grant permission (positive override)
             return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId, isGranted: true });
-          } else {
+          } else if (action === 'remove') {
             // Revoke permission (negative override) - this allows overriding role permissions
             return await apiRequest(`/api/unified/users/${userId}/permission-overrides`, 'POST', { permissionId, isGranted: false });
+          } else if (action === 'restore') {
+            // Restore role permission by deleting the override (restores default from role)
+            return await apiRequest(`/api/unified/users/${userId}/permission-overrides/${permissionId}`, 'DELETE');
           }
         })
       );
@@ -402,18 +405,28 @@ export function UnifiedUserManagement() {
   const handleSaveChanges = () => {
     if (!selectedUser || localPermissionChanges.size === 0) return;
     
-    const changes: Array<{ permissionId: string; action: 'add' | 'remove' }> = [];
+    const changes: Array<{ permissionId: string; action: 'add' | 'remove' | 'restore' }> = [];
     
     localPermissionChanges.forEach((newState, permissionId) => {
-      const currentPermission = userPermissionsWithSources.find(p => p.code === allPermissions.find(ap => ap.id === permissionId)?.code);
+      const permission = allPermissions.find(ap => ap.id === permissionId);
+      const currentPermission = userPermissionsWithSources.find(p => p.code === permission?.code);
       const currentHasPermission = !!currentPermission;
       
+      // Check if this permission exists in user's role (not through override)
+      const userRoles = selectedUser.roles;
+      const rolePermissionCodes = userRoles.flatMap((role: any) => role.permissions?.map((p: any) => p.code) || []);
+      const isRolePermission = permission ? rolePermissionCodes.includes(permission.code) : false;
+      
       if (newState && !currentHasPermission) {
-        // Add permission - user wants this permission
-        changes.push({ permissionId, action: 'add' });
+        if (isRolePermission) {
+          // Restoring a role permission - delete the negative override to restore default
+          changes.push({ permissionId, action: 'restore' });
+        } else {
+          // Adding a new permission - create positive override
+          changes.push({ permissionId, action: 'add' });
+        }
       } else if (!newState && currentHasPermission) {
-        // Remove permission - user wants to revoke this permission (even if it comes from role)
-        // This will create a negative override if the permission comes from a role
+        // Remove permission - create negative override (even if it comes from role)
         changes.push({ permissionId, action: 'remove' });
       }
     });
