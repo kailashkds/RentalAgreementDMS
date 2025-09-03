@@ -96,8 +96,8 @@ export function UnifiedUserManagement() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [passwordResult, setPasswordResult] = useState<string>("");
-  const [pendingPermissions, setPendingPermissions] = useState<Set<string>>(new Set());
   const [localPermissionChanges, setLocalPermissionChanges] = useState<Map<string, boolean>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [createUserData, setCreateUserData] = useState<CreateUserData>({
@@ -124,53 +124,39 @@ export function UnifiedUserManagement() {
     enabled: showPermissionsDialog && !!selectedUser,
   });
 
-  // Fetch users with roles
-  const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ['/api/unified/users'],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (searchTerm) params.append('search', searchTerm);
-      if (roleFilter && roleFilter !== 'all') params.append('role', roleFilter);
-      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
-
-      const response = await fetch(`/api/unified/users?${params.toString()}`, {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch users');
-      return response.json();
-    }
-  }) as { data: { users: UnifiedUser[]; total: number } | undefined; isLoading: boolean };
-
-  // Fetch roles for dropdown
-  const { data: roles = [], isLoading: rolesLoading } = useQuery({
-    queryKey: ['/api/unified/roles'],
-  }) as { data: Role[]; isLoading: boolean };
+  // Users query
+  const { data: usersData } = useQuery({
+    queryKey: ["/api/unified/users"],
+  });
 
   const users = usersData?.users || [];
 
+  // Roles query
+  const { data: roles = [] } = useQuery<Role[]>({
+    queryKey: ["/api/unified/roles"],
+  });
+
   // Create user mutation
   const createUserMutation = useMutation({
-    mutationFn: async (userData: CreateUserData) => {
-      const response = await apiRequest('/api/unified/users', 'POST', userData);
-      return response;
+    mutationFn: async (data: CreateUserData) => {
+      const response = await apiRequest("/api/unified/users", "POST", data);
+      return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
       toast({
-        title: "User Created",
-        description: `User ${createUserData.name} created successfully`,
+        title: "Success",
+        description: "User created successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
       setShowCreateDialog(false);
-      setCreateUserData({ name: "", email: "", username: "", phone: "", roleId: "", password: "" });
-
-      // Show generated credentials if any
-      if (data.credentials) {
-        toast({
-          title: "Generated Credentials",
-          description: `Username: ${data.credentials.username}, Password: ${data.credentials.password}`,
-          duration: 10000,
-        });
-      }
+      setCreateUserData({
+        name: "",
+        email: "",
+        username: "",
+        phone: "",
+        roleId: "",
+        password: "",
+      });
     },
     onError: (error: any) => {
       toast({
@@ -183,17 +169,17 @@ export function UnifiedUserManagement() {
 
   // Update user mutation
   const updateUserMutation = useMutation({
-    mutationFn: async ({ id, userData }: { id: string; userData: Partial<CreateUserData> }) => {
-      return await apiRequest(`/api/unified/users/${id}`, 'PUT', userData);
+    mutationFn: async ({ id, userData }: { id: string; userData: CreateUserData }) => {
+      const response = await apiRequest(`/api/unified/users/${id}`, "PUT", userData);
+      return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
       toast({
-        title: "User Updated",
+        title: "Success",
         description: "User updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
       setShowEditDialog(false);
-      setSelectedUser(null);
     },
     onError: (error: any) => {
       toast({
@@ -207,14 +193,15 @@ export function UnifiedUserManagement() {
   // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/unified/users/${id}`, 'DELETE');
+      const response = await apiRequest(`/api/unified/users/${id}`, "DELETE");
+      return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
       toast({
-        title: "User Deleted",
+        title: "Success",
         description: "User deleted successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
     },
     onError: (error: any) => {
       toast({
@@ -227,16 +214,16 @@ export function UnifiedUserManagement() {
 
   // Reset password mutation
   const resetPasswordMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await apiRequest(`/api/unified/users/${id}/reset-password`, 'PATCH', {});
-      return response;
+    mutationFn: async (userId: string) => {
+      const response = await apiRequest(`/api/unified/users/${userId}/reset-password`, "POST");
+      return response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       setPasswordResult(data.password);
       setShowPasswordDialog(true);
       toast({
         title: "Password Reset",
-        description: "Password reset successfully",
+        description: "New password generated successfully",
       });
     },
     onError: (error: any) => {
@@ -248,7 +235,7 @@ export function UnifiedUserManagement() {
     },
   });
 
-  // Toggle status mutation
+  // Toggle user status mutation
   const toggleStatusMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
       return await apiRequest(`/api/unified/users/${id}/toggle-status`, 'PATCH', { isActive });
@@ -269,7 +256,7 @@ export function UnifiedUserManagement() {
     },
   });
 
-  // Batch save permissions mutation
+  // Batch permission changes mutation - Production workflow
   const saveBatchPermissionsMutation = useMutation({
     mutationFn: async ({ userId, changes }: { userId: string; changes: Array<{ permissionId: string; action: 'add' | 'remove' }> }) => {
       // Process all permission changes as batch operations
@@ -285,21 +272,24 @@ export function UnifiedUserManagement() {
       return results;
     },
     onSuccess: async (data, { userId }) => {
-      const changeCount = localPermissionChanges.size;
-      
       // Invalidate the user permissions query to refresh the data
       queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${userId}/permissions-with-sources`] });
       
       // Clear local state
       setLocalPermissionChanges(new Map());
       setHasUnsavedChanges(false);
-      setPendingPermissions(new Set());
+      setShowConfirmDialog(false);
       
       // Show success message
       toast({
         title: "Permissions Updated",
-        description: `${changeCount} permission changes applied successfully`,
+        description: "Permission changes applied successfully",
       });
+      
+      // Auto-close the permissions dialog after showing notification
+      setTimeout(() => {
+        setShowPermissionsDialog(false);
+      }, 1500); // Close after 1.5 seconds to let user see the notification
     },
     onError: (error: any) => {
       toast({
@@ -307,7 +297,7 @@ export function UnifiedUserManagement() {
         description: error.message || "Failed to apply permission changes",
         variant: "destructive",
       });
-      setPendingPermissions(new Set());
+      setShowConfirmDialog(false);
     },
   });
 
@@ -364,9 +354,49 @@ export function UnifiedUserManagement() {
     // Reset local state when opening dialog
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
-    setPendingPermissions(new Set());
   };
 
+  const getCurrentPermissionState = (permissionId: string): boolean => {
+    const permission = allPermissions.find(p => p.id === permissionId);
+    if (!permission) return false;
+    const userPermission = userPermissionsWithSources.find(p => p.code === permission.code);
+    return !!userPermission;
+  };
+
+  const handlePermissionToggle = (permissionId: string, checked: boolean) => {
+    const currentState = getCurrentPermissionState(permissionId);
+    
+    // Update local state
+    setLocalPermissionChanges(prev => {
+      const newMap = new Map(prev);
+      if (checked === currentState) {
+        // If reverting to original state, remove from changes
+        newMap.delete(permissionId);
+      } else {
+        // If different from original state, track the change
+        newMap.set(permissionId, checked);
+      }
+      
+      // Update hasUnsavedChanges based on the updated map
+      const hasChanges = newMap.size > 0;
+      setHasUnsavedChanges(hasChanges);
+      
+      return newMap;
+    });
+  };
+
+  const getChangesSummary = (): { adding: number; removing: number } => {
+    let adding = 0;
+    let removing = 0;
+    
+    localPermissionChanges.forEach((newState, permissionId) => {
+      const currentState = getCurrentPermissionState(permissionId);
+      if (newState && !currentState) adding++;
+      if (!newState && currentState) removing++;
+    });
+    
+    return { adding, removing };
+  };
 
   const handleSaveChanges = () => {
     if (!selectedUser || localPermissionChanges.size === 0) return;
@@ -385,7 +415,6 @@ export function UnifiedUserManagement() {
     });
     
     if (changes.length > 0) {
-      setPendingPermissions(new Set(changes.map(c => c.permissionId)));
       saveBatchPermissionsMutation.mutate({
         userId: selectedUser.id,
         changes
@@ -393,10 +422,47 @@ export function UnifiedUserManagement() {
     }
   };
 
-  const handleDiscardChanges = () => {
-    setLocalPermissionChanges(new Map());
-    setHasUnsavedChanges(false);
+  const handleCloseOrSave = () => {
+    if (hasUnsavedChanges) {
+      setShowConfirmDialog(true);
+    } else {
+      setShowPermissionsDialog(false);
+      setLocalPermissionChanges(new Map());
+    }
   };
+
+  // Filter users based on search term, role, and status
+  const filteredUsers = useMemo(() => {
+    let filtered = users;
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (user) =>
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (user.username && user.username.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    if (roleFilter !== "all") {
+      filtered = filtered.filter((user) =>
+        user.roles.some((role) => role.id === roleFilter)
+      );
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((user) => {
+        if (statusFilter === "active") {
+          return user.isActive && user.status !== "inactive";
+        } else if (statusFilter === "inactive") {
+          return !user.isActive || user.status === "inactive";
+        }
+        return true;
+      });
+    }
+
+    return filtered;
+  }, [users, searchTerm, roleFilter, statusFilter]);
 
   return (
     <div className="space-y-6">
@@ -559,7 +625,7 @@ export function UnifiedUserManagement() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Roles</CardTitle>
+            <CardTitle className="text-sm font-medium">Available Roles</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -573,7 +639,8 @@ export function UnifiedUserManagement() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters & Search</CardTitle>
+          <CardTitle>Filters</CardTitle>
+          <CardDescription>Filter users by name, email, role, or status</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
@@ -595,9 +662,9 @@ export function UnifiedUserManagement() {
                   <SelectValue placeholder="Filter by role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="all" data-testid="option-all-roles">All Roles</SelectItem>
                   {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
+                    <SelectItem key={role.id} value={role.id} data-testid={`option-filter-role-${role.name.toLowerCase()}`}>
                       {role.name}
                     </SelectItem>
                   ))}
@@ -610,9 +677,9 @@ export function UnifiedUserManagement() {
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="all" data-testid="option-all-status">All Status</SelectItem>
+                  <SelectItem value="active" data-testid="option-active-status">Active</SelectItem>
+                  <SelectItem value="inactive" data-testid="option-inactive-status">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -623,9 +690,9 @@ export function UnifiedUserManagement() {
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Users List</CardTitle>
+          <CardTitle>Users ({filteredUsers.length})</CardTitle>
           <CardDescription>
-            Complete list of all users with their roles and permissions
+            Comprehensive list of all users with their roles and permissions
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -633,86 +700,77 @@ export function UnifiedUserManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
+                  <TableHead>User</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Roles</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {usersLoading ? (
+                {filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                        <span className="ml-2">Loading users...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : users.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                      No users found
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      No users found matching your criteria
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.map((user) => (
-                    <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id} data-testid={`user-row-${user.id}`}>
                       <TableCell>
-                        <div>
-                          <div className="font-medium" data-testid={`text-user-name-${user.id}`}>
-                            {user.name}
+                        <div className="flex items-center space-x-3">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <User className="h-4 w-4" />
                           </div>
-                          {user.username && (
-                            <div className="text-sm text-muted-foreground">
-                              @{user.username}
+                          <div>
+                            <div className="font-medium" data-testid={`user-name-${user.id}`}>
+                              {user.name}
                             </div>
-                          )}
+                            {user.username && (
+                              <div className="text-sm text-muted-foreground" data-testid={`user-username-${user.id}`}>
+                                @{user.username}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div>
+                        <div className="space-y-1">
                           {user.email && (
-                            <div className="text-sm" data-testid={`text-user-email-${user.id}`}>
-                              {user.email}
-                            </div>
+                            <div className="text-sm" data-testid={`user-email-${user.id}`}>{user.email}</div>
                           )}
                           {user.phone && (
-                            <div className="text-sm text-muted-foreground" data-testid={`text-user-phone-${user.id}`}>
-                              {user.phone}
-                            </div>
+                            <div className="text-sm text-muted-foreground" data-testid={`user-phone-${user.id}`}>{user.phone}</div>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="space-y-1">
                           {user.roles.map((role) => (
-                            <Badge
-                              key={role.id}
-                              variant="secondary"
-                              data-testid={`badge-role-${role.name.toLowerCase()}-${user.id}`}
-                            >
+                            <Badge key={role.id} variant="secondary" data-testid={`user-role-${user.id}-${role.name.toLowerCase()}`}>
                               {role.name}
                             </Badge>
                           ))}
+                          {user.roles.length === 0 && (
+                            <Badge variant="outline">No Role</Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        {getStatusBadge(user.isActive, user.status)}
-                      </TableCell>
-                      <TableCell data-testid={`text-user-created-${user.id}`}>
-                        {formatDateToDDMMYYYY(user.createdAt)}
+                        <div data-testid={`user-status-${user.id}`}>
+                          {getStatusBadge(user.isActive, user.status)}
+                        </div>
                       </TableCell>
                       <TableCell>
+                        <div className="text-sm" data-testid={`user-created-${user.id}`}>
+                          {formatDateToDDMMYYYY(user.createdAt)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              data-testid={`button-user-actions-${user.id}`}
-                            >
+                            <Button variant="ghost" size="sm" data-testid={`user-actions-${user.id}`}>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -790,7 +848,7 @@ export function UnifiedUserManagement() {
                                     <AlertDialogAction
                                       onClick={() => deleteUserMutation.mutate(user.id)}
                                       disabled={deleteUserMutation.isPending}
-                                      data-testid={`button-confirm-delete-${user.id}`}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     >
                                       {deleteUserMutation.isPending ? "Deleting..." : "Delete"}
                                     </AlertDialogAction>
@@ -816,7 +874,7 @@ export function UnifiedUserManagement() {
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Update user information and role assignment.
+              Update user information and role assignments.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditUser} className="space-y-4">
@@ -870,7 +928,7 @@ export function UnifiedUserManagement() {
                 </SelectTrigger>
                 <SelectContent>
                   {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
+                    <SelectItem key={role.id} value={role.id} data-testid={`option-edit-role-${role.name.toLowerCase()}`}>
                       {role.name}
                     </SelectItem>
                   ))}
@@ -889,36 +947,49 @@ export function UnifiedUserManagement() {
               <Button
                 type="submit"
                 disabled={updateUserMutation.isPending}
-                data-testid="button-update-user"
+                data-testid="button-save-user"
               >
-                {updateUserMutation.isPending ? "Updating..." : "Update User"}
+                {updateUserMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Password Reset Result Dialog */}
+      {/* Password Result Dialog */}
       <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Password Reset Successful</DialogTitle>
+            <DialogTitle>New Password Generated</DialogTitle>
             <DialogDescription>
-              The new password has been generated for the user.
+              The new password has been generated. Please share it securely with the user.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="p-4 bg-muted rounded-lg">
+            <div className="bg-muted p-4 rounded-md">
               <Label className="text-sm font-medium">New Password:</Label>
-              <div className="font-mono text-lg mt-1 break-all" data-testid="text-new-password">
+              <div className="mt-1 font-mono text-lg" data-testid="generated-password">
                 {passwordResult}
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Please securely share this password with the user. They should change it upon first login.
-            </p>
+            <div className="text-sm text-muted-foreground">
+              Make sure to copy this password before closing this dialog. It will not be shown again.
+            </div>
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end space-x-2">
+            <Button
+              onClick={() => {
+                navigator.clipboard.writeText(passwordResult);
+                toast({
+                  title: "Copied",
+                  description: "Password copied to clipboard",
+                });
+              }}
+              variant="outline"
+              data-testid="button-copy-password"
+            >
+              Copy Password
+            </Button>
             <Button onClick={() => setShowPasswordDialog(false)} data-testid="button-close-password-dialog">
               Close
             </Button>
@@ -952,8 +1023,6 @@ export function UnifiedUserManagement() {
                 </div>
                 <div className="text-muted-foreground">
                   <span className="text-blue-600">+{userPermissionsWithSources.filter(p => p.source === 'override').length} added</span>
-                  {" | "}
-                  <span className="text-red-600">-0 removed</span>
                 </div>
               </div>
             </div>
@@ -971,7 +1040,6 @@ export function UnifiedUserManagement() {
                 const hasPermission = !!userPermission;
                 const isFromRole = userPermission?.source === 'role';
                 const isOverride = userPermission?.source === 'override';
-                const isPending = pendingPermissions.has(permission.id);
                 
                 if (!acc[category]) {
                   acc[category] = [];
@@ -981,8 +1049,7 @@ export function UnifiedUserManagement() {
                   userPermission,
                   hasPermission,
                   isFromRole,
-                  isOverride,
-                  isPending
+                  isOverride
                 });
                 return acc;
               }, {} as Record<string, any[]>);
@@ -1010,27 +1077,15 @@ export function UnifiedUserManagement() {
                               {permission.isFromRole && (
                                 <Badge variant="secondary" className="text-xs">Role</Badge>
                               )}
-                              {permission.isPending && (
-                                <Badge variant="outline" className="text-xs text-blue-600">
-                                  Saving...
-                                </Badge>
-                              )}
                               {(() => {
                                 const hasLocalChange = localPermissionChanges.has(permission.id);
                                 const localState = localPermissionChanges.get(permission.id);
-                                // Only show "Adding/Removing" if there are unsaved changes
-                                if (hasUnsavedChanges && hasLocalChange && localState !== permission.hasPermission) {
+                                const currentState = permission.hasPermission;
+                                
+                                if (hasLocalChange && localState !== currentState) {
                                   return (
                                     <Badge variant="outline" className="text-xs text-amber-600">
                                       {localState ? 'Adding' : 'Removing'}
-                                    </Badge>
-                                  );
-                                }
-                                // Show "Updated" badge when no unsaved changes but local state still active
-                                if (!hasUnsavedChanges && hasLocalChange) {
-                                  return (
-                                    <Badge variant="outline" className="text-xs text-green-600">
-                                      Updated
                                     </Badge>
                                   );
                                 }
@@ -1047,13 +1102,7 @@ export function UnifiedUserManagement() {
                                 : permission.hasPermission}
                               onCheckedChange={(checked) => {
                                 if (permission.isFromRole) return;
-                                // Only update local state - no API calls
-                                setLocalPermissionChanges(prev => {
-                                  const newMap = new Map(prev);
-                                  newMap.set(permission.id, checked);
-                                  return newMap;
-                                });
-                                setHasUnsavedChanges(true);
+                                handlePermissionToggle(permission.id, checked);
                               }}
                               disabled={permission.isFromRole}
                               data-testid={`switch-permission-${permissionId}`}
@@ -1077,70 +1126,56 @@ export function UnifiedUserManagement() {
               )}
             </div>
             <div className="flex gap-2">
-              {hasUnsavedChanges && (
-                <>
-                  <Button 
-                    variant="outline"
-                    onClick={handleDiscardChanges}
-                    data-testid="button-discard-changes"
-                  >
-                    Discard
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        disabled={saveBatchPermissionsMutation.isPending}
-                        data-testid="button-save-changes"
-                      >
-                        {saveBatchPermissionsMutation.isPending ? 'Saving...' : 'Save Changes'}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm Permission Changes</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to save all permission changes for {selectedUser?.name}? This will update the user's permissions immediately.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleSaveChanges}
-                          disabled={saveBatchPermissionsMutation.isPending}
-                        >
-                          {saveBatchPermissionsMutation.isPending ? 'Saving...' : 'Save Changes'}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </>
-              )}
               <Button 
-                variant={hasUnsavedChanges ? "outline" : "default"}
-                onClick={() => {
-                  if (hasUnsavedChanges) {
-                    if (confirm('You have unsaved changes. Are you sure you want to close without saving?')) {
-                      setShowPermissionsDialog(false);
-                      // Clear all local state when discarding changes
-                      setLocalPermissionChanges(new Map());
-                      setHasUnsavedChanges(false);
-                      setPendingPermissions(new Set());
-                    }
-                  } else {
-                    setShowPermissionsDialog(false);
-                    // Clear all local state when closing normally
-                    setLocalPermissionChanges(new Map());
-                    setPendingPermissions(new Set());
-                  }
-                }} 
-                data-testid="button-close-permissions-dialog"
+                variant={hasUnsavedChanges ? "default" : "outline"}
+                onClick={handleCloseOrSave}
+                disabled={saveBatchPermissionsMutation.isPending}
+                data-testid="button-dynamic-save-close"
               >
-                {hasUnsavedChanges ? 'Cancel' : 'Done'}
+                {saveBatchPermissionsMutation.isPending 
+                  ? 'Saving...' 
+                  : hasUnsavedChanges 
+                    ? 'Save Changes' 
+                    : 'Close'
+                }
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Dialog - Production Version */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Permission Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const { adding, removing } = getChangesSummary();
+                return (
+                  <div className="space-y-2">
+                    <div>You are about to change permissions for <strong>{selectedUser?.name}</strong>:</div>
+                    {adding > 0 && <div className="text-blue-600">Adding {adding} permissions</div>}
+                    {removing > 0 && <div className="text-red-600">Removing {removing} permissions</div>}
+                    <div className="text-sm text-muted-foreground mt-2">
+                      These changes will take effect immediately and may affect the user's access to system features.
+                    </div>
+                  </div>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowConfirmDialog(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSaveChanges}
+              disabled={saveBatchPermissionsMutation.isPending}
+            >
+              {saveBatchPermissionsMutation.isPending ? 'Applying...' : 'Apply Changes'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
