@@ -89,6 +89,7 @@ export default function UserRoleManagement() {
   const [showPermissions, setShowPermissions] = useState<string | null>(null);
   const [isRoleAssignmentModalOpen, setIsRoleAssignmentModalOpen] = useState(false);
   const [managingRoleAssignments, setManagingRoleAssignments] = useState<Role | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // User form data
   const [userFormData, setUserFormData] = useState({
@@ -461,6 +462,31 @@ export default function UserRoleManagement() {
     setHasUnsavedChanges(true);
   };
 
+  // Get changes summary for confirmation dialog
+  const getChangesSummary = () => {
+    if (!managingPermissionsUser) return { adding: 0, removing: 0 };
+    
+    let adding = 0;
+    let removing = 0;
+    
+    const userPermissions = getUserPermissions(managingPermissionsUser);
+    
+    localPermissionChanges.forEach((newCheckedState, permissionId) => {
+      const permission = permissions.find(p => p.id === permissionId);
+      if (!permission) return;
+      
+      const currentHasPermission = userPermissions.total.includes(permission.name);
+      
+      if (newCheckedState && !currentHasPermission) {
+        adding++;
+      } else if (!newCheckedState && currentHasPermission) {
+        removing++;
+      }
+    });
+    
+    return { adding, removing };
+  };
+
   // Batch save all permission changes
   const handleSavePermissionChanges = async () => {
     if (!managingPermissionsUser || localPermissionChanges.size === 0) return;
@@ -506,6 +532,11 @@ export default function UserRoleManagement() {
         title: "Permissions Updated",
         description: `${localPermissionChanges.size} permission changes applied successfully`,
       });
+      
+      // Auto-close the permissions dialog after showing notification
+      setTimeout(() => {
+        setIsPermissionsModalOpen(false);
+      }, 1500);
       
     } catch (error) {
       console.error('Failed to save permission changes:', error);
@@ -1299,35 +1330,61 @@ export default function UserRoleManagement() {
               )}
             </div>
             <div className="flex gap-2">
-              {hasUnsavedChanges && (
-                <>
-                  <Button 
-                    variant="outline"
-                    onClick={handleDiscardPermissionChanges}
-                  >
-                    Discard
-                  </Button>
-                  <Button 
-                    onClick={handleSavePermissionChanges}
-                    disabled={addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
-                  >
-                    {(addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending) ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                </>
-              )}
               <Button 
-                variant="outline" 
-                onClick={() => {
+                variant={hasUnsavedChanges ? "default" : "outline"}
+                onClick={hasUnsavedChanges ? () => setShowConfirmDialog(true) : () => {
                   setIsPermissionsModalOpen(false);
-                  handleDiscardPermissionChanges(); // Clean up on close
+                  handleDiscardPermissionChanges();
                 }}
+                disabled={addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
               >
-                Close
+                {(addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending) 
+                  ? 'Saving...' 
+                  : hasUnsavedChanges 
+                    ? 'Save Changes' 
+                    : 'Close'
+                }
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Permission Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const { adding, removing } = getChangesSummary();
+                return (
+                  <div className="space-y-2">
+                    <div>You are about to change permissions for <strong>{managingPermissionsUser?.name}</strong>:</div>
+                    {adding > 0 && <div className="text-blue-600">Adding {adding} permissions</div>}
+                    {removing > 0 && <div className="text-red-600">Removing {removing} permissions</div>}
+                    <div className="text-sm text-muted-foreground mt-2">
+                      These changes will take effect immediately and may affect the user's access to system features.
+                    </div>
+                  </div>
+                );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowConfirmDialog(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowConfirmDialog(false);
+                handleSavePermissionChanges();
+              }}
+              disabled={addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending}
+            >
+              {(addPermissionOverrideMutation.isPending || removePermissionOverrideMutation.isPending) ? 'Applying...' : 'Apply Changes'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* View User Permissions Modal */}
       <Dialog open={isViewPermissionsModalOpen} onOpenChange={setIsViewPermissionsModalOpen}>
