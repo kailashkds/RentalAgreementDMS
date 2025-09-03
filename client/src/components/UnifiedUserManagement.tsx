@@ -100,6 +100,7 @@ export function UnifiedUserManagement() {
   const [pendingPermissions, setPendingPermissions] = useState<Set<string>>(new Set());
   const [localPermissionChanges, setLocalPermissionChanges] = useState<Map<string, boolean>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isChangesApplied, setIsChangesApplied] = useState(false);
   const [createUserData, setCreateUserData] = useState<CreateUserData>({
     name: "",
     email: "",
@@ -295,7 +296,8 @@ export function UnifiedUserManagement() {
         console.error('Error refetching permissions:', error);
       }
       
-      // Clear unsaved changes flag since changes are now saved
+      // Mark changes as applied but keep local state for visual consistency
+      setIsChangesApplied(true);
       setHasUnsavedChanges(false);
       setPendingPermissions(new Set());
       
@@ -368,6 +370,7 @@ export function UnifiedUserManagement() {
     // Reset local state when opening dialog
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
+    setIsChangesApplied(false);
     setPendingPermissions(new Set());
   };
 
@@ -1030,8 +1033,8 @@ export function UnifiedUserManagement() {
                                     </Badge>
                                   );
                                 }
-                                // Show "Updated" badge when changes are saved but local state still active
-                                if (!hasUnsavedChanges && hasLocalChange) {
+                                // Show "Updated" badge when changes are applied but local state still active
+                                if (isChangesApplied && hasLocalChange) {
                                   return (
                                     <Badge variant="outline" className="text-xs text-green-600">
                                       Updated
@@ -1135,12 +1138,14 @@ export function UnifiedUserManagement() {
                       // Clear all local state when discarding changes
                       setLocalPermissionChanges(new Map());
                       setHasUnsavedChanges(false);
+                      setIsChangesApplied(false);
                       setPendingPermissions(new Set());
                     }
                   } else {
                     setShowPermissionsDialog(false);
                     // Clear all local state when closing normally
                     setLocalPermissionChanges(new Map());
+                    setIsChangesApplied(false);
                     setPendingPermissions(new Set());
                   }
                 }} 
