@@ -371,7 +371,7 @@ function formatDateToReadable(dateString: string): string {
   return `${day}${getOrdinalSuffix(day)} ${month} ${year}`;
 }
 
-// Helper function to format date from YYYY-MM-DD to DD MM YYYY format
+// Helper function to format date from YYYY-MM-DD to DD/MM/YYYY format
 function formatDateToDDMMYYYY(dateString: string): string {
   if (!dateString) return '';
   
@@ -383,7 +383,7 @@ function formatDateToDDMMYYYY(dateString: string): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
   
-  return `${day} ${month} ${year}`;
+  return `${day}/${month}/${year}`;
 }
 
 // Helper function to determine if a value should be formatted based on its characteristics
