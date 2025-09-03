@@ -762,14 +762,22 @@ export function mapFormDataToTemplateFields(formData: any, language?: string): R
     templateFields['MINIMUM_STAY'] = '11 months';
   }
 
-  // Handle agreement date mapping - use DD MM YYYY format
+  // Handle agreement date mapping - use DD/MM/YYYY format
   if (!templateFields['AGREEMENT_DATE']) {
+    let dateSource = '';
+    let dateValue = '';
     if (formData.createdAt) {
+      dateSource = 'createdAt';
+      dateValue = formData.createdAt;
       templateFields['AGREEMENT_DATE'] = formatDateToDDMMYYYY(formData.createdAt);
     } else if (formData.agreementDate) {
+      dateSource = 'agreementDate';
+      dateValue = formData.agreementDate;
       templateFields['AGREEMENT_DATE'] = formatDateToDDMMYYYY(formData.agreementDate);
     } else {
       // Fallback to current date
+      dateSource = 'fallback';
+      dateValue = new Date().toISOString();
       templateFields['AGREEMENT_DATE'] = formatDateToDDMMYYYY(new Date().toISOString());
     }
   }

@@ -14,7 +14,7 @@ export const DATE_FORMATS = {
 /**
  * Convert date to DD MM YYYY format
  */
-export function formatDateToDDMMYYYY(dateInput: string | Date, separator: string = ' '): string {
+export function formatDateToDDMMYYYY(dateInput: string | Date, separator: string = '/'): string {
   if (!dateInput) return '';
   
   try {
@@ -39,7 +39,7 @@ export function formatDateToDDMMYYYY(dateInput: string | Date, separator: string
 /**
  * Convert DD MM YYYY string back to Date object
  */
-export function parseDDMMYYYYToDate(dateString: string, separator: string = ' '): Date | null {
+export function parseDDMMYYYYToDate(dateString: string, separator: string = '/'): Date | null {
   if (!dateString) return null;
   
   try {
@@ -89,7 +89,7 @@ export function formatDateForInput(dateInput: string | Date): string {
 /**
  * Convert HTML input date (YYYY-MM-DD) to DD MM YYYY display format
  */
-export function formatInputDateToDisplay(inputDate: string, separator: string = ' '): string {
+export function formatInputDateToDisplay(inputDate: string, separator: string = '/'): string {
   if (!inputDate) return '';
   
   try {
@@ -104,7 +104,7 @@ export function formatInputDateToDisplay(inputDate: string, separator: string = 
 /**
  * Get current date in DD MM YYYY format
  */
-export function getCurrentDateDDMMYYYY(separator: string = ' '): string {
+export function getCurrentDateDDMMYYYY(separator: string = '/'): string {
   return formatDateToDDMMYYYY(new Date(), separator);
 }
 
