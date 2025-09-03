@@ -127,19 +127,24 @@ export function UnifiedUserManagement() {
 
   // Set original permission states when data loads for the first time
   useEffect(() => {
-    if (showPermissionsDialog && selectedUser && allPermissions.length > 0 && userPermissionsWithSources !== null) {
-      // Only set original states if they haven't been set yet (first time dialog opens with data)
+    if (showPermissionsDialog && selectedUser && allPermissions.length > 0 && userPermissionsWithSources.length >= 0) {
+      // Only set original states if they haven't been set yet 
       if (originalPermissionStates.size === 0) {
         const originalStates = new Map<string, boolean>();
+        console.log('Creating original states from data:', { allPermissions: allPermissions.length, userPermissions: userPermissionsWithSources.length });
+        
         allPermissions.forEach(permission => {
           const userPermission = userPermissionsWithSources.find((p: any) => p.code === permission.code);
-          originalStates.set(permission.id, !!userPermission);
+          const hasPermission = !!userPermission;
+          originalStates.set(permission.id, hasPermission);
+          console.log(`Permission ${permission.code}: original state = ${hasPermission}`);
         });
+        
         setOriginalPermissionStates(originalStates);
-        console.log('Setting original permission states:', originalStates);
+        console.log('Set original permission states:', Array.from(originalStates.entries()));
       }
     }
-  }, [showPermissionsDialog, selectedUser, allPermissions, userPermissionsWithSources, originalPermissionStates.size]);
+  }, [showPermissionsDialog, selectedUser, allPermissions, userPermissionsWithSources]);
 
   // Users query
   const { data: usersData } = useQuery({
@@ -376,11 +381,11 @@ export function UnifiedUserManagement() {
   const openPermissionsDialog = (user: UnifiedUser) => {
     setSelectedUser(user);
     setShowPermissionsDialog(true);
-    // Reset local state when opening dialog
+    // Reset ALL local state when opening dialog
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
-    // Store original permission states - we'll set them after the query loads
     setOriginalPermissionStates(new Map());
+    console.log('Opening permissions dialog for user:', user.id);
     // Force refresh user data when opening dialog
     queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
     queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${user.id}/permissions-with-sources`] });
