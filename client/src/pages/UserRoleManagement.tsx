@@ -431,12 +431,14 @@ export default function UserRoleManagement() {
     setIsRoleModalOpen(true);
   };
 
-  const openManagePermissions = (user: User) => {
+  const openManagePermissions = async (user: User) => {
     setManagingPermissionsUser(user);
     setIsPermissionsModalOpen(true);
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
-    queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
+    
+    // Force refresh the permission data before opening dialog
+    await queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
   };
 
   const openRoleAssignments = (role: Role) => {

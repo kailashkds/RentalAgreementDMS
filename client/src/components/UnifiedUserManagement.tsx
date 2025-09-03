@@ -357,13 +357,17 @@ export function UnifiedUserManagement() {
     setShowEditDialog(true);
   };
 
-  const openPermissionsDialog = (user: UnifiedUser) => {
+  const openPermissionsDialog = async (user: UnifiedUser) => {
     setSelectedUser(user);
     setShowPermissionsDialog(true);
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
-    queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
-    queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${user.id}/permissions-with-sources`] });
+    
+    // Force refresh the permission data before opening dialog
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] }),
+      queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${user.id}/permissions-with-sources`] })
+    ]);
   };
 
   const getCurrentPermissionState = (permissionId: string): boolean => {
