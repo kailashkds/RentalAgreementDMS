@@ -1079,13 +1079,33 @@ export function UnifiedUserManagement() {
                   >
                     Discard
                   </Button>
-                  <Button 
-                    onClick={handleSaveChanges}
-                    disabled={saveBatchPermissionsMutation.isPending}
-                    data-testid="button-save-changes"
-                  >
-                    {saveBatchPermissionsMutation.isPending ? 'Saving...' : 'Save Changes'}
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        disabled={saveBatchPermissionsMutation.isPending}
+                        data-testid="button-save-changes"
+                      >
+                        {saveBatchPermissionsMutation.isPending ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Permission Changes</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to save all permission changes for {selectedUser?.name}? This will update the user's permissions immediately.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleSaveChanges}
+                          disabled={saveBatchPermissionsMutation.isPending}
+                        >
+                          {saveBatchPermissionsMutation.isPending ? 'Saving...' : 'Save Changes'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </>
               )}
               <Button 
