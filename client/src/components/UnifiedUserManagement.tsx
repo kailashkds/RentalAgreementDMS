@@ -100,7 +100,6 @@ export function UnifiedUserManagement() {
   const [pendingPermissions, setPendingPermissions] = useState<Set<string>>(new Set());
   const [localPermissionChanges, setLocalPermissionChanges] = useState<Map<string, boolean>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isChangesApplied, setIsChangesApplied] = useState(false);
   const [createUserData, setCreateUserData] = useState<CreateUserData>({
     name: "",
     email: "",
@@ -299,11 +298,10 @@ export function UnifiedUserManagement() {
         console.error('Error refetching permissions:', error);
       }
       
-      // Mark as successfully applied but keep local state until dialog closes
+      // Mark changes as saved but keep local state until dialog closes 
       setHasUnsavedChanges(false);
-      setIsChangesApplied(true);
       setPendingPermissions(new Set());
-      // Keep localPermissionChanges until dialog closes to maintain visual consistency
+      // Keep localPermissionChanges to maintain visual consistency
       
       // Show success message
       toast({
@@ -1037,8 +1035,8 @@ export function UnifiedUserManagement() {
                                     </Badge>
                                   );
                                 }
-                                // Show "Updated" badge when changes are applied but local state still active
-                                if (isChangesApplied && hasLocalChange) {
+                                // Show "Updated" badge when no unsaved changes but local state still active
+                                if (!hasUnsavedChanges && hasLocalChange) {
                                   return (
                                     <Badge variant="outline" className="text-xs text-green-600">
                                       Updated
@@ -1053,33 +1051,14 @@ export function UnifiedUserManagement() {
                           
                           <div className="flex items-center ml-4">
                             <Switch
-                              checked={(() => {
-                                // Always use local state if it exists, regardless of any other state
-                                const localState = localPermissionChanges.get(permission.id);
-                                const dbState = permission.hasPermission;
-                                
-                                // Debug logging for any permission that has local changes or for first few permissions
-                                if (localState !== undefined || permission.name.includes('agreement')) {
-                                  console.log(`🔄 [${permission.name}] Local: ${localState}, DB: ${dbState}, HasUnsaved: ${hasUnsavedChanges}, Applied: ${isChangesApplied}`);
-                                }
-                                
-                                if (localState !== undefined) {
-                                  return localState;
-                                }
-                                // Only use database state when no local override exists
-                                return dbState;
-                              })()}
+                              checked={localPermissionChanges.has(permission.id) 
+                                ? localPermissionChanges.get(permission.id)! 
+                                : permission.hasPermission}
                               onCheckedChange={(checked) => {
-                                // Don't allow toggling role-based permissions
                                 if (permission.isFromRole) return;
-                                
-                                console.log(`🖱️ TOGGLE [${permission.name}] from ${permission.hasPermission} to ${checked}`);
-                                
-                                // Update local state only - no API calls
                                 setLocalPermissionChanges(prev => {
                                   const newMap = new Map(prev);
                                   newMap.set(permission.id, checked);
-                                  console.log(`📝 Local state updated for [${permission.name}]: ${checked}`);
                                   return newMap;
                                 });
                                 setHasUnsavedChanges(true);
@@ -1153,14 +1132,12 @@ export function UnifiedUserManagement() {
                       // Clear all local state when discarding changes
                       setLocalPermissionChanges(new Map());
                       setHasUnsavedChanges(false);
-                      setIsChangesApplied(false);
                       setPendingPermissions(new Set());
                     }
                   } else {
                     setShowPermissionsDialog(false);
                     // Clear all local state when closing normally
                     setLocalPermissionChanges(new Map());
-                    setIsChangesApplied(false);
                     setPendingPermissions(new Set());
                   }
                 }} 
