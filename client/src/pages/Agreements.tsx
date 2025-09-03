@@ -660,14 +660,37 @@ export default function Agreements() {
   };
 
   const handleDownloadPoliceVerification = (agreement: any) => {
-    const policeVerificationUrl = agreement.documents?.policeVerificationDocument?.url;
+    // Try multiple possible paths for police verification document
+    const policeVerificationUrl = 
+      agreement.documents?.policeVerificationDocument?.url ||
+      agreement.policeVerificationDocument?.url ||
+      agreement.policeVerificationDocumentUrl;
+    
     if (policeVerificationUrl) {
       const link = document.createElement('a');
       link.href = policeVerificationUrl;
-      link.download = agreement.documents?.policeVerificationDocument?.originalName || `${agreement.agreementNumber}-police-verification.pdf`;
+      
+      // Try multiple possible paths for the filename
+      const filename = 
+        agreement.documents?.policeVerificationDocument?.originalName ||
+        agreement.policeVerificationDocument?.originalName ||
+        `${agreement.agreementNumber}-police-verification.pdf`;
+      
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      toast({
+        title: "Download Started",
+        description: "Police verification document download started",
+      });
+    } else {
+      toast({
+        title: "Download Error", 
+        description: "Police verification document not found",
+        variant: "destructive",
+      });
     }
   };
 

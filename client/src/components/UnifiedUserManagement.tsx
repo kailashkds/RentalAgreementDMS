@@ -100,7 +100,6 @@ export function UnifiedUserManagement() {
   const [passwordResult, setPasswordResult] = useState<string>("");
   const [localPermissionChanges, setLocalPermissionChanges] = useState<Map<string, boolean>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [originalPermissionStates, setOriginalPermissionStates] = useState<Map<string, boolean>>(new Map());
   const [createUserData, setCreateUserData] = useState<CreateUserData>({
     name: "",
     email: "",
@@ -125,18 +124,6 @@ export function UnifiedUserManagement() {
     enabled: showPermissionsDialog && !!selectedUser,
   });
 
-  useEffect(() => {
-    if (showPermissionsDialog && selectedUser && allPermissions.length > 0 && userPermissionsWithSources.length >= 0) {
-      if (originalPermissionStates.size === 0) {
-        const originalStates = new Map<string, boolean>();
-        allPermissions.forEach(permission => {
-          const userPermission = userPermissionsWithSources.find((p: any) => p.code === permission.code);
-          originalStates.set(permission.id, !!userPermission);
-        });
-        setOriginalPermissionStates(originalStates);
-      }
-    }
-  }, [showPermissionsDialog, selectedUser, allPermissions, userPermissionsWithSources, originalPermissionStates.size]);
 
   // Users query
   const { data: usersData } = useQuery({
@@ -375,7 +362,6 @@ export function UnifiedUserManagement() {
     setShowPermissionsDialog(true);
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
-    setOriginalPermissionStates(new Map());
     queryClient.invalidateQueries({ queryKey: ["/api/unified/users"] });
     queryClient.invalidateQueries({ queryKey: [`/api/unified/users/${user.id}/permissions-with-sources`] });
   };

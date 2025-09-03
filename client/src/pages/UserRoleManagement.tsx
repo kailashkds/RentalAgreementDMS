@@ -436,7 +436,6 @@ export default function UserRoleManagement() {
     setIsPermissionsModalOpen(true);
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
-    setOriginalPermissionStates(new Map());
     queryClient.invalidateQueries({ queryKey: ['/api/unified/users'] });
   };
 
@@ -462,20 +461,7 @@ export default function UserRoleManagement() {
   // Local state for permission changes
   const [localPermissionChanges, setLocalPermissionChanges] = useState<Map<string, boolean>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [originalPermissionStates, setOriginalPermissionStates] = useState<Map<string, boolean>>(new Map());
 
-  useEffect(() => {
-    if (isPermissionsModalOpen && managingPermissionsUser && permissions.length > 0) {
-      if (originalPermissionStates.size === 0) {
-        const userPermissions = getUserPermissions(managingPermissionsUser);
-        const originalStates = new Map<string, boolean>();
-        permissions.forEach(permission => {
-          originalStates.set(permission.id, userPermissions.total.includes(permission.name));
-        });
-        setOriginalPermissionStates(originalStates);
-      }
-    }
-  }, [isPermissionsModalOpen, managingPermissionsUser, permissions, originalPermissionStates.size]);
 
   const handlePermissionToggle = (userId: string, permissionId: string, permissionName: string, checked: boolean) => {
     const newMap = new Map(localPermissionChanges);
