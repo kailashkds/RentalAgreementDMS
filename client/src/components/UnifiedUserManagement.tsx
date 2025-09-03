@@ -269,11 +269,9 @@ export function UnifiedUserManagement() {
     },
   });
 
-  // Batch save permissions mutation - ONLY CALLED FROM SAVE BUTTON
+  // Batch save permissions mutation
   const saveBatchPermissionsMutation = useMutation({
     mutationFn: async ({ userId, changes }: { userId: string; changes: Array<{ permissionId: string; action: 'add' | 'remove' }> }) => {
-      console.log('🚀 BATCH SAVE TRIGGERED - Making API calls now:', changes);
-      
       // Process all permission changes as batch operations
       const results = await Promise.all(
         changes.map(async ({ permissionId, action }) => {
@@ -367,12 +365,7 @@ export function UnifiedUserManagement() {
 
 
   const handleSaveChanges = () => {
-    console.log('🎯 SAVE CHANGES BUTTON CLICKED - This is the ONLY place API calls should happen');
-    
-    if (!selectedUser || localPermissionChanges.size === 0) {
-      console.log('❌ No changes to save');
-      return;
-    }
+    if (!selectedUser || localPermissionChanges.size === 0) return;
     
     const changes: Array<{ permissionId: string; action: 'add' | 'remove' }> = [];
     
@@ -388,14 +381,11 @@ export function UnifiedUserManagement() {
     });
     
     if (changes.length > 0) {
-      console.log('✅ Preparing to save changes:', changes);
       setPendingPermissions(new Set(changes.map(c => c.permissionId)));
       saveBatchPermissionsMutation.mutate({
         userId: selectedUser.id,
         changes
       });
-    } else {
-      console.log('❌ No valid changes to save');
     }
   };
 
@@ -1046,24 +1036,17 @@ export function UnifiedUserManagement() {
                                 }
                                 return permission.hasPermission;
                               })()}
-                              onCheckedChange={(newCheckedState) => {
+                              onCheckedChange={(checked) => {
                                 // Don't allow toggling role-based permissions
-                                if (permission.isFromRole) {
-                                  console.log('❌ Blocked: Cannot toggle role-based permission');
-                                  return;
-                                }
+                                if (permission.isFromRole) return;
                                 
-                                console.log('✅ Toggle clicked - VISUAL ONLY:', permission.code, 'new state:', newCheckedState);
-                                
-                                // CRITICAL: This should ONLY change local state, NO API CALLS!
+                                // Update local state only - no API calls
                                 setLocalPermissionChanges(prev => {
                                   const newMap = new Map(prev);
-                                  newMap.set(permission.id, newCheckedState);
-                                  console.log('📝 Local state updated for', permission.code, '- Total changes:', newMap.size);
+                                  newMap.set(permission.id, checked);
                                   return newMap;
                                 });
                                 setHasUnsavedChanges(true);
-                                console.log('🚨 If you see API calls in server logs now, there is a bug!');
                               }}
                               disabled={permission.isFromRole}
                               data-testid={`switch-permission-${permissionId}`}
