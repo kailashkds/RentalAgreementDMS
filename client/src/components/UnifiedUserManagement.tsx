@@ -364,7 +364,6 @@ export function UnifiedUserManagement() {
     // Reset local state when opening dialog
     setLocalPermissionChanges(new Map());
     setHasUnsavedChanges(false);
-    setIsChangesApplied(false);
     setPendingPermissions(new Set());
   };
 
