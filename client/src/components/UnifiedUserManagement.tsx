@@ -1040,7 +1040,9 @@ export function UnifiedUserManagement() {
                                 // Don't allow toggling role-based permissions
                                 if (permission.isFromRole || permission.isPending) return;
                                 
-                                // Set the new state directly in local changes
+                                console.log('Toggle clicked - Visual only change:', permission.id, newCheckedState);
+                                
+                                // Set the new state directly in local changes - NO API CALLS
                                 setLocalPermissionChanges(prev => {
                                   const newMap = new Map(prev);
                                   newMap.set(permission.id, newCheckedState);
