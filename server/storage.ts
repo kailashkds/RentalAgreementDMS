@@ -1903,18 +1903,27 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(permissions, eq(rolePermissionsTable.permissionId, permissions.id))
       .where(eq(userRoles.userId, userId));
 
-    // Get manual permission overrides
+    // Get manual permission overrides (both granted and revoked)
     const manualPermissions = await db
-      .select({ code: permissions.code })
+      .select({ 
+        code: permissions.code,
+        isGranted: userPermissions.isGranted
+      })
       .from(userPermissions)
       .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
       .where(eq(userPermissions.userId, userId));
 
-    // Combine and deduplicate permissions
-    const allPermissions = new Set([
-      ...rolePermissionResults.map(p => p.code),
-      ...manualPermissions.map(p => p.code)
-    ]);
+    // Start with role permissions
+    const allPermissions = new Set(rolePermissionResults.map(p => p.code));
+    
+    // Apply manual overrides
+    manualPermissions.forEach(({ code, isGranted }) => {
+      if (isGranted) {
+        allPermissions.add(code); // Grant permission
+      } else {
+        allPermissions.delete(code); // Revoke permission
+      }
+    });
 
     return Array.from(allPermissions);
   }

@@ -293,8 +293,8 @@ export default function UserRoleManagement() {
 
   // Permission override mutations
   const addPermissionOverrideMutation = useMutation({
-    mutationFn: async ({ userId, permissionId }: { userId: string; permissionId: string }) => {
-      const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId });
+    mutationFn: async ({ userId, permissionId, isGranted = true }: { userId: string; permissionId: string; isGranted?: boolean }) => {
+      const response = await apiRequest(`/api/unified/users/${userId}/permission-overrides`, "POST", { permissionId, isGranted });
       return response.json();
     },
     onSuccess: async () => {
@@ -508,10 +508,11 @@ export default function UserRoleManagement() {
             permissionId 
           }));
         } else if (!newCheckedState && currentHasPermission) {
-          // Remove permission
-          promises.push(removePermissionOverrideMutation.mutateAsync({ 
+          // Remove permission (revoke with isGranted: false)
+          promises.push(addPermissionOverrideMutation.mutateAsync({ 
             userId: managingPermissionsUser.id, 
-            permissionId 
+            permissionId,
+            isGranted: false
           }));
         }
       });
