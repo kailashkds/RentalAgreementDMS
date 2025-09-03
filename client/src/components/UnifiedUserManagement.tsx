@@ -296,8 +296,6 @@ export function UnifiedUserManagement() {
       setLocalPermissionChanges(new Map());
       setHasUnsavedChanges(false);
       setPendingPermissions(new Set());
-      // Close the permissions dialog
-      setShowPermissionsDialog(false);
     },
     onError: (error: any) => {
       toast({
