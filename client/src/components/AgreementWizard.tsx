@@ -2118,12 +2118,14 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                     <Controller
                       name="propertyDetails.purpose"
                       control={control}
-                      defaultValue="residential"
-                      render={({ field }) => (
-                        <Select 
-                          value={field.value || "residential"} 
-                          onValueChange={field.onChange}
-                        >
+                      render={({ field }) => {
+                        // Handle case conversion for stored values
+                        const normalizedValue = field.value ? field.value.toLowerCase() : "residential";
+                        return (
+                          <Select 
+                            value={normalizedValue} 
+                            onValueChange={field.onChange}
+                          >
                           <SelectTrigger>
                             <SelectValue placeholder={t("selectPurpose")} />
                           </SelectTrigger>
@@ -2132,8 +2134,9 @@ export default function AgreementWizard({ isOpen, onClose, agreementId, editingA
                             <SelectItem value="commercial">{t("commercial")}</SelectItem>
                             <SelectItem value="mixed">{t("mixedUse")}</SelectItem>
                           </SelectContent>
-                        </Select>
-                      )}
+                          </Select>
+                        );
+                      }}
                     />
                     {errors.propertyDetails?.purpose && (
                       <p className="text-sm text-red-600 mt-1">{errors.propertyDetails.purpose.message}</p>
